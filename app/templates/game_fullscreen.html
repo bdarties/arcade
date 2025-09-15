@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{{ game.title }} - Arcade</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+				background: #000;
+				overflow: hidden;
+			}
+			#game-container {
+				width: 100vw;
+				height: 100vh;
+				position: relative;
+			}
+			.exit-button {
+				position: absolute;
+				top: 20px;
+				right: 20px;
+				background: rgba(255, 255, 255, 0.2);
+				border: 2px solid rgba(255, 255, 255, 0.5);
+				color: white;
+				padding: 10px 20px;
+				border-radius: 5px;
+				cursor: pointer;
+				font-size: 16px;
+				z-index: 1000;
+				transition: all 0.3s ease;
+			}
+			.exit-button:hover {
+				background: rgba(255, 255, 255, 0.3);
+				border-color: rgba(255, 255, 255, 0.8);
+			}
+		</style>
+	</head>
+	<body>
+		<button class="exit-button" onclick="window.location.href='{{ url_for('routes.games_list') }}'">Retour</button>
+		<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+		<script type="module" src="{{ entry_js_url }}"></script>
+	</body>
+</html>
+
+

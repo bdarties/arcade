@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{% block title %}Arcade{% endblock %}</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+	</head>
+	<body style="background-color: aqua;">
+		<header class="site-header">
+			<div class="container">
+				<h1><a href="{{ url_for('routes.home') }}">Arcade</a></h1>
+			</div>
+		</header>
+		<main class="container">
+			{% block content %}{% endblock %}
+		</main>
+		<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+	</body>
+</html>
+

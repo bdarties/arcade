@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Arcade - Jeux{% endblock %}
+{% block content %}
+	<div class="games-container">
+		<div class="games-grid-section">
+			<div class="games-grid" id="games-grid">
+				{% for game in games %}
+					<div class="game-cell" data-game-id="{{ game.id }}" data-game-title="{{ game.title }}" data-game-description="{{ game.description }}" data-game-authors="{{ game.authors|join(', ') }}">
+						<div class="game-image">
+							<img src="{{ url_for('routes.serve_game_file', game_id=game.id, filepath='presentation.png') }}" alt="{{ game.title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+						
+							<div class="game-placeholder" style="display: none;">
+								<span>{{ game.title }}</span>
+							</div>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div class="game-description-section">
+			<div class="game-description" id="game-description">
+				<h2 id="game-title">Sélectionnez un jeu</h2>
+				<p id="game-desc">Utilisez les flèches directionnelles pour naviguer dans la grille de jeux.</p>
+				<p id="game-authors"></p>
+				
+				<!-- Ajout de la section vidéo -->
+				<div class="game-demo-video" id="game-demo-video" style="display: none;">
+					<video autoplay loop muted playsinline
+						   style="width: 100%; max-width: 600px; margin-top: 20px;">
+						<source id="video-source" src="" type="video/mp4">
+					</video>
+				</div>
+
+				<div class="game-actions">
+					<button id="play-button" class="play-button" disabled>Jouer</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+
