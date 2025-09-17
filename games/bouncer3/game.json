@@ -1,6 +1,7 @@
 {
-	"title": "Bouncer",
+	"title": "SUPER JEU",
 	"description": "Logo qui rebondit en plein écran.",
-	"authors": ["Arcade Team"]
+	"genre" : "action / aventure",
+	"authors": ["Benoit Darties", "Nicolas Maurin"]
 }
 
