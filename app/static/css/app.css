@@ -167,6 +167,11 @@ body {
 	color: white;
 }
 
+h1 {
+	font-size: 2rem;
+	margin-bottom: 1rem;
+	color: white;
+}
 .game-description p {
 	font-size: 1.1rem;
 	line-height: 1.6;
