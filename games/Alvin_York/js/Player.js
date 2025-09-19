@@ -11,15 +11,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.setOffset(14, 18);
 
     this.setBounce(0);           // Pas de rebond
-this.setFriction(1, 1);      // Friction maximale (si Arcade supporte)
-this.body.setAllowGravity(false);
-  
-  // CORRECTION: Désactiver la gravité pour éviter les micro-mouvements
-  this.body.setGravityY(0);
+    this.setFriction(1, 1);      // Friction maximale (si Arcade supporte)
+    this.body.setAllowGravity(false);
+    // CORRECTION: Désactiver la gravité pour éviter les micro-mouvements
+    this.body.setGravityY(0);
 
-  this.direction = "right";
-  this.dernierTir = 0;
-  this.cooldownTir = 800;
+    this.direction = "right";
+    this.dernierTir = 0;
+    this.cooldownTir = 500;
 
     // Arme
     this.arme = scene.add.sprite(this.x, this.y, "weapons");
@@ -41,9 +40,15 @@ this.body.setAllowGravity(false);
     });
     this.anims.create({
       key: "anim_idle",
-      frames: this.anims.generateFrameNumbers("img_player_idle", { start: 0, end: 4 }),
+      frames: this.anims.generateFrameNumbers("img_player_idle", { start: 0, end: 3 }),
       frameRate: 5,
       repeat: -1
+    });
+    this.anims.create({
+      key: "anim_player_dead",
+      frames: this.anims.generateFrameNumbers("img_player_dead", { start: 0, end: 4 }),
+      frameRate: 7,
+      repeat: 0
     });
   }
 
@@ -52,13 +57,13 @@ this.body.setAllowGravity(false);
 
     // Déplacements
     if (clavier.right.isDown) {
-      this.setVelocityX(400);
+      this.setVelocityX(225);
       this.anims.play("anim_run", true);
       this.direction = "right";
       this.setFlipX(false);
       enMouvement = true;
     } else if (clavier.left.isDown) {
-      this.setVelocityX(-400);
+      this.setVelocityX(-225);
       this.anims.play("anim_run", true);
       this.direction = "left";
       this.setFlipX(true);
@@ -68,10 +73,10 @@ this.body.setAllowGravity(false);
     }
 
     if (clavier.up.isDown) {
-      this.setVelocityY(-400);
+      this.setVelocityY(-225);
       enMouvement = true;
     } else if (clavier.down.isDown) {
-      this.setVelocityY(400);
+      this.setVelocityY(225);
       enMouvement = true;
     } else {
       this.setVelocityY(0);
@@ -81,9 +86,9 @@ this.body.setAllowGravity(false);
   }
 
   updateArme(ennemiCible = null) {
-    // Positionner l'arme au centre du joueur
-    this.arme.x = this.body.center.x;
-    this.arme.y = this.body.center.y;
+    // Positionner l'arme un peu en dessous du centre du joueur
+    this.arme.x = this.body.center.x -5;
+    this.arme.y = this.body.center.y + 5; // +10 pixels vers le bas
 
     if (ennemiCible && ennemiCible.body) {
       // CORRECTION: Orienter l'arme vers l'ennemi
@@ -95,7 +100,16 @@ this.body.setAllowGravity(false);
       );
       this.arme.rotation = angle;
       
-      // Ajuster le flip en fonction de l'angle
+      // Déterminer la direction du joueur selon la position de l'ennemi
+      if (ennemiCible.body.center.x < this.body.center.x) {
+        this.direction = "left";
+        this.setFlipX(true);
+      } else {
+        this.direction = "right";
+        this.setFlipX(false);
+      }
+
+      // Ajuster le flip de l'arme en fonction de l'angle
       if (angle > Math.PI/2 || angle < -Math.PI/2) {
         this.arme.setFlipY(true);
       } else {
@@ -116,8 +130,8 @@ this.body.setAllowGravity(false);
   updateHitbox() {
     // CORRECTION: Dessiner la hitbox comme un cercle graphique
     this.hitbox.clear();
-    this.hitbox.lineStyle(2, 0xff0000, 0.5);
-    this.hitbox.strokeCircle(this.body.center.x, this.body.center.y, this.rayonHitbox);
+    // this.hitbox.lineStyle(2, 0xff0000, 0.5);
+    // this.hitbox.strokeCircle(this.body.center.x, this.body.center.y, this.rayonHitbox);
   }
 
   tirer(ennemi) {
@@ -169,5 +183,46 @@ this.body.setAllowGravity(false);
       }
     }
     return null;
+  }
+
+  mourir() {
+    this.setActive(false);
+    this.setVisible(false);
+    this.arme.setVisible(false);
+    this.hitbox.clear();
+
+    // Optionnel : animation de mort si tu en as une
+    this.anims.play("anim_player_dead");
+
+    // Affiche "Game Over" à l'écran
+    this.scene.add.text(
+      this.scene.cameras.main.centerX,
+      this.scene.cameras.main.centerY,
+      "GAME OVER",
+      { fontSize: "64px", color: "#ff0000" }
+    ).setOrigin(0.5);
+
+    // Optionnel : arrêter la physique ou relancer la scène
+    this.scene.physics.pause();
+    this.scene.time.delayedCall(2000, () => { this.scene.scene.restart(); });
+  }
+
+  prendreDegats(qte = 1) {
+    if (this.invincible) return;
+    if (this.vie === undefined) this.vie = 3; // Valeur par défaut si non initialisée
+    this.vie -= qte;
+
+    // Optionnel : effet visuel d'invincibilité
+    this.setTint(0xff0000);
+    this.scene.time.delayedCall(200, () => {
+      this.clearTint();
+    });
+
+    // Optionnel : vérifier la mort du joueur
+    if (this.vie <= 0) {
+      this.vie = 0;
+      this.mourir();
+  
+    }
   }
 }
