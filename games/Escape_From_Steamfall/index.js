@@ -27,14 +27,8 @@ var config = {
 
 let game = null;
 
-// On attend le clic sur le bouton Start
-document.getElementById("startButton").addEventListener("click", () => {
-  // Masquer le menu
-  document.getElementById("menu").style.display = "none";
-  // Afficher le jeu
-  document.getElementById("game-container").style.display = "block";
 
   // Créer et lancer le jeu
   game = new Phaser.Game(config);
   game.scene.start("selection");
-});
+
