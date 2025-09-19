@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mon premier jeu en Phaser 3</title>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <style>
+      body, html {
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+      }
+
+      .background {
+        background-image: url('assets/home_page.png');
+        background-size: cover;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        margin-left: 70px;
+        margin-bottom: -490px;
+      }
+
+      .button {
+        margin-bottom: 20px;
+        position: relative;
+        cursor: pointer;
+      }
+
+      .button img {
+        width: 400px;
+        height: 125px;
+        border-radius: 5px;
+      }
+
+      .button:hover {
+        transform: scale(1.02);
+      }
+
+      #game-container {
+        width: 100%;
+        height: 100%;
+        display: none; /* on cache Phaser au départ */
+      }
+    </style>
+</head>
+<body> 
+    <!-- Menu -->
+    <div class="background" id="menu">
+        <div class="button-container">
+            <div class="button start" id="startButton">
+                <img src="assets/start.png" alt="Start" class="btnStart">
+            </div>
+            <div class="button control" onclick="location.href='controls.html'">
+                <img src="assets/control.png" alt="Control" class="btnControl">
+            </div>
+            <div class="button credits" onclick="location.href='credits.html'">
+                <img src="assets/credits.png" alt="Credits" class="btnCredits">
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur pour le jeu Phaser -->
+    <div id="game-container"></div>
+    <!-- Ton script du jeu -->
+    <script type="module" src="index.js"></script>
+    <script>
+const buttons = [
+    document.getElementById('startButton'),
+    document.querySelector('.control'),
+    document.querySelector('.credits')
+];
+let selectedIndex = 0;
+
+// Fonction pour mettre à jour la sélection visuelle
+function updateSelection() {
+    buttons.forEach((btn, i) => {
+                btn.style.transform = i === selectedIndex ? 'scale(1.05)' : 'scale(1)';
+    });
+}
+updateSelection();
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+        selectedIndex = (selectedIndex + 1) % buttons.length;
+        updateSelection();
+    } else if (e.key === 'ArrowUp') {
+        selectedIndex = (selectedIndex - 1 + buttons.length) % buttons.length;
+        updateSelection();
+    } else if (e.key === 'Enter') {
+        buttons[selectedIndex].click();
+    }
+});
+</script>
+</body>
+</html>
