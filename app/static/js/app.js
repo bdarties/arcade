@@ -8,7 +8,6 @@ class GamesGridNavigation {
 		this.gameTitle = document.getElementById('game-title');
 		this.gameDesc = document.getElementById('game-desc');
 		this.gameAuthors = document.getElementById('game-authors');
-		this.playButton = document.getElementById('play-button');
 		this.demoVideo = document.getElementById('game-demo-video');
 		if (this.grid && this.gameCells.length > 0) {
 			this.init();
@@ -76,6 +75,11 @@ class GamesGridNavigation {
 				break;
 				
 			case 'Enter':
+			case 'x':
+			case 'X':
+			case 'N':
+			case 'n':
+
 				e.preventDefault();
 				this.playCurrentGame();
 				break;
@@ -114,11 +118,6 @@ class GamesGridNavigation {
                 videoContainer.style.display = 'block';
             }
 
-		// Activer le bouton jouer
-		this.playButton.disabled = false;
-		this.playButton.onclick = () => {
-			window.location.href = `/games/${gameId}`;
-		};
 	}
 	
 	playCurrentGame() {
