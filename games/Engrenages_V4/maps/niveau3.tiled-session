@@ -1,0 +1,46 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "niveau3.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
+        "C:/Users/lilym/Downloads/Engrenages V4 - Lily/phaser/assets/tileset.tsx": {
+            "scaleInDock": 1
+        },
+        "niveau3.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 6,
+            "viewCenter": {
+                "x": 1364,
+                "y": 645
+            }
+        },
+        "niveau3.tmx#tileset": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/lilym/Downloads/Engrenages V4 - Lily/phaser/maps",
+    "last.externalTilesetPath": "C:/Users/lilym/Downloads/Engrenages V4 - Lily/phaser/assets",
+    "last.imagePath": "C:/Users/lilym/Downloads/Engrenages V4 - Lily/phaser/assets",
+    "map.height": 45,
+    "map.lastUsedExportFilter": "Fichiers de carte JSON (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 80,
+    "openFiles": [
+        "niveau3.tmx"
+    ],
+    "project": "niveau3.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "niveau3.tmx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.lastUsedFilter": "Tous les Fichiers (*)"
+}
