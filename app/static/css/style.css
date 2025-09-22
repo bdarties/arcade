@@ -25,7 +25,6 @@ body, html {
 
 /* Styles de la page d'accueil */
 .container {
-    display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
@@ -59,15 +58,20 @@ body, html {
 .games-container {
     display: flex;
     width: 100%;
-    height: calc(100vh - 100px); /* Tenir compte du titre */
     padding: 20px;
     box-sizing: border-box;
+    overflow: hiddden;
+
 }
 
+/* le conteneur de liste des jeux */
 .games-grid-section {
-    flex: 5; /* 5/8 de la largeur */
+    flex: 5;
     padding: 20px;
     box-sizing: border-box;
+    min-width: 0;
+    height:500px;
+    overflow: hidden; /* Cache tout débordement */
 }
 
 .game-description-section {
@@ -80,11 +84,15 @@ body, html {
 
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colonnes égales */
+    grid-template-columns: repeat(3, minmax(200px, 1fr));
     gap: 20px;
-    height: 100%;
-    overflow-y: auto;
-    padding-right: 10px;
+    height: 500px; /* Limite la hauteur */
+    padding-right: 16px; /* Espace pour la barre de défilement */
+    align-items: start; /* Empêche l'étirement vertical */
+    overflow-y: auto;   /* scroll vertical si contenu dépasse */
+  overflow-x: hidden; /* pas de scroll horizontal */
+  scroll-behavior: smooth;
+  scroll-padding: 20px;
 }
 
 .game-cell {
@@ -94,31 +102,51 @@ body, html {
     padding: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-height: 150px; /* Hauteur minimale */
+    display: flex;
+    flex-direction: column;
+    scroll-margin: 20px;
+}
+
+.game-image {
+    width: 100%;
     aspect-ratio: 16/9;
+    min-height: 100px; /* Hauteur minimale pour l'image */
+    overflow: hidden;
+    border-radius: 5px;
 }
 
 h1 {
     color: white;
     text-align: center;
     padding: 20px;
-    margin: 0;
+	margin-bottom: 1rem;
+
 }
 
-/* Style pour la barre de défilement */
+/* Style de la barre de défilement */
 .games-grid::-webkit-scrollbar {
-    width: 8px;
+    width: 12px;
 }
 
 .games-grid::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    border-radius: 6px;
+    margin: 4px;
 }
 
 .games-grid::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .games-grid::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.4);
+}
+
+/* Pour Firefox */
+.games-grid {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }

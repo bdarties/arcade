@@ -87,13 +87,20 @@ class GamesGridNavigation {
 	}
 	
 	updateFocus() {
-		// Retirer le focus de toutes les cellules
-		this.gameCells.forEach(cell => cell.classList.remove('focused'));
-		
-		// Ajouter le focus à la cellule actuelle
-		if (this.gameCells[this.currentIndex]) {
-			this.gameCells[this.currentIndex].classList.add('focused');
-		}
+		this.gameCells.forEach((cell, index) => {
+			if (index === this.currentIndex) {
+				cell.classList.add('focused');
+				// Assure que l'élément sélectionné est visible
+				cell.scrollIntoView({
+					behavior: 'smooth',
+					block: 'nearest',
+					inline: 'nearest'
+				});
+			} else {
+				cell.classList.remove('focused');
+			}
+		});
+		this.updateDescription();
 	}
 	
 	updateDescription() {
