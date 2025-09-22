@@ -1,23 +1,62 @@
-{% extends 'base.html' %}
-{% block title %}Arcade - Accueil{% endblock %}
-
-{% block content %}
-    <div class="home-container">
-        <div class="home-content">
-            <h1 class="home-title">Arcade</h1>
-            <p class="home-subtitle">Un projet initié par le Fab Lab</p>
-            <div class="start-instruction"><H2>Appuyez sur start pour commencer</H2></div>
-            <a href="{{ url_for('routes.games_list') }}" class="start-button" id="start-link" style="display: none;">Appuyez sur Entrée</a>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade - Accueil</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <div class="buttons-container">
+            <a href="{{ url_for('routes.games_list') }}" class="nav-button focused" data-href="{{ url_for('routes.games_list') }}">
+                COMMENCER
+            </a>
+            <a href="{{ url_for('routes.about') }}" class="nav-button" data-href="{{ url_for('routes.about') }}">
+                À PROPOS / CRÉDITS
+            </a>
         </div>
     </div>
 
     <script>
+        const buttons = document.querySelectorAll('.nav-button');
+        let currentFocus = 0;
+
+        function updateFocus() {
+            buttons.forEach((btn, index) => {
+                if (index === currentFocus) {
+                    btn.classList.add('focused');
+                } else {
+                    btn.classList.remove('focused');
+                }
+            });
+        }
+
         document.addEventListener('keydown', function(e) {
-            if (e.key.toLowerCase() === 'x') {
-                window.location.href = "{{ url_for('routes.games_list') }}";
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentFocus = Math.max(0, currentFocus - 1);
+                    updateFocus();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    currentFocus = Math.min(buttons.length - 1, currentFocus + 1);
+                    updateFocus();
+                    break;
+                case 'x':
+                case 'X':
+                    e.preventDefault();
+                    const selectedButton = buttons[currentFocus];
+                    if (selectedButton) {
+                        window.location.href = selectedButton.dataset.href;
+                    }
+                    break;
             }
         });
     </script>
-{% endblock %}
+</body>
+</html>
 
 

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade - À propos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <h1>À propos du projet Arcade</h1>
+        <p>Description du projet...</p>
+        <a href="{{ url_for('routes.home') }}" class="back-button">RETOUR (X)</a>
+    </div>
+
+    <script>
+        document.addEventListener('keydown', function(e) {
+            if (e.key.toLowerCase() === 'x') {
+                window.location.href = "{{ url_for('routes.home') }}";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,9 +2,11 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any
 
-from flask import Blueprint, current_app, render_template, abort, send_from_directory, url_for
+from flask import Blueprint, current_app, render_template, abort, send_from_directory, url_for, request, jsonify
 
+from .db import get_top_scores, add_score
 bp = Blueprint("routes", __name__)
+bp_api = Blueprint('api', __name__, url_prefix='/api')
 
 
 def get_games_root() -> Path:
@@ -92,4 +94,47 @@ def game_page(game_id: str):
     return render_template("game_fullscreen.html", 
                          game=game_meta, 
                          entry_js_url=entry_js_url)
+
+@bp.route("/about")
+def about():
+    return render_template("about.html")
+
+@bp_api.route('/scores/<game_id>', methods=['GET'])
+def get_scores(game_id):
+    """Récupère les 10 meilleurs scores pour un jeu."""
+    scores = get_top_scores(game_id)
+    return jsonify([
+        {'player': name, 'score': score} 
+        for name, score in scores
+    ])
+
+@bp_api.route('/scores', methods=['POST'])
+def save_score():
+    """Ajoute un nouveau score."""
+    data = request.get_json()
+    
+    # Vérification des données requises
+    if not all(k in data for k in ['gameId', 'playerName', 'score']):
+        return jsonify({
+            'success': False,
+            'error': 'Données manquantes'
+        }), 400
+    
+    # Validation des types
+    if not isinstance(data['score'], int):
+        return jsonify({
+            'success': False,
+            'error': 'Le score doit être un nombre entier'
+        }), 400
+        
+    success = add_score(
+        data['gameId'],
+        data['playerName'],
+        data['score']
+    )
+    
+    return jsonify({
+        'success': success,
+        'error': None if success else 'Erreur lors de l\'ajout du score'
+    }), 200 if success else 500
 
