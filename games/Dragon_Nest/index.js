@@ -8,6 +8,8 @@ import niveau3 from "./js/niveau3.js";
 import credits from "./js/credits.js";
 import controles from "./js/controles.js";
 import gameover from "./js/gameover.js"; // ⚡ importer la scène Game Over
+import confirmationExit from "/static/js/confirmationExit.js";
+
 
 // configuration générale du jeu
 var config = {
@@ -36,6 +38,7 @@ var config = {
     credits,
     controles,
     gameover, // ⚡ ajout de l’écran Game Over
+    confirmationExit
   ],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, ""),
 };

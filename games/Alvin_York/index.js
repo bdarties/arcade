@@ -2,6 +2,7 @@
 import selection from "./js/selection.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
+import confirmationExit from "/static/js/confirmationExit.js";
 
 // configuration générale du jeu
 var config = {
@@ -25,7 +26,7 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [selection, niveau2, niveau3],
+  scene: [selection, niveau2, niveau3, confirmationExit],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

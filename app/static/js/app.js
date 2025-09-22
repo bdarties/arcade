@@ -33,7 +33,7 @@ class GamesGridNavigation {
 	}
 	
 	handleKeyPress(e) {
-		const cols = 3; // Nombre de colonnes dans la grille
+		const cols = 4; // Nombre de colonnes dans la grille
 		const rows = Math.ceil(this.gameCells.length / cols);
 		
 		switch(e.key) {
