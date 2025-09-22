@@ -21,9 +21,10 @@ MAP = {
     14: e.KEY_P,          # BTN3_J1
     25: e.KEY_K,          # BTN4_J1
     24: e.KEY_L,          # BTN5_J1
-    23: e.KEY_SEMICOLON,          # BTN6_J1
-    10: e.KEY_Z,      # BTN_START_J1
-    9: e.KEY_X,      # BTN_SELECT_J1
+    23: e.KEY_SEMICOLON,  # BTN6_J1
+    10: e.KEY_X,          # BTN_START_J1
+    9: e.KEY_Z,           # BTN_SELECT_J1
+
 
     # --- Joueur 2 ---
     11: e.KEY_W,
