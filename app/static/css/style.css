@@ -1,5 +1,6 @@
 /* Styles généraux */
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
     height: 100%;
@@ -64,64 +65,41 @@ body, html {
 
 }
 
+
+
+
 /* le conteneur de liste des jeux */
 .games-grid-section {
-    flex: 5;
+    flex: 8;
     padding: 20px;
     box-sizing: border-box;
     min-width: 0;
-    height:500px;
-    overflow: hidden; /* Cache tout débordement */
-}
-
-.game-description-section {
-    flex: 3; /* 3/8 de la largeur */
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.5);
-    margin: 20px;
-    border-radius: 10px;
+    height: 80vh;
+    overflow: hidden;
+    /* Cache tout débordement */
 }
 
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(200px, 1fr));
-    gap: 20px;
-    height: 500px; /* Limite la hauteur */
-    padding-right: 16px; /* Espace pour la barre de défilement */
-    align-items: start; /* Empêche l'étirement vertical */
-    overflow-y: auto;   /* scroll vertical si contenu dépasse */
-  overflow-x: hidden; /* pas de scroll horizontal */
-  scroll-behavior: smooth;
-  scroll-padding: 20px;
-}
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    /*grid-template-columns: repeat(4, 1fr); */
 
-.game-cell {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-height: 150px; /* Hauteur minimale */
-    display: flex;
-    flex-direction: column;
-    scroll-margin: 20px;
-}
 
-.game-image {
-    width: 100%;
-    aspect-ratio: 16/9;
-    min-height: 100px; /* Hauteur minimale pour l'image */
-    overflow: hidden;
-    border-radius: 5px;
-}
+    gap: 16px;
+    max-height: calc(100vh - 40px);
 
-h1 {
-    color: white;
-    text-align: center;
-    padding: 20px;
-	margin-bottom: 1rem;
-
+    
+    /* Limite la hauteur */
+    padding-right: 16px;
+    /* Espace pour la barre de défilement */
+    align-items: start;
+    /* Empêche l'étirement vertical */
+    overflow-y: auto;
+    /* scroll vertical si contenu dépasse */
+    overflow-x: hidden;
+    /* pas de scroll horizontal */
+    scroll-behavior: smooth;
+    scroll-padding: 12px;
 }
 
 /* Style de la barre de défilement */
@@ -145,8 +123,151 @@ h1 {
     background: rgba(255, 255, 255, 0.4);
 }
 
+/* Style pour la barre de défilement */
+.games-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.games-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.games-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.games-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
 /* Pour Firefox */
 .games-grid {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
+
+
+
+.game-cell {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 120px;
+    /* Hauteur minimale */
+    display: flex;
+    flex-direction: column;
+    scroll-margin: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+
+.game-cell.focused {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.game-image {
+    width: 100%;
+    aspect-ratio: 16/9;
+    min-height: 100px;
+    /* Hauteur minimale pour l'image */
+    overflow: hidden;
+    border-radius: 5px;
+}
+
+
+
+.game-description-section {
+    flex: 3;
+    /* 3/8 de la largeur */
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin: 20px;
+    border-radius: 10px;
+}
+
+
+h1 {
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 1rem;
+
+}
+
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("../images/background.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+}
+
+
+
+
+
+
+
+
+.game-image {
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    border-radius: 5px;
+}
+
+.game-image img,
+.game-image video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.game-placeholder {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+}
+
+.game-placeholder span {
+    color: white;
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
