@@ -31,6 +31,13 @@ html {
     height: 100vh;
 }
 
+.container-accueil {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
 .buttons-container {
     display: flex;
     flex-direction: column;

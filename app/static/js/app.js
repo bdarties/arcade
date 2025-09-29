@@ -39,8 +39,16 @@ class GamesGridNavigation {
 		switch(e.key) {
 			case 'ArrowUp':
 				e.preventDefault();
+				if (this.currentIndex == -1) {
+					return;
+				}
 				if (this.currentIndex >= cols) {
 					this.currentIndex -= cols;
+					this.updateFocus();
+					this.updateDescription();
+				}
+				else if (this.currentIndex  < cols ) {
+					this.currentIndex = -1;
 					this.updateFocus();
 					this.updateDescription();
 				}
@@ -50,6 +58,11 @@ class GamesGridNavigation {
 				e.preventDefault();
 				if (this.currentIndex + cols < this.gameCells.length) {
 					this.currentIndex += cols;
+					this.updateFocus();
+					this.updateDescription();
+				}
+				else if (this.currentIndex  < cols ) {
+					this.currentIndex = -1;
 					this.updateFocus();
 					this.updateDescription();
 				}
@@ -81,12 +94,25 @@ class GamesGridNavigation {
 			case 'n':
 
 				e.preventDefault();
+				if (this.currentIndex == -1) {
+					window.location.href = '/';
+					break;
+				} else {
 				this.playCurrentGame();
 				break;
+				}
 		}
 	}
 	
 	updateFocus() {
+		if (this.currentIndex == -1) {
+			this.gameTitle.textContent = '';
+			this.gameDesc.textContent = 'Utilisez les flèches pour naviguer dans la grille et appuyez sur "Start" pour lancer un jeu.';
+			this.gameAuthors.textContent = '';
+
+			// this.demoVideo.style.display = 'none';
+			return;
+		}
 		this.gameCells.forEach((cell, index) => {
 			if (index === this.currentIndex) {
 				cell.classList.add('focused');

@@ -14,6 +14,7 @@
 {% block title %}Arcade - Jeux{% endblock %}
 {% block content %}
 	<H1> Selectionnez votre jeu puis apuyez sur le bouton start pour le lancer</H1>
+	<div class="return button" onclick="window.location.href='{{ url_for('routes.home') }}'">Retour à l'accueil</div>
 
 	<div class="games-container">
 		<div class="games-grid-section">
