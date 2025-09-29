@@ -37,8 +37,8 @@ MAP = {
     21: e.KEY_F,          # BTN4_J2
     20: e.KEY_G,          # BTN5_J2
     16: e.KEY_H,          # BTN6_J2
-    19: e.KEY_B,      # BTN_START_J2
-    26: e.KEY_N,      # BTN_SELECT_J2
+    19: e.KEY_N,      # BTN_START_J2
+    26: e.KEY_B,      # BTN_SELECT_J2
 }
 
 # Anti-rebond (s)
