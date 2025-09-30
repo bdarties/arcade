@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "mcp__serena__list_dir",
+      "mcp__serena__read_file"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
