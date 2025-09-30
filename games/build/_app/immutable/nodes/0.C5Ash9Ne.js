@@ -1,2 +1,0 @@
-import"../chunks/DsnmJJEf.js";import"../chunks/DmcyWhip.js";import{o,q as f,f as d,a as s,c as l,r as m}from"../chunks/BGIvNqa6.js";function v(i,t,a,e,u){o&&f();var r=t.$$slots?.[a],n=!1;r===!0&&(r=t.children,n=!0),r===void 0||r(i,n?()=>e:e)}var c=d('<div data-theme="beatborner"><!></div>');function b(i,t){var a=c(),e=l(a);v(e,t,"default",{}),m(a),s(i,a)}export{b as component};
-//# sourceMappingURL=0.C5Ash9Ne.js.map
