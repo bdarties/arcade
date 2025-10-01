@@ -45,7 +45,7 @@ var config = {
 };
 
 // Création et lancement du jeu
-var game = new Phaser.Game(config); // Instancie le jeu avec la config
+export var game = new Phaser.Game(config); // Instancie le jeu avec la config
 game.scene.start("accueil"); // Démarre sur accueil.js
 
 // Gestion de l'overlay (si les éléments existent)

@@ -30,5 +30,5 @@ var config = {
 
 
 // création et lancement du jeu
-var game = new Phaser.Game(config);
+export var game = new Phaser.Game(config);
 game.scene.start("debut");

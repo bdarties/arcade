@@ -4,6 +4,7 @@ import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
 
+
 // configuration générale du jeu
 var config = {
   width: 1280, // largeur en pixels
@@ -32,5 +33,6 @@ var config = {
 
 
 // création et lancement du jeu
-var game = new Phaser.Game(config);
+export const game  = new Phaser.Game(config);
 game.scene.start("selection");
+

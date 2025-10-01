@@ -67,8 +67,7 @@ export default class ConfirmationExit extends Phaser.Scene {
                     this.scene.resume(this.registry.get('previousScene'));
                     this.scene.stop();
                 } else {
-                    this.scene.stop(this.registry.get('previousScene'));
-                    
+                    this.scene.stop(this.registry.get('previousScene'));                   
                     window.location.href='/games'; 
                 }
                 break;

@@ -31,4 +31,4 @@ const config = {
   scene: [accueil, controls, lose, credits, story, MainScene, SecondScene, Scene3, Scene4, Scene5, PowerUpScene ], // Assurez-vous que le nom de la scène est correct
 };
 
-new Phaser.Game(config);
+export var game = new Phaser.Game(config);

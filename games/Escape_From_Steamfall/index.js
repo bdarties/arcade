@@ -25,10 +25,8 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-let game = null;
-
 
   // Créer et lancer le jeu
-  game = new Phaser.Game(config);
+  export var game = new Phaser.Game(config);
   game.scene.start("selection");
 

@@ -39,7 +39,81 @@
 	<body>
 		<button class="exit-button" onclick="window.location.href='{{ url_for('routes.games_list') }}'">Retour</button>
 		<script src="/static/js/phaser.min.js"></script>
-		<script type="module" src="{{ entry_js_url }}"></script>
+
+			<script type="module">
+			import confirmationExit from "/static/js/confirmationExit.js";
+			import { game } from "{{ entry_js_url }}";
+
+  			game.scene.add('confirmationExit', confirmationExit);
+
+// Ajout d'un écouteur global pour la touche W
+window.addEventListener('keydown', (event) => {
+  
+    if (event.key.toLowerCase() === 'w') {
+        // Récupère la scène active
+        const activeScene = game.scene.scenes.find(scene => 
+            scene.scene.settings.active && 
+            !scene.scene.key.includes('confirmationExit')
+        );
+        
+        if (activeScene) {
+            // Stocke le nom de la scène active
+            game.registry.set('previousScene', activeScene.scene.key);
+            // Met en pause la scène active
+            game.scene.pause(activeScene.scene.key);
+            // Lance la scène de confirmation
+            game.scene.start('confirmationExit');
+        }
+    }
+});
+
+ function shutdownPhaser(game) {
+	console.log("Shutdown Phaser")
+  if (!game) return;
+  try {
+	console.log("Try")
+    // Audio
+    if (game.sound) {
+      game.sound.stopAll();
+      game.sound.removeAllListeners();
+    }
+
+    // Scenes: kill tweens/timers/listeners
+    if (game.scene) {
+      game.scene.getScenes(true).forEach(s => {
+        s.tweens && s.tweens.killAll();
+        s.time && s.time.removeAllEvents();
+        s.events && s.events.removeAllListeners();
+        s.input && s.input.removeAllListeners();
+      });
+    }
+
+    // (Optionnel) Nettoyer des textures / anims si tu recrées un nouveau jeu juste après
+    // Attention: ne supprime pas __DEFAULT/__MISSING
+    if (game.textures) {
+      game.textures.list && Object.keys(game.textures.list).forEach(k => {
+        if (k !== '__DEFAULT' && k !== '__MISSING') {
+          game.textures.remove(k);
+        }
+      });
+    }
+    if (game.anims) {
+      game.anims.remove('all'); // ou remove par clé si tu en recrées d’autres
+    }
+  } finally {
+    // Retire le canvas du DOM et libère les contextes
+    game.destroy(true);
+    console.log("OK")
+	console.log(game)
+  }
+}
+
+
+window.addEventListener('pagehide', () => shutdownPhaser(game));
+/* ou, en SPA, dans le hook "beforeRouteLeave"/"onUnmounted" */
+
+</script>
+
 	</body>
 </html>
 
