@@ -8,14 +8,12 @@ export default class credits extends Phaser.Scene {
 
     // --- TITRE ---
     this.add.text(width / 2, height * 0.2, "Crédits", {
-      fontFamily: "Arial",
       fontSize: "48px",
       color: "#ffffff",
     }).setOrigin(0.5);
 
     // --- TEXTE ---
-    this.add.text(width / 2, height * 0.4, "Jeu créé par :\nTon Nom", {
-      fontFamily: "Arial",
+    this.add.text(width / 2, height * 0.4, "Jeu créé par :\nJoan Colomb, Gianni Oliver, Marthe Carion", {
       fontSize: "28px",
       color: "#ffffff",
       align: "center"
@@ -23,19 +21,18 @@ export default class credits extends Phaser.Scene {
 
     // --- BOUTON RETOUR ---
     this.retour = this.add.text(width / 2, height * 0.8, "Retour au menu", {
-      fontFamily: "Arial",
       fontSize: "32px",
       color: "#ffffff",
       backgroundColor: "#00000066",
       padding: { left: 10, right: 10, top: 5, bottom: 5 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    // Action quand on clique à la souris
+    // Clic souris
     this.retour.on("pointerup", () => {
       this.scene.start("menu");
     });
 
-    // Effet visuel quand la souris survole
+    // Effet survol souris
     this.retour.on("pointerover", () => {
       this.setSelection(true);
     });
@@ -47,16 +44,13 @@ export default class credits extends Phaser.Scene {
     this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // Au lancement, le bouton est automatiquement sélectionné
+    // Bouton sélectionné par défaut
     this.setSelection(true);
   }
 
-  /**
-   * Active ou désactive la mise en évidence du bouton
-   */
   setSelection(isSelected) {
     if (isSelected) {
-      this.retour.setStyle({ color: "#ba280bff" }); // vert = sélectionné
+      this.retour.setStyle({ color: "#ba280bff" });
       this.isSelected = true;
     } else {
       this.retour.setStyle({ color: "#ffffff" });
@@ -65,7 +59,6 @@ export default class credits extends Phaser.Scene {
   }
 
   update() {
-    // Si le bouton est sélectionné et que le joueur appuie sur Entrée ou Espace
     if (this.isSelected && (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey))) {
       this.scene.start("menu");
     }

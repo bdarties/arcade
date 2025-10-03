@@ -7,33 +7,30 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.speed = 120;
         this.facing = "right";
         this.attackDelay = 1200;
-        this.attackRange = 28;
+        this.attackRange = 37;
         this.lastAttack = 0;
 
         this.weapon = scene.add.sprite(this.x, this.y, "weapons").setOrigin(0.5).setVisible(false);
         scene.physics.add.existing(this.weapon);
         if (this.weapon.body) this.weapon.body.enable = false;
 
-        this.attackZone = scene.add.zone(this.x, this.y, this.attackRange * 2, this.attackRange * 2);
-        scene.physics.world.enable(this.attackZone);
-        if (this.attackZone.body) {
-            this.attackZone.body.setAllowGravity(false).setImmovable(true);
-        }
+        // Suppression de la zone d'attaque automatique
+        this.attackZone = null;
         this._zoneCollider = null;
 
         this.level = 1;
         this.xp = 0;
         this.xpToNext = 5;
         this.damage = 50;
-        this.maxHealth = 200;
+        this.maxHealth = 300;
         this.health = this.maxHealth;
-        this.regen = 0.5;
+        this.regen = 1;
         this._regenTimer = 0;
 
         this.isDashing = false;
         this.dashSpeed = 400;
-        this.dashDuration = 200; 
-        this.dashCooldown = 3000; 
+        this.dashDuration = 200;
+        this.dashCooldown = 1000;
         this.lastDash = 0;
     }
 
@@ -46,31 +43,65 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             { key: "idle_right", start: 0, end: 2, rate: 6 },
             { key: "idle_left", start: 7, end: 9, rate: 6 },
             { key: "walk_right", start: 14, end: 17, rate: 10 },
-            { key: "walk_left", start: 21, end: 24, rate: 10 }
+            { key: "walk_left", start: 21, end: 24, rate: 10 },
+            { key: "dash_right", start: 28, end: 30, rate: 20 },
+            { key: "dash_left", start: 31, end: 33, rate: 20 }
         ];
-        anims.forEach(a => scene.anims.create({
-            key: a.key,
-            frames: scene.anims.generateFrameNumbers("elf", { start: a.start, end: a.end }),
-            frameRate: a.rate,
-            repeat: -1
-        }));
+        anims.forEach(a => {
+            if (!scene.anims.exists(a.key)) {
+                scene.anims.create({
+                    key: a.key,
+                    frames: scene.anims.generateFrameNumbers("elf", { start: a.start, end: a.end }),
+                    frameRate: a.rate,
+                    repeat: 0
+                });
+            }
+        });
     }
 
-    _onEnemyInZone = (zone, enemy) => {
-        if (!enemy?.active) return;
+    // Nouvelle méthode pour trouver l'ennemi le plus proche
+    findClosestEnemy() {
+        if (!this.scene?.enemies || this.scene.enemies.getLength() === 0) {
+            return null;
+        }
+
+        let closestEnemy = null;
+        let closestDistance = this.attackRange;
+
+        this.scene.enemies.getChildren().forEach(enemy => {
+            if (enemy.active) {
+                const distance = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+                if (distance <= closestDistance) {
+                    closestDistance = distance;
+                    closestEnemy = enemy;
+                }
+            }
+        });
+
+        return closestEnemy;
+    }
+
+    // Méthode d'attaque manuelle
+    manualAttack() {
         const time = this.scene.time.now;
         if (time > this.lastAttack + this.attackDelay) {
-            this.attack(enemy);
-            this.lastAttack = time;
+            const closestEnemy = this.findClosestEnemy();
+            if (closestEnemy) {
+                this.attack(closestEnemy);
+                this.lastAttack = time;
+                return true; // Attaque réussie
+            }
         }
+        return false; // Aucun ennemi à portée ou en cooldown
     }
 
-    attack(target = null) {
+    attack(target) {
         this.weapon.setVisible(true);
         if (this.weapon.body) this.weapon.body.enable = true;
+        this.scene.sound.play('sword_swing');
 
-        const angle = target ? Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y) : 0;
-        const reach = target ? Math.min(Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y), this.attackRange) : this.attackRange;
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+        const reach = Math.min(Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y), this.attackRange);
         this.weapon.setPosition(this.x + Math.cos(angle) * reach, this.y + Math.sin(angle) * reach);
         this.weapon.setRotation(angle + Math.PI / 2);
         this.weapon.play("sword_attack", true);
@@ -107,19 +138,25 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.isDashing = true;
         this.lastDash = now;
 
-        let dx = 0, dy = 0;
+        let vx = 0, vy = 0;
         switch (this.facing) {
-            case "right": dx = 1; break;
-            case "left": dx = -1; break;
-            case "up": dy = -1; break;
-            case "down": dy = 1; break;
+            case "right": vx = this.dashSpeed; break;
+            case "left": vx = -this.dashSpeed; break;
+            case "up": vy = -this.dashSpeed; break;
+            case "down": vy = this.dashSpeed; break;
         }
 
-        this.body.checkCollision.none = true;
-        this.body.setVelocity(dx * this.dashSpeed, dy * this.dashSpeed);
+        this.body.setVelocity(vx, vy);
+        this.body.checkCollision.none = false;
 
-        const ghostInterval = 40; 
+        // Animation de dash
+        const animKey = (this.facing === "right") ? "dash_right" : (this.facing === "left" ? "dash_left" : null);
+        if (animKey) this.play(animKey, true);
+
+        // Ghost effect
+        const ghostInterval = 40;
         const ghostCount = Math.floor(this.dashDuration / ghostInterval);
+        let created = 0;
 
         const ghostTimer = this.scene.time.addEvent({
             delay: ghostInterval,
@@ -136,56 +173,49 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
                     duration: 200,
                     onComplete: () => ghost.destroy()
                 });
+
+                created++;
             }
         });
 
         this.scene.time.delayedCall(this.dashDuration, () => {
             this.isDashing = false;
-            this.setVisible(true);
             this.body.setVelocity(0, 0);
-            this.body.checkCollision.none = false;
-            ghostTimer.remove(); 
+            ghostTimer.remove();
         });
-    }    
+    }
 
     update(controls) {
         const delta = this.scene.game.loop.delta;
-        let vx = 0, vy = 0;
-
         if (!this.isDashing) {
+            let vx = 0, vy = 0;
             if (controls.left.isDown) vx = -this.speed;
             else if (controls.right.isDown) vx = this.speed;
             if (controls.up.isDown) vy = -this.speed;
             else if (controls.down.isDown) vy = this.speed;
+
             this.body.setVelocity(vx, vy);
 
             if (vx || vy) {
                 this.facing = Math.abs(vx) >= Math.abs(vy) ? (vx >= 0 ? "right" : "left") : (vy >= 0 ? "down" : "up");
                 const animKey = vx ? (this.facing === "right" ? "walk_right" : "walk_left") : (vy ? "walk_right" : "");
-                this.anims.play(animKey, true);
+                if (animKey) this.anims.play(animKey, true);
             } else {
                 this.anims.play(this.facing === "right" || this.facing === "down" ? "idle_right" : "idle_left", true);
             }
 
-            // 🔑 Utilise le contrôle dash (par défaut K)
             if (controls.dash?.isDown) this.dash();
+            
+            // Attaque manuelle (par exemple avec la barre d'espace)
+            if (controls.attack?.isDown) {
+                this.manualAttack();
+            }
         }
 
         this._regenTimer += delta;
-        if (this._regenTimer >= 1000) { 
-            this.health = Math.min(this.maxHealth, this.health + this.regen); 
-            this._regenTimer = 0; 
-        }
+        if (this._regenTimer >= 1000) { this.health = Math.min(this.maxHealth, this.health + this.regen); this._regenTimer = 0; }
 
-        if (!this._zoneCollider && this.scene?.enemies) {
-            this._zoneCollider = this.scene.physics.add.overlap(this.attackZone, this.scene.enemies, this._onEnemyInZone);
-        }
-
-        this.attackZone.setPosition(this.x, this.y);
-        if (this.attackZone.body) {
-            this.attackZone.body.x = this.x - this.attackZone.width / 2;
-            this.attackZone.body.y = this.y - this.attackZone.height / 2;
-        }
+        // Suppression de la logique de zone d'attaque automatique
     }
 
     destroy(fromScene) {

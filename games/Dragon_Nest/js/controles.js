@@ -8,23 +8,24 @@ export default class controles extends Phaser.Scene {
 
     // --- TITRE ---
     this.add.text(width / 2, height * 0.2, "Contrôles", {
-      fontFamily: "Arial",
       fontSize: "48px",
       color: "#ffffff",
     }).setOrigin(0.5);
 
     // --- TEXTE DES CONTROLES ---
-    this.add.text(width / 2, height * 0.4,
-      "- Flèches pour se déplacer\n- Barre espace pour sauter\n- Échap pour pause", {
-      fontFamily: "Arial",
-      fontSize: "28px",
-      color: "#ffffff",
-      align: "center"
-    }).setOrigin(0.5);
+    this.add.text(
+      width / 2,
+      height * 0.4,
+      "- Flèches pour se déplacer\n- Touche A pour attaquer",
+      {
+        fontSize: "28px",
+        color: "#ffffff",
+        align: "center"
+      }
+    ).setOrigin(0.5);
 
     // --- BOUTON RETOUR ---
     this.retour = this.add.text(width / 2, height * 0.8, "Retour au menu", {
-      fontFamily: "Arial",
       fontSize: "32px",
       color: "#ffffff",
       backgroundColor: "#00000066",
@@ -45,8 +46,8 @@ export default class controles extends Phaser.Scene {
     });
 
     // --- CLAVIER ---
-    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    // uniquement la barre espace comme touche de confirmation
+    this.confirmKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Sélection du bouton dès le lancement
     this.setSelection(true);
@@ -57,7 +58,7 @@ export default class controles extends Phaser.Scene {
    */
   setSelection(isSelected) {
     if (isSelected) {
-      this.retour.setStyle({ color: "#ba280bff" }); // Vert = sélectionné
+      this.retour.setStyle({ color: "#ba280bff" }); // Rouge = sélectionné
       this.isSelected = true;
     } else {
       this.retour.setStyle({ color: "#ffffff" });
@@ -66,8 +67,8 @@ export default class controles extends Phaser.Scene {
   }
 
   update() {
-    // Valider avec Entrée ou Espace
-    if (this.isSelected && (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey))) {
+    // Valider uniquement avec Espace
+    if (this.isSelected && Phaser.Input.Keyboard.JustDown(this.confirmKey)) {
       this.scene.start("menu");
     }
   }

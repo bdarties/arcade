@@ -7,51 +7,89 @@ export default class gameover extends Phaser.Scene {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
 
-    // Fond optionnel (mets ton image si tu veux un écran personnalisé)
-    this.load.image("gameover_bg", "assets/gameover.png");
+    // Charger l’image de fond Game Over
+    this.load.image("gameover_bg", "assets/game_over.jpg");
   }
 
   create() {
     const { width, height } = this.scale;
 
-    // Fond (si tu as une image)
-    if (this.textures.exists("gameover_bg")) {
-      const bg = this.add.image(width / 2, height / 2, "gameover_bg").setOrigin(0.5);
-      bg.setDisplaySize(width, height);
-    } else {
-      this.cameras.main.setBackgroundColor("#000000");
+    // Affiche l’image en fond plein écran
+    const bg = this.add.image(width / 2, height / 2, "gameover_bg").setOrigin(0.5);
+    bg.setDisplaySize(width, height);
+
+    // Crée les boutons
+    this.buttons = [];
+    this.selectedIndex = 0;
+
+    this.styleNormal = { fontSize: "24px", color: "#ffffff" };
+    this.styleSelected = { fontSize: "24px", color: "#ba280bff" };
+
+    // Boutons plus hauts
+    const restartBtn = this.add.text(width / 2, height - 200, "Recommencer", this.styleNormal).setOrigin(0.5);
+    const menuBtn = this.add.text(width / 2, height - 140, "Retour Menu", this.styleNormal).setOrigin(0.5);
+
+    this.buttons.push(restartBtn, menuBtn);
+
+    // Mettre en surbrillance le premier bouton
+    this.updateSelection();
+
+    // Entrées clavier
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Clique souris
+    restartBtn.setInteractive().on("pointerdown", () => this.restartGame());
+    menuBtn.setInteractive().on("pointerdown", () => this.goMenu());
+
+    // Survol souris = sélection bouton
+    this.buttons.forEach((btn, index) => {
+      btn.setInteractive().on("pointerover", () => {
+        this.selectedIndex = index;
+        this.updateSelection();
+      });
+    });
+
+    // Sélectionne automatiquement le premier bouton
+    this.selectedIndex = 0;
+    this.updateSelection();
+  }
+
+  update() {
+    // Navigation clavier
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
+      this.selectedIndex = (this.selectedIndex - 1 + this.buttons.length) % this.buttons.length;
+      this.updateSelection();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
+      this.selectedIndex = (this.selectedIndex + 1) % this.buttons.length;
+      this.updateSelection();
     }
 
-    // Texte "GAME OVER"
-    this.add.text(width / 2, height * 0.3, "GAME OVER", {
-      fontFamily: "Arial",
-      fontSize: "80px",
-      color: "#ff0000",
-      fontStyle: "bold",
-    }).setOrigin(0.5);
+    // Validation
+    if (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+      if (this.selectedIndex === 0) this.restartGame();
+      else this.goMenu();
+    }
+  }
 
-    // Texte d’instructions
-    this.add.text(width / 2, height * 0.5, "Appuie sur ESPACE pour recommencer", {
-      fontFamily: "Arial",
-      fontSize: "32px",
-      color: "#ffffff",
-    }).setOrigin(0.5);
-
-    this.add.text(width / 2, height * 0.6, "Ou sur M pour revenir au menu", {
-      fontFamily: "Arial",
-      fontSize: "28px",
-      color: "#aaaaaa",
-    }).setOrigin(0.5);
-
-    // Input clavier
-    this.input.keyboard.on("keydown-SPACE", () => {
-      this.registry.set("playerLives", 3);
-      this.registry.set("playerPotions", 4);
-      this.scene.start("selection"); // relance la sélection / niveau
+  updateSelection() {
+    this.buttons.forEach((btn, index) => {
+      if (index === this.selectedIndex) btn.setStyle(this.styleSelected);
+      else btn.setStyle(this.styleNormal);
     });
+  }
 
-    this.input.keyboard.on("keydown-M", () => {
-      this.scene.start("menu");
-    });
+  restartGame() {
+    this.registry.set("playerLives", 3);
+    this.registry.set("playerPotions", 4);
+    this.scene.start("selection");
+  }
+
+  goMenu() {
+    this.registry.set("playerLives", 3);
+    this.registry.set("playerPotions", 4);
+    this.scene.start("menu");
   }
 }

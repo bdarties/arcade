@@ -1,34 +1,60 @@
-import Player from "./Player.js";
-import Slime from "./Slime.js";
-import WaveManager from "./WaveManager.js";
-import Bat from "./Bat.js";
-import MiniBossSlime from "./MiniBossSlime.js";
-import Fly from "./Fly.js";
-import Rat from "./Rat.js";
-import Chest from "./Chest.js";
-import FlyingSkull from "./FlyingSkull.js";
-import Skeleton from "./Skeleton.js";
-import Ghost from "./Ghost.js";
-import Goblin from "./Goblin.js"; 
-import MiniBossFly from "./MiniBossFly.js";
-import MiniBossRat from "./MiniBossRat.js";
+import Player from "./player.js";
+import Player2 from "./player2.js";
+import Slime from "./slime.js";
+import Bat from "./bat.js";
+import Fly from "./fly.js";
+import Rat from "./rat.js";
+import FlyingSkull from "./flyingskull.js";
+import Skeleton from "./skeleton.js";
+import Ghost from "./ghost.js";
+import Goblin from "./goblin.js";
+import WaveManager from "./wavemanager.js";
+import MapGenerator from "./mapgenerator.js";
+import EnemyFactory from "./enemyfactory.js";
+import Chest from "./chest.js";
+import MusicManager from "./musicmanager.js";
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super("GameScene");
+        this.isWaveActive = false;
+        this.currentWaveRoom = null;
+        this.enemiesAlive = 0;
+        this.gameMode = 'solo';
     }
 
     preload() {
-        [Player, Slime, Bat, Fly, Rat, FlyingSkull, Skeleton, Ghost, Goblin].forEach(cls => cls.preload(this));
-        this.load.spritesheet("weapons", "assets/weapons_animated.png", { frameWidth: 32, frameHeight: 32 });
-        this.load.spritesheet("icons", "assets/icons_8x8.png", { frameWidth: 8, frameHeight: 8 });
-        this.load.spritesheet("chest", "assets/animated_props.png", { frameWidth: 16, frameHeight: 16 });
+        [Player, Player2, Slime, Bat, Fly, Rat, FlyingSkull, Skeleton, Ghost, Goblin].forEach(cls => cls.preload?.(this));
+        [
+            ["weapons", "assets/weapons_animated.png", 32, 32],
+            ["icons", "assets/icons_8x8.png", 8, 8],
+            ["chest", "assets/animated_props.png", 16, 16],
+            ["walls", "assets/walls_1.png", 16, 16],
+            ["door_frames", "assets/doors_1.png", 16, 16],
+            ["doors", "assets/door.png", 16, 16],
+            ["lever", "assets/lever.png", 16, 16]
+        ].forEach(([key, path, w, h]) => this.load.spritesheet(key, path, { frameWidth: w, frameHeight: h }));
+        this.load.audio('sword_swing', 'assets/sound/son_attaque.mp3');
+        this.load.audio('sword_hit', 'assets/sound/son_attaque_touche.mp3');
+        
+        // Chargement des musiques
+        MusicManager.preloadAll(this);
     }
 
     create(data = {}) {
+        this.gameMode = data.gameMode || 'solo';
         this.cameras.main.setBackgroundColor("#222");
-
-        // Génération d'orbes pour XP
+        
+        const volume = this.getVolume();
+        this.sound.volume = volume;
+        
+        // Initialisation du gestionnaire de musique
+        this.musicManager = new MusicManager(this);
+        this.musicManager.setVolume(volume);
+        
+        // Lancer la musique de donjon en rotation
+        this.musicManager.playNextDungeon(1000);
+        
         const g = this.add.graphics();
         g.fillStyle(0x66ccff, 1);
         g.fillCircle(4, 4, 4);
@@ -36,84 +62,69 @@ export default class GameScene extends Phaser.Scene {
         g.destroy();
         this.orbs = this.physics.add.group();
 
-        // Création du player
-        this.player = new Player(this, 400, 300);
+        this.tileSize = 16;
+        this.margin = 500;
+
+        this.mapGen = new MapGenerator(this, this.tileSize, this.margin);
+        const mapData = this.mapGen.generate(20);
+        ["rooms","wallGroup","doorsVis","doorsHit","blockDoorsVis","blockDoorsHit"].forEach(key => this[key] = mapData[key]);
+
+        this.wallGroup.getChildren().forEach(w => w.setDepth(1));
+        this.doorsVis.getChildren().forEach(d => d.setDepth(2));
+        this.blockDoorsVis.getChildren().forEach(d => d.setDepth(3));
+
+        const bounds = this.calculateWorldBounds();
+        this.physics.world.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.cameras.main.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+
+        this.player = new Player(this, this.rooms[0].centerX - 20, this.rooms[0].centerY);
         Player.createAnimations(this);
+        if (!this.anims.exists("sword_attack")) {
+            this.anims.create({
+                key: "sword_attack",
+                frames: this.anims.generateFrameNumbers("weapons", { start: 0, end: 4 }),
+                frameRate: 24,
+                repeat: 0
+            });
+        }
         this.player.lastHitTime = 0;
         this.player.hitCooldown = 500;
+        this.player.setDepth(10);
 
-        // Contrôles par défaut : flèches pour déplacement, K pour dash
-        this.controls = data.controls || { up: "UP", down: "DOWN", left: "LEFT", right: "RIGHT", dash: "K" };
-        const toKeyCode = key => {
-            switch (key.toUpperCase()) {
-                case "UP": return Phaser.Input.Keyboard.KeyCodes.UP;
-                case "DOWN": return Phaser.Input.Keyboard.KeyCodes.DOWN;
-                case "LEFT": return Phaser.Input.Keyboard.KeyCodes.LEFT;
-                case "RIGHT": return Phaser.Input.Keyboard.KeyCodes.RIGHT;
-                case "K": return Phaser.Input.Keyboard.KeyCodes.K;
-                default:
-                    if (key.length === 1) return key.toUpperCase().charCodeAt(0);
-                    return Phaser.Input.Keyboard.KeyCodes.Z;
-            }
-        };
+        if (this.gameMode === 'coop') {
+            this.player2 = new Player2(this, this.rooms[0].centerX + 20, this.rooms[0].centerY);
+            Player2.createAnimations(this);
+            this.player2.lastHitTime = 0;
+            this.player2.hitCooldown = 500;
+            this.player2.setDepth(10);
+            this.setupCoopCamera();
+        } else {
+            this.cameras.main.startFollow(this.player).setZoom(3);
+        }
 
-        this.keys = this.input.keyboard.addKeys({
-            up: toKeyCode(this.controls.up),
-            down: toKeyCode(this.controls.down),
-            left: toKeyCode(this.controls.left),
-            right: toKeyCode(this.controls.right),
-            dash: toKeyCode(this.controls.dash)
+        this.setupControls(data.controls);
+
+        this.game.events.on('focus', () => {
+            this.input.keyboard.resetKeys();
         });
-
-        // Lancement de l'UI
-        this.events.once("uiReady", () => this.startNextWave());
-        if (!this.scene.isActive("UiScene")) this.scene.launch("UiScene");
-        else this.time.delayedCall(50, () => { if (!this._firstWaveStarted) this.startNextWave(); });
-
-        this.cameras.main.startFollow(this.player).setZoom(2);
-
-        // Création des animations des ennemis
-        [Slime, Bat, Fly, Rat, FlyingSkull, Skeleton, Ghost, Goblin].forEach(cls => cls.createAnimations(this));
-
-        // Groupes d'ennemis
-        this.slimes = this.add.group();
-        this.bats = this.add.group();
-        this.flies = this.add.group();
-        this.rats = this.add.group();
-        this.skulls = this.add.group();
-        this.skeletons = this.add.group();
-        this.ghosts = this.add.group();
-        this.goblins = this.add.group(); 
-        this.miniBossGroup = this.add.group();
-        this.enemies = this.add.group();
-
-        // Animations globales
-        if (!this.anims.exists("sword_attack"))
-            this.anims.create({ key: "sword_attack", frames: this.anims.generateFrameNumbers("weapons", { start: 0, end: 4 }), frameRate: 24, repeat: 0 });
-        if (!this.anims.exists("chest_open"))
-            this.anims.create({ key: "chest_open", frames: this.anims.generateFrameNumbers("chest", { start: 4, end: 6 }), frameRate: 6, repeat: 0 });
-
-        // Overlaps
-        this.physics.add.overlap(this.player, this.enemies, (player, enemy) => {
-            const now = this.time.now;
-            const angle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
-            if (enemy.knockback) enemy.knockback(150, angle, 200);
-            if (now >= player.lastHitTime + player.hitCooldown) {
-                player.lastHitTime = now;
-                player.health -= enemy.contactDamage || 10;
-                if (player.setTint) { player.setTint(0xff9999); this.time.delayedCall(80, () => player.clearTint()); }
-                if (player.health <= 0) this.gameOver();
-            }
+        
+        this.game.events.on('blur', () => {
+            this.input.keyboard.resetKeys();
         });
+        
+        if (!this.scene.isActive("UiScene")) this.scene.launch("UiScene", { gameMode: this.gameMode });
 
-        this.physics.add.overlap(this.player, this.orbs, (player, orb) => {
-            if (!orb || !orb.value) return;
-            player.gainXP(orb.value);
-            if (orb.destroy) orb.destroy();
-            this.events.emit("xpChanged", player.xp, player.xpToNext);
-        });
+        [Slime, Bat, Fly, Rat, FlyingSkull, Skeleton, Ghost, Goblin].forEach(cls => cls.createAnimations?.(this));
 
-        // Initialisation des vagues
+        this.enemyGroups = ["slimes","bats","flies","rats","skulls","skeletons","ghosts","goblins","miniBossGroup", "dragonBossGroup"];
+        this.enemyGroups.forEach(g => this[g] = this.physics.add.group());
+        this.enemies = this.physics.add.group();
+
+        this.events.on("enemySpawned", () => this.enemiesAlive++);
+        this.events.on("enemyDied", () => { this.enemiesAlive--; this.checkWaveCompletion(); });
+
+        this.setupCollisions();
+
         this.timeElapsed = 0;
         this.waveManager = new WaveManager(this);
         this.isStartingWave = false;
@@ -121,117 +132,368 @@ export default class GameScene extends Phaser.Scene {
         this._firstWaveStarted = false;
         this.score = 0;
         this.events.emit("updateScore", this.score);
+
+        this.currentRoom = this.rooms[0];
+        this.currentRoom.waveStarted = true;
+
+        if (this.gameMode === 'coop') {
+            this.distanceThreshold = 50;
+            this.maxZoom = 0.4;
+            this.minZoom = 2.3;
+        }
+
+        Chest.createAnimations(this);
+        
+        // Gestion du nettoyage de la musique lors de la fermeture de la scène
+        this.events.once('shutdown', () => {
+            this.musicManager?.destroy();
+        });
+    }
+
+    getVolume() {
+        try {
+            return parseFloat(localStorage.getItem("gameVolume")) || 0.5;
+        } catch {
+            return 0.5;
+        }
+    }
+
+    calculateWorldBounds() {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        this.rooms.forEach(r => {
+            minX = Math.min(minX, r.x);
+            minY = Math.min(minY, r.y);
+            maxX = Math.max(maxX, r.x + r.cols * this.tileSize);
+            maxY = Math.max(maxY, r.y + r.rows * this.tileSize);
+        });
+        const pad = 128;
+        return { x: minX - pad, y: minY - pad, width: (maxX - minX) + pad * 2, height: (maxY - minY) + pad * 2 };
+    }
+
+    setupControls(controls) {
+        if (this.gameMode === 'coop') {
+            this.keysP1 = {
+                up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
+                down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
+                left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+                right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+                dash: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
+                attack: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L),
+                interact: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M)
+            };
+            
+            this.keysP2 = {
+                up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z),
+                down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
+                right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+                dash: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+                attack: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G),
+                interact: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H)
+            };
+        } else {
+            this.keys = {
+                up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
+                down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
+                left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+                right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+                dash: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
+                attack: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L),
+                interact: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M)
+            };
+        }
+    }
+
+    setupCollisions() {
+        const players = [this.player, this.player2].filter(p => p);
+        const targets = [this.wallGroup, this.blockDoorsHit];
+        
+        players.forEach(p => {
+            targets.forEach(t => this.physics.add.collider(p, t));
+            this.physics.add.overlap(p, this.doorsHit, this.onDoorHit, null, this);
+            this.physics.add.overlap(p, this.enemies, this.handlePlayerEnemyCollision, null, this);
+            this.physics.add.overlap(p, this.orbs, this.collectOrb, null, this);
+        });
+
+        this.enemyGroups.forEach(g => targets.forEach(t => this.physics.add.collider(this[g], t)));
+    }
+
+    setupCoopCamera() {
+        this.midpoint = this.add.container((this.player.x + this.player2.x) / 2, (this.player.y + this.player2.y) / 2);
+        this.midpoint.setSize(1, 1);
+        this.physics.world.enable(this.midpoint);
+        this.midpoint.body.setAllowGravity(false);
+        this.cameras.main.startFollow(this.midpoint, true, 0.1, 0.1).setZoom(2.6);
+    }
+
+    updateCoopCamera() {
+        if (this.gameMode !== 'coop' || !this.player2) return;
+        this.midpoint.x = (this.player.x + this.player2.x) / 2;
+        this.midpoint.y = (this.player.y + this.player2.y) / 2;
+        const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.player2.x, this.player2.y);
+        let zoom = this.minZoom;
+        if (dist > this.distanceThreshold) {
+            zoom = Phaser.Math.Clamp(this.minZoom - (dist - this.distanceThreshold) / 500, this.maxZoom, this.minZoom);
+        }
+        this.cameras.main.zoom = Phaser.Math.Linear(this.cameras.main.zoom, zoom, 0.1);
+    }
+
+    spawnInRoom(room) {
+        return {
+            x: Phaser.Math.Between(room.x + this.tileSize, room.x + room.cols * this.tileSize - this.tileSize),
+            y: Phaser.Math.Between(room.y + this.tileSize, room.y + room.rows * this.tileSize - this.tileSize)
+        };
+    }
+
+    handlePlayerEnemyCollision(player, enemy) {
+        const now = this.time.now;
+        enemy.knockback?.(150, Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y), 200);
+
+        if (now >= player.lastHitTime + player.hitCooldown) {
+            player.lastHitTime = now;
+            player.health -= enemy.contactDamage || 10;
+            if (player.setTint) {
+                player.setTint(0xff9999);
+                this.time.delayedCall(80, () => player.setTint(player.baseTint || 0xffffff));
+            }
+            if (player.health <= 0) this.handlePlayerDeath(player, player === this.player2);
+        }
+    }
+
+    collectOrb(player, orb) {
+        if (!orb?.value) return;
+        player.gainXP(orb.value);
+        orb.destroy?.();
+        const evt = player === this.player ? "xpChanged" : "xpChangedP2";
+        this.events.emit(evt, player.xp, player.xpToNext);
+    }
+
+    checkWaveCompletion() {
+        if (this.isWaveActive && this.enemiesAlive <= 0) {
+            this.isWaveActive = false;
+            this.currentRoom && this.mapGen.openRoomDoors(this.currentRoom.index);
+            this.currentWaveRoom = null;
+            this.events.emit("waveCompleted");
+        }
     }
 
     update(time, delta) {
         if (this.gameEnded) return;
-        if (this.player?.active) this.player.update(this.keys);
+        
+        if (this.gameMode === 'coop') {
+            this.player?.update(this.keysP1);
+            this.player2?.update(this.keysP2);
+            this.updateCoopCamera();
+        } else {
+            this.player?.update(this.keys);
+        }
 
-        [...this.rats.getChildren()].forEach(r => r.update());
-        [...this.slimes.getChildren()].forEach(s => s.update());
-        [...this.bats.getChildren()].forEach(b => b.update(this.player));
-        [...this.flies.getChildren()].forEach(f => f.update());
-        [...this.skulls.getChildren()].forEach(s => s.update(this.player));
-        [...this.skeletons.getChildren()].forEach(s => s.update(this.player));
-        [...this.ghosts.getChildren()].forEach(g => g.update(time, this.player));
-        [...this.goblins.getChildren()].forEach(g => g.preUpdate(time, delta)); 
-        [...this.miniBossGroup.getChildren()].forEach(b => b.update(time, this.player));
+        [...this.rats.getChildren(), ...this.slimes.getChildren(), ...this.bats.getChildren(), 
+         ...this.flies.getChildren(), ...this.skulls.getChildren(), ...this.skeletons.getChildren(), 
+         ...this.ghosts.getChildren(), ...this.goblins.getChildren(), ...this.miniBossGroup.getChildren()]
+        .forEach(e => {
+            if (e.moveToTarget) e.target = this.getClosestPlayer(e);
+            e.update?.(time, this.player) || e.preUpdate?.(time, delta);
+        });
 
         this.timeElapsed += delta;
-        const totalSeconds = Math.floor(this.timeElapsed / 1000);
-        const timeString = `${String(Math.floor(totalSeconds / 60)).padStart(2,"0")}:${String(totalSeconds % 60).padStart(2,"0")}`;
-        this.events.emit("updateTimer", timeString);
+        const sec = Math.floor(this.timeElapsed / 1000);
+        this.events.emit("updateTimer", `${String(Math.floor(sec / 60)).padStart(2,"0")}:${String(sec % 60).padStart(2,"0")}`);
 
-        if (this.waveManager.canStartNextWave(this.timeElapsed, this.enemies.countActive(true), this.isStartingWave))
-            this.startNextWave();
+        if ((this.gameMode === 'coop' && this.player.health <= 0 && this.player2.health <= 0) || 
+            (this.gameMode !== 'coop' && this.player.health <= 0)) {
+            this.gameOver();
+        }
+
+        if (this.gameMode === 'coop') {
+            if (Phaser.Input.Keyboard.JustDown(this.keysP1.interact)) {
+                this.mapGen.checkLeverInteraction(this.player, true, false);
+            }
+            if (this.player2 && Phaser.Input.Keyboard.JustDown(this.keysP2.interact)) {
+                this.mapGen.checkLeverInteraction(this.player2, true, true);
+            }
+        } else {
+            if (Phaser.Input.Keyboard.JustDown(this.keys.interact)) {
+                this.mapGen.checkLeverInteraction(this.player, true, false);
+            }
+        }
     }
 
-    startNextWave() {
-        if (this.gameEnded || this.isStartingWave) return;
-        this.isStartingWave = true;
+    getClosestPlayer(enemy) {
+        if (this.gameMode !== 'coop' || !this.player2 || this.player2.health <= 0) return this.player;
+        if (this.player.health <= 0) return this.player2;
+        const d1 = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+        const d2 = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player2.x, this.player2.y);
+        return d1 < d2 ? this.player : this.player2;
+    }
 
-        const waveData = this.waveManager.startNextWave(this.timeElapsed);
+    startNextWave(room) {
+        if (room.isPuzzleRoom || this.gameEnded || this.isStartingWave || this.isWaveActive) return;
+
+        this.isStartingWave = this.isWaveActive = true;
+        this.currentWaveRoom = room;
+        this.mapGen.closeRoomDoors(room.index);
+
+        const w = this.waveManager.startNextWave(this.timeElapsed);
         this._firstWaveStarted = true;
-        const delay = waveData.spawnDelay || 3000;
 
-        this.time.delayedCall(delay, () => {
-            const spawnEnemy = (cls, count, group, dmg = 10) => {
-                for (let i = 0; i < count; i++) {
-                    const x = this.player.x + Phaser.Math.Between(-200, 200);
-                    const y = this.player.y + Phaser.Math.Between(-200, 200);
+        this.time.delayedCall(w.spawnDelay || 2000, () => {
+            if (w.wave >= 30 && w.wave % 30 === 0) {
+                this.spawnDragonBoss(room);
+                return;
+            }
+
+            const spawn = (cls, cnt, grp, dmg = 10) => {
+                for (let i = 0; i < cnt; i++) {
+                    const {x, y} = this.spawnInRoom(room);
                     const e = new cls(this, x, y);
-
-                    if (e.speed !== undefined) e.speed *= waveData.enemySpeedMult;
+                    if (e.speed !== undefined) e.speed *= w.enemySpeedMult;
                     e.contactDamage = dmg;
-
-                    group.add(e);
+                    e.setDepth(4);
+                    grp.add(e);
                     this.enemies.add(e);
+                    this.events.emit("enemySpawned");
                 }
             };
 
-            spawnEnemy(Slime, waveData.slimeCount || 0, this.slimes);
-            spawnEnemy(Fly, waveData.flyCount || 0, this.flies);
-            spawnEnemy(Rat, waveData.ratCount || 0, this.rats);
-            spawnEnemy(Bat, waveData.batCount || 0, this.bats, 15);
-            spawnEnemy(Ghost, waveData.ghostCount || 0, this.ghosts, 10);
-            spawnEnemy(FlyingSkull, waveData.skullCount || 0, this.skulls, 5);
-            spawnEnemy(Skeleton, waveData.skeletonCount || 0, this.skeletons, 15);
-            spawnEnemy(Goblin, waveData.goblinCount || 0, this.goblins, 20);
+            this.enemiesAlive = 0;
+            [
+                [Slime, w.slimeCount, this.slimes, 10],
+                [Fly, w.flyCount, this.flies, 10],
+                [Rat, w.ratCount, this.rats, 10],
+                [Bat, w.batCount, this.bats, 15],
+                [Ghost, w.ghostCount, this.ghosts, 10],
+                [FlyingSkull, w.skullCount, this.skulls, 5],
+                [Skeleton, w.skeletonCount, this.skeletons, 15],
+                [Goblin, w.goblinCount, this.goblins, 20]
+            ].forEach(([cls, cnt, grp, dmg]) => spawn(cls, cnt || 0, grp, dmg));
 
-            if (waveData.spawnMiniboss) {
-                const x = this.player.x + Phaser.Math.Between(-300, 300);
-                const y = this.player.y + Phaser.Math.Between(-300, 300);
-                const minibossMapping = { slime: MiniBossSlime, fly: MiniBossFly, rat: MiniBossRat };
-                const possibleMinibosses = [];
-                if (waveData.slimeCount > 0) possibleMinibosses.push(minibossMapping.slime);
-                if (waveData.flyCount > 0) possibleMinibosses.push(minibossMapping.fly);
-                if (waveData.ratCount > 0) possibleMinibosses.push(minibossMapping.rat);
-                if (possibleMinibosses.length > 0) {
-                    const MiniBossClass = Phaser.Utils.Array.GetRandom(possibleMinibosses);
-                    const miniboss = new MiniBossClass(this, x, y);
-                    miniboss.contactDamage = 20;
-                    miniboss.on("destroy", () => this.spawnChest(miniboss.x, miniboss.y));
-                    this.miniBossGroup.add(miniboss);
-                    this.enemies.add(miniboss);
+            if (w.spawnMiniboss && w.availableMinibossTypes && w.availableMinibossTypes.length > 0) {
+                const {x, y} = this.spawnInRoom(room);
+                const mb = EnemyFactory.spawnRandomMiniBoss(this, x, y, w.availableMinibossTypes);
+                if (mb) {
+                    mb.contactDamage = 20;
+                    mb.setDepth(4);
+                    mb.once("destroy", () => this.events.emit("enemyDied"));
+                    this.miniBossGroup.add(mb);
+                    this.enemies.add(mb);
+                    this.events.emit("enemySpawned");
+                    this.events.emit("minibossWarning", `Miniboss ${mb.constructor.name} appeared!`);
                 }
             }
 
-            this.events.emit("updateWave", waveData.wave);
+            this.events.emit("updateWave", w.wave);
             this.time.delayedCall(50, () => this.isStartingWave = false);
         });
     }
 
-    spawnChest(x, y) {
-        new Chest(this, x, y);
+    spawnDragonBoss(room) {
+        this.events.emit("bossWarning", "DRAGON BOSS INCOMING!");
+        
+        this.cameras.main.shake(1000, 0.02);
+        this.cameras.main.flash(1000, 255, 0, 0, 0.3);
+        
+        this.time.delayedCall(2000, () => {
+            const dragon = EnemyFactory.spawnDragonBoss(this, room.centerX, room.centerY - 100);
+            
+            if (dragon) {
+                dragon.setDepth(15);
+                dragon.once("destroy", () => {
+                    this.events.emit("enemyDied");
+                    this.events.emit("bossDefeated", "Dragon Boss");
+                    this.addScore(1000);
+                });
+                
+                this.dragonBossGroup.add(dragon);
+                this.enemies.add(dragon);
+                this.enemiesAlive = 1;
+                
+                this.events.emit("updateWave", `BOSS WAVE - DRAGON`);
+            }
+            
+            this.isStartingWave = false;
+        });
     }
-
-    showGoldUpgrade(onPicked) {
-        const uiScene = this.scene.get("UiScene");
-        if (!uiScene?.levelUpSystem) return;
-        const lus = uiScene.levelUpSystem;
-        lus.setPlayer(this.player);
-        const baseRandom = lus.randomRarity;
-        lus.randomRarity = () => lus.rarities.gold;
-        lus.show();
-        this.time.delayedCall(100, () => lus.randomRarity = baseRandom);
-        if (onPicked) {
-            const oldClose = lus.close.bind(lus);
-            lus.close = () => { oldClose(); onPicked(); };
-        }
-    }
-
-    addScore(points) {
-        this.score = (this.score || 0) + (points || 0);
-        this.events.emit("updateScore", this.score);
+    
+    addScore(pts) { 
+        this.score = (this.score || 0) + (pts || 0); 
+        this.events.emit("updateScore", this.score); 
     }
 
     gameOver() {
         if (this.gameEnded) return;
         this.gameEnded = true;
-        this.enemies.getChildren().forEach(e => { e.healthBar?.destroy(); e.healthBarBg?.destroy(); e.destroy(); });
+        this.isWaveActive = false;
+        this.currentWaveRoom = null;
+        
+        // Arrêter la musique avec un fade out
+        this.musicManager?.stop(1000);
+        
+        this.enemies.getChildren().forEach(e => { 
+            e.healthBar?.destroy(); 
+            e.healthBarBg?.destroy(); 
+            e.destroy?.(); 
+        });
         this.enemies.clear(true, true);
-        if (this.player) this.player.setActive(false).setVisible(false);
+        this.player?.setActive(false).setVisible(false);
+        if (this.player2) this.player2?.setActive(false).setVisible(false);
         this.scene.get("UiScene")?.showGameOver?.();
         this.events.emit("gameOver");
+    }
+
+    onDoorHit(player, hit) {
+        if (this.time.now < (this.lastTeleport || 0) + 500 || this.isWaveActive) return;
+        this.lastTeleport = this.time.now;
+        const tRoom = this.rooms[hit.roomIndex];
+        const pos = this.calculateSpawnPosition(tRoom, hit.direction);
+        
+        this.player.setPosition(pos.x, pos.y);
+        if (this.player2) {
+            const off = [30, 0, 30, 0];
+            const isX = hit.direction % 2 === 0;
+            this.player2.setPosition(
+                pos.x + (isX ? off[hit.direction] : 0),
+                pos.y + (isX ? 0 : off[hit.direction])
+            );
+        }
+        
+        this.currentRoom = tRoom;
+        if (!tRoom.waveStarted && this.enemies.countActive(true) === 0) {
+            tRoom.waveStarted = true;
+            if (!tRoom.isPuzzleRoom) this.startNextWave(tRoom);
+        }
+    }
+
+    calculateSpawnPosition(room, dir) {
+        const s = this.tileSize;
+        const off = 3.2 * s;
+        const pos = [
+            { x: room.centerX, y: room.y + room.rows * s - off },
+            { x: room.x + off, y: room.centerY },
+            { x: room.centerX, y: room.y + off },
+            { x: room.x + room.cols * s - off, y: room.centerY }
+        ];
+        return pos[dir] || { x: room.centerX, y: room.centerY };
+    }
+
+    handlePlayerDeath(player, isP2 = false) {
+        player.setActive(false).setVisible(false);
+        player.healthBar?.destroy();
+        player.healthBarBg?.destroy();
+        this.events.emit(isP2 ? "updateHealthP2" : "updateHealth", 0, 100);
+
+        if (this.gameMode === 'coop') {
+            if (!this.player.active && (!this.player2 || !this.player2.active)) {
+                this.gameOver();
+            } else {
+                this.cameras.main.startFollow(this.player.active ? this.player : this.player2);
+            }
+        } else {
+            this.gameOver();
+        }
+    }
+
+    spawnChest(x, y) {
+        new Chest(this, x, y);
     }
 }

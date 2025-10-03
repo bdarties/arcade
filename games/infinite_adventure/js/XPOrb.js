@@ -20,16 +20,37 @@ export default class XPOrb extends Phaser.Physics.Arcade.Sprite {
 
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
-        const player = this.scene?.player;
-        if (!player) return;
 
-        const dx = player.x - this.x;
-        const dy = player.y - this.y;
-        const dist = Math.hypot(dx, dy);
+        // On récupère les joueurs actifs
+        const players = [];
+        if (this.scene?.player) players.push(this.scene.player);
+        if (this.scene?.player2) players.push(this.scene.player2);
 
-        if (dist < 100) {
-            const force = Phaser.Math.Clamp(200 / dist, 50, 300);
-            this.body.setVelocity((dx / dist) * force, (dy / dist) * force);
+        if (!players.length) return;
+
+        // Trouver le joueur le plus proche
+        let closest = null;
+        let closestDist = Infinity;
+        for (const p of players) {
+            if (!p.active) continue;
+            const dx = p.x - this.x;
+            const dy = p.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < closestDist) {
+                closest = p;
+                closestDist = dist;
+            }
+        }
+
+        if (!closest) return;
+
+        // Attiré par le joueur le plus proche
+        if (closestDist < 100) {
+            const force = Phaser.Math.Clamp(200 / closestDist, 50, 300);
+            this.body.setVelocity(
+                (closest.x - this.x) / closestDist * force,
+                (closest.y - this.y) / closestDist * force
+            );
         } else {
             this.idleTime += delta * 0.005;
             this.body.setVelocity(

@@ -1,28 +1,27 @@
-import MenuScene from "./js/MenuScene.js";
-import OptionsScene from "./js/OptionsScene.js";
-import UiScene from "./js/UiScene.js";
-import GameScene from "./js/GameScene.js";
+import MenuScene from "./js/menuscene.js";
+import OptionsScene from "./js/optionsscene.js";
+import GameScene from "./js/gamescene.js";
+import UiScene from "./js/uiscene.js";
+import StoryScene from "./js/storyscene.js";
 
 var config = {
-  width: 1280,
-  height: 720,
   type: Phaser.AUTO,
+  width: 1280, 
+  height: 720, 
+  pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,
-    parent: "game-container",
+    parent: 'game-container',
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 0 },
       debug: false,
     },
   },
-  scene: [MenuScene, OptionsScene, GameScene, UiScene],
-  baseURL: window.location.pathname.replace(/\/[^/]*$/, ""),
+  scene: [MenuScene, OptionsScene, StoryScene, GameScene, UiScene],
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-// création et lancement du jeu
 export var game = new Phaser.Game(config);
-game.scene.start("MenuScene");

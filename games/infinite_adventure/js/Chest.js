@@ -10,7 +10,10 @@ export default class Chest extends Phaser.Physics.Arcade.Sprite {
 
         if (this.body) this.body.setImmovable(true).setAllowGravity(false);
 
-        this._overlap = scene.physics.add.overlap(scene.player, this, () => this.open());
+        // Overlap avec les joueurs existants
+        this._overlaps = [];
+        if (scene.player) this._overlaps.push(scene.physics.add.overlap(scene.player, this, () => this.open(scene.player)));
+        if (scene.player2) this._overlaps.push(scene.physics.add.overlap(scene.player2, this, () => this.open(scene.player2)));
     }
 
     static preload(scene) {
@@ -31,25 +34,24 @@ export default class Chest extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    open() {
+    open(player) {
         if (this.opened) return;
         this.opened = true;
-    
-        if (this._overlap) {
-            this.scene.physics.world.removeCollider(this._overlap);
-            this._overlap = null;
-        }
-    
+
+        // Supprime tous les overlaps
+        this._overlaps.forEach(o => this.scene.physics.world.removeCollider(o));
+        this._overlaps = [];
+
         if (this.body) this.body.enable = false;
-    
+
         this.play("chest_open");
-    
+
         const uiScene = this.scene.scene.get("UiScene");
         if (uiScene?.levelUpSystem) {
-            uiScene.levelUpSystem.setPlayer(this.scene.player);
-            uiScene.levelUpSystem.show("gold"); 
+            uiScene.levelUpSystem.setPlayer(player); // prend le joueur qui ouvre
+            uiScene.levelUpSystem.show("gold");
         }
-    
+
         this.scene.tweens.add({
             targets: this,
             alpha: 0,
@@ -61,5 +63,4 @@ export default class Chest extends Phaser.Physics.Arcade.Sprite {
             }
         });
     }
-    
 }

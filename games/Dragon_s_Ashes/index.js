@@ -1,9 +1,10 @@
 // chargement des librairies
+import menu from "./js/menu.js";
+import commandes from "./js/commandes.js";
 import selection from "./js/selection.js";
-import niveau1 from "./js/niveau1.js";
-import niveau2 from "./js/niveau2.js";
-import niveau3 from "./js/niveau3.js";
-import confirmationExit  from "/static/js/confirmationExit.js";
+import defaite from "./js/defaite.js";
+import victoire from "./js/victoire.js";
+import histoire from "./js/histoire.js";
 
 // configuration générale du jeu
 var config = {
@@ -27,20 +28,11 @@ var config = {
       debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [selection, niveau1, niveau2, niveau3, confirmationExit],
+  scene: [menu, commandes, histoire, selection, defaite, victoire],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config);
-
-game.scene.start("selection");
-
-
-
-
-
-
-
-
+game.scene.start("menu");

@@ -1,0 +1,145 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "Tous les Fichiers (*)",
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "#ea489fd3-6071-4143-aed7-fd1d786891b5": {
+            "scaleInEditor": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1601,
+                "y": 319
+            }
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx#Tileset": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx#tuilesJeu": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_1.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1600.6666666666665,
+                "y": 319.33333333333326
+            }
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_1.tmx#tuilesJeu": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_2.tmx": {
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1600.5,
+                "y": 319.5
+            }
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_2.tmx#tuilesJeu": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_2.tmx#zNokSD": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_3.tmx": {
+            "scale": 1,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1600,
+                "y": 319.5
+            }
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_3.tmx#tuilesJeu": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/TP2/map.tmx": {
+            "scale": 0.372875,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 1334.227287965136,
+                "y": 948.0388870264834
+            }
+        },
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/TP2/map.tmx#tuilesJeu": {
+            "scaleInDock": 1
+        },
+        "sans titre.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 1827,
+                "y": 3187
+            }
+        },
+        "sans titre.tmx#36b0c958-0079-4b22-8533-efb9bb43834a (1)": {
+            "scaleInDock": 0.5
+        },
+        "sans titre.tmx#82c71d7a-b3ba-4494-b2d4-4e3449d95bdd": {
+            "scaleInDock": 0.5
+        },
+        "sans titre.tmx#9ad85738-bd94-4c71-ad80-97265cec83d5": {
+            "scaleInDock": 0.33
+        },
+        "sans titre.tmx#Background map 1 extend": {
+            "scaleInDock": 0.25
+        },
+        "sans titre.tmx#Background map 2 extend": {
+            "scaleInDock": 0.015625
+        },
+        "sans titre.tmx#Background map 3 extend": {
+            "scaleInDock": 0.125
+        },
+        "sans titre.tmx#dirigeable": {
+            "scaleInDock": 0.33
+        },
+        "sans titre.tmx#e517bb53-ba6b-4c48-ab4b-31422e1ece67": {
+            "scaleInDock": 0.75
+        },
+        "sans titre.tmx#ea489fd3-6071-4143-aed7-fd1d786891b5": {
+            "scaleInDock": 0.75,
+            "scaleInEditor": 1
+        },
+        "sans titre.tmx#f7ab0909-1e05-4e07-b6b9-1385aefbf71a": {
+            "scaleInDock": 0.5
+        },
+        "sans titre.tmx#sol_meca": {
+            "scaleInDock": 0.5
+        }
+    },
+    "last.exportedFilePath": "C:/Users/Enrique/Desktop/MMI 2/SAE 301",
+    "last.imagePath": "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets",
+    "map.height": 96,
+    "map.lastUsedExportFilter": "Fichiers de carte JSON (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 240,
+    "openFiles": [
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_3.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_1.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_2.tmx"
+    ],
+    "project": "SAE_301.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_3.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_1.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map_2.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/Projet Final/assets/map.tmx",
+        "sans titre.tmx",
+        "C:/Users/Enrique/Desktop/MMI 2/R312 Dev front  Intégration/TP2/map.tmx"
+    ],
+    "tileset.embedInMap": true
+}

@@ -1,179 +1,259 @@
 export default class OptionsScene extends Phaser.Scene {
     constructor() {
         super("OptionsScene");
-        this.selectedIndex = 0; // index de sélection pour navigation clavier
-        this.menuButtons = [];
     }
 
     preload() {
-        this.load.image("background_options", "assets/options.png");
-        this.load.image("bouton_retour", "assets/bouton_retour.png");
+        this.load.image("background_options", "assets/options.jpg");
         this.load.image("bouton_exit", "assets/bouton_exit.png");
         this.load.image("bouton_start", "assets/bouton_start.png");
         this.load.image("bouton_reset", "assets/bouton_reset.png");
+        this.load.image("tablette", "assets/tablette.png");
     }
 
     create(data = {}) {
         this.from = data.from || "MenuScene";
-
         const cx = this.scale.width / 2;
         const cy = this.scale.height / 2;
 
-        // Fond
         this.add.image(cx, cy, "background_options")
             .setOrigin(0.5)
             .setDisplaySize(this.scale.width, this.scale.height);
 
-        const centerX = cx;
-        this.add.text(centerX, 80, "Options — Changer les touches", { fontSize: "28px", fill: "#fff", fontFamily: 'Silkscreen' })
-            .setOrigin(0.5);
+        this.add.image(cx, cy, "tablette").setOrigin(0.5).setScale(2.15);
 
-        // Chargement des touches
-        this.controls = this._loadControls() || data.controls || { up: "Z", down: "S", left: "Q", right: "D" };
-        this.waiting = null;
+        this.add.text(cx, 220, "Options", { 
+            fontSize: "36px", 
+            color: "#ffffff", 
+            fontFamily: 'Silkscreen' 
+        }).setOrigin(0.5);
 
-        // Affichage des touches
-        const keys = ["up", "down", "left", "right"];
-        let y = 180;
-        this.keyTexts = {};
+        this.volume = this.loadData("gameVolume") !== null ? this.loadData("gameVolume") : 0.5;
 
-        keys.forEach(key => {
-            const label = key === "up" ? "Haut" : key === "down" ? "Bas" : key === "left" ? "Gauche" : "Droite";
-            this.keyTexts[key] = this.add.text(centerX, y, `${label} : ${this._displayName(this.controls[key])}`, { fontSize: "22px", fill: "#fff", fontFamily: 'Silkscreen' })
-                .setOrigin(0.5).setInteractive();
-            this.keyTexts[key].on("pointerdown", () => this._waitForKey(key, this.keyTexts[key]));
-            y += 44;
+        this.add.text(cx, 300, "Volume Audio", { 
+            fontSize: "24px", 
+            color: "#ffffff", 
+            fontFamily: 'Silkscreen' 
+        }).setOrigin(0.5);
+
+        const sliderY = 350;
+        const sliderW = 320;
+        const sliderH = 12;
+
+        this.sliderBg = this.add.rectangle(cx, sliderY, sliderW, sliderH, 0x444444).setOrigin(0.5);
+        this.sliderFill = this.add.rectangle(
+            cx - sliderW / 2, 
+            sliderY, 
+            sliderW * this.volume, 
+            sliderH, 
+            0x00ff00
+        ).setOrigin(0, 0.5);
+
+        this.sliderHandle = this.add.circle(
+            cx - sliderW / 2 + sliderW * this.volume, 
+            sliderY, 
+            14, 
+            0xffffff
+        ).setInteractive({ useHandCursor: true, draggable: true });
+
+        this.volumeText = this.add.text(cx, sliderY + 45, `${Math.round(this.volume * 100)}%`, {
+            fontSize: "22px",
+            color: "#cccccc",
+            fontFamily: 'Silkscreen'
+        }).setOrigin(0.5);
+
+        this.sliderData = { x: cx, width: sliderW };
+
+        this.input.on('drag', (pointer, obj, dragX) => {
+            if (obj !== this.sliderHandle) return;
+            const minX = cx - sliderW / 2;
+            const maxX = cx + sliderW / 2;
+            const clampedX = Phaser.Math.Clamp(dragX, minX, maxX);
+            this.sliderHandle.x = clampedX;
+            this.volume = (clampedX - minX) / sliderW;
+            this.sliderFill.width = sliderW * this.volume;
+            this.volumeText.setText(`${Math.round(this.volume * 100)}%`);
+            this.sound.volume = this.volume;
+            this.saveData("gameVolume", this.volume);
         });
 
-        this.infoText = this.add.text(centerX, y, "Clique sur une ligne puis appuie sur une touche", { fontSize: "16px", fill: "#ccc", fontFamily: 'Silkscreen' })
-            .setOrigin(0.5);
+        const startY = 480;
+        const buttonSpacing = 90;
 
-        // Boutons
-        const btnStart = this._createMenuButton(cx + 150, cy + 300, "bouton_start", () => this.startGame());
-        const btnExit = this._createMenuButton(cx - 150, cy + 300, "bouton_exit", () => this.returnMenu());
-        const btnReset = this._createMenuButton(cx, cy, "bouton_reset", () => this.resetControls());
-
-        this.menuButtons = [btnStart, btnExit, btnReset];
-
-        // Navigation clavier
-        this.keysNav = this.input.keyboard.addKeys({
-            up: Phaser.Input.Keyboard.KeyCodes.UP,
-            down: Phaser.Input.Keyboard.KeyCodes.DOWN,
-            select: Phaser.Input.Keyboard.KeyCodes.K
-        });
-
-        this._updateSelection();
-    }
-
-    update() {
-        if (Phaser.Input.Keyboard.JustDown(this.keysNav.up)) {
-            this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex - 1, 0, this.menuButtons.length);
-            this._updateSelection();
-        }
-        if (Phaser.Input.Keyboard.JustDown(this.keysNav.down)) {
-            this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + 1, 0, this.menuButtons.length);
-            this._updateSelection();
-        }
-        if (Phaser.Input.Keyboard.JustDown(this.keysNav.select)) {
-            this._activateSelected();
-        }
-    }
-
-    _createMenuButton(x, y, texture, callback) {
-        const btn = this.add.image(x, y, texture)
+        this.btnReset = this.add.image(cx, startY, "bouton_reset")
             .setOrigin(0.5)
-            .setScale(0.25)
+            .setScale(0.45)
             .setInteractive({ useHandCursor: true });
-        btn.on("pointerdown", callback);
-        btn.on("pointerover", () => {
-            const idx = this.menuButtons.indexOf(btn);
-            if (idx >= 0) this.selectedIndex = idx;
-            this._updateSelection();
+
+        this.btnReset.on("pointerdown", () => {
+            this.resetVolume();
         });
-        btn.on("pointerout", () => this._updateSelection());
-        return btn;
-    }
 
-    _updateSelection() {
-        this.menuButtons.forEach((b, i) => {
-            b.setScale(i === this.selectedIndex ? 0.27 : 0.25);
+        this.btnStart = this.add.image(cx, startY + buttonSpacing, "bouton_start")
+            .setOrigin(0.5)
+            .setScale(0.45)
+            .setInteractive({ useHandCursor: true });
+
+        this.btnStart.on("pointerdown", () => {
+            this.startGame(data);
         });
+
+        this.btnExit = this.add.image(cx, startY + buttonSpacing * 2, "bouton_exit")
+            .setOrigin(0.5)
+            .setScale(0.45)
+            .setInteractive({ useHandCursor: true });
+
+        this.btnExit.on("pointerdown", () => {
+            this.exitToMenu(data);
+        });
+
+        [this.btnReset, this.btnStart, this.btnExit].forEach(b => {
+            b.on("pointerover", () => {
+                b.setScale(0.47);
+            });
+            b.on("pointerout", () => {
+                const idx = this.buttons.indexOf(b);
+                if (idx !== this.currentButtonIndex) {
+                    b.setScale(0.45);
+                }
+            });
+        });
+
+        this.buttons = [this.btnReset, this.btnStart, this.btnExit];
+        this.currentButtonIndex = 0;
+        this.isAdjustingSlider = false;
+
+        this.setupKeyboardNavigation();
+        this.highlightSelectedButton();
     }
 
-    _activateSelected() {
-        const btn = this.menuButtons[this.selectedIndex];
-        btn.emit("pointerdown");
-    }
+    setupKeyboardNavigation() {
+        this.input.keyboard.on('keydown', (event) => {
+            const key = event.key.toLowerCase();
 
-    startGame() {
-        this._saveControls();
-        this.scene.start("GameScene", { controls: this.controls });
-    }
-
-    returnMenu() {
-        this._saveControls();
-        this.scene.start("MenuScene", { controls: this.controls });
-    }
-
-    resetControls() {
-        this.controls = { up: "Z", down: "S", left: "Q", right: "D" };
-        this._refreshTexts();
-        this._saveControls();
-    }
-
-    _displayName(code) {
-        const map = { UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→", SPACE: "SPACE" };
-        return map[code] || code || "";
-    }
-
-    _waitForKey(dir, textObj) {
-        if (this.waiting) return;
-        this.waiting = { dir, textObj };
-        textObj.setText(`${dir.toUpperCase()} : ...`);
-        this.infoText.setText("Appuie sur une touche pour assigner (Échap pour annuler)");
-
-        this.input.keyboard.once("keydown", e => {
-            if (e.key === "Escape") {
-                this.waiting = null;
-                this._refreshTexts();
-                this.infoText.setText("Assignation annulée");
-                this.time.delayedCall(800, () => this.infoText.setText("Clique sur une ligne puis appuie sur une touche"));
+            if (this.isAdjustingSlider) {
+                if (key === 'arrowleft' || key === 'q') {
+                    this.adjustSlider(-0.05);
+                } else if (key === 'arrowright' || key === 'd') {
+                    this.adjustSlider(0.05);
+                } else if (key === 'k' || key === 'f' || key === 'enter') {
+                    this.isAdjustingSlider = false;
+                    this.sliderHandle.setFillStyle(0xffffff);
+                }
                 return;
             }
 
-            this.controls[dir] = this._getKeyNameFromEvent(e);
-            this.waiting = null;
-            this._refreshTexts();
-            this._saveControls();
-            this.infoText.setText(`Assigned ${dir.toUpperCase()} → ${this._displayName(this.controls[dir])}`);
-            this.time.delayedCall(900, () => this.infoText.setText("Clique sur une ligne puis appuie sur une touche"));
+            if (key === 'arrowup' || key === 'z') {
+                this.navigate(-1);
+            } else if (key === 'arrowdown' || key === 's') {
+                this.navigate(1);
+            } else if (key === 'k' || key === 'f' || key === 'enter') {
+                this.selectCurrentButton();
+            } else if (key === 'arrowleft' || key === 'q') {
+                this.isAdjustingSlider = true;
+                this.sliderHandle.setFillStyle(0xff0000);
+            } else if (key === 'arrowright' || key === 'd') {
+                this.isAdjustingSlider = true;
+                this.sliderHandle.setFillStyle(0xff0000);
+            }
         });
     }
 
-    _refreshTexts() {
-        Object.entries(this.keyTexts).forEach(([key, txt]) => {
-            const label = key === "up" ? "Haut" : key === "down" ? "Bas" : key === "left" ? "Gauche" : "Droite";
-            txt.setText(`${label} : ${this._displayName(this.controls[key])}`);
-        });
-    }
+    navigate(direction) {
+        this.currentButtonIndex += direction;
 
-    _getKeyNameFromEvent(e) {
-        if (!e) return "";
-        if (e.key && e.key.length === 1) return e.key.toUpperCase();
-        if (e.key && e.key.startsWith("Arrow")) return e.key.slice(5).toUpperCase();
-        if (e.code) {
-            if (e.code.startsWith("Key")) return e.code.slice(3).toUpperCase();
-            if (e.code.startsWith("Digit")) return e.code.slice(5);
-            return e.code.toUpperCase();
+        if (this.currentButtonIndex < 0) {
+            this.currentButtonIndex = this.buttons.length - 1;
+        } else if (this.currentButtonIndex >= this.buttons.length) {
+            this.currentButtonIndex = 0;
         }
-        return (e.key || "").toUpperCase();
+
+        this.highlightSelectedButton();
     }
 
-    _saveControls() {
-        try { localStorage.setItem("controls", JSON.stringify(this.controls)); } catch {}
+    highlightSelectedButton() {
+        this.buttons.forEach((button, index) => {
+            if (index === this.currentButtonIndex) {
+                button.setTint(0xffff00);
+                button.setScale(0.47);
+            } else {
+                button.clearTint();
+                button.setScale(0.45);
+            }
+        });
     }
 
-    _loadControls() {
-        try { return JSON.parse(localStorage.getItem("controls")) || null; } catch { return null; }
+    adjustSlider(delta) {
+        this.volume = Phaser.Math.Clamp(this.volume + delta, 0, 1);
+
+        const cx = this.sliderData.x;
+        const sliderW = this.sliderData.width;
+        const minX = cx - sliderW / 2;
+
+        this.sliderHandle.x = minX + sliderW * this.volume;
+        this.sliderFill.width = sliderW * this.volume;
+        this.volumeText.setText(`${Math.round(this.volume * 100)}%`);
+
+        this.sound.volume = this.volume;
+        this.saveData("gameVolume", this.volume);
+    }
+
+    selectCurrentButton() {
+        const selectedButton = this.buttons[this.currentButtonIndex];
+
+        selectedButton.setTint(0xffffff);
+        this.tweens.add({
+            targets: selectedButton,
+            scale: 0.43,
+            duration: 80,
+            yoyo: true,
+            onComplete: () => {
+                if (selectedButton === this.btnReset) {
+                    this.resetVolume();
+                } else if (selectedButton === this.btnStart) {
+                    this.startGame();
+                } else if (selectedButton === this.btnExit) {
+                    this.exitToMenu();
+                }
+            }
+        });
+    }
+
+    resetVolume() {
+        this.volume = 0.5;
+        const cx = this.sliderData.x;
+        const sliderW = this.sliderData.width;
+        this.updateSlider(sliderW, cx);
+        this.saveData("gameVolume", this.volume);
+        this.sound.volume = this.volume;
+    }
+
+    startGame() {
+        this.scene.start("StoryScene", { gameMode: 'solo' });
+    }
+
+    exitToMenu() {
+        this.scene.start("MenuScene");
+    }
+
+    updateSlider(sliderW, cx) {
+        this.sliderHandle.x = cx - sliderW / 2 + sliderW * this.volume;
+        this.sliderFill.width = sliderW * this.volume;
+        this.volumeText.setText(`${Math.round(this.volume * 100)}%`);
+    }
+
+    saveData(key, val) {
+        try { 
+            localStorage.setItem(key, JSON.stringify(val)); 
+        } catch {}
+    }
+
+    loadData(key) {
+        try { 
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : null;
+        } catch { 
+            return null; 
+        }
     }
 }

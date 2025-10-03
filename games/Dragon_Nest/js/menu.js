@@ -10,12 +10,15 @@ export default class menu extends Phaser.Scene {
     this.load.setBaseURL(baseURL);
 
     // image de fond
-    this.load.image("menu_bg", "./presentation.png");
+    this.load.image("menu_bg", "./presentation.jpg");
 
     // images des boutons
     this.load.image("btn_jouer", "./assets/bouton_jouer.png");
     this.load.image("btn_controles", "./assets/bouton_controle.png");
     this.load.image("btn_credits", "./assets/bouton_credits.png");
+    
+    // --- CHARGEMENT DU SON ---
+    this.load.audio('musiqueMenu', './assets/MusiqueMenu.mp3');
   }
 
   create() {
@@ -25,16 +28,28 @@ export default class menu extends Phaser.Scene {
     const bg = this.add.image(width / 2, height / 2, "menu_bg").setOrigin(0.5);
     bg.setDisplaySize(width, height);
 
+    // --- MUSIQUE GLOBALE ---
+    // Initialisation du stockage global si inexistant
+    if (!this.sys.game.globals) {
+      this.sys.game.globals = {};
+    }
+
+    // Création et lecture de la musique uniquement si elle n'existe pas encore
+    if (!this.sys.game.globals.musiqueMenu) {
+      this.sys.game.globals.musiqueMenu = this.sound.add('musiqueMenu', { loop: true, volume: 0.5 });
+      this.sys.game.globals.musiqueMenu.play();
+    }
+
     // --- Fonction générique pour créer un bouton image ---
     const creerBoutonImage = (y, keyImage, action) => {
       const bouton = this.add.image(width / 2, y, keyImage).setOrigin(0.5);
-      bouton.setDisplaySize(200, 60); // taille réduite
+      bouton.setDisplaySize(200, 60);
       bouton.setInteractive({ useHandCursor: true });
-      bouton.action = action; // stocker l'action pour l'activation clavier
+      bouton.action = action;
 
       // Effet au survol souris
       bouton.on("pointerover", () => {
-        this.setSelection(this.menuItems.indexOf(bouton)); // survol = sélection
+        this.setSelection(this.menuItems.indexOf(bouton));
       });
       bouton.on("pointerout", () => bouton.clearTint());
       bouton.on("pointerup", action);
@@ -48,9 +63,16 @@ export default class menu extends Phaser.Scene {
 
     // Création des boutons
     this.menuItems = [
-      creerBoutonImage(startY, "btn_jouer", () => this.scene.start("intro")),
-      creerBoutonImage(startY + spacing, "btn_controles", () => this.scene.start("controles")),
-      creerBoutonImage(startY + 2 * spacing, "btn_credits", () => this.scene.start("credits"))
+      creerBoutonImage(startY, "btn_jouer", () => {
+        // Ne pas arrêter la musique
+        this.scene.start("intro");
+      }),
+      creerBoutonImage(startY + spacing, "btn_controles", () => {
+        this.scene.start("controles");
+      }),
+      creerBoutonImage(startY + 2 * spacing, "btn_credits", () => {
+        this.scene.start("credits");
+      })
     ];
 
     // Sélectionner le premier bouton
@@ -59,15 +81,15 @@ export default class menu extends Phaser.Scene {
     // --- Gestion clavier ---
     this.cursors = this.input.keyboard.createCursorKeys();
     this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   }
 
   // Met à jour la sélection visuelle
   setSelection(index) {
-    // retirer le style précédent
     this.menuItems.forEach((btn, i) => {
       btn.clearTint();
       if (i === index) {
-        btn.setTint(0xba280b); // bouton sélectionné en rouge foncé
+        btn.setTint(0xba280b);
       }
     });
     this.selectedIndex = index;
@@ -86,8 +108,8 @@ export default class menu extends Phaser.Scene {
       this.setSelection(newIndex);
     }
 
-    // Validation avec Entrée
-    if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
+    // Validation avec Entrée OU Espace
+    if (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       const selectedButton = this.menuItems[this.selectedIndex];
       if (selectedButton && typeof selectedButton.action === "function") {
         selectedButton.action();
