@@ -4,10 +4,10 @@ export default class hud extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('heart_empty', '../assets/hud/health/heart_empty.png');
-    this.load.image('heart_1q', '../assets/hud/health/heart_1q.png');
-    this.load.image('heart_3q', '../assets/hud/health/heart_3q.png');
-    this.load.image('heart_half', '../assets/hud/health/heart_half.png');
+    this.load.image('heart_empty', './assets/hud/health/heart_empty.png');
+    this.load.image('heart_1q', './assets/hud/health/heart_1q.png');
+    this.load.image('heart_3q', './assets/hud/health/heart_3q.png');
+    this.load.image('heart_half', './assets/hud/health/heart_half.png');
   }
 
   create() {
