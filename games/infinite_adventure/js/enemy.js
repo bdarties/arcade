@@ -1,4 +1,4 @@
-import XPOrb from "./XPOrb.js";
+import XPOrb from "./xporb.js";
 
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, texture, config = {}) {
@@ -110,4 +110,5 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
             }
         });
     }
+
 }
