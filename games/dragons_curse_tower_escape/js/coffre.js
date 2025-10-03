@@ -10,10 +10,10 @@ export default class Coffre extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("slot_empty", "../assets/hud/slot_empty.png");
-    this.load.image("slot_selected", "../assets/hud/slot_selected.png");
-    this.load.image("slot_left", "../assets/hud/slot_left.png");
-    this.load.image("slot_right", "../assets/hud/slot_right.png");
+    this.load.image("slot_empty", "./assets/hud/slot_empty.png");
+    this.load.image("slot_selected", "./assets/hud/slot_selected.png");
+    this.load.image("slot_left", "./assets/hud/slot_left.png");
+    this.load.image("slot_right", "./assets/hud/slot_right.png");
   }
 
   create() {
