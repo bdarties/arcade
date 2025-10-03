@@ -14,7 +14,6 @@ import MiniBossGhost from "./minibossghost.js";
 import MiniBossFlyingSkull from "./minibossflyingskull.js";
 import MiniBossSkeleton from "./minibossskeleton.js";
 import MiniBossGoblin from "./minibossgoblin.js";
-import DragonBoss from "./dragonboss.js";
 
 export default class EnemyFactory {
     static create(enemyType, scene, x, y) {
@@ -22,7 +21,7 @@ export default class EnemyFactory {
             bat: Bat, fly: Fly, slime: Slime, rat: Rat, ghost: Ghost, skull: FlyingSkull, skeleton: Skeleton, goblin: Goblin,
             miniboss_fly: MiniBossFly, miniboss_rat: MiniBossRat, miniboss_slime: MiniBossSlime, miniboss_bat: MiniBossBat,
             miniboss_ghost: MiniBossGhost, miniboss_skull: MiniBossFlyingSkull, miniboss_skeleton: MiniBossSkeleton,
-            miniboss_goblin: MiniBossGoblin, dragon_boss: DragonBoss
+            miniboss_goblin: MiniBossGoblin
         };
 
         const EnemyClass = enemies[enemyType];
@@ -35,12 +34,10 @@ export default class EnemyFactory {
 
     static preloadAll(scene) {
         [Bat, Fly, Slime, Rat, Ghost, FlyingSkull, Skeleton, Goblin, MiniBossFly, MiniBossRat, MiniBossSlime].forEach(c => c.createAnimations?.(scene));
-        DragonBoss.preload(scene);
     }
 
     static createAllAnimations(scene) {
         [Bat, Fly, Slime, Rat, Ghost, FlyingSkull, Skeleton, Goblin, MiniBossFly, MiniBossRat, MiniBossSlime].forEach(c => c.createAnimations?.(scene));
-        DragonBoss.createAnimations(scene);
     }
 
     static getEnemyGroups(scene) {
@@ -54,16 +51,11 @@ export default class EnemyFactory {
             ghosts: scene.physics.add.group(),
             goblins: scene.physics.add.group(),
             miniBossGroup: scene.physics.add.group(),
-            dragonBossGroup: scene.physics.add.group()
         };
     }
 
     static spawnRandomMiniBoss(scene, x, y) {
         const types = ['miniboss_fly', 'miniboss_rat', 'miniboss_slime', 'miniboss_bat', 'miniboss_ghost', 'miniboss_skull', 'miniboss_skeleton', 'miniboss_goblin'];
         return this.create(types[Math.floor(Math.random() * types.length)], scene, x, y);
-    }
-
-    static spawnDragonBoss(scene, x, y) {
-        return this.create('dragon_boss', scene, x, y);
     }
 }

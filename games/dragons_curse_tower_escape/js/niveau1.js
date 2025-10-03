@@ -68,20 +68,47 @@ export default class niveau1 extends Phaser.Scene {
       if (tile && tile.index >= 183 && tile.index <= 196) {
         if (!this.isDamaged) {
           this.isDamaged = true;
-          this.scene.restart();
           this.cameras.main.shake(100, 0.005);
           
-          this.damageTimer = this.time.delayedCall(50, () => {
-            const tileUnderPlayer = this.pics.getTileAtWorldXY(this.player.x, this.player.y);
-            
-            if (tileUnderPlayer && tileUnderPlayer.index >= 183 && tileUnderPlayer.index <= 196) {
-              console.log("Trop longtemps sur les pics ! Reset...");
-                            this.pvManager.damage(1);
-            }
-            
+          // Infliger des dégâts immédiatement
+          console.log("Contact avec les pics !");
+          this.pvManager.damage(1);
+          
+          this.damageTimer = this.time.delayedCall(500, () => {
             this.isDamaged = false;
           });
         }
+      }
+    });
+
+    // --- Collision avec les tiles estLeve (nouveauté)
+    this.isOnLeve = false;
+    this.leveDamageTimer = null;
+    
+    // Vérifier chaque calque qui pourrait contenir des tiles estLeve
+    const calquesAVerifier = [this.calque_plateformes, this.objets, this.calque_background];
+    
+    calquesAVerifier.forEach(calque => {
+      if (calque) {
+        this.physics.add.overlap(this.player, calque, (player, tile) => {
+          if (tile && tile.properties.estLeve) {
+            if (!this.isOnLeve) {
+              this.isOnLeve = true;
+              console.log("Contact avec une tile estLeve !");
+              
+              // Effet visuel (shake caméra)
+              this.cameras.main.shake(100, 0.003);
+              
+              // Infliger des dégâts immédiatement
+              this.pvManager.damage(1);
+              
+              // Timer pour éviter les dégâts multiples trop rapides
+              this.leveDamageTimer = this.time.delayedCall(500, () => {
+                this.isOnLeve = false;
+              });
+            }
+          }
+        });
       }
     });
 
@@ -106,22 +133,6 @@ export default class niveau1 extends Phaser.Scene {
     this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
-    //==========================================
-    // Ouverture/fermeture inventaire avec P
-    //==========================================
-    // IMPORTANT : On n'utilise plus keydown-P mais JustDown dans update()
-    // pour éviter les conflits entre scènes
-
-    // ===========================
-    // Menu pause avec touche F
-    // ===========================
-    // Même chose : on utilisera JustDown dans update()
-
-    // ===========================
-    // Ouvrir coffre avec touche I
-    // ===========================
-    // Même chose : on utilisera JustDown dans update()
-    
     // --- Animations du joueur
     this.anims.create({
       key: "mage_idle",
@@ -222,22 +233,18 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   toggleInventory() {
-    // Vérifier si l'inventaire est actuellement actif
     const inventoryActive = this.scene.isActive('Inventory');
     
     if (inventoryActive) {
-      // Fermer l'inventaire
       console.log("Fermeture de l'inventaire");
       this.scene.bringToTop(this.scene.key);
       this.scene.bringToTop("hud");
       this.scene.pause('Inventory');
       this.scene.resume();
     } else {
-      // Ouvrir l'inventaire
       console.log("Ouverture de l'inventaire");
       this.registry.set('lastScene', this.scene.key);
       
-      // Créer ou reprendre l'inventaire
       if (!this.registry.get('inventaireCree')) {
         this.scene.launch('Inventory');
         this.registry.set('inventaireCree', true);

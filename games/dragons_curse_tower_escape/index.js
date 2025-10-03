@@ -29,7 +29,7 @@ var config = {
     default: "arcade",
     arcade: {
       gravity: { y: 0 },
-      debug: true
+      debug: false
     }
   },
   scene: [hud, menu, credits, controls, intro, selection, niveau1, niveau2, niveau3, niveau4, PauseManager, Inventory, Coffre],

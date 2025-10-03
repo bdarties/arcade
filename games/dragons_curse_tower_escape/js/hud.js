@@ -18,7 +18,7 @@ export default class hud extends Phaser.Scene {
       .setScrollFactor(0)
       .setScale(0.5);
 
-    this.healthText = this.add.text(width / 2, height - 50, '0', {
+    this.healthText = this.add.text(width / 2, height - 50, '9', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -31,19 +31,24 @@ export default class hud extends Phaser.Scene {
   }
 
   update() {
-    var health = this.registry.get('playerHealth') || 5;
+    var health = this.registry.get('playerHealth') || 9;
+    var maxHealth = this.registry.get('playerMaxHealth') || 9;
 
-    // Sélection de la texture en fonction des PV
+    // Sélection de la texture en fonction des PV (logique corrigée)
     let texture = 'heart_empty';
-    if (health >= 5) {
-      texture = 'heart_empty';
-    } else if (health === 4) {
+    
+    // Calculer le pourcentage de vie
+    const healthPercent = health / maxHealth;
+    
+    if (healthPercent >= 0.875) {       // 7.875/9 ou plus = coeur plein
+      texture = 'heart_full';
+    } else if (healthPercent >= 0.625) { // 5.625/9 = 3/4
       texture = 'heart_3q';
-    } else if (health === 3) {
+    } else if (healthPercent >= 0.375) { // 3.375/9 = 1/2
       texture = 'heart_half';
-    } else if (health === 2) {
+    } else if (healthPercent >= 0.125) { // 1.125/9 = 1/4
       texture = 'heart_1q';
-    } else if (health === 1) {
+    } else {                             // Presque vide
       texture = 'heart_empty';
     }
 

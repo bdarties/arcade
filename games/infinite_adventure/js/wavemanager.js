@@ -14,7 +14,6 @@ export default class WaveManager {
             skull: 16,
             skeleton: 21,
             goblin: 26,
-            dragon: 30
         };
 
         // Types de miniboss disponibles
@@ -97,10 +96,8 @@ export default class WaveManager {
                     ? 1
                     : Phaser.Math.Between(1, 1 + Math.floor(this.wave / 20));
         }
-
-        // Miniboss toutes les 4 vagues, mais pas les vagues de boss dragon
-        const spawnMiniboss = this.wave % 4 === 0 && this.wave < this.unlocks.dragon;
-        const spawnDragonBoss = this.wave % 30 === 0 && this.wave >= this.unlocks.dragon;
+        // Miniboss toutes les 4 vagues
+        const spawnMiniboss = this.wave % 4 === 0 && this.wave;
 
         // Déterminer quels types de miniboss sont disponibles selon la vague
         const availableMinibossTypes = [];
@@ -123,7 +120,6 @@ export default class WaveManager {
             skeletonCount,
             goblinCount,
             spawnMiniboss,
-            spawnDragonBoss,
             availableMinibossTypes, // AJOUT IMPORTANT
             spawnDelay: this.spawnDelay
         };

@@ -116,7 +116,7 @@ export default class GameScene extends Phaser.Scene {
 
         [Slime, Bat, Fly, Rat, FlyingSkull, Skeleton, Ghost, Goblin].forEach(cls => cls.createAnimations?.(this));
 
-        this.enemyGroups = ["slimes","bats","flies","rats","skulls","skeletons","ghosts","goblins","miniBossGroup", "dragonBossGroup"];
+        this.enemyGroups = ["slimes","bats","flies","rats","skulls","skeletons","ghosts","goblins","miniBossGroup"];
         this.enemyGroups.forEach(g => this[g] = this.physics.add.group());
         this.enemies = this.physics.add.group();
 
@@ -338,10 +338,6 @@ export default class GameScene extends Phaser.Scene {
         this._firstWaveStarted = true;
 
         this.time.delayedCall(w.spawnDelay || 2000, () => {
-            if (w.wave >= 30 && w.wave % 30 === 0) {
-                this.spawnDragonBoss(room);
-                return;
-            }
 
             const spawn = (cls, cnt, grp, dmg = 10) => {
                 for (let i = 0; i < cnt; i++) {
@@ -384,34 +380,6 @@ export default class GameScene extends Phaser.Scene {
 
             this.events.emit("updateWave", w.wave);
             this.time.delayedCall(50, () => this.isStartingWave = false);
-        });
-    }
-
-    spawnDragonBoss(room) {
-        this.events.emit("bossWarning", "DRAGON BOSS INCOMING!");
-        
-        this.cameras.main.shake(1000, 0.02);
-        this.cameras.main.flash(1000, 255, 0, 0, 0.3);
-        
-        this.time.delayedCall(2000, () => {
-            const dragon = EnemyFactory.spawnDragonBoss(this, room.centerX, room.centerY - 100);
-            
-            if (dragon) {
-                dragon.setDepth(15);
-                dragon.once("destroy", () => {
-                    this.events.emit("enemyDied");
-                    this.events.emit("bossDefeated", "Dragon Boss");
-                    this.addScore(1000);
-                });
-                
-                this.dragonBossGroup.add(dragon);
-                this.enemies.add(dragon);
-                this.enemiesAlive = 1;
-                
-                this.events.emit("updateWave", `BOSS WAVE - DRAGON`);
-            }
-            
-            this.isStartingWave = false;
         });
     }
     
