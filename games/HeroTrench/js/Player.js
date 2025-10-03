@@ -17,7 +17,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.direction = "right";
     this.dernierTir = 0;
-<<<<<<<< HEAD:games/HeroTrench/js/Player.js
     this.invincible = false;
     this.estMort = false;
 
@@ -40,13 +39,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.vitesseDeplacementBase = this.statsDeBase.vitesseDeplacementBase;
     this.hitsAbsorbes = this.statsDeBase.hitsAbsorbes;
     this.rayonHitbox = this.statsDeBase.rayonHitbox;
-========
-    this.cooldownTir = 500;
-    this.vie = 100;
-    this.vieMax = 100;
-    this.invincible = false;
-    this.estMort = false;
->>>>>>>> 4568b2524a8cf712656d018d79bae6114ed8886d:games/Alvin York/js/Player.js
 
     // Arme
     this.arme = scene.add.sprite(this.x, this.y, "weapons");
@@ -130,11 +122,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   updateArme(ennemiCible = null) {
     // Positionner l'arme un peu en dessous du centre du joueur
     this.arme.x = this.body.center.x - 5;
-<<<<<<<< HEAD:games/HeroTrench/js/Player.js
     this.arme.y = this.body.center.y + 5;
-========
-    this.arme.y = this.body.center.y + 5; // +10 pixels vers le bas
->>>>>>>> 4568b2524a8cf712656d018d79bae6114ed8886d:games/Alvin York/js/Player.js
 
     if (ennemiCible && ennemiCible.body) {
       // Orienter l'arme vers l'ennemi
@@ -203,7 +191,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     );
     balle.setVelocity(Math.cos(angle) * vitesse, Math.sin(angle) * vitesse);
 
-<<<<<<<< HEAD:games/HeroTrench/js/Player.js
     // Flip de la balle selon sa direction
     let angleEnDegres = Phaser.Math.RadToDeg(angle);
     if (angleEnDegres > 90 && angleEnDegres < 270) {
@@ -214,22 +201,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Rotation de la balle pour qu'elle pointe dans la bonne direction
     balle.rotation = angle;
-========
-    //////////////////////////////////////////////////////////////////////////////////////
-    // FLIP DE LA BALLE selon sa direction
-    // Si la balle va vers la gauche (angle entre 90° et 270°), on la flip
-    let angleEnDegres = Phaser.Math.RadToDeg(angle);
-    if (angleEnDegres > 90 && angleEnDegres < 270) {
-      balle.setFlipX(true);  // Flip horizontal quand elle va vers la gauche
-    } else {
-      balle.setFlipX(false); // Pas de flip quand elle va vers la droite
-    }
-
-    // 🎯 ROTATION de la balle pour qu'elle pointe dans la bonne direction
-
-    balle.rotation = angle;
-    /////////////////////////////////////////////////////////////////////////////////////
->>>>>>>> 4568b2524a8cf712656d018d79bae6114ed8886d:games/Alvin York/js/Player.js
 
     this.scene.time.delayedCall(1000, () => {
       if (balle && balle.active) balle.destroy();
@@ -259,7 +230,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     return null;
   }
 
-<<<<<<<< HEAD:games/HeroTrench/js/Player.js
   mourir() {
     if (this.estMort) return;
     this.estMort = true;
@@ -301,47 +271,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.vie -= qte;
     if (this.vie < 0) this.vie = 0;
 
-========
- mourir() {
-  if (this.estMort) return;
-  this.estMort = true;
-
-  this.setVelocity(0, 0);
-  this.arme.setVisible(false);
-  this.hitbox.clear();
-
-  // 🔥 Jouer l'animation de mort
-  this.anims.play("anim_player_dead");
-
-  // Quand l'anim est terminée → game over
-  this.once("animationcomplete", () => {
-    // Là seulement on désactive le sprite
-    this.setActive(false);
-    this.setVisible(false);
-
-    if (this.scene.gererGameOver) {
-      this.scene.gererGameOver();
-    }
-  });
-}
-
-  prendreDegats(qte = 10) {
-    if (this.invincible || this.estMort) return;
-
-    this.vie -= qte;
-    if (this.vie < 0) this.vie = 0;
-
->>>>>>>> 4568b2524a8cf712656d018d79bae6114ed8886d:games/Alvin York/js/Player.js
     // Mise à jour de la barre de vie
     if (this.scene.updateBarreVie) {
       this.scene.updateBarreVie();
     }
 
-<<<<<<<< HEAD:games/HeroTrench/js/Player.js
     // Effet visuel de dégâts (flash rouge)
-========
-    // Effet visuel de dégâts
->>>>>>>> 4568b2524a8cf712656d018d79bae6114ed8886d:games/Alvin York/js/Player.js
     this.setTint(0xff0000);
     this.scene.time.delayedCall(1000, () => {
       if (this.active) this.clearTint();
