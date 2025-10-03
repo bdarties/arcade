@@ -3,6 +3,165 @@
 
 const baseURL = window.location.pathname.replace(/\/$/, ''); // /games/Beat_Arcade
 
+// Export d'un objet "game" pour la compatibilité avec la borne d'arcade
+// Implémente le nettoyage Babylon.js + SvelteKit
+export var game = {
+    // Stockage des ressources Babylon pour le cleanup
+    _babylonEngines: new Set(),
+    _babylonScenes: new Set(),
+    _audioContext: null,
+    _activeAudios: new Set(),
+
+    // Interface Phaser attendue par la borne (stubs)
+    scene: {
+        add: () => {},
+        start: () => {},
+        pause: () => {},
+        getScenes: () => []
+    },
+    registry: {
+        set: () => {},
+        get: () => null
+    },
+
+    // Gestion du son (compatible avec les audios HTML5 et Web Audio API)
+    sound: {
+        stopAll: () => {
+            // Arrêter tous les éléments <audio>
+            document.querySelectorAll('audio').forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.src = '';
+            });
+
+            // Arrêter les audios trackés
+            game._activeAudios.forEach(audio => {
+                try {
+                    audio.pause();
+                    audio.currentTime = 0;
+                } catch(e) {
+                    console.warn('Erreur stop audio:', e);
+                }
+            });
+            game._activeAudios.clear();
+
+            // Suspendre l'AudioContext si présent
+            if (game._audioContext && game._audioContext.state === 'running') {
+                game._audioContext.suspend();
+            }
+        },
+        removeAllListeners: () => {
+            document.querySelectorAll('audio').forEach(audio => {
+                const clone = audio.cloneNode();
+                audio.parentNode?.replaceChild(clone, audio);
+            });
+        }
+    },
+
+    // Méthode principale de nettoyage
+    destroy: (removeCanvas = true) => {
+        console.log('🧹 Beat Arcade: Nettoyage en cours...');
+
+        try {
+            // 1. Arrêter tous les sons
+            game.sound.stopAll();
+
+            // 2. Nettoyer les scènes Babylon.js
+            game._babylonScenes.forEach(scene => {
+                try {
+                    if (scene && !scene.isDisposed) {
+                        // Disposer les meshes
+                        scene.meshes.forEach(mesh => {
+                            if (mesh.dispose) mesh.dispose();
+                        });
+
+                        // Disposer les matériaux
+                        scene.materials.forEach(material => {
+                            if (material.dispose) material.dispose();
+                        });
+
+                        // Disposer les textures
+                        scene.textures.forEach(texture => {
+                            if (texture.dispose) texture.dispose();
+                        });
+
+                        // Disposer la scène
+                        scene.dispose();
+                    }
+                } catch(e) {
+                    console.warn('Erreur nettoyage scene Babylon:', e);
+                }
+            });
+            game._babylonScenes.clear();
+
+            // 3. Nettoyer les engines Babylon.js
+            game._babylonEngines.forEach(engine => {
+                try {
+                    if (engine && !engine.isDisposed) {
+                        engine.stopRenderLoop();
+                        engine.dispose();
+                    }
+                } catch(e) {
+                    console.warn('Erreur nettoyage engine Babylon:', e);
+                }
+            });
+            game._babylonEngines.clear();
+
+            // 4. Supprimer les canvas si demandé
+            if (removeCanvas) {
+                document.querySelectorAll('canvas').forEach(canvas => {
+                    // Nettoyer les contextes WebGL
+                    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                    if (gl) {
+                        const loseContext = gl.getExtension('WEBGL_lose_context');
+                        if (loseContext) loseContext.loseContext();
+                    }
+
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    canvas.remove();
+                });
+            }
+
+            // 5. Annuler tous les timers et animations
+            let id = setTimeout(() => {}, 0);
+            while (id--) clearTimeout(id);
+
+            id = setInterval(() => {}, 99999);
+            while (id--) clearInterval(id);
+
+            if (window.cancelAnimationFrame) {
+                let rafId = requestAnimationFrame(() => {});
+                while (rafId--) cancelAnimationFrame(rafId);
+            }
+
+            // 6. Supprimer les event listeners globaux (sauf ceux de la borne)
+            const events = ['click', 'mousedown', 'mouseup', 'mousemove', 'touchstart', 'touchend', 'touchmove', 'wheel'];
+            events.forEach(event => {
+                document.body.removeEventListener(event, () => {}, true);
+            });
+
+            console.log('✅ Beat Arcade: Nettoyage terminé');
+
+        } catch(e) {
+            console.error('❌ Erreur lors du nettoyage:', e);
+        }
+    },
+
+    // Méthodes utilitaires pour tracker les ressources Babylon
+    registerBabylonEngine: (engine) => {
+        game._babylonEngines.add(engine);
+    },
+
+    registerBabylonScene: (scene) => {
+        game._babylonScenes.add(scene);
+    },
+
+    registerAudio: (audio) => {
+        game._activeAudios.add(audio);
+    }
+};
+
 // Intercepter les fetch pour réécrire les URLs
 const originalFetch = window.fetch;
 window.fetch = function(url, options) {
