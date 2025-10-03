@@ -60,3 +60,4 @@ export default class XPOrb extends Phaser.Physics.Arcade.Sprite {
         }
     }
 }
+
