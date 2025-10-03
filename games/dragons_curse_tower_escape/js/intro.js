@@ -56,4 +56,5 @@ export default class intro extends Phaser.Scene {
   }
 }
 
-export default intro;
+//export default intro;
+
