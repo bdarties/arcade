@@ -9,9 +9,9 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("tuiles_de_jeu", "../assets/maps/tiles/tuilesJeu2.png"); 
-    this.load.image("pics", "../assets/maps/tiles/pics.png"); 
-    this.load.tilemapTiledJSON("map3", "../assets/maps/map3.json");
+    this.load.image("tuiles_de_jeu", "./assets/maps/tiles/tuilesJeu2.png"); 
+    this.load.image("pics", "./assets/maps/tiles/pics.png"); 
+    this.load.tilemapTiledJSON("map3", "./assets/maps/map3.json");
     this.load.spritesheet("mage1", "./assets/mage1.png", {
       frameWidth: 64,
       frameHeight: 64
@@ -297,4 +297,5 @@ export default class niveau1 extends Phaser.Scene {
       }
     }
   }
+
 }
