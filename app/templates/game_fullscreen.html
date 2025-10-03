@@ -111,9 +111,36 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('pagehide', () => shutdownPhaser(game));
 /* ou, en SPA, dans le hook "beforeRouteLeave"/"onUnmounted" */
 
+
+const pressedKeys = new Set();
+
+window.addEventListener('keydown', (e) => {
+  console.log(e.key);
+  pressedKeys.add(e.key.toUpperCase());
+
+  // Combo reboot : I O P R T Y
+  if (['I','O','P','R','T','Y'].every(k => pressedKeys.has(k))) {
+    e.preventDefault();
+    fetch('/reboot', { method: 'POST' });
+  }
+
+  // Combo shutdown : K L M F G H
+  if (['K','L','M','F','G','H'].every(k => pressedKeys.has(k))) {
+    e.preventDefault();
+    fetch('/shutdown', { method: 'POST' });
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  pressedKeys.delete(e.key.toUpperCase());
+});
+
+
 </script>
 
 	</body>
 </html>
+
+
 
 
