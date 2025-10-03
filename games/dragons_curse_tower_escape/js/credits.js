@@ -56,4 +56,5 @@ export default class credits extends Phaser.Scene {
   }
 }
 
-export default credits;
+//export default credits;
+
