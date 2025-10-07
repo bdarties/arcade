@@ -29,6 +29,8 @@ export default class selection extends Phaser.Scene {
     const baseURL = this.sys.game.config.baseURL;
     
     this.load.setBaseURL(baseURL);
+
+    this.load.audio("musique_jeu", "./assets/musique_jeu.ogg");
     
     // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
     this.load.spritesheet("img_perso", "./assets/dragon_deplacement.png", {
@@ -216,6 +218,10 @@ if (layerEnnemi) {
 
 this.groupeBallesEnnemis = this.physics.add.group();
 
+    if (!this.sound.get("musique_jeu")) {
+      this.musiqueJeu = this.sound.add("musique_jeu", { loop: true, volume: 0.2 });
+      this.musiqueJeu.play();
+    }
 
     /****************************
      *  CREATION DU PERSONNAGE  *
@@ -351,7 +357,7 @@ this.physics.add.overlap(this.player, this.objetSaut, () => {
 this.groupeObjets = this.physics.add.group();
 
 // Création de l’objet interactif
-this.objetInteractif = this.physics.add.staticSprite(1835, 5826, "img_chest1");
+this.objetInteractif = this.physics.add.staticSprite(1835, 5833, "img_chest1");
 this.objetEtat = 1; // état courant (1 = image1, 2 = image2)
 
 // Créer une zone de détection autour de l’objet
@@ -412,6 +418,7 @@ this.physics.add.collider(player, this.groupeEnnemis, (playerObj, ennemi) => {
                 // plus de vies, écran de défaite
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.musiqueJeu.stop();
                     this.scene.start("defaite");
                 });
             }

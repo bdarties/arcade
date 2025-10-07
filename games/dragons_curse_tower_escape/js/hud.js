@@ -4,7 +4,6 @@ export default class hud extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('heart_full', '../assets/hud/health/heart_full.png');
     this.load.image('heart_empty', '../assets/hud/health/heart_empty.png');
     this.load.image('heart_1q', '../assets/hud/health/heart_1q.png');
     this.load.image('heart_3q', '../assets/hud/health/heart_3q.png');
@@ -41,7 +40,7 @@ export default class hud extends Phaser.Scene {
     const healthPercent = health / maxHealth;
     
     if (healthPercent >= 0.875) {       // 7.875/9 ou plus = coeur plein
-      texture = 'heart_full';
+      texture = 'heart_3q';
     } else if (healthPercent >= 0.625) { // 5.625/9 = 3/4
       texture = 'heart_3q';
     } else if (healthPercent >= 0.375) { // 3.375/9 = 1/2

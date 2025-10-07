@@ -41,7 +41,6 @@ export default class selection extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
-    this.load.image('bullet', './assets/balle.png');
     this.load.audio('damageSound', '../assets/sounds/givedamage.mp3');
   }
 

@@ -1,10 +1,10 @@
 // chargement des librairies
 import menu from "./js/menu.js";
-import commandes from "./js/commandes.js";
 import selection from "./js/selection.js";
-import defaite from "./js/defaite.js";
-import victoire from "./js/victoire.js";
-import histoire from "./js/histoire.js";
+import controles from "./js/controles.js";
+import niveau1 from "./js/niveau1.js";
+import niveau2 from "./js/niveau2.js";
+import niveau3 from "./js/niveau3.js";
 
 // configuration générale du jeu
 var config = {
@@ -28,7 +28,7 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [menu, commandes, histoire, selection, defaite, victoire],
+  scene: [menu,selection,controles, niveau1, niveau2, niveau3],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
