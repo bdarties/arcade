@@ -15,8 +15,8 @@ export default class selection extends Phaser.Scene {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
 
-    this.load.image("tuiles_de_jeu", "../assets/maps/tiles/tuilesJeu.png");
-    this.load.tilemapTiledJSON("map2", "../assets/maps/map2.json");
+    this.load.image("tuiles_de_jeu", "./assets/maps/tiles/tuilesJeu.png");
+    this.load.tilemapTiledJSON("map2", "./assets/maps/map2.json");
     this.load.spritesheet("mage1", "./assets/mage1.png", {
       frameWidth: 64,
       frameHeight: 64
@@ -25,7 +25,7 @@ export default class selection extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     }); 
-    this.load.spritesheet('mage_attaque', 'assets/mage_attaque.png', {
+    this.load.spritesheet('mage_attaque', './assets/mage_attaque.png', {
       frameWidth: 64,
       frameHeight: 64
     });
@@ -41,7 +41,7 @@ export default class selection extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
-    this.load.audio('damageSound', '../assets/sounds/givedamage.mp3');
+    this.load.audio('damageSound', './assets/sounds/givedamage.mp3');
   }
 
   create() {

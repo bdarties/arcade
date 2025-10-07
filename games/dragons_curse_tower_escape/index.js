@@ -36,8 +36,8 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-let game = null;
+//let game = null;
 
-  game = new Phaser.Game(config);
+  export var game = new Phaser.Game(config);
   game.scene.start("menu");
 
