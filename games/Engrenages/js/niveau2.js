@@ -6,44 +6,44 @@ export default class niveau2 extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("ville_grotte", "assets/ville_grotte_final3.jpg");
-    this.load.image("tiles", "assets/tileset.png");
-    this.load.image("selection", "assets/selection.png");
-    this.load.image("retour_menu", "assets/retour_menu.png");
-    this.load.tilemapTiledJSON("map_niveau2", "maps/map_niveau2.json");
-  this.load.spritesheet("gearPiece", "assets/gearPiece.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.image("button", "assets/button.png");
-    this.load.image("terminal_rempli", "assets/terminal_rempli.png");
-    this.load.image("screen_victoire", "assets/screen_victoire.png");
-    this.load.spritesheet("img_perso1", "assets/mouv_J1.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("J1_idle", "assets/idle_J1.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.image("ville_grotte", "./assets/ville_grotte_final3.jpg");
+    this.load.image("tiles", "./assets/tileset.png");
+    this.load.image("selection", "./assets/selection.png");
+    this.load.image("retour_menu", "./assets/retour_menu.png");
+    this.load.tilemapTiledJSON("map_niveau2", "./maps/map_niveau2.json");
+  this.load.spritesheet("gearPiece", "./assets/gearPiece.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.image("button", "./assets/button.png");
+    this.load.image("terminal_rempli", "./assets/terminal_rempli.png");
+    this.load.image("screen_victoire", "./assets/screen_victoire.png");
+    this.load.spritesheet("img_perso1", "./assets/mouv_J1.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("J1_idle", "./assets/idle_J1.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("img_perso2", "assets/mouv_J2.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("J2_idle", "assets/idle_J2.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("J1_jump", "assets/jump_J1.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("J2_jump", "assets/jump_J2.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("magie_J1", "assets/magie_J1.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet("magie_J2", "assets/magie_J2.png", { frameWidth: 64, frameHeight: 64 });
-    this.load.image("trappe_h", "assets/trappe_h.png");
-    this.load.image("trappe_v", "assets/trappe_v.png");
-    this.load.image("button", "assets/button.png");
+    this.load.spritesheet("J2_idle", "./assets/idle_J2.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("J1_jump", "./assets/jump_J1.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("J2_jump", "./assets/jump_J2.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("magie_J1", "./assets/magie_J1.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("magie_J2", "./assets/magie_J2.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.image("trappe_h", "./assets/trappe_h.png");
+    this.load.image("trappe_v", "./assets/trappe_v.png");
+    this.load.image("button", "./assets/button.png");
 
     // Spritesheets ennemis
-    this.load.spritesheet("enemy_walk", "assets/enemy_walk.png", {
+    this.load.spritesheet("enemy_walk", "./assets/enemy_walk.png", {
       frameWidth: 128,
       frameHeight: 96
     });
-    this.load.spritesheet("enemy_tir", "assets/enemy_tir.png", {
+    this.load.spritesheet("enemy_tir", "./assets/enemy_tir.png", {
       frameWidth: 128,
       frameHeight: 96
     });
-    this.load.spritesheet("enemy_dead", "assets/enemy_dead.png", {
+    this.load.spritesheet("enemy_dead", "./assets/enemy_dead.png", {
       frameWidth: 128,
       frameHeight: 96
     });
-    this.load.image("tir", "assets/tir.png");
+    this.load.image("tir", "./assets/tir.png");
 
 //spritesheets ennemis 2
-    this.load.spritesheet("enemy2_fly", "assets/enemy2_fly.png", {
+    this.load.spritesheet("enemy2_fly", "./assets/enemy2_fly.png", {
       frameWidth: 128,
       frameHeight: 96
     });
@@ -51,7 +51,7 @@ export default class niveau2 extends Phaser.Scene {
       frameWidth: 128,
       frameHeight: 96
     });
-    this.load.spritesheet("enemy2_dead", "assets/enemy2_dead.png", {
+    this.load.spritesheet("enemy2_dead", "./assets/enemy2_dead.png", {
       frameWidth: 128,
       frameHeight: 96
     });
