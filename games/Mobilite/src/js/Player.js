@@ -33,8 +33,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         // Configuration des touches
         this.cursors = scene.input.keyboard.createCursorKeys();
-        this.jumpKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-        this.fireKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G);
+        this.jumpKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K);
+        this.fireKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
     }
 
     // === Gestion des animations ===

@@ -5,7 +5,7 @@ export default class InputManager extends Phaser.Scene {
 
     create() {
         // Écouteur pour la touche T (pause/reprise)
-        this.input.keyboard.on('keydown-T', () => {
+        this.input.keyboard.on('keydown-O', () => {
             const mainScene = this.scene.get("main_scene");
             if (mainScene.scene.isPaused()) {
                 mainScene.scene.resume();
@@ -18,15 +18,15 @@ export default class InputManager extends Phaser.Scene {
             }
         });
 
-    // Ajout des écouteurs pour les touches Y et H
-        this.input.keyboard.on('keydown-Y', () => {
+    // Ajout des écouteurs pour les touches P et M
+        this.input.keyboard.on('keydown-P', () => {
             const mainScene = this.scene.get("main_scene");
             mainScene.global_mobility_model++;
             console.log(`global_mobility_model incrémenté : ${mainScene.global_mobility_model}`);
             mainScene.scene.restart(); // Redémarre la scène
     });
 
-    this.input.keyboard.on('keydown-H', () => {
+    this.input.keyboard.on('keydown-M', () => {
         const mainScene = this.scene.get("main_scene");
         mainScene.global_mobility_model = Math.max(1, mainScene.global_mobility_model - 1); // Empêche d'aller en dessous de 1
         console.log(`global_mobility_model décrémenté : ${mainScene.global_mobility_model}`);
@@ -34,7 +34,7 @@ export default class InputManager extends Phaser.Scene {
     });
 
         // Écouteur pour la touche R (redémarrage)
-        this.input.keyboard.on('keydown-R', () => {
+        this.input.keyboard.on('keydown-I', () => {
             const mainScene = this.scene.get("main_scene");
             console.log("La scène principale est redémarrée.");
             mainScene.restart = true;
