@@ -1,6 +1,5 @@
 import PauseManager from "./pause.js";
 import * as fct from "./fonctions.js";
-import Inventory from "./inventory.js";
 import Coffre from "./coffre.js"
 
 export default class niveau1 extends Phaser.Scene {
@@ -128,10 +127,9 @@ export default class niveau1 extends Phaser.Scene {
      *  CREATION DU CLAVIER *
      ************************/
     this.clavier = this.input.keyboard.createCursorKeys();
-    this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
-    this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-    this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
-    this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+  this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+  this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+  this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
     // --- Animations du joueur
     this.anims.create({
@@ -151,6 +149,9 @@ export default class niveau1 extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
     this.cameras.main.startFollow(this.player);
+
+    // Enregistrer cette scène comme la scène de jeu active
+    this.registry.set('currentGameScene', this.scene.key);
 
     // --- Contrôles
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -209,12 +210,6 @@ export default class niveau1 extends Phaser.Scene {
       this.player.setVelocityY(speed);
     }
 
-    // ===========================
-    // Gestion de l'inventaire (touche P)
-    // ===========================
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.P)) {
-      this.toggleInventory();
-    }
 
     // ===========================
     // Gestion du menu pause (touche F)
@@ -229,30 +224,6 @@ export default class niveau1 extends Phaser.Scene {
     // ===========================
     if (Phaser.Input.Keyboard.JustDown(this.clavier.I)) {
       this.handleChestInteraction();
-    }
-  }
-
-  toggleInventory() {
-    const inventoryActive = this.scene.isActive('Inventory');
-    
-    if (inventoryActive) {
-      console.log("Fermeture de l'inventaire");
-      this.scene.bringToTop(this.scene.key);
-      this.scene.bringToTop("hud");
-      this.scene.pause('Inventory');
-      this.scene.resume();
-    } else {
-      console.log("Ouverture de l'inventaire");
-      this.registry.set('lastScene', this.scene.key);
-      
-      if (!this.registry.get('inventaireCree')) {
-        this.scene.launch('Inventory');
-        this.registry.set('inventaireCree', true);
-      } else {
-        this.scene.resume('Inventory');
-        this.scene.bringToTop('Inventory');
-      }
-      this.scene.pause();
     }
   }
 

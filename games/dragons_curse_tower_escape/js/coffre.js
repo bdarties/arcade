@@ -17,7 +17,7 @@ export default class Coffre extends Phaser.Scene {
   }
 
   create() {
-    this.registry.set("coffreCree", true);
+    console.log("Création de la scène Coffre");
 
     this.add.text(400, 50, "Coffre", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
 
@@ -34,28 +34,40 @@ export default class Coffre extends Phaser.Scene {
 
     // fermer coffre et reprendre la scène principale avec K
     this.input.keyboard.on('keydown-K', () => {
-      var lastScene = this.registry.get('lastScene');
-      if (lastScene && !this.scene.isActive(lastScene)) {
-        this.scene.stop(); 
-        this.scene.bringToTop(lastScene);
-        this.scene.bringToTop("hud");
-        this.scene.resume(lastScene);
-      }
+      this.closeCoffre();
     });
 
     // touche I pour transférer l'item vers inventaire
     this.input.keyboard.on("keydown-I", () => {
       const item = this.slots[this.selectedIndex];
       if (item) {
-        const inventoryScene = this.scene.get("Inventory");
-        if (inventoryScene.addItem(item.toString())) {
+        // Inventory removed: directly apply the item effect to the player if possible
+        const lastSceneKey = this.registry.get('lastScene');
+        const gameScene = lastSceneKey ? this.scene.get(lastSceneKey) : null;
+        if (gameScene && gameScene.pvManager) {
+          console.log("Utilisation directe de l'objet depuis le coffre");
+          // If it's a Potion, use it
+          if (typeof item.use === 'function') {
+            item.use(gameScene.pvManager);
+          }
           this.slots[this.selectedIndex] = null;
           this.redrawSlots();
         } else {
-          console.log("Inventaire plein !");
+          console.log("Aucune scène de jeu disponible pour utiliser l'objet");
         }
       }
     });
+  }
+
+  closeCoffre() {
+    var lastScene = this.registry.get('lastScene');
+    if (lastScene) {
+      console.log("Fermeture du coffre, retour à:", lastScene);
+      this.scene.stop();
+      this.scene.bringToTop(lastScene);
+      this.scene.bringToTop("hud");
+      this.scene.resume(lastScene);
+    }
   }
 
   update() {
@@ -114,6 +126,15 @@ export default class Coffre extends Phaser.Scene {
     if (newIndex >= len) newIndex = 0;
     this.selectedIndex = newIndex;
     this.redrawSlots();
+  }
+
+  shutdown() {
+    console.log("Nettoyage de la scène Coffre");
+    // Nettoyer les tableaux
+    this.slots = [];
+    this.slotImages = [];
+    this.itemTexts = [];
+    this.selectedIndex = 0;
   }
 }
 

@@ -24,6 +24,9 @@ export default class niveau2 extends Phaser.Scene {
 
     this.pvManager = new PvManager(this);
 
+    // Enregistrer cette scène comme la scène de jeu active
+    this.registry.set('currentGameScene', this.scene.key);
+
     this.clavier = this.input.keyboard.createCursorKeys();
 
     this.deathZone = this.physics.add.staticSprite(400, 200, "death_zone");
@@ -54,7 +57,7 @@ handleDeath() {
     if (this.pvManager.getHealth() > 0) {
       this.scene.restart();
     } else {
-      this.scene.start("menu");
+      this.scene.start("gameover");
     }
   });
 }

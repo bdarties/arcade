@@ -5,11 +5,15 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
         scene.physics.add.existing(this);
         scene.add.existing(this);
         
-        this.pointsVie = 3;
-        this.vitesse = 50;
-        this.distanceTir = 200; // portée de tir réduite (avant: 400)
-        this.cooldownTir = 1500; // 1.5 secondes
-        this.dernierTir = 0;
+    this.pointsVie = 3;
+    this.vitesse = 50;
+    // Réduire la portée de tir et définir une portée de détection (aggro)
+    this.distanceTir = 120; // portée de tir
+    this.detectionRange = 220; // portée max à laquelle l'ennemi commence à détecter/poursuivre le joueur
+    this.stopDistance = 120; // distance à partir de laquelle l'ennemi arrête de se rapprocher
+    this.cooldownTir = 1500; // 1.5 secondes
+    // Désynchroniser les ennemis en initialisant dernierTir aléatoirement
+    this.dernierTir = Phaser.Math.Between(-this.cooldownTir, 0);
         this.estEnTrainDeTirer = false;
         
         this.setCollideWorldBounds(true);
@@ -29,6 +33,9 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
         if (!scene.groupeFlechesEnnemis) {
             scene.groupeFlechesEnnemis = scene.physics.add.group();
         }
+        // Initialiser compteur de tirs simultanés sur la scène si nécessaire
+        if (typeof scene.activeEnemyShots === 'undefined') scene.activeEnemyShots = 0;
+        if (typeof scene.maxEnemyShots === 'undefined') scene.maxEnemyShots = 2; // tolérance: au plus 2 ennemis tirent en même temps
     }
 
     creerAnimations() {
@@ -74,8 +81,8 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
             this.scene.player.x, this.scene.player.y
         );
 
-        // Suivre le joueur seulement si loin
-        if (distanceJoueur > 120) { // portée de poursuite réduite (avant: 200)
+        // Suivre le joueur seulement s'il est dans la portée de détection
+        if (distanceJoueur <= this.detectionRange && distanceJoueur > this.stopDistance) {
             this.scene.physics.moveToObject(this, this.scene.player, this.vitesse);
             
             // Animation marche si l'ennemi bouge
@@ -99,7 +106,7 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
             }
         }
         
-        // Tirer si le joueur est à portée
+        // Tirer si le joueur est à portée de tir
         if (distanceJoueur <= this.distanceTir) {
             this.gererTir();
         }
@@ -110,7 +117,10 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
         
         // Vérifier le cooldown et si pas déjà en train de tirer
         if (tempsActuel - this.dernierTir < this.cooldownTir || this.estEnTrainDeTirer) return;
-        
+
+        // Limiter le nombre d'ennemis qui peuvent tirer en même temps
+        if (this.scene.activeEnemyShots >= this.scene.maxEnemyShots) return;
+
         // Vérifier la ligne de vue (pas de mur entre l'ennemi et le joueur)
         if (this.ligneDeVueLibre()) {
             this.commencerTir();
@@ -118,29 +128,43 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
     }
     
     commencerTir() {
+        // Réserver une place parmi les tirs simultanés
+        this.scene.activeEnemyShots++;
         this.estEnTrainDeTirer = true;
-        
+
         // Arrêter le mouvement
         this.setVelocity(0, 0);
-        
+
         // Jouer l'animation de tir
         this.anims.play('ennemi_tir', true);
-        
-        // Tirer la flèche au milieu de l'animation (frame ~39)
-        this.scene.time.delayedCall(300, () => {
+
+        // Ajouter un petit jitter aléatoire pour désynchroniser les tirs
+        const jitter = Phaser.Math.Between(150, 450);
+
+        // Tirer la flèche au milieu de l'animation (avec jitter)
+        this.scene.time.delayedCall(300 + jitter, () => {
             if (this.active) {
                 this.tirerFleche();
             }
         });
-        
+
         // Fin du tir quand l'animation est terminée
         this.once('animationcomplete', (animation) => {
             if (animation.key === 'ennemi_tir') {
                 this.estEnTrainDeTirer = false;
-                this.dernierTir = this.scene.time.now;
+                this.dernierTir = this.scene.time.now + Phaser.Math.Between(0, 300); // petit offset pour éviter sync
                 
                 // Revenir à l'animation idle
                 this.anims.play('ennemi_idle', true);
+                // Libérer la place réservée
+                this.scene.activeEnemyShots = Math.max(0, this.scene.activeEnemyShots - 1);
+            }
+        });
+
+        // Si l'ennemi est détruit sans que l'animation complète, s'assurer de décrémenter le compteur
+        this.once('destroy', () => {
+            if (this.estEnTrainDeTirer) {
+                this.scene.activeEnemyShots = Math.max(0, this.scene.activeEnemyShots - 1);
             }
         });
     }
@@ -220,6 +244,10 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
         });
         
         if (this.pointsVie <= 0) {
+            // Donner de l'XP au joueur avant de détruire l'ennemi
+            if (this.scene.levelManager) {
+                this.scene.levelManager.addXP(1);
+            }
             this.destroy();
         }
     }

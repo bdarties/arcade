@@ -1,6 +1,5 @@
 import * as fct from "./fonctions.js";
 import Ennemi1 from "./ennemi.js";
-import Inventory from "./inventory.js";
 import Coffre from "./coffre.js"
 
 var clavier;
@@ -73,6 +72,9 @@ export default class selection extends Phaser.Scene {
     this.player.body.setOffset(14, 8);
     this.player.setCollideWorldBounds(true);
     this.pvManager = new fct.PvManager(this);
+    
+    // Initialiser le système de level (3 ennemis = 1 level)
+    this.levelManager = new fct.LevelManager(this, { enemiesPerLevel: 3 });
 
     if (this.calque_plateformes) {
       this.calque_plateformes.setCollisionByProperty({ estSolide: true });
@@ -85,7 +87,26 @@ export default class selection extends Phaser.Scene {
     this.lastDirection = 'right';
     this.scene.bringToTop('hud');
 
-    // Animations
+    // Création de la minimap
+    const minimapWidth = 200;
+    const minimapHeight = 40;
+    const minimapX = this.cameras.main.width - minimapWidth - 10;
+    const minimapY = 10;
+
+    this.minimap = this.cameras.add(minimapX, minimapY, minimapWidth, minimapHeight);
+    this.minimap.setZoom(0.0625); // Zoom pour voir toute la carte
+    this.minimap.setBounds(0, 0, 3200, 640);
+    this.minimap.startFollow(this.player);
+    this.minimap.setBackgroundColor(0x002244);
+
+    // Bordure de la minimap
+    this.minimapBorder = this.add.graphics();
+    this.minimapBorder.lineStyle(2, 0xffffff, 1);
+    this.minimapBorder.strokeRect(minimapX, minimapY, minimapWidth, minimapHeight);
+    this.minimapBorder.setScrollFactor(0);
+    this.minimapBorder.setDepth(1001);
+
+    // Animations    // Animations
     this.anims.create({
       key: "mage_idle",
       frames: this.anims.generateFrameNumbers("mage1", { start: 0, end: 3 }),
@@ -107,15 +128,9 @@ export default class selection extends Phaser.Scene {
 
     // Création du clavier
     this.clavier = this.input.keyboard.createCursorKeys();
-    this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
-    this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-    this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
-    this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-
-    // Initialiser l'état de l'inventaire si nécessaire
-    if (!this.registry.has('inventaireCree')) {
-      this.registry.set('inventaireCree', false);
-    }
+  this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+  this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+  this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
     // Création des ennemis
     this.groupeBullets = this.physics.add.group();
@@ -194,13 +209,6 @@ export default class selection extends Phaser.Scene {
     }
 
     // ===========================
-    // Gestion de l'inventaire (touche P)
-    // ===========================
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.P)) {
-      this.toggleInventory();
-    }
-
-    // ===========================
     // Gestion du menu pause (touche F)
     // ===========================
     if (Phaser.Input.Keyboard.JustDown(this.clavier.F)) {
@@ -220,34 +228,6 @@ export default class selection extends Phaser.Scene {
       this.groupeEnnemis.getChildren().forEach(ennemi => {
         ennemi.update();
       });
-    }
-  }
-
-  toggleInventory() {
-    // Vérifier si l'inventaire est actuellement actif
-    const inventoryActive = this.scene.isActive('Inventory');
-    
-    if (inventoryActive) {
-      // Fermer l'inventaire
-      console.log("Fermeture de l'inventaire");
-      this.scene.bringToTop(this.scene.key);
-      this.scene.bringToTop("hud");
-      this.scene.pause('Inventory');
-      this.scene.resume();
-    } else {
-      // Ouvrir l'inventaire
-      console.log("Ouverture de l'inventaire");
-      this.registry.set('lastScene', this.scene.key);
-      
-      // Créer ou reprendre l'inventaire
-      if (!this.registry.get('inventaireCree')) {
-        this.scene.launch('Inventory');
-        this.registry.set('inventaireCree', true);
-      } else {
-        this.scene.resume('Inventory');
-        this.scene.bringToTop('Inventory');
-      }
-      this.scene.pause();
     }
   }
 
@@ -274,16 +254,16 @@ export default class selection extends Phaser.Scene {
       console.log("Coffre trouvé et ouvert !");
       this.registry.set("lastScene", this.scene.key);
 
-      if (!this.scene.isActive("Coffre") && !this.registry.get("coffreCree")) {
-        this.scene.launch("Coffre", { coffreId });
-        this.registry.set("coffreCree", true);
-        this.scene.pause();
-      } else {
+      // Vérifier si la scène Coffre existe et est active
+      if (this.scene.isActive("Coffre")) {
+        // Si elle est active, l'arrêter d'abord
         this.scene.stop("Coffre");
-        this.scene.launch("Coffre", { coffreId });
-        this.scene.bringToTop("Coffre");
-        this.scene.pause();
       }
+      
+      // Toujours lancer une nouvelle instance
+      this.scene.launch("Coffre", { coffreId });
+      this.scene.bringToTop("Coffre");
+      this.scene.pause();
     } else {
       console.log("Pas de coffre sous le joueur.");
       
