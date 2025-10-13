@@ -1,227 +1,219 @@
-export default class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, "elf");
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
+export class Player {
+  constructor(scene, x, y) {
+    this.scene = scene;
+    this.health = 100;
+    this.maxHealth = 100;
+    this.xp = 0;
+    this.maxXP = 100;
+    this.level = 0;
+    this.speed = 100;
+    this.healthRegen = 1;
+    this.lastRegenTime = 0;
+    
+    // États
+    this.isGameOver = false;
+    this.isDying = false;
+    this.isFalling = false;
+    
+    // Attaque
+    this.isAttacking = false;
+    this.attackCooldown = 0;
+    this.attackDelay = 800;
+    this.attackRange = 60;
+    this.attackRangeSq = 1600;
+    this.attackDamage = 25;
+    
+    this.spawnPoint = { x, y };
+    this.createSprite(x, y);
+    this.createWeapon(x, y);
+  }
 
-        this.speed = 120;
-        this.facing = "right";
-        this.attackDelay = 1200;
-        this.attackRange = 37;
-        this.lastAttack = 0;
+  createSprite(x, y) {
+    this.sprite = this.scene.physics.add.sprite(x, y, 'dude')
+      .setCollideWorldBounds(true);
+    this.body = this.sprite.body;
+    this.body.setSize(12, 14).setOffset(2, 2);
+    this.sprite.anims.play('idle', true);
+  }
 
-        this.weapon = scene.add.sprite(this.x, this.y, "weapons").setOrigin(0.5).setVisible(false);
-        scene.physics.add.existing(this.weapon);
-        if (this.weapon.body) this.weapon.body.enable = false;
+  createWeapon(x, y) {
+    this.weapon = this.scene.add.sprite(x, y, 'weapons_animated')
+      .setVisible(false)
+      .setDepth(10)
+      .setOrigin(0.5, 0.5);
+  }
 
-        // Suppression de la zone d'attaque automatique
-        this.attackZone = null;
-        this._zoneCollider = null;
+  update(cursors, time) {
+    if (this.isGameOver || this.isDying || this.isFalling) return;
 
-        this.level = 1;
-        this.xp = 0;
-        this.xpToNext = 5;
-        this.damage = 50;
-        this.maxHealth = 300;
-        this.health = this.maxHealth;
-        this.regen = 1;
-        this._regenTimer = 0;
+    this.updateMovement(cursors);
+    this.updateHealthRegen(time);
+  }
 
-        this.isDashing = false;
-        this.dashSpeed = 400;
-        this.dashDuration = 200;
-        this.dashCooldown = 1000;
-        this.lastDash = 0;
+  updateMovement(cursors) {
+    const { left, right, up, down } = cursors;
+    this.body.setDrag(600).setMaxVelocity(this.speed);
+
+    const vx = (right.isDown ? 1 : 0) - (left.isDown ? 1 : 0);
+    const vy = (down.isDown ? 1 : 0) - (up.isDown ? 1 : 0);
+
+    if (vx) this.sprite.setFlipX(vx < 0);
+
+    if (vx || vy) {
+      const invLen = 1 / Math.sqrt(vx * vx + vy * vy);
+      this.body.setAcceleration(vx * invLen * 500, vy * invLen * 500);
+      if (this.sprite.anims.currentAnim?.key !== 'walk') {
+        this.sprite.anims.play('walk', true);
+      }
+    } else {
+      this.body.setAcceleration(0);
+      if (this.sprite.anims.currentAnim?.key !== 'idle') {
+        this.sprite.anims.play('idle', true);
+      }
     }
+  }
 
-    static preload(scene) {
-        scene.load.spritesheet("elf", "assets/elf.png", { frameWidth: 16, frameHeight: 16 });
+  updateHealthRegen(time) {
+    if (this.healthRegen > 0 && this.health < this.maxHealth && time - this.lastRegenTime >= 1000) {
+      this.heal(this.healthRegen);
+      this.lastRegenTime = time;
     }
+  }
 
-    static createAnimations(scene) {
-        const anims = [
-            { key: "idle_right", start: 0, end: 2, rate: 6 },
-            { key: "idle_left", start: 7, end: 9, rate: 6 },
-            { key: "walk_right", start: 14, end: 17, rate: 10 },
-            { key: "walk_left", start: 21, end: 24, rate: 10 },
-            { key: "dash_right", start: 28, end: 30, rate: 20 },
-            { key: "dash_left", start: 31, end: 33, rate: 20 }
-        ];
-        anims.forEach(a => {
-            if (!scene.anims.exists(a.key)) {
-                scene.anims.create({
-                    key: a.key,
-                    frames: scene.anims.generateFrameNumbers("elf", { start: a.start, end: a.end }),
-                    frameRate: a.rate,
-                    repeat: 0
-                });
-            }
-        });
+  takeDamage(amount = 10) {
+    if (this.isGameOver || this.isDying || this.isFalling) return;
+    
+    this.health = Math.max(0, this.health - amount);
+    
+    this.sprite.setTint(0xff0000);
+    this.scene.time.delayedCall(100, () => {
+      if (this.sprite?.active) {
+        this.sprite.clearTint();
+      }
+    });
+    
+    if (this.health <= 0) this.death();
+  }
+
+  death() {
+    if (this.isDying) return;
+    this.isDying = true;
+    
+    this.body?.setVelocity(0, 0).setAcceleration(0, 0);
+    this.weapon?.setVisible(false);
+    this.sprite.anims.stop();
+    this.sprite.anims.play('death', true);
+    
+    this.sprite.once('animationcomplete', () => {
+      this.scene.time.delayedCall(1000, () => {
+        this.isGameOver = true;
+        this.scene.scene.launch('GameOverScene');
+      });
+    });
+  }
+
+  fall() {
+    if (this.isFalling || this.isDying || this.isGameOver) return;
+    this.isFalling = true;
+    
+    this.body?.setVelocity(0, 0).setAcceleration(0, 0);
+    this.weapon?.setVisible(false);
+    this.sprite.anims.stop();
+    this.sprite.anims.play('fall', true);
+    
+    this.sprite.once('animationcomplete', () => {
+      const damage = Math.floor(this.maxHealth / 2);
+      this.health = Math.max(0, this.health - damage);
+      
+      if (this.health <= 0) {
+        this.isDying = true;
+        this.isGameOver = true;
+        this.scene.scene.launch('GameOverScene');
+        return;
+      }
+      
+      this.sprite.setPosition(this.spawnPoint.x, this.spawnPoint.y);
+      this.sprite.setAlpha(0.5);
+      this.scene.tweens.add({
+        targets: this.sprite,
+        alpha: 1,
+        duration: 300,
+        ease: 'Power2'
+      });
+      
+      this.isFalling = false;
+      this.sprite.anims.play('idle', true);
+    });
+  }
+
+  heal(amount) {
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
+
+  addXP(amount) {
+    this.xp += amount;
+    while (this.xp >= this.maxXP) {
+      this.xp -= this.maxXP;
+      this.levelUp();
     }
+  }
 
-    // Nouvelle méthode pour trouver l'ennemi le plus proche
-    findClosestEnemy() {
-        if (!this.scene?.enemies || this.scene.enemies.getLength() === 0) {
-            return null;
-        }
-
-        let closestEnemy = null;
-        let closestDistance = this.attackRange;
-
-        this.scene.enemies.getChildren().forEach(enemy => {
-            if (enemy.active) {
-                const distance = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
-                if (distance <= closestDistance) {
-                    closestDistance = distance;
-                    closestEnemy = enemy;
-                }
-            }
-        });
-
-        return closestEnemy;
+  levelUp() {
+    this.level++;
+    this.scene.scene.pause();
+    
+    if (!this.scene.scene.get('LevelUpScene')) {
+      this.scene.scene.add('LevelUpScene', this.scene.LevelUpScene, true);
+    } else {
+      this.scene.scene.launch('LevelUpScene');
     }
+  }
 
-    // Méthode d'attaque manuelle
-    manualAttack() {
-        const time = this.scene.time.now;
-        if (time > this.lastAttack + this.attackDelay) {
-            const closestEnemy = this.findClosestEnemy();
-            if (closestEnemy) {
-                this.attack(closestEnemy);
-                this.lastAttack = time;
-                return true; // Attaque réussie
-            }
-        }
-        return false; // Aucun ennemi à portée ou en cooldown
+  attack(target) {
+    const now = this.scene.time.now;
+    if (this.isAttacking || now < this.attackCooldown) return false;
+
+    this.isAttacking = true;
+    this.attackCooldown = now + this.attackDelay;
+
+    const angle = Phaser.Math.Angle.Between(
+      this.sprite.x, this.sprite.y,
+      target.sprite.x, target.sprite.y
+    );
+
+    this.weapon.setPosition(this.sprite.x, this.sprite.y)
+      .setVisible(true)
+      .setRotation(angle + Math.PI)
+      .setFlipY(Math.abs(angle) <= Math.PI / 2)
+      .play('sword_slash');
+
+    return true;
+  }
+
+  finishAttack(enemies) {
+    this.weapon.setVisible(false);
+    this.isAttacking = false;
+
+    const px = this.sprite.x;
+    const py = this.sprite.y;
+    const rangeSq = this.attackRangeSq;
+
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      
+      if (!e.isAlive()) continue;
+      
+      const dx = e.sprite.x - px;
+      const dy = e.sprite.y - py;
+
+      if (dx * dx + dy * dy <= rangeSq) {
+        e.takeDamage(this.attackDamage, px, py);
+      }
     }
+  }
 
-    attack(target) {
-        this.weapon.setVisible(true);
-        if (this.weapon.body) this.weapon.body.enable = true;
-        this.scene.sound.play('sword_swing');
-
-        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
-        const reach = Math.min(Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y), this.attackRange);
-        this.weapon.setPosition(this.x + Math.cos(angle) * reach, this.y + Math.sin(angle) * reach);
-        this.weapon.setRotation(angle + Math.PI / 2);
-        this.weapon.play("sword_attack", true);
-
-        const hit = new Set();
-        const overlap = this.scene.physics.add.overlap(this.weapon, this.scene.enemies, (w, e) => {
-            if (!hit.has(e) && e.takeDamage) { e.takeDamage(this.damage, this); hit.add(e); }
-        });
-
-        this.weapon.once("animationcomplete", () => {
-            this.weapon.setVisible(false);
-            if (this.weapon.body) this.weapon.body.enable = false;
-            try { if (overlap) this.scene.physics.world.removeCollider(overlap); } catch {}
-        });
-    }
-
-    gainXP(amount) {
-        this.xp += amount;
-        this.scene.events.emit("xpChanged", this.xp, this.xpToNext);
-
-        while (this.xp >= this.xpToNext) {
-            this.level++;
-            this.xp -= this.xpToNext;
-            this.xpToNext = Math.floor(this.xpToNext * 1.2);
-            const ui = this.scene.scene.get("UiScene");
-            ui?.showLevelUp?.();
-        }
-    }
-
-    dash() {
-        const now = this.scene.time.now;
-        if (now < this.lastDash + this.dashCooldown || this.isDashing) return;
-
-        this.isDashing = true;
-        this.lastDash = now;
-
-        let vx = 0, vy = 0;
-        switch (this.facing) {
-            case "right": vx = this.dashSpeed; break;
-            case "left": vx = -this.dashSpeed; break;
-            case "up": vy = -this.dashSpeed; break;
-            case "down": vy = this.dashSpeed; break;
-        }
-
-        this.body.setVelocity(vx, vy);
-        this.body.checkCollision.none = false;
-
-        // Animation de dash
-        const animKey = (this.facing === "right") ? "dash_right" : (this.facing === "left" ? "dash_left" : null);
-        if (animKey) this.play(animKey, true);
-
-        // Ghost effect
-        const ghostInterval = 40;
-        const ghostCount = Math.floor(this.dashDuration / ghostInterval);
-        let created = 0;
-
-        const ghostTimer = this.scene.time.addEvent({
-            delay: ghostInterval,
-            repeat: ghostCount - 1,
-            callback: () => {
-                const ghost = this.scene.add.sprite(this.x, this.y, this.texture.key, this.frame.name)
-                    .setAlpha(0.6)
-                    .setTint(0xffffff)
-                    .setDepth(this.depth - 1);
-
-                this.scene.tweens.add({
-                    targets: ghost,
-                    alpha: 0,
-                    duration: 200,
-                    onComplete: () => ghost.destroy()
-                });
-
-                created++;
-            }
-        });
-
-        this.scene.time.delayedCall(this.dashDuration, () => {
-            this.isDashing = false;
-            this.body.setVelocity(0, 0);
-            ghostTimer.remove();
-        });
-    }
-
-    update(controls) {
-        const delta = this.scene.game.loop.delta;
-        if (!this.isDashing) {
-            let vx = 0, vy = 0;
-            if (controls.left.isDown) vx = -this.speed;
-            else if (controls.right.isDown) vx = this.speed;
-            if (controls.up.isDown) vy = -this.speed;
-            else if (controls.down.isDown) vy = this.speed;
-
-            this.body.setVelocity(vx, vy);
-
-            if (vx || vy) {
-                this.facing = Math.abs(vx) >= Math.abs(vy) ? (vx >= 0 ? "right" : "left") : (vy >= 0 ? "down" : "up");
-                const animKey = vx ? (this.facing === "right" ? "walk_right" : "walk_left") : (vy ? "walk_right" : "");
-                if (animKey) this.anims.play(animKey, true);
-            } else {
-                this.anims.play(this.facing === "right" || this.facing === "down" ? "idle_right" : "idle_left", true);
-            }
-
-            if (controls.dash?.isDown) this.dash();
-            
-            // Attaque manuelle (par exemple avec la barre d'espace)
-            if (controls.attack?.isDown) {
-                this.manualAttack();
-            }
-        }
-
-        this._regenTimer += delta;
-        if (this._regenTimer >= 1000) { this.health = Math.min(this.maxHealth, this.health + this.regen); this._regenTimer = 0; }
-
-        // Suppression de la logique de zone d'attaque automatique
-    }
-
-    destroy(fromScene) {
-        try { this._zoneCollider && this.scene.physics.world.removeCollider(this._zoneCollider); } catch {}
-        this.attackZone?.destroy();
-        this.weapon?.destroy();
-        super.destroy(fromScene);
-    }
+  destroy() {
+    this.sprite?.destroy();
+    this.weapon?.destroy();
+  }
 }

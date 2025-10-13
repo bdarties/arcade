@@ -1,229 +1,167 @@
-import MusicManager from "./musicmanager.js";
-
-export default class MenuScene extends Phaser.Scene {
+// Scène de menu principal
+export class MenuScene extends Phaser.Scene {
     constructor() {
-        super("MenuScene");
+        super({ key: 'MenuScene' });
+        this.selectedIndex = 0;
+        this.buttons = [];
     }
 
     preload() {
-        this.load.image("bouton_start", "assets/bouton_start.png");
-        this.load.image("bouton_coop", "assets/bouton_coop.png");
-        this.load.image("bouton_option", "assets/bouton_option.png");
-        this.load.image("background_menu", "assets/background.jpg");
-        this.load.image("title", "assets/title.png");
-        
-        // Charger toutes les musiques du jeu
-        MusicManager.preloadAll(this);
+        this.load.spritesheet('buttons', 'assets/bouton_1.png', { 
+            frameWidth: 301, 
+            frameHeight: 95 
+        });
+        this.load.image('background', 'assets/background.jpg');
     }
 
     create() {
-        const cx = this.scale.width / 2;
-        const cy = this.scale.height / 2;
+        const { width, height } = this.cameras.main;
 
-        // Initialiser le gestionnaire de musique
-        if (!this.game.musicManager) {
-            this.game.musicManager = new MusicManager(this);
-        } else {
-            this.game.musicManager.scene = this;
-        }
-        
-        // Jouer la musique du menu
-        this.game.musicManager.play("menu_music");
-
-        this.add.image(this.scale.width/2, this.scale.height/2, "background_menu")
+        // Fond
+        this.add.image(width / 2, height / 2, 'background')
             .setOrigin(0.5)
-            .setDisplaySize(this.scale.width, this.scale.height);
+            .setDisplaySize(width, height);
 
-        // Ajout du titre
-        this.add.image(cx, cy - 210, "title")
-            .setOrigin(0.5)
-            .setScale(0.8);
+        // Titre avec animation
+        if (this.textures.exists('title')) {
+            const title = this.add.image(width / 2, 200, 'title')
+                .setOrigin(0.5)
+                .setScale(1.75);
 
-        // Création des boutons
-        const btnStart = this.add.image(cx, cy - 60, "bouton_start")
-            .setOrigin(0.5).setScale(0.68).setInteractive({ useHandCursor: true });
-        btnStart.on("pointerdown", () => {
-            this.launchSolo();
-        });
-
-        const btnCoop = this.add.image(cx, cy + 40, "bouton_coop")
-            .setOrigin(0.5).setScale(0.75).setInteractive({ useHandCursor: true });
-        btnCoop.on("pointerdown", () => {
-            this.launchCoop();
-        });
-
-        const btnOptions = this.add.image(cx, cy + 140, "bouton_option")
-            .setOrigin(0.5).setScale(0.72).setInteractive({ useHandCursor: true });
-        btnOptions.on("pointerdown", () => {
-            this.launchOptions();
-        });
-
-        // Effets de survol
-        [btnStart, btnCoop, btnOptions].forEach(b => {
-            b.on("pointerover", () => b.setScale(b.scale * 1.05));
-            b.on("pointerout",  () => b.setScale(b.scale / 1.05));
-        });
-
-        // Configuration de la navigation au clavier
-        this.setupKeyboardNavigation();
-        
-        // Tableau des boutons pour la navigation
-        this.buttons = [btnStart, btnCoop, btnOptions];
-        this.currentButtonIndex = 0;
-        
-        // Mise en surbrillance du bouton sélectionné
-        this.highlightSelectedButton();
-    }
-
-    setupKeyboardNavigation() {
-        // Configuration des touches
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.keyK = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K);
-        this.keyF = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-        this.keyZ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
-        this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        
-        // Événements pour la navigation
-        this.input.keyboard.on('keydown-UP', () => {
-            this.navigate(-1);
-        });
-        
-        this.input.keyboard.on('keydown-DOWN', () => {
-            this.navigate(1);
-        });
-        
-        this.input.keyboard.on('keydown-Z', () => {
-            this.navigate(-1);
-        });
-        
-        this.input.keyboard.on('keydown-S', () => {
-            this.navigate(1);
-        });
-        
-        this.input.keyboard.on('keydown-K', () => {
-            this.selectCurrentButton();
-        });
-        
-        this.input.keyboard.on('keydown-F', () => {
-            this.selectCurrentButton();
-        });
-        
-        this.input.keyboard.on('keydown-ENTER', () => {
-            this.selectCurrentButton();
-        });
-    }
-
-    navigate(direction) {
-        // Navigation dans le menu
-        this.currentButtonIndex += direction;
-        
-        // Gestion des limites
-        if (this.currentButtonIndex < 0) {
-            this.currentButtonIndex = this.buttons.length - 1;
-        } else if (this.currentButtonIndex >= this.buttons.length) {
-            this.currentButtonIndex = 0;
+            this.tweens.add({
+                targets: title,
+                y: 208,
+                duration: 2000,
+                ease: 'Sine.easeInOut',
+                yoyo: true,
+                repeat: -1
+            });
         }
-        
-        // Mise à jour de la surbrillance
-        this.highlightSelectedButton();
+
+        // Configuration des boutons
+        const centerX = width / 2;
+        const startY = height / 2 + 60;
+        const spacing = 110;
+
+        const buttonConfigs = [
+            { sprite: 3, y: startY, action: () => this.scene.start('PreloadScene') },
+            { sprite: 0, y: startY + spacing, action: null },
+            { sprite: 2, y: startY + spacing * 2, action: null }
+        ];
+
+        // Créer les boutons
+        buttonConfigs.forEach((config, i) => {
+            const btn = this.add.sprite(centerX, config.y, 'buttons', config.sprite)
+                .setInteractive({ useHandCursor: true })
+                .setScale(0.85)
+                .setData('action', config.action)
+                .setData('index', i)
+                .setData('baseScale', 0.85); // FIX 1: Stocker l'échelle de base
+
+            this.setupButtonEvents(btn);
+            this.buttons.push(btn);
+        });
+
+        // Sélection initiale
+        this.selectButton(0);
+
+        // Navigation clavier
+        const upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+        const downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+        const kKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K);
+        const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER); // FIX 2: Ajouter Enter
+
+        upKey.on('down', () => this.navigate(-1));
+        downKey.on('down', () => this.navigate(1));
+        kKey.on('down', () => this.activateButton());
+        enterKey.on('down', () => this.activateButton()); // FIX 2: Enter aussi
     }
 
-    highlightSelectedButton() {
-        // Réinitialiser tous les boutons
-        this.buttons.forEach((button, index) => {
-            if (index === this.currentButtonIndex) {
-                // Bouton sélectionné
-                button.setTint(0xffff00); // Jaune
-                button.setScale(this.getBaseScale(button) * 1.1); // Légèrement agrandi
-            } else {
-                // Bouton non sélectionné
-                button.clearTint();
-                // Retour à l'échelle normale
-                const baseScale = this.getBaseScale(button);
-                button.setScale(baseScale);
+    setupButtonEvents(btn) {
+        btn.on('pointerover', () => {
+            const index = btn.getData('index');
+            this.selectButton(index);
+        });
+
+        btn.on('pointerdown', () => {
+            this.tweens.killTweensOf(btn);
+            btn.setScale(0.8);
+        });
+
+        btn.on('pointerup', () => {
+            this.tweens.killTweensOf(btn);
+            btn.setScale(0.95);
+            
+            const action = btn.getData('action');
+            if (action) {
+                // FIX 3: Petit délai pour voir l'animation
+                this.time.delayedCall(100, () => action());
+            }
+        });
+
+        btn.on('pointerout', () => {
+            const index = btn.getData('index');
+            const baseScale = btn.getData('baseScale');
+            
+            // FIX 4: Ne réinitialiser que si ce n'est pas le bouton sélectionné
+            if (index !== this.selectedIndex) {
+                this.tweens.killTweensOf(btn);
+                btn.setScale(baseScale);
             }
         });
     }
 
-    getBaseScale(button) {
-        // Détermine l'échelle de base selon le bouton
-        if (button.texture.key === "bouton_start") return 0.68;
-        if (button.texture.key === "bouton_coop") return 0.75;
-        if (button.texture.key === "bouton_option") return 0.72;
-        return 1;
+    navigate(dir) {
+        this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + dir, 0, this.buttons.length);
+        this.selectButton(this.selectedIndex);
     }
 
-    selectCurrentButton() {
-        const selectedButton = this.buttons[this.currentButtonIndex];
+    selectButton(index) {
+        // FIX 5: Vérifier que l'index est valide
+        if (index < 0 || index >= this.buttons.length) return;
+
+        // Désélectionner tous les boutons
+        this.buttons.forEach((btn, i) => {
+            if (i !== index) {
+                this.tweens.killTweensOf(btn);
+                const baseScale = btn.getData('baseScale') || 0.85;
+                btn.setScale(baseScale);
+            }
+        });
+
+        // Sélectionner le nouveau
+        this.selectedIndex = index;
+        const selectedBtn = this.buttons[index];
         
-        // Effet visuel de sélection
-        selectedButton.setTint(0xffffff);
+        this.tweens.killTweensOf(selectedBtn); // FIX 6: Tuer les tweens existants avant d'en créer un nouveau
         this.tweens.add({
-            targets: selectedButton,
-            scale: this.getBaseScale(selectedButton) * 0.9,
-            duration: 80,
-            yoyo: true,
-            onComplete: () => {
-                // Exécuter l'action du bouton
-                this.executeButtonAction(selectedButton);
-            }
+            targets: selectedBtn,
+            scale: 0.95,
+            duration: 150,
+            ease: 'Back.easeOut'
         });
     }
 
-    executeButtonAction(button) {
-        switch (button.texture.key) {
-            case "bouton_start":
-                this.launchSolo();
-                break;
-            case "bouton_coop":
-                this.launchCoop();
-                break;
-            case "bouton_option":
-                this.launchOptions();
-                break;
+    activateButton() {
+        const btn = this.buttons[this.selectedIndex];
+        if (!btn) return; // FIX 7: Vérifier que le bouton existe
+        
+        const action = btn.getData('action');
+        if (action) {
+            // Animation de clic
+            this.tweens.killTweensOf(btn);
+            btn.setScale(0.8);
+            
+            this.time.delayedCall(100, () => {
+                btn.setScale(0.95);
+                action();
+            });
         }
     }
 
-    launchSolo() {
-        this.scene.start("StoryScene", { 
-            gameMode: 'solo'
-        });
-    }
-
-    launchCoop() {
-        this.scene.start("StoryScene", { 
-            gameMode: 'coop'
-        });
-    }
-
-    launchOptions() {
-        this.scene.start("OptionsScene", { from: "MenuScene" });
-    }
-
-    update() {
-        // Navigation alternative avec les flèches (méthode classique)
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
-            this.navigate(-1);
-        }
-        
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
-            this.navigate(1);
-        }
-        
-        if (Phaser.Input.Keyboard.JustDown(this.keyZ)) {
-            this.navigate(-1);
-        }
-        
-        if (Phaser.Input.Keyboard.JustDown(this.keyS)) {
-            this.navigate(1);
-        }
-        
-        if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
-            this.selectCurrentButton();
-        }
-        
-        if (Phaser.Input.Keyboard.JustDown(this.keyF)) {
-            this.selectCurrentButton();
-        }
+    // FIX 8: Cleanup pour éviter les fuites mémoire
+    shutdown() {
+        this.buttons = [];
+        this.selectedIndex = 0;
     }
 }
