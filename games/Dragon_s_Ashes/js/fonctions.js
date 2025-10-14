@@ -12,6 +12,18 @@ export function doAlsoNothing() {
 //fonction tirer( ), prenant comme paramètre l'auteur du tir
 
 export function tirer(player, groupeBullets) {
+    // --- Gestion du cooldown ---
+    if (player.cooldownTirActif) {
+        return; // 🚫 Encore en cooldown, pas de tir possible
+    }
+
+    // Active le cooldown
+    player.cooldownTirActif = true;
+    player.scene.time.delayedCall(1500, () => {
+        player.cooldownTirActif = false;
+    });
+
+    // --- Détermination de la direction ---
     let coefDir = (player.direction === 'left') ? -1 : 1;
 
     // Choix de la texture de la balle en fonction de la direction
@@ -38,8 +50,10 @@ player.enTrainDeTirer = true;
 
 if (coefDir === -1) {
     player.anims.play("anim_tir_gauche", true);
+    player.sonTir.play();
 } else {
     player.anims.play("anim_tir_droite", true);
+    player.sonTir.play();
 }
 
 // Remettre à false quand l'animation est terminée
@@ -63,6 +77,7 @@ export function attaquer(player, groupeAttaques) {
     hitbox.anims = player.scene.add.sprite(hitbox.x, hitbox.y, 'perso_attaque');
     hitbox.anims.play('anim_attaque', true);
 
+
     // Ajouter au groupe
     groupeAttaques.add(hitbox);
 
@@ -74,6 +89,7 @@ export function attaquer(player, groupeAttaques) {
 
         hitbox.setPosition(player.x + decalageX, player.y);
         hitbox.anims.setPosition(hitbox.x, hitbox.y); // synchroniser le sprite animé
+        player.sonAttaque.play();
     }
 
     // Détruire la hitbox et le sprite animé après 200 ms
@@ -82,6 +98,7 @@ export function attaquer(player, groupeAttaques) {
         hitbox.destroy();
     });
 }
+
 
 
 export function mettreAJourAnimation(player) {
@@ -93,18 +110,57 @@ export function mettreAJourAnimation(player) {
     if (!player.body.blocked.down) {
         const anim = player.direction === 'right' ? 'anim_saut_droite' : 'anim_saut_gauche';
         if (player.anims.currentAnim?.key !== anim) player.anims.play(anim, true);
+
+        // arrêter le son de course en l'air
+        if (player.sonCourse?.isPlaying) player.sonCourse.stop();
+
+        // jouer le son de vol si disponible
+        if (player.sonVol && !player.sonVol.isPlaying) {
+            player.sonVol.play({ loop: true });
+        }
+
         return;
+    } else {
+        // arrêter le son de vol si joueur au sol
+        if (player.sonVol?.isPlaying) player.sonVol.stop();
     }
 
     // Déplacement horizontal
     if (player.body.velocity.x !== 0) {
         const anim = player.direction === 'right' ? 'anim_tourne_droite' : 'anim_tourne_gauche';
         if (player.anims.currentAnim?.key !== anim) player.anims.play(anim, true);
+
+        // jouer le son de course si pas déjà en train de jouer
+        if (player.sonCourse && !player.sonCourse.isPlaying) player.sonCourse.play();
+
         return;
     }
 
     // Repos
     const animRepos = player.direction === 'right' ? 'anim_repos_droite' : 'anim_repos_gauche';
     if (player.anims.currentAnim?.key !== animRepos) player.anims.play(animRepos, true);
+
+    // arrêter le son de course si joueur immobile
+    if (player.sonCourse?.isPlaying) player.sonCourse.stop();
+}
+
+export function updatePV() {
+    this.groupPV.children.iterate((coeur, index) => {
+        if (index < this.player.hp) {
+            coeur.setTexture("img_coeurplein");
+        } else {
+            coeur.setTexture("img_coeurvide");
+        }
+    });
+}
+
+export function updateVies() {
+    this.groupVies.children.iterate((vie, index) => {
+        if (index < this.player.vies) {
+            vie.setTexture("img_viecomplete");
+        } else {
+            vie.setTexture("img_vievide");
+        }
+    });
 }
 

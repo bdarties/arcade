@@ -12,11 +12,15 @@ export default class commandes extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.fadeIn(500, 0, 0, 0); 
+
     // Musique de fond
-    if (!this.sound.get("musique_defaite")) {
-      this.musiqueDefaite = this.sound.add("musique_defaite", { loop: true, volume: 0.5 });
-      this.musiqueDefaite.play();
-    }
+this.sound.stopAll();
+
+this.musiqueDefaite = this.sound.add("musique_defaite", { loop: true, volume: 0.5 });
+this.musiqueDefaite.play();
+
+
 
     // Fond
     this.add.image(0, 0, "defaite_fond").setOrigin(0).setDepth(0);

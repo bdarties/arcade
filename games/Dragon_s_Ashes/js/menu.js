@@ -13,11 +13,20 @@ export default class menu extends Phaser.Scene {
   }
 
 create() {
-    // Musique de fond
-    if (!this.sound.get("musique_menu")) {
-      this.musiqueMenu = this.sound.add("musique_menu", { loop: true, volume: 0.5 });
-      this.musiqueMenu.play();
-    }
+this.cameras.main.fadeIn(1000, 0, 0, 0);
+
+    // 🔊 Vérifie si la musique du menu existe déjà
+  const musiqueExistante = this.sound.get("musique_menu");
+
+  if (!musiqueExistante) {
+    // Démarre la musique UNE SEULE FOIS
+    this.musiqueMenu = this.sound.add("musique_menu", { loop: true, volume: 0.5 });
+    this.musiqueMenu.play();
+  } else if (!musiqueExistante.isPlaying) {
+    // Si elle existe mais a été mise en pause
+    musiqueExistante.play();
+  }
+
     // Fond
     this.add.image(0, 0, "menu_fond").setOrigin(0).setDepth(0);
 
