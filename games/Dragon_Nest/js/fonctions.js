@@ -1,9 +1,14 @@
 // ------------------ DRAGON (petit) ------------------
 export function preloadDragon(scene) {
-    scene.load.spritesheet("petit_dragon", "assets/petit_dragon.png", { frameWidth: 42, frameHeight: 33 });
+    // Chargement du spritesheet du petit dragon
+    scene.load.spritesheet("petit_dragon", "assets/petit_dragon.png", {
+        frameWidth: 42,
+        frameHeight: 33
+    });
 }
 
 export function createDragon(scene, x, y) {
+    // Animation de marche / vol
     if (!scene.anims.exists("dragon_walk")) {
         scene.anims.create({
             key: "dragon_walk",
@@ -12,36 +17,59 @@ export function createDragon(scene, x, y) {
             repeat: -1
         });
     }
-    let dragon = scene.physics.add.sprite(x, y, "petit_dragon");
+
+    // Création du sprite
+    const dragon = scene.physics.add.sprite(x, y, "petit_dragon");
     dragon.setOrigin(0.5, 1);
     dragon.setCollideWorldBounds(true);
     dragon.body.allowGravity = false;
-    dragon.dragonStartX = x;
-    dragon.dragonDirection = 1;
-    dragon.setFlipX(true);
+
+    // Propriétés personnalisées
+    dragon.startX = x;
+    dragon.direction = 1; // 1 = droite, -1 = gauche
+    dragon.patrolRange = 100; // distance max de patrouille
+    dragon.speed = 60; // vitesse de patrouille
+    dragon.chaseSpeed = 120; // vitesse en poursuite
     dragon.health = 2;
-    dragon.damage = 2; // points de dégâts infligés
+    dragon.damage = 2;
+
     dragon.play("dragon_walk");
+
     return dragon;
 }
 
 export function updateDragon(dragon, player, scene) {
     if (!dragon || !dragon.body) return;
-    let distance = Phaser.Math.Distance.Between(player.x, player.y, dragon.x, dragon.y);
-    let speed = 100;
 
-    if (distance < 200) {
-        let dx = player.x - dragon.x;
-        let dy = player.y - dragon.y;
-        let angle = Math.atan2(dy, dx);
-        dragon.setVelocityX(Math.cos(angle) * speed);
-        dragon.setVelocityY(Math.sin(angle) * speed);
-        dragon.setFlipX(dragon.body.velocity.x > 0);
+    const distance = Phaser.Math.Distance.Between(player.x, player.y, dragon.x, dragon.y);
+    const isChasing = distance < 200;
+
+    if (isChasing) {
+        // --- Poursuite du joueur ---
+        const dx = player.x - dragon.x;
+        const dy = player.y - dragon.y;
+        const angle = Math.atan2(dy, dx);
+
+        dragon.setVelocityX(Math.cos(angle) * dragon.chaseSpeed);
+        dragon.setVelocityY(Math.sin(angle) * dragon.chaseSpeed * 0.4); // léger mouvement vertical
+
+        // Orientation automatique
+        if (dragon.body.velocity.x > 5) dragon.setFlipX(true);
+        else if (dragon.body.velocity.x < -5) dragon.setFlipX(false);
+
     } else {
-        dragon.setVelocityX(50 * dragon.dragonDirection);
-        dragon.setVelocityY(Math.sin(scene.time.now / 500) * 20);
-        if (dragon.x > dragon.dragonStartX + 100) { dragon.dragonDirection = -1; dragon.setFlipX(false); }
-        if (dragon.x < dragon.dragonStartX - 100) { dragon.dragonDirection = 1; dragon.setFlipX(true); }
+        // --- Patrouille automatique ---
+        dragon.setVelocityX(dragon.speed * dragon.direction);
+        dragon.setVelocityY(Math.sin(scene.time.now / 500) * 15); // petit effet de vol ondulé
+
+        // Changement de direction aux extrémités
+        if (dragon.x > dragon.startX + dragon.patrolRange) {
+            dragon.direction = -1;
+            dragon.setFlipX(false);
+        } else if (dragon.x < dragon.startX - dragon.patrolRange) {
+            dragon.direction = 1;
+            dragon.setFlipX(true);
+        }
     }
 }
 

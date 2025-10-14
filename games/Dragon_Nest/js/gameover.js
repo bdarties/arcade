@@ -7,14 +7,14 @@ export default class gameover extends Phaser.Scene {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
 
-    // Charger l’image de fond Game Over
+    // Charger l'image de fond Game Over
     this.load.image("gameover_bg", "assets/game_over.jpg");
   }
 
   create() {
     const { width, height } = this.scale;
 
-    // Affiche l’image en fond plein écran
+    // Affiche l'image en fond plein écran
     const bg = this.add.image(width / 2, height / 2, "gameover_bg").setOrigin(0.5);
     bg.setDisplaySize(width, height);
 
@@ -36,8 +36,7 @@ export default class gameover extends Phaser.Scene {
 
     // Entrées clavier
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.iKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
     // Clique souris
     restartBtn.setInteractive().on("pointerdown", () => this.restartGame());
@@ -67,8 +66,8 @@ export default class gameover extends Phaser.Scene {
       this.updateSelection();
     }
 
-    // Validation
-    if (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+    // Validation avec la touche I
+    if (Phaser.Input.Keyboard.JustDown(this.iKey)) {
       if (this.selectedIndex === 0) this.restartGame();
       else this.goMenu();
     }
@@ -82,14 +81,26 @@ export default class gameover extends Phaser.Scene {
   }
 
   restartGame() {
-    this.registry.set("playerLives", 3);
-    this.registry.set("playerPotions", 4);
-    this.scene.start("selection");
-  }
+  // Réinitialiser les stats
+  this.registry.set("playerLives", 3);
+  this.registry.set("playerPotions", 4);
+  this.registry.set("eggsCollected", 0);
+  this.registry.set("potionHelpShown", false);
+  
+  // Arrêter toutes les musiques
+  this.sound.stopAll();
+  
+  // Arrêter cette scène
+  this.scene.stop();
+  
+  // Redémarrer la scène selection
+  this.scene.start("selection");
+}
 
   goMenu() {
     this.registry.set("playerLives", 3);
     this.registry.set("playerPotions", 4);
+    this.registry.set("eggsCollected", 0);
     this.scene.start("menu");
   }
 }

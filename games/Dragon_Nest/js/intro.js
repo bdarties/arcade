@@ -8,7 +8,7 @@ export default class Intro extends Phaser.Scene {
 
     // --- Texte d'introduction ---
     const introText = `
-Dans l'ombre d'un monde oublié, un mystérieux commanditaire vous a tendu une offre que vous ne pouvez pas refuser. Une fortune colossale vous attend… à condition de réussir l'impossible.
+Dans l'ombre d'un monde oublié, un mystérieux mage vous a tendu une offre que vous ne pouvez pas refuser. Une fortune colossale vous attend… à condition de réussir l'impossible.
 
 Votre mission : retrouver dix œufs de dragon, cachés dans les recoins les plus dangereux de terres oubliées. Chaque pas que vous ferez est surveillé par des monstres affamés, prêts à tout pour vous empêcher d'atteindre votre but.
 

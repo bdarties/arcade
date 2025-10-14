@@ -1,17 +1,14 @@
-// chargement des librairies
+// Importation des scènes
 import menu from "./js/menu.js";
 import intro from "./js/intro.js";
-import selection from "./js/selection.js";
-import niveau1 from "./js/niveau1.js";
+import { Selection, Niveau1, Niveau2, Niveau3 } from "./js/levels.js";
 import bd1 from "./js/bd1.js";
-import niveau2 from "./js/niveau2.js";
-import niveau3 from "./js/niveau3.js";
 import credits from "./js/credits.js";
 import controles from "./js/controles.js";
 import gameover from "./js/gameover.js";
 
-// configuration générale du jeu
-var config = {
+// Configuration générale du jeu
+const config = {
   width: 1280,
   height: 720,
   type: Phaser.AUTO,
@@ -24,18 +21,18 @@ var config = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 300 },
-      debug: false, // Mettre à false pour la version finale
+      gravity: { y: 650 },
+      debug: false,
     },
   },
   scene: [
     menu,
     intro,
-    selection,
-    niveau1,
+    Selection,
+    Niveau1,
     bd1,
-    niveau2,
-    niveau3,
+    Niveau2,
+    Niveau3,
     credits,
     controles,
     gameover,
@@ -43,5 +40,5 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, ""),
 };
 
-// création et lancement du jeu
-export var game = new Phaser.Game(config);
+// Création et lancement du jeu
+export const game = new Phaser.Game(config);
