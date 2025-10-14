@@ -63,46 +63,14 @@ export class GameOverScene extends Phaser.Scene {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Assombrir le jeu en arrière-plan
-    const gameScene = this.scene.get('GameScene');
-    if (gameScene && gameScene.cameras && gameScene.cameras.main) {
-      this.tweens.add({
-        targets: gameScene.cameras.main,
-        alpha: 0.3,
-        duration: 800,
-        ease: 'Power2'
-      });
-    }
-
-    // Fond noir avec vignette rouge
-    const bg = this.add.rectangle(0, 0, width, height, 0x000000, 0)
-      .setOrigin(0, 0)
-      .setScrollFactor(0);
-    
-    this.tweens.add({
-      targets: bg,
-      alpha: 0.85,
-      duration: 800,
-      ease: 'Power2'
-    });
-
-    const vignette = this.add.rectangle(0, 0, width, height, 0x8b0000, 0)
+    // Fond opaque solid pour ne pas voir le jeu
+    this.cameras.main.setBackgroundColor('#000000');
+    this.add.rectangle(0, 0, width, height, 0x000000, 1)
       .setOrigin(0, 0)
       .setScrollFactor(0)
-      .setBlendMode(Phaser.BlendModes.MULTIPLY);
-    
-    this.tweens.add({
-      targets: vignette,
-      alpha: 0.3,
-      duration: 1000,
-      ease: 'Sine.easeIn'
-    });
+      .setDepth(0);
 
-    this.showGameOver(centerX, centerY);
-  }
-
-  showGameOver(centerX, centerY) {
-    // Texte "GAME OVER" simplifié (pas de shake)
+    // GAME OVER
     const gameOverText = this.add.text(centerX, centerY - 80, 'GAME OVER', {
       fontSize: '72px',
       fill: '#ff0000',
@@ -110,74 +78,51 @@ export class GameOverScene extends Phaser.Scene {
       fontStyle: 'bold',
       stroke: '#4a0000',
       strokeThickness: 8
-    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0).setScale(1.2);
-
-    this.tweens.add({
-      targets: gameOverText,
-      alpha: 1,
-      scale: 1,
-      duration: 300,
-      ease: 'Power2'
-    });
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
 
     // Statistiques
     const gameScene = this.scene.get('GameScene');
     if (gameScene?.playerLevel) {
-      const statsText = this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
+      this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
         fontSize: '22px',
         fill: '#d4d29b',
         fontFamily: 'Arial',
         fontStyle: 'bold',
         stroke: '#000000',
         strokeThickness: 3
-      }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
-
-      this.tweens.add({
-        targets: statsText,
-        alpha: 1,
-        duration: 300,
-        delay: 400
-      });
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
     }
 
-    // Texte restart
+    // Texte restart (pulse simple)
     const restartText = this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
       fontSize: '18px',
       fill: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#8b0000',
       strokeThickness: 3
-    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
 
-    this.tweens.add({
-      targets: restartText,
-      alpha: 1,
-      duration: 300,
-      delay: 600
-    });
-
-    // Pulse du restart (simplifié)
+    // Pulse simple
     this.tweens.add({
       targets: restartText,
       alpha: 0.5,
       duration: 1000,
       yoyo: true,
-      repeat: -1,
-      delay: 900
+      repeat: -1
     });
 
     // Contrôle K
     this.input.keyboard.once('keydown-K', () => {
-      // Pas de flash, transition directe
-      if (gameScene && gameScene.cameras && gameScene.cameras.main) {
-        gameScene.cameras.main.alpha = 1;
-      }
-      
+      this.input.keyboard.removeAllListeners();
       this.scene.stop('GameOverScene');
       this.scene.stop('GameScene');
       this.scene.stop('UIScene');
-      this.scene.start('PreloadScene');
+      this.scene.start('MenuScene');
     });
+  }
+
+  shutdown() {
+    this.input.keyboard.removeAllListeners();
   }
 }
 
@@ -265,6 +210,7 @@ export class GameScene extends Phaser.Scene {
       visitedRooms: [],
       currentMap: null,
       isFirstSpawn: true,
+      roomsCleared: 0,
       playerHealth: 200,
       maxHealth: 200,
       playerXP: 0,
@@ -490,10 +436,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   loadRandomRoom() {
+    // Incrémenter le nombre de salles complétées
+    this.roomsCleared++;
+    
     // Filtrer les maps disponibles pour exclure la map actuelle
     const availableMaps = AVAILABLE_MAPS.filter(map => map !== this.currentMap);
     
-    // Si toutes les maps sont déjà utilisées (cas impossible avec 2+ maps), prendre une au hasard
+    // Si toutes les maps sont déjà utilisées, prendre une au hasard
     const mapName = availableMaps.length > 0 
       ? Phaser.Utils.Array.GetRandom(availableMaps)
       : Phaser.Utils.Array.GetRandom(AVAILABLE_MAPS);
@@ -526,7 +475,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   createEnemiesInRoom() {
-    this.enemies = createEnemies(this, 4);
+    // Récupérez le nombre de salles complétées (à adapter selon votre système)
+    const roomsCleared = this.roomsCleared || 0;
+    
+    this.enemies = createEnemies(this, roomsCleared);
     this.enemyGroup = this.physics.add.group();
     this.enemies.forEach(e => this.enemyGroup.add(e.sprite));
 

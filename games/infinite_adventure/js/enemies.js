@@ -721,6 +721,84 @@ export class Skeleton extends Enemy {
   }
 }
 
+// SLIME - Slime gélatineux lent mais résistant
+export class Slime extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 45,
+      maxHealth: 45,
+      normalSpeed: 50,
+      chargeSpeed: 0,
+      detectionRange: 180,
+      chargeRange: 0,
+      attackDelay: 800,
+      contactDamage: 10,
+      bodySize: { width: 14, height: 14 },
+      bodyOffset: { x: 1, y: 1 },
+      xpValue: 15,
+      idleFrames: [19, 20], // sprite idle slime
+      moveFrames: [21, 22, 23], // sprite run slime
+      frameRate: 6,
+      spriteSheet: 'enemies_1'
+    });
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
+// SPIDER - Araignée rapide avec saut
+export class Spider extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 35,
+      maxHealth: 35,
+      normalSpeed: 90,
+      chargeSpeed: 0,
+      detectionRange: 190,
+      chargeRange: 0,
+      attackDelay: 600,
+      contactDamage: 8,
+      bodySize: { width: 12, height: 12 },
+      bodyOffset: { x: 2, y: 2 },
+      xpValue: 14,
+      idleFrames: [24, 25], // sprite idle araignée
+      moveFrames: [26, 27, 28, 29], // sprite run araignée
+      frameRate: 8,
+      spriteSheet: 'enemies_1'
+    });
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
 // ========================================
 // MINIBOSS
 // ========================================
@@ -1019,15 +1097,84 @@ export class RatKing extends Enemy {
   }
 }
 
+// SLIME KING - Miniboss slime gélatineux avec split
+export class SlimeKing extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 200,
+      maxHealth: 200,
+      normalSpeed: 60,
+      chargeSpeed: 0,
+      detectionRange: 280,
+      chargeRange: 0,
+      attackDelay: 1000,
+      contactDamage: 22,
+      bodySize: { width: 20, height: 20 },
+      bodyOffset: { x: -2, y: -2 },
+      xpValue: 120,
+      idleFrames: [19],
+      moveFrames: [20],
+      frameRate: 5,
+      spriteSheet: 'enemies_1'
+    });
+    
+    this.sprite.setScale(2.5);
+    this.splitThreshold = this.config.maxHealth / 2;
+    this.hasSplit = false;
+  }
+
+  takeDamage(damage, attackerX, attackerY) {
+    if (!this.isAlive()) return;
+    
+    super.takeDamage(damage, attackerX, attackerY);
+    
+    // Split quand santé <= 50%
+    if (!this.hasSplit && this.health <= this.splitThreshold) {
+      this.hasSplit = true;
+      this.split();
+    }
+  }
+
+  split() {
+    if (!this.isAlive()) return;
+    
+    // Crée 2 petits slimes
+    for (let i = 0; i < 2; i++) {
+      const angle = (Math.PI * i) / 1;
+      const newSlime = new Slime(this.scene, 
+        this.sprite.x + Math.cos(angle) * 30,
+        this.sprite.y + Math.sin(angle) * 30
+      );
+      this.scene.enemies.push(newSlime);
+    }
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
 // ========================================
 // FONCTION DE CRÉATION
 // ========================================
 
-function spawnEnemies(scene, spawns, types, count) {
+function spawnEnemies(scene, spawns, types, totalCount) {
   const enemies = [];
   const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < totalCount; i++) {
     const spawn = Phaser.Utils.Array.GetRandom(spawns);
     const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
     const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);
@@ -1049,8 +1196,11 @@ function spawnEnemies(scene, spawns, types, count) {
   return enemies;
 }
 
-export function createEnemies(scene, airCount = 4, groundCount = 4) {
+export function createEnemies(scene, roomCount = 0) {
   const enemies = [];
+  
+  // Calcul du nombre d'ennemis : 6 de base + 1 par 2 salles
+  const baseEnemyCount = 5 + Math.floor(roomCount / 2);
   
   const airSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_1');
   const groundSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_2');
@@ -1065,8 +1215,15 @@ export function createEnemies(scene, airCount = 4, groundCount = 4) {
     scene.projectilePool = new ProjectilePool(scene, 20);
   }
 
-  // Ennemis aériens
-  if (airSpawns.length > 0) {
+  // Déterminer quelle zone de spawn est disponible et répartir tous les ennemis
+  const hasAirSpawns = airSpawns.length > 0;
+  const hasGroundSpawns = groundSpawns.length > 0;
+
+  if (hasAirSpawns && hasGroundSpawns) {
+    // Les deux zones existent : répartir 40% aérien, 60% terrestre
+    const airCount = Math.ceil(baseEnemyCount * 0.4);
+    const groundCount = baseEnemyCount - airCount;
+
     const airTypes = [
       { class: Bat, weight: 30 },
       { class: Fly, weight: 25 },
@@ -1074,29 +1231,48 @@ export function createEnemies(scene, airCount = 4, groundCount = 4) {
       { class: Ghost, weight: 20 }
     ];
     
-    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, airCount));
-  }
-
-  // Ennemis terrestres
-  if (groundSpawns.length > 0) {
     const groundTypes = [
-      { class: Goblin, weight: 15 },
-      { class: Rat, weight: 50 },
-      { class: Skeleton, weight: 35 }
+      { class: Goblin, weight: 10 },
+      { class: Rat, weight: 20 },
+      { class: Skeleton, weight: 10 },
+      { class: Slime, weight: 40 },
+      { class: Spider, weight: 20 }
     ];
     
+    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, airCount));
     enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, groundCount));
+  } else if (hasAirSpawns) {
+    // Seulement des spawns aériens : tous les ennemis sont aériens
+    const airTypes = [
+      { class: Bat, weight: 30 },
+      { class: Fly, weight: 25 },
+      { class: Skull, weight: 25 },
+      { class: Ghost, weight: 20 }
+    ];
+    
+    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, baseEnemyCount));
+  } else if (hasGroundSpawns) {
+    // Seulement des spawns terrestres : tous les ennemis sont terrestres
+    const groundTypes = [
+      { class: Goblin, weight: 10 },
+      { class: Rat, weight: 20 },
+      { class: Skeleton, weight: 10 },
+      { class: Slime, weight: 40 },
+      { class: Spider, weight: 20 }
+    ];
+    
+    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, baseEnemyCount));
   }
 
-  // Miniboss
+  // Miniboss (indépendant du nombre d'ennemis basiques)
   if (minibossSpawns.length > 0) {
     const minibossTypes = [
-      { class: SkullKing, weight: 30 },
-      { class: BatLord, weight: 40 },
-      { class: RatKing, weight: 30 },
+      { class: SkullKing, weight: 25 },
+      { class: BatLord, weight: 35 },
+      { class: RatKing, weight: 25 },
+      { class: SlimeKing, weight: 15 }
     ];
     
-    // Spawn 1 miniboss par point de spawn
     for (const spawn of minibossSpawns) {
       const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
       const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);

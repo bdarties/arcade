@@ -1,6 +1,6 @@
 {
 	"title": "infinite adventure",
-	"description": "Un aventurier bloque dans un donjon infinis harcelé par des vagues de monstres jusqu'a sa mort",
+	"description": "Un aventurier bloque entre les monstres à vie",
 	"genre" : "rogue like",
 	"authors": ["BELLEDENT Dylan", "DELPUECH Hugo", "SERES-PEREA Mathieu", "MALAURE Yoan"]
 }

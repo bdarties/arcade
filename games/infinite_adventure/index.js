@@ -87,7 +87,7 @@ var config = {
     default: "arcade",
     arcade: {
       gravity: { y: 0 },
-      debug: true,
+      debug: false,
       fps: 60,
       // Optimisation physique
       timeScale: 1,
