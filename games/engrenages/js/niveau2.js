@@ -5,6 +5,12 @@ export default class niveau2 extends Phaser.Scene {
     super({ key: "niveau2" });
   }
 
+  // helper: convert a life value (1..5) to spritesheet frame index (0..4)
+  frameForVie(vie) {
+    const clamped = Math.max(1, Math.min(5, Math.round(vie)));
+    return 5 - clamped; // 5->0, 4->1, ..., 1->4
+  }
+
   preload() {
     this.load.image("ville_grotte", "assets/ville_grotte_final3.jpg");
     this.load.image("tiles", "assets/tileset.png");
@@ -23,6 +29,8 @@ export default class niveau2 extends Phaser.Scene {
     this.load.spritesheet("J2_jump", "assets/jump_J2.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("magie_J1", "assets/magie_J1.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("magie_J2", "assets/magie_J2.png", { frameWidth: 64, frameHeight: 64 });
+  // lifebar spritesheet for HUD (5 frames: 5/5 -> frame 0, ... 1/5 -> frame 4)
+  this.load.spritesheet('lifebar', 'assets/lifebar.png', { frameWidth: 398, frameHeight: 89 });
     this.load.image("trappe_h", "assets/trappe_h.png");
     this.load.image("trappe_v", "assets/trappe_v.png");
     this.load.image("button", "assets/button.png");
@@ -64,6 +72,18 @@ export default class niveau2 extends Phaser.Scene {
 
 
   create() {
+    // Configuration des touches pour le menu pause (P ou Y)
+    this.input.keyboard.on('keydown-P', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
+    this.input.keyboard.on('keydown-Y', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
+
+
+
     // Map Tiled
     const map = this.make.tilemap({ key: "map_niveau2" });
     const tileset = map.addTilesetImage("tileset", "tiles");
@@ -182,15 +202,16 @@ export default class niveau2 extends Phaser.Scene {
     this.clavier1.menu = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M); // Touche M pour menu J1
     this.clavier1.tir = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O); // Touche O pour tirer J1
 
-  // Points de vie et direction de tir pour J1
-  this.player1.vie = 5;
-  this.player1.directionTir = 1;
-  this.player1.positionInitiale = { x: 100, y: 1200 };
-  this.player1.fallStartY = this.player1.y;
-  this.player1.wasOnGround = true;
-  this.player1.isFalling = false;
-
     this.player2 = this.physics.add.sprite(100, 1400, "img_perso2");
+
+    // Points de vie et direction de tir pour J1
+    this.player1.vie = 5;
+    this.player1.directionTir = 1;
+    this.player1.positionInitiale = { x: 100, y: 1200 };
+    this.player1.fallStartY = this.player1.y;
+    this.player1.wasOnGround = true;
+    this.player1.isFalling = false;
+    this.player1.peutTirer = true; // Possibilité de tirer initiale    
     this.player2.refreshBody();
     this.player2.setBounce(0.2);
     this.player2.setCollideWorldBounds(true);
@@ -215,6 +236,7 @@ export default class niveau2 extends Phaser.Scene {
     this.player2.fallStartY = this.player2.y;
     this.player2.wasOnGround = true;
     this.player2.isFalling = false;
+    this.player2.peutTirer = true; // Possibilité de tirer initiale
 
     // Système de projectiles
     this.projectiles = this.physics.add.group({
@@ -287,13 +309,24 @@ export default class niveau2 extends Phaser.Scene {
       // taille : si besoin ajuster manuellement dans Tiled ou via setDisplaySize
     }
 
-    // Split screen
-    this.cameras.main.setViewport(0, 0, 640, 720);
-    this.camera2 = this.cameras.add(640, 0, 640, 720);
-  this.cameras.main.startFollow(this.player1);
-  // activer un léger lissage (lerp) pour la caméra du joueur 2 afin d'adoucir ses mouvements
-  // (valeurs 0.12/0.12 pour une sensation similaire à niveau1)
-  this.camera2.startFollow(this.player2, true, 0.12, 0.12);
+    // Split screen: compute camera sizes from current game scale so camera2 is
+    // always visible in the top-right of the screen even on smaller windows.
+    const desiredCamW = 640;
+    const desiredCamH = 720;
+    const camW = Math.min(desiredCamW, Math.floor(this.scale.width / 2));
+    const camH = Math.min(desiredCamH, this.scale.height);
+
+    // main camera on the left
+    this.cameras.main.setViewport(0, 0, camW, camH);
+
+    // camera2 on the right/top of the screen
+    const cam2X = Math.max(camW, this.scale.width - camW);
+    this.camera2 = this.cameras.add(cam2X, 0, camW, camH);
+
+    this.cameras.main.startFollow(this.player1);
+    // activer un léger lissage (lerp) pour la caméra du joueur 2 afin d'adoucir ses mouvements
+    // (valeurs 0.12/0.12 pour une sensation similaire à niveau1)
+    this.camera2.startFollow(this.player2, true, 0.12, 0.12);
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.camera2.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -344,18 +377,44 @@ export default class niveau2 extends Phaser.Scene {
       this.nbEngrenages++;
     });
 
-    // Interface utilisateur pour l'affichage des points de vie
-    this.vieJ1Text = this.add.text(50, 40, `J1 Vie: ${this.player1.vie}`, {
-      fontSize: '20px',
-      fill: '#ff6666',
-      strokeThickness: 2
-    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    // textual HUD removed: we now use lifebar sprites only
 
-    this.vieJ2Text = this.add.text(500, 40, `J2 Vie: ${this.player2.vie}`, {
-      fontSize: '20px',
-      fill: '#6666ff',
-      strokeThickness: 2
-    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    // Create a dedicated UI camera that covers the whole game canvas. This
+    // camera will render HUD elements on top of both gameplay cameras.
+    this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    // ensure the UI camera doesn't move
+    this.uiCamera.setScroll(0, 0);
+
+    // Lifebar HUD sprites: add them in screen coordinates and have only the UI
+    // camera render them (main & camera2 will ignore these sprites).
+    const hudTop = 10;
+    const hudLeftJ1 = 10;
+    const lifebarFrameWidth = 398; // must match preload frameWidth
+    const hudLeftJ2 = Math.max(this.scale.width - lifebarFrameWidth - 10, this.cameras.main.width + 10);
+
+    // initial frame based on vies (use class helper to be able to update later)
+    this.hudLifeJ1 = this.add.sprite(hudLeftJ1, hudTop, 'lifebar', this.frameForVie(this.player1.vie)).setOrigin(0, 0).setScrollFactor(0).setDepth(1000);
+    this.hudLifeJ2 = this.add.sprite(hudLeftJ2, hudTop, 'lifebar', this.frameForVie(this.player2.vie)).setOrigin(0, 0).setScrollFactor(0).setDepth(1000);
+
+    // Make gameplay cameras ignore HUD sprites so only the UI camera draws them.
+    try {
+      this.cameras.main.ignore(this.hudLifeJ1);
+      this.camera2.ignore(this.hudLifeJ1);
+      this.cameras.main.ignore(this.hudLifeJ2);
+      this.camera2.ignore(this.hudLifeJ2);
+    } catch (e) {}
+
+    // Ensure the UI camera only renders HUD elements: make it ignore all other
+    // children in the scene. This prevents the UI camera from covering the
+    // gameplay cameras' viewports.
+    try {
+  const hudSet = new Set([this.hudLifeJ1, this.hudLifeJ2]);
+      (this.children.list || []).forEach(child => {
+        if (!hudSet.has(child)) {
+          try { this.uiCamera.ignore(child); } catch (e) {}
+        }
+      });
+    } catch (e) {}
 
     // Animations J1
     this.anims.create({
@@ -717,12 +776,12 @@ export default class niveau2 extends Phaser.Scene {
     // Perdre une vie
     joueur.vie--;
     
-    // Afficher vies restantes
-    if (joueur === this.player1) {
-      this.vieJ1Text.setText(`J1 Vie: ${joueur.vie}`);
-    } else {
-      this.vieJ2Text.setText(`J2 Vie: ${joueur.vie}`);
-    }
+    // textual HUD removed; update lifebar frames below
+    // Mettre 
+    try {
+      if (this.hudLifeJ1 && joueur === this.player1) this.hudLifeJ1.setFrame(this.frameForVie(joueur.vie));
+      if (this.hudLifeJ2 && joueur === this.player2) this.hudLifeJ2.setFrame(this.frameForVie(joueur.vie));
+    } catch (e) {}
     
     // Effet visuel et invulnérabilité temporaire
     joueur.setTint(0xff0000);
@@ -742,6 +801,24 @@ export default class niveau2 extends Phaser.Scene {
   }
 
   update() {
+    // Reposition HUDs in case camera sizes or viewports changed (keeps J1 at left and J2 at top-right)
+    try {
+      const hudTop = 10;
+      const lifebarFrameWidth = 398;
+      // ensure UI camera covers full scaled screen
+      if (this.uiCamera) {
+        this.uiCamera.setViewport(0, 0, this.scale.width, this.scale.height);
+      }
+      if (this.hudLifeJ1) {
+        this.hudLifeJ1.x = 10;
+        this.hudLifeJ1.y = hudTop;
+      }
+      if (this.hudLifeJ2) {
+        // position relative to full game width (top-right)
+        this.hudLifeJ2.x = this.scale.width - lifebarFrameWidth - 10;
+        this.hudLifeJ2.y = hudTop;
+      }
+    } catch (e) {}
     // J1
     const isOnGround = this.player1.body.blocked.down || this.player1.body.touching.down;
     // Mémoriser l'état au sol pour le tick suivant
@@ -870,7 +947,7 @@ export default class niveau2 extends Phaser.Scene {
 
     // Gestion des tirs des joueurs
     // J1 tire avec O
-    if (Phaser.Input.Keyboard.JustDown(this.clavier1.tir)) {
+    if (Phaser.Input.Keyboard.JustDown(this.clavier1.tir) && this.player1.peutTirer) {
       const coefDir = this.player1.lastDirection === 'left' ? -1 : 1;
       
       // Marquer le joueur comme attaquant
@@ -898,10 +975,16 @@ export default class niveau2 extends Phaser.Scene {
           bullet.destroy();
         }
       });
+
+      // Activer le cooldown
+      this.player1.peutTirer = false;
+      this.time.delayedCall(1000, () => {
+        this.player1.peutTirer = true;
+      });
     }
 
     // J2 tire avec T
-    if (Phaser.Input.Keyboard.JustDown(this.clavier2.tir)) {
+    if (Phaser.Input.Keyboard.JustDown(this.clavier2.tir) && this.player2.peutTirer) {
       const coefDir = this.player2.lastDirection === 'left' ? -1 : 1;
       
       // Marquer le joueur comme attaquant
@@ -928,6 +1011,12 @@ export default class niveau2 extends Phaser.Scene {
         if (bullet && bullet.active) {
           bullet.destroy();
         }
+      });
+
+      // Activer le cooldown
+      this.player2.peutTirer = false;
+      this.time.delayedCall(1000, () => {
+        this.player2.peutTirer = true;
       });
     }
 

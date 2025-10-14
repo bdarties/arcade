@@ -5,6 +5,12 @@ export default class Niveau3 extends Phaser.Scene {
     super({ key: "niveau3" }); 
   }
 
+  // helper: convert a life value (1..5) to spritesheet frame index (0..4)
+  frameForVie(vie) {
+    const clamped = Math.max(1, Math.min(5, Math.round(vie)));
+    return 5 - clamped; // 5->0, 4->1, ..., 1->4
+  }
+
   preload() {
     this.load.image("background_niveau3", "assets/background_niveau3.jpg");
     this.load.image("tiles", "assets/tileset.png");
@@ -14,6 +20,10 @@ export default class Niveau3 extends Phaser.Scene {
     this.load.image("tir", "assets/tir.png");
     this.load.image("terminal_rempli", "assets/terminal_rempli.png");
     this.load.image("screen_victoire", "assets/screen_victoire.png");
+  // lifebar spritesheet (5 frames: 5/5 -> frame 0, ... 1/5 -> frame 4)
+  this.load.spritesheet('lifebar', 'assets/lifebar.png', { frameWidth: 398, frameHeight: 89 });
+    // compteur d'engrenages (spritesheet frames horizontales)
+    this.load.spritesheet('engrenages_sprite', 'assets/engrenages_sprite.png', { frameWidth: 137, frameHeight: 43 });
     this.load.image("trappe_h", "assets/trappe_h.png");
     this.load.image("trappe_v", "assets/trappe_v.png");
     this.load.image("door1", "assets/door1.png");
@@ -78,6 +88,18 @@ export default class Niveau3 extends Phaser.Scene {
   }
 
   create() {
+    // Configuration des touches pour le menu pause (P ou Y)
+    this.input.keyboard.on('keydown-P', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
+    this.input.keyboard.on('keydown-Y', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
+
+
+
     // Initialisation de la carte
     const map = this.make.tilemap({ key: "map_niveau3" });
     const tileset = map.addTilesetImage("tileset", "tiles");
@@ -107,7 +129,6 @@ export default class Niveau3 extends Phaser.Scene {
   // Remap J1 jump to K
   this.clavier1.up = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K);
     this.clavier1.action = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
-    this.clavier1.menu = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
     this.clavier1.respawn = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
     this.clavier1.tir = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
     this.clavier1.space = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -118,7 +139,6 @@ export default class Niveau3 extends Phaser.Scene {
       up: Phaser.Input.Keyboard.KeyCodes.F, // J2 jump -> F
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
       action: Phaser.Input.Keyboard.KeyCodes.R,
-      menu: Phaser.Input.Keyboard.KeyCodes.H,
       respawn: Phaser.Input.Keyboard.KeyCodes.Y,
       tir: Phaser.Input.Keyboard.KeyCodes.T
     });
@@ -219,6 +239,19 @@ export default class Niveau3 extends Phaser.Scene {
       engrenage.setActive(false);
       this.nbEngrenages++;
       this.compteurText.setText(`Engrenages: ${this.nbEngrenages}/${this.totalEngrenages}`);
+      // Mettre  a jour le sprite compteur si pr e9sent
+      try {
+        if (this.engrenagesCounter && typeof this.engrenagesCounter.setFrame === 'function') {
+          const maxFrames = Math.max(1, (this.engrenagesCounterMax || 1));
+          const frame = Math.min(this.nbEngrenages, maxFrames - 1);
+          this.engrenagesCounter.setFrame(frame);
+        }
+        if (this.engrenagesCounterJ2 && typeof this.engrenagesCounterJ2.setFrame === 'function') {
+          const maxFrames = Math.max(1, (this.engrenagesCounterMax || 1));
+          const frame = Math.min(this.nbEngrenages, maxFrames - 1);
+          this.engrenagesCounterJ2.setFrame(frame);
+        }
+      } catch (e) {}
     };
 
     // Caméras
@@ -239,17 +272,64 @@ export default class Niveau3 extends Phaser.Scene {
       strokeThickness: 2
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
-    this.vieJ1Text = this.add.text(50, 40, `J1 Vie: ${this.player1.vie}`, {
-      fontSize: '20px',
-      fill: '#ff6666',
-      strokeThickness: 2
-    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    // UI camera pour HUD (barres de vie)
+    this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.uiCamera.setScroll(0, 0);
 
-    this.vieJ2Text = this.add.text(500, 40, `J2 Vie: ${this.player2.vie}`, {
-      fontSize: '20px',
-      fill: '#6666ff',
-      strokeThickness: 2
-    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+    const hudTop = 10;
+    const lifebarFrameWidth = 398; // correspond au spritesheet
+    const hudLeftJ1 = 10;
+    const hudLeftJ2 = Math.max(this.scale.width - lifebarFrameWidth - 10, this.cameras.main.width + 10);
+
+    // Créer les containers HUD pour J1 (gauche) et J2 (droite). Chaque container contiendra la lifebar
+    // et le compteur d'engrenages (sous la lifebar). Le container est rendu par l'UI camera.
+    const lifebarFrameHeight = 89; // d'apr e8s le preload
+    const counterYOffset = lifebarFrameHeight + 8;
+
+    // Container gauche (J1)
+    this.hudLeftContainer = this.add.container(hudLeftJ1, hudTop).setScrollFactor(0).setDepth(1000);
+    this.hudLifeJ1 = this.add.sprite(0, 0, 'lifebar', this.frameForVie(this.player1.vie)).setOrigin(0, 0);
+    this.engrenagesCounter = this.add.sprite(0, counterYOffset, 'engrenages_sprite', 0).setOrigin(0, 0);
+    this.hudLeftContainer.add([this.hudLifeJ1, this.engrenagesCounter]);
+
+    // Container droite (J2)
+    this.hudRightContainer = this.add.container(hudLeftJ2, hudTop).setScrollFactor(0).setDepth(1000);
+    this.hudLifeJ2 = this.add.sprite(0, 0, 'lifebar', this.frameForVie(this.player2.vie)).setOrigin(0, 0);
+    this.engrenagesCounterJ2 = this.add.sprite(0, counterYOffset, 'engrenages_sprite', 0).setOrigin(0, 0);
+    this.hudRightContainer.add([this.hudLifeJ2, this.engrenagesCounterJ2]);
+
+    // calculer le nombre de frames disponibles dans le spritesheet si possible
+    try { this.engrenagesCounterMax = (this.textures.get('engrenages_sprite').frameTotal || 1); } catch (e) { this.engrenagesCounterMax = 1; }
+
+    // Faire en sorte que les caméras gameplay ignorent ces containers (seule l'UI camera les rendra)
+    try { this.cameras.main.ignore(this.hudLeftContainer); this.camera2.ignore(this.hudLeftContainer); this.cameras.main.ignore(this.hudRightContainer); this.camera2.ignore(this.hudRightContainer); } catch (e) {}
+
+    // Faire en sorte que les caméras de jeu ignorent ces sprites (seule l'UI camera les rendra)
+    try {
+      this.cameras.main.ignore(this.hudLifeJ1);
+      this.camera2.ignore(this.hudLifeJ1);
+      this.cameras.main.ignore(this.hudLifeJ2);
+      this.camera2.ignore(this.hudLifeJ2);
+    } catch (e) {}
+
+    // Ensure the UI camera only renders HUD elements: make it ignore all other
+    // children in the scene. This prevents the UI camera from covering the
+    // gameplay cameras' viewports. (mirrors niveau2 logic)
+    try {
+      const hudSet = new Set([
+        this.hudLeftContainer,
+        this.hudRightContainer,
+        this.hudLifeJ1,
+        this.hudLifeJ2,
+        this.engrenagesCounter,
+        this.engrenagesCounterJ2
+      ].filter(Boolean));
+      (this.children.list || []).forEach(child => {
+        if (!hudSet.has(child)) {
+          try { this.uiCamera.ignore(child); } catch (e) {}
+        }
+      });
+    } catch (e) {}
 
     this.controlsJ1Text = this.add.text(50, 70, 'J1: ←→ Déplacer, ↑ Sauter, O Tirer, P Respawn', {
       fontSize: '14px',
@@ -516,9 +596,9 @@ export default class Niveau3 extends Phaser.Scene {
     
     // Afficher vies restantes
     if (joueur === this.player1) {
-      this.vieJ1Text.setText(`J1 Vie: ${joueur.vie}`);
+      if (this.hudLifeJ1 && this.hudLifeJ1.setFrame) this.hudLifeJ1.setFrame(this.frameForVie(joueur.vie));
     } else {
-      this.vieJ2Text.setText(`J2 Vie: ${joueur.vie}`);
+      if (this.hudLifeJ2 && this.hudLifeJ2.setFrame) this.hudLifeJ2.setFrame(this.frameForVie(joueur.vie));
     }
     
     // Effet visuel et invulnérabilité temporaire
@@ -613,10 +693,11 @@ export default class Niveau3 extends Phaser.Scene {
     
     if (joueur.vie > 0) {
       joueur.vie--;
-      if (joueur === this.player1 && this.vieJ1Text) {
-        this.vieJ1Text.setText(`J1 Vie: ${joueur.vie}`);
-      } else if (this.vieJ2Text) {
-        this.vieJ2Text.setText(`J2 Vie: ${joueur.vie}`);
+      // Mettre   jour les sprites de lifebar
+      if (joueur === this.player1) {
+        if (this.hudLifeJ1 && this.hudLifeJ1.setFrame) this.hudLifeJ1.setFrame(this.frameForVie(joueur.vie));
+      } else {
+        if (this.hudLifeJ2 && this.hudLifeJ2.setFrame) this.hudLifeJ2.setFrame(this.frameForVie(joueur.vie));
       }
     }
     
@@ -748,6 +829,12 @@ export default class Niveau3 extends Phaser.Scene {
       }
     }
 
+      // reposition engrenages counters under lifebars
+      try {
+        const counterY = hudTop + 100;
+        if (this.engrenagesCounter) { this.engrenagesCounter.x = 10; this.engrenagesCounter.y = counterY; }
+        if (this.engrenagesCounterJ2) { this.engrenagesCounterJ2.x = this.scale.width - lifebarFrameWidth - 10; this.engrenagesCounterJ2.y = counterY; }
+      } catch (e) {}
     // Gestion des tirs
     if (Phaser.Input.Keyboard.JustDown(this.clavier1.tir)) {
       this.tirerProjectile(this.player1);
@@ -898,14 +985,6 @@ export default class Niveau3 extends Phaser.Scene {
           }
         }
       }
-    }
-
-    // Touches pour retourner au menu
-    if (Phaser.Input.Keyboard.JustDown(this.clavier1.menu)) {
-      this.scene.start("accueil");
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.clavier2.menu)) {
-      this.scene.start("accueil");
     }
 
     // Touches pour respawn

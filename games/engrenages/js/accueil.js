@@ -7,7 +7,7 @@ export default class accueil extends Phaser.Scene {
 
   // Préchargement des images utilisées dans la scène
   preload() {
-    this.load.image("screen_welcome", "assets/screen_welcome.png"); // Fond d'accueil
+    this.load.image("screen_welcome", "assets/screen_welcome.jpg"); // Fond d'accueil
     this.load.image("button_play", "assets/button_play.png"); // Bouton Jouer
     this.load.image("button_parametres", "assets/button_parametres.png"); // Bouton Paramètres
     this.load.image("button_controls", "assets/button_controls.png"); // Bouton Contrôles
@@ -30,9 +30,9 @@ export default class accueil extends Phaser.Scene {
     this.add.image(this.game.config.width / 2, this.game.config.height / 2, "screen_welcome");
 
     // Positionnement des boutons
-    const xBoutons = 215; // Position X des boutons
-    const yDebut = 400;   // Position Y du premier bouton
-    const ecart = 80;     // Espace vertical entre les boutons
+    const xBoutons = 235; // Position X des boutons
+    const yDebut = 360;   // Position Y du premier bouton
+    const ecart = 90;     // Espace vertical entre les boutons
 
     // Création des boutons (non-interactifs pour la navigation clavier)
     const bouton_play = this.add.image(xBoutons, yDebut, "button_play").setScale(0.7); // Jouer
@@ -61,10 +61,10 @@ export default class accueil extends Phaser.Scene {
     this.boutons.forEach((bouton, index) => {
       if (index === this.selectedIndex) {
         bouton.setScale(0.85); // Agrandir le bouton sélectionné
-        bouton.setTint(0xff8800); // Teinte orange pour le bouton sélectionné
+        bouton.clearTint(); // Supprimer la teinte
       } else {
         bouton.setScale(0.7); // Taille normale
-        bouton.clearTint(); // Supprimer la teinte
+        bouton.setTint(0xEBCF88); // Teinte orange pour le bouton sélectionné
       }
     });
   }

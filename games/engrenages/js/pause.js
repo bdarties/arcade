@@ -7,10 +7,10 @@ export default class pause extends Phaser.Scene {
 
   // Préchargement des images utilisées dans la scène
   preload() {
-    this.load.image("button_reprendre", "assets/button_play.png"); // Bouton Reprendre
-    this.load.image("button_menu", "assets/button_credits.png"); // Bouton Menu Principal
-    this.load.image("button_parametres", "assets/button_parametres.png"); // Bouton Paramètres
-    this.load.image("button_quitter", "assets/button_controls.png"); // Bouton Quitter
+    this.load.image("button_reprendre", "assets/button_reprendre.png");
+    this.load.image("button_parametres", "assets/button_parametres.png"); 
+    this.load.image("button_controls", "assets/button_controls.png"); 
+    this.load.image("button_quitter", "assets/button_quitter.png"); 
   }
 
   // Création des éléments visuels et interactivité
@@ -22,12 +22,14 @@ export default class pause extends Phaser.Scene {
       this.game.config.width, 
       this.game.config.height, 
       0x000000, 
-      0.7
+      0.8
     );
+
 
     // Panneau central pour le menu pause
     const panelWidth = 400;
     const panelHeight = 500;
+    /*
     this.add.rectangle(
       this.game.config.width / 2, 
       this.game.config.height / 2, 
@@ -35,7 +37,8 @@ export default class pause extends Phaser.Scene {
       panelHeight, 
       0x2a2a2a, 
       0.95
-    ).setStrokeStyle(4, 0xff8800);
+    )//.setStrokeStyle(4, 0xff8800);
+    */
 
     // Titre "PAUSE"
     this.add.text(
@@ -44,22 +47,22 @@ export default class pause extends Phaser.Scene {
       'PAUSE', 
       {
         fontSize: '64px',
-        fontFamily: 'Arial Black',
-        color: '#ff8800',
-        stroke: '#000000',
-        strokeThickness: 6
+        fontfamily: 'Verdana',
+        color: '#ffffffff',
+        //stroke: '#000000',
+        //strokeThickness: 6
       }
     ).setOrigin(0.5);
 
     // Positionnement des boutons
     const xBoutons = this.game.config.width / 2;
     const yDebut = 280;
-    const ecart = 80;
+    const ecart = 90;
 
     // Création des boutons (images)
     const bouton_reprendre = this.add.image(xBoutons, yDebut, "button_reprendre").setScale(0.7);
     const bouton_parametres = this.add.image(xBoutons, yDebut + ecart, "button_parametres").setScale(0.7);
-    const bouton_menu = this.add.image(xBoutons, yDebut + ecart * 2, "button_menu").setScale(0.7);
+    const bouton_menu = this.add.image(xBoutons, yDebut + ecart * 2, "button_controls").setScale(0.7);
     const bouton_quitter = this.add.image(xBoutons, yDebut + ecart * 3, "button_quitter").setScale(0.7);
 
     // Système de navigation par touches
@@ -67,7 +70,7 @@ export default class pause extends Phaser.Scene {
     this.actions = [
       () => this.reprendreJeu(),
       () => this.ouvrirParametres(),
-      () => this.retourMenu(),
+      () => this.ouvrirControles(),
       () => this.quitterJeu()
     ];
     this.selectedIndex = 0; // Par défaut sur "Reprendre"
@@ -77,20 +80,22 @@ export default class pause extends Phaser.Scene {
 
     // Contrôles clavier
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.actionKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    this.pauseKeyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.pauseKeyY = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Y);
 
+    /*
     // Indication visuelle des contrôles
     this.add.text(
       this.game.config.width / 2,
       this.game.config.height - 50,
-      'Flèches : Naviguer | Entrée/Espace : Sélectionner | Échap : Reprendre',
+      'Flèches : Naviguer | I : Sélectionner | P/Y : Reprendre',
       {
         fontSize: '14px',
         color: '#aaaaaa'
       }
     ).setOrigin(0.5);
+    */
   }
 
   // Méthode pour mettre à jour la sélection visuelle
@@ -98,10 +103,10 @@ export default class pause extends Phaser.Scene {
     this.boutons.forEach((bouton, index) => {
       if (index === this.selectedIndex) {
         bouton.setScale(0.85); // Agrandir le bouton sélectionné
-        bouton.setTint(0xff8800); // Teinte orange pour le bouton sélectionné
+        bouton.clearTint(); // Supprimer la teinte
       } else {
         bouton.setScale(0.7); // Taille normale
-        bouton.clearTint(); // Supprimer la teinte
+        bouton.setTint(0xEBCF88); // Teinte orange pour le bouton sélectionné
       }
     });
   }
@@ -126,13 +131,13 @@ export default class pause extends Phaser.Scene {
       this.updateSelection();
     }
 
-    // Sélection avec Entrée ou Espace
-    if (Phaser.Input.Keyboard.JustDown(this.enterKey) || Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+    // Sélection avec I
+    if (Phaser.Input.Keyboard.JustDown(this.actionKey)) {
       this.actions[this.selectedIndex]();
     }
 
-    // Touche Échap pour reprendre directement
-    if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
+    // Touches P ou Y pour reprendre directement
+    if (Phaser.Input.Keyboard.JustDown(this.pauseKeyP) || Phaser.Input.Keyboard.JustDown(this.pauseKeyY)) {
       this.reprendreJeu();
     }
   }
@@ -153,23 +158,28 @@ export default class pause extends Phaser.Scene {
 
   // Ouvrir les paramètres
   ouvrirParametres() {
-    // Lance la scène paramètres tout en gardant le jeu en pause
-    this.scene.stop();
-    this.scene.launch('parametres');
+    this.scene.sleep(); // Met en pause la scène pause au lieu de la stopper
+    this.scene.launch('parametres', { fromPause: true }); // Indique qu'on vient de pause
   }
 
-  // Retourner au menu principal
-  retourMenu() {
-    this.scene.stop(); // Ferme le menu pause
-    this.scene.stop('jeu'); // Arrête complètement la scène de jeu
-    this.scene.start('accueil'); // Retourne à l'accueil
+  // Ouvrir les contrôles
+  ouvrirControles() {
+    this.scene.sleep(); // Met en pause la scène pause au lieu de la stopper
+    this.scene.launch('controls', { fromPause: true }); // Indique qu'on vient de pause
   }
 
-  // Quitter le jeu (ferme la fenêtre ou retourne à l'accueil selon le contexte)
+  // Quitter le jeu (retourne à l'accueil)
   quitterJeu() {
-    this.scene.stop();
-    this.scene.stop('jeu');
+    // Trouve et arrête toutes les scènes actives sauf l'accueil
+    const scenesActives = this.scene.manager.scenes.filter(scene => 
+      scene.scene.isActive() || scene.scene.isPaused()
+    );
+    
+    scenesActives.forEach(scene => {
+      this.scene.stop(scene.scene.key);
+    });
+
+    // Démarre la scène d'accueil
     this.scene.start('accueil');
-    // Alternative : window.close(); si vous voulez fermer la fenêtre
   }
 }

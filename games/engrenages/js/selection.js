@@ -21,7 +21,10 @@ export default class selection extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(400, 300, "background");
+    // Ajout du fond d'écran centré et adapté à la taille de l'écran
+    const background = this.add.image(this.game.config.width / 2, this.game.config.height / 2, "background");
+    background.setDisplaySize(this.game.config.width, this.game.config.height);
+    
     this.add.text(650, 450, "Seul le J1 peut choisir le niveau. J2 n'a aucun contrôle ici.", { fontSize: "25px", fill: "#fff" }).setOrigin(0.5);
 
     // Positions des portes
@@ -97,7 +100,7 @@ export default class selection extends Phaser.Scene {
     // interpolation simple
     player.targetVel = desiredVel;
   const pressLerpSel = 0.6;
-  const releaseLerpSel = 0.15;
+  const releaseLerpSel = 0.45;
     const lerpFactorSel = Math.abs(player.targetVel) > Math.abs(player.smoothVel) ? pressLerpSel : releaseLerpSel;
     player.smoothVel = Phaser.Math.Linear(player.smoothVel, player.targetVel, lerpFactorSel);
   if (Math.abs(player.smoothVel) < 2) player.smoothVel = 0;

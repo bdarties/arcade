@@ -38,19 +38,68 @@ export default class niveau1 extends Phaser.Scene {
   // Sons utilisés dans ce niveau
   this.load.audio('button_on', 'assets/son/button_on.mp3');
   this.load.audio('button_off', 'assets/son/button_off.mp3');
+  // sons de gasp du joueur 1
+  this.load.audio('j1_gasp1', 'assets/son/j1_gasp1.mp3');
+  this.load.audio('j1_gasp2', 'assets/son/j1_gasp2.mp3');
+  this.load.audio('j1_gasp3', 'assets/son/j1_gasp3.mp3');
+  this.load.audio('j1_gasp4', 'assets/son/j1_gasp4.mp3');
+  this.load.audio('j1_gasp5', 'assets/son/j1_gasp5.mp3');
+  this.load.audio('j1_gasp6', 'assets/son/j1_gasp6.mp3');
   }
 
   create() {
-    this.input.keyboard.on('keydown-ESC', () => {
-    this.scene.pause();
-    this.scene.launch('pause');
-  });
+    // Configuration des touches pour le menu pause (P ou Y)
+    this.input.keyboard.on('keydown-P', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
+    this.input.keyboard.on('keydown-Y', () => {
+      this.scene.pause();
+      this.scene.launch('pause');
+    });
 
-  // Initialisation des sons pour ce niveau
-  this.sounds = {
-    buttonOn: this.sound.add('button_on'),
-    buttonOff: this.sound.add('button_off')
-  };
+    // Initialisation des sons pour ce niveau
+    this.sounds = {
+      buttonOn: this.sound.add('button_on'),
+      buttonOff: this.sound.add('button_off')
+    };
+
+    // Helper: dessiner un rectangle en pointillés sur un Graphics
+    // attaché à la scène pour être réutilisable depuis update()
+    this.drawDashedRect = (g, x, y, w, h, color, thickness = 3, dashLen = 10, gap = 6, offset = 0) => {
+      try {
+        g.lineStyle(thickness, color, 1);
+        const phase = offset % (dashLen + gap);
+        // top (gauche -> droite) avec offset
+        for (let sx = x + phase; sx < x + w + (dashLen + gap); sx += dashLen + gap) {
+          const start = sx;
+          const ex = Math.min(sx + dashLen, x + w);
+          if (start < x + w) g.strokeLineShape(new Phaser.Geom.Line(Math.max(start, x), y, ex, y));
+        }
+        // right (haut -> bas)
+        for (let sy = y + phase; sy < y + h + (dashLen + gap); sy += dashLen + gap) {
+          const start = sy;
+          const ey = Math.min(sy + dashLen, y + h);
+          if (start < y + h) g.strokeLineShape(new Phaser.Geom.Line(x + w, Math.max(start, y), x + w, ey));
+        }
+        // bottom (droite -> gauche)
+        for (let sx = x + w - phase; sx > x - (dashLen + gap); sx -= dashLen + gap) {
+          const start = sx;
+          const ex = Math.max(sx - dashLen, x);
+          if (start > x) g.strokeLineShape(new Phaser.Geom.Line(start, y + h, Math.max(ex, x), y + h));
+        }
+        // left (bas -> haut)
+        for (let sy = y + h - phase; sy > y - (dashLen + gap); sy -= dashLen + gap) {
+          const start = sy;
+          const ey = Math.max(sy - dashLen, y);
+          if (start > y) g.strokeLineShape(new Phaser.Geom.Line(x, start, x, Math.max(ey, y)));
+        }
+      } catch (e) {
+        try { g.strokeRect(x, y, w, h); } catch (e) {}
+      }
+    };
+  // vitesse par défaut en pixels par seconde pour le défilement des pointillés
+  this._dashSpeed = 32; // ajustable : plus petit => plus lent
 
 
 
@@ -105,6 +154,8 @@ export default class niveau1 extends Phaser.Scene {
     this.player1.setBounce(0.15);
     this.player1.setCollideWorldBounds(true);
     this.player1.setSize(26, 58);
+  // s'assurer que le joueur est rendu au-dessus des overlays d'indication
+  this.player1.setDepth(20);
   // propriétés pour lissage des déplacements (utilisées pour une décélération "bezier-like" simple)
   this.player1.smoothVel = 0;
   this.player1.targetVel = 0;
@@ -119,6 +170,8 @@ export default class niveau1 extends Phaser.Scene {
     this.player2.setBounce(0.15);
     this.player2.setCollideWorldBounds(true);
     this.player2.setSize(26, 58);
+  // s'assurer que le joueur est rendu au-dessus des overlays d'indication
+  this.player2.setDepth(20);
   // propriétés pour lissage des déplacements du joueur 2
   this.player2.smoothVel = 0;
   this.player2.targetVel = 0;
@@ -232,6 +285,32 @@ export default class niveau1 extends Phaser.Scene {
       if (platform.body) platform.body.enable = false;
       platform.refreshBody();
 
+      // Créer un overlay graphique coloré pour rendre la plateforme plus visible
+      try {
+        const base = ptint || 0xffffff;
+        const overlay = this.add.graphics();
+    overlay.fillStyle(base, 0.14);
+    overlay.fillRect(Math.round(pcx - pw / 2), Math.round(pcy - ph / 2), Math.round(pw), Math.round(ph));
+    // contour en pointillés pour bien distinguer la plateforme
+    this.drawDashedRect(overlay, Math.round(pcx - pw / 2), Math.round(pcy - ph / 2), Math.round(pw), Math.round(ph), base, 3, 10, 6, 0);
+        overlay.setDepth(5); // au-dessus du tileset mais en-dessous des joueurs (players depth = 20)
+        overlay.setVisible(!platform.estSolide);
+        // stocker l'overlay sur la plateforme pour y accéder plus tard
+        platform._overlay = overlay;
+        // stocker paramètres pour redraw animé
+        overlay._dashOffset = 0;
+        overlay._dashParams = { x: Math.round(pcx - pw / 2), y: Math.round(pcy - ph / 2), w: Math.round(pw), h: Math.round(ph), color: base, thickness: 3, dashLen: 10, gap: 6 };
+        // dessin initial (remplissage + contour pointillé)
+        overlay.clear();
+        overlay.fillStyle(base, 0.14);
+        overlay.fillRect(overlay._dashParams.x, overlay._dashParams.y, overlay._dashParams.w, overlay._dashParams.h);
+        this.drawDashedRect(overlay, overlay._dashParams.x, overlay._dashParams.y, overlay._dashParams.w, overlay._dashParams.h, base, 3, 10, 6, overlay._dashOffset);
+        // effet de pulsation discret pour attirer l'œil
+        this.tweens.add({ targets: overlay, alpha: { from: 0.6, to: 0.85 }, duration: 700, yoyo: true, repeat: -1 });
+      } catch (e) {
+        // si l'overlay échoue, ne pas casser le reste
+      }
+
       // Ajouter aux groupes en dernier
   this.platforms_boutons.add(platform);
   this.platforms_boutons_blocs.add(platform);
@@ -284,6 +363,8 @@ export default class niveau1 extends Phaser.Scene {
         if (platform.body) platform.body.enable = false;
       }
       platform.refreshBody();
+
+        // Ne pas créer d'overlay pour les portes — on ne veut que pour les plateformes
 
       this.platforms_boutons.add(platform);
       this.platforms_boutons_portes.add(platform);
@@ -451,7 +532,7 @@ export default class niveau1 extends Phaser.Scene {
     this.anims.create({ key: "jump_idle2", frames: this.anims.generateFrameNumbers("J2_jump", { start: 10, end: 14 }), frameRate: 20, repeat: 0 });
   }
 
-  update() {
+  update(time, delta) {
     // J1 (mouvements lissés)
     const isOnGround = this.player1.body.blocked.down || this.player1.body.touching.down;
 
@@ -468,6 +549,11 @@ export default class niveau1 extends Phaser.Scene {
       if (this.player1.lastDirection === 'right') this.player1.anims.play('jump_right', true);
       else if (this.player1.lastDirection === 'left') this.player1.anims.play('jump_left', true);
       else this.player1.anims.play('jump_idle', true);
+      // jouer un son de gasp aléatoire pour J1
+      try {
+        const n = Phaser.Math.Between(1, 6);
+        this.sound.play(`j1_gasp${n}`);
+      } catch (e) {}
       this.player1.jumpPlayed = true;
     }
 
@@ -577,11 +663,26 @@ export default class niveau1 extends Phaser.Scene {
       if ((p1Overlap || p2Overlap) && Phaser.Input.Keyboard.JustDown(this.keyR)) {
         this.victoryTriggered = true;
         this.add.image(this.cameras.main.worldView.x + this.cameras.main.width/2, this.cameras.main.worldView.y + this.cameras.main.height/2, 'screen_victoire').setScrollFactor(0).setDepth(200);
-        this.time.delayedCall(800, () => this.scene.start('selection'), [], this);
+        this.time.delayedCall(800, () => this.scene.start('victoire'), [], this);
       }
     }
 
- 
+    // plus de HUD contextuel (désactivé)
+    // animer les overlays (décalage des pointillés) — seulement pour les blocs
+    try {
+      const overlays = [...this.platforms_boutons_blocs.children.entries].map(p => p._overlay).filter(o => o && o._dashParams);
+      overlays.forEach(ov => {
+        // incrément basé sur delta pour une animation fluide et indépendante du framerate
+        ov._dashOffset = (ov._dashOffset || 0) + (this._dashSpeed * (delta / 1000));
+        if (!ov.visible) return;
+        ov.clear();
+        ov.fillStyle(ov._dashParams.color, 0.14);
+        ov.fillRect(ov._dashParams.x, ov._dashParams.y, ov._dashParams.w, ov._dashParams.h);
+        // ne pas arrondir l'offset pour garder une animation fluide
+        this.drawDashedRect(ov, ov._dashParams.x, ov._dashParams.y, ov._dashParams.w, ov._dashParams.h, ov._dashParams.color, ov._dashParams.thickness, ov._dashParams.dashLen, ov._dashParams.gap, ov._dashOffset);
+      });
+    } catch (e) {}
+
   }
   // Méthode pour activer un bouton : il devient gris, applique ses effets, puis se déactive au bout de 5s
   activerBouton(bouton, joueur) {
@@ -605,6 +706,7 @@ export default class niveau1 extends Phaser.Scene {
   try { if (this.sounds && this.sounds.buttonOn) this.sounds.buttonOn.play(); } catch (e) {}
     // appliquer immédiatement les effets sur les plateformes liées
     this.updatePlatformsForButton(bouton);
+    // (ne pas changer davantage l'overlay ici : updatePlatformsForButton gère visibilité/tint)
 
     // démarrer le timer pour déactiver après 5s
     if (bouton._timer) this.time.removeEvent(bouton._timer);
@@ -650,14 +752,20 @@ export default class niveau1 extends Phaser.Scene {
         if (!p._collider2) p._collider2 = this.physics.add.collider(this.player2, p);
         if (baseColor) p.setTint(baseColor);
         else p.clearTint();
+        // cacher l'overlay si existant
+        if (p._overlay) p._overlay.setVisible(false);
       } else {
         p.setAlpha(0.4);
         if (p.body) p.body.enable = false;
         if (p._collider1) { p._collider1.destroy(); p._collider1 = null; }
         if (p._collider2) { p._collider2.destroy(); p._collider2 = null; }
         if (baseColor) p.setTint(brighten(baseColor, 1.1));
+        // montrer l'overlay si existant
+        if (p._overlay) p._overlay.setVisible(true);
       }
       if (p.refreshBody) p.refreshBody();
     });
   }
+
+  // ...existing code...
 }
