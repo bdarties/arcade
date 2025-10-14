@@ -8,6 +8,7 @@ export default class hud extends Phaser.Scene {
     this.load.image('heart_1q', './assets/hud/health/heart_1q.png');
     this.load.image('heart_3q', './assets/hud/health/heart_3q.png');
     this.load.image('heart_half', './assets/hud/health/heart_half.png');
+    this.load.image('potion_icon', './assets/hud/health/heart_3q.png'); // Utilise le coeur comme icône temporaire
   }
 
   create() {
@@ -66,6 +67,25 @@ export default class hud extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(1002);
+
+    // Affichage des potions en bas à gauche
+    this.potionIcon = this.add.image(50, height - 50, 'potion_icon')
+      .setScrollFactor(0)
+      .setScale(0.4)
+      .setDepth(1000)
+      .setTint(0xff00ff); // Teinte magenta pour différencier des coeurs
+
+    this.potionText = this.add.text(80, height - 50, '0', {
+      fontSize: '28px',
+      color: '#ff00ff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4,
+      align: 'left',
+    })
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1000);
   }
 
   createVignette() {
@@ -156,5 +176,12 @@ export default class hud extends Phaser.Scene {
     this.xpBar.strokeRect(this.cameras.main.width / 2 - 100, 16, barWidth, barHeight);
     
     this.xpText.setText(`Level ${level}`);
+
+    // Mise à jour du nombre de potions
+    // Import dynamique pour accéder à nbPotions
+    import('./fonctions.js').then(fct => {
+      const potions = fct.getNbPotions();
+      this.potionText.setText(`${potions}`);
+    });
   }
 }

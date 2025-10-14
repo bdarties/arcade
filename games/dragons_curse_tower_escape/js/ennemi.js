@@ -234,8 +234,33 @@ export default class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
         });
     }
     
-    prendreDegats() {
-        this.pointsVie--;
+    prendreDegats(degats = 1) {
+        this.pointsVie -= degats;
+        
+        // Afficher les dégâts au-dessus de l'ennemi
+        const damageText = this.scene.add.text(
+            this.x,
+            this.y - 30,
+            `-${degats.toFixed(1)}`,
+            {
+                fontSize: '18px',
+                color: '#ff0000',
+                fontFamily: 'Arial',
+                stroke: '#000000',
+                strokeThickness: 3
+            }
+        ).setOrigin(0.5);
+        
+        this.scene.tweens.add({
+            targets: damageText,
+            y: damageText.y - 30,
+            alpha: 0,
+            duration: 800,
+            ease: 'Power2',
+            onComplete: () => {
+                damageText.destroy();
+            }
+        });
         
         // Effet visuel
         this.setTint(0xff0000);

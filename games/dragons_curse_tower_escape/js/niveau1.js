@@ -1,6 +1,5 @@
 import PauseManager from "./pause.js";
 import * as fct from "./fonctions.js";
-import Coffre from "./coffre.js"
 
 export default class niveau1 extends Phaser.Scene {
   constructor() {
@@ -19,11 +18,19 @@ export default class niveau1 extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64
     });
+    // Charger l'image de la potion (on utilise le coeur comme placeholder)
+    this.load.image('potion', './assets/hud/health/heart_3q.png');
   }
 
   create() {
     // --- PvManager
     this.pvManager = new fct.PvManager(this);
+    
+    // --- Initialiser le système de skills (accès global)
+    this.skillManager = new fct.SkillManager(this);
+    
+    // --- Groupe de potions au sol
+    this.groupePotions = this.physics.add.group();
 
     // --- Charger la map
     this.map = this.make.tilemap({ key: "map3" });
@@ -42,6 +49,7 @@ export default class niveau1 extends Phaser.Scene {
     this.calque_plateformes = this.map.createLayer("calque_plateformes", tileset1);
     this.portes = this.map.createLayer("portes", tileset1);
     this.objets = this.map.createLayer("objets", tileset1);
+    this.poteaux = this.objets; // Utilise le calque objets pour les coffres
 
     // --- Animation manuelle des pics
     this.animatePics();
@@ -58,6 +66,9 @@ export default class niveau1 extends Phaser.Scene {
       this.calque_plateformes.setCollisionByProperty({ estSolide: true });
       this.physics.add.collider(this.player, this.calque_plateformes);
     }
+
+    // Collision avec les potions
+    this.physics.add.overlap(this.player, this.groupePotions, this.ramasserPotion, null, this);
 
     // --- Collision danger (pics) avec timer de vérification
     this.isDamaged = false;
@@ -130,6 +141,7 @@ export default class niveau1 extends Phaser.Scene {
   this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
   this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
   this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+  this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
 
     // --- Animations du joueur
     this.anims.create({
@@ -187,7 +199,17 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   update() {
-    const speed = 150;
+    // Ne pas bouger si les inputs sont bloqués (pendant la sélection de skill)
+    if (this.inputsBlocked) {
+      this.player.setVelocity(0);
+      return;
+    }
+    
+    // Mouvements avec bonus de vitesse du skill
+    const baseSpeed = 150;
+    const speedMultiplier = this.skillManager ? this.skillManager.getSpeedMultiplier() : 1;
+    const speed = baseSpeed * speedMultiplier;
+    
     this.player.setVelocity(0);
 
     // Mouvements
@@ -223,50 +245,19 @@ export default class niveau1 extends Phaser.Scene {
     // Gestion des coffres (touche I)
     // ===========================
     if (Phaser.Input.Keyboard.JustDown(this.clavier.I)) {
-      this.handleChestInteraction();
+      fct.gererCoffre(this);
+    }
+
+    // ===========================
+    // Utiliser une potion (touche P)
+    // ===========================
+    if (Phaser.Input.Keyboard.JustDown(this.clavier.P)) {
+      fct.utiliserPotion(this, this.pvManager);
     }
   }
 
-  handleChestInteraction() {
-    if (!this.poteaux) {
-      console.log("Pas de calque poteaux");
-      return;
-    }
-
-    const tile = this.poteaux.getTileAtWorldXY(this.player.x, this.player.y, true);
-
-    if (tile && tile.properties.estCoffre) {
-      const coffreId = `${tile.x},${tile.y}`;
-      let coffresOuverts = this.registry.get("coffresOuverts") || {};
-      
-      if (coffresOuverts[coffreId]) {
-        console.log("Ce coffre a déjà été ouvert !");
-        return;
-      }
-
-      coffresOuverts[coffreId] = true;
-      this.registry.set("coffresOuverts", coffresOuverts);
-
-      console.log("Coffre trouvé et ouvert !");
-      this.registry.set("lastScene", this.scene.key);
-
-      if (!this.scene.isActive("Coffre") && !this.registry.get("coffreCree")) {
-        this.scene.launch("Coffre", { coffreId });
-        this.registry.set("coffreCree", true);
-        this.scene.pause();
-      } else {
-        this.scene.stop("Coffre");
-        this.scene.launch("Coffre", { coffreId });
-        this.scene.bringToTop("Coffre");
-        this.scene.pause();
-      }
-    } else {
-      console.log("Pas de coffre sous le joueur.");
-      
-      if (this.porte && fct.estPorte(this, this.player, this.porte)) {
-        console.log("Ouverture de la porte vers un niveau aléatoire !");
-      }
-    }
+  ramasserPotion(player, potion) {
+    fct.ramasserPotion(this, player, potion);
   }
 
 }

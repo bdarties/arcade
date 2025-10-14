@@ -5,7 +5,7 @@ export default class gameover extends Phaser.Scene {
   //on charge les images
   preload() {
     this.load.image("gm_fond", "assets/gameover.png");
-    this.load.image("imageBoutonPlay", "assets/start.png");
+    this.load.image("imageBoutonBack", "assets/retour.png");
   }
 
   create() {
@@ -17,7 +17,7 @@ export default class gameover extends Phaser.Scene {
 
     // Boutons
     this.boutons = [
-      this.add.image(525, 555, "imageBoutonPlay").setDepth(1),
+      this.add.image(625, 555, "imageBoutonBack").setDepth(1),
     ];
 
     this.boutons.forEach(b => b.setInteractive());
@@ -31,7 +31,7 @@ export default class gameover extends Phaser.Scene {
 
     // Action sur validation
     this.actions = [
-      () => this.scene.start("selection"),
+      () => this.scene.start("menu"),
     ];
   }
 
