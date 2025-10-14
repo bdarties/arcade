@@ -310,12 +310,7 @@ update() {
             this.setActive(false);
             this.setVisible(false);
             this.scene.cameras.main.fadeOut(1500, 0, 0, 0);
-            let musique = this.scene.sound.get("musique_jeu");
-            if (musique && musique.isPlaying) {
-                musique.stop();
-        }
             this.scene.time.delayedCall(1500, () => {
-                        
             this.scene.scene.start("victoire");
             });
         }
