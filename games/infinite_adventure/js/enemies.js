@@ -1,4 +1,3 @@
-// États de base pour les ennemis
 export const ENEMY_STATE = {
   IDLE: 0,
   CHASE: 1,
@@ -9,7 +8,7 @@ export const ENEMY_STATE = {
   GHOSTING: 6
 };
 
-// Pool de projectiles pour éviter les créations/destructions
+// ========== PROJECTILE POOL ==========
 class ProjectilePool {
   constructor(scene, maxSize = 20) {
     this.scene = scene;
@@ -61,7 +60,7 @@ class ProjectilePool {
       const wallTile = collisionLayer?.getTileAt(tileX, tileY);
       const propTile = propsCollisionLayer?.getTileAt(tileX, tileY);
       
-      if ((wallTile && wallTile.properties.Solide) || (propTile && propTile.properties.Solide)) {
+      if ((wallTile?.properties.Solide) || (propTile?.properties.Solide)) {
         this.release(proj);
         continue;
       }
@@ -69,7 +68,7 @@ class ProjectilePool {
       const dx = proj.x - player.x;
       const dy = proj.y - player.y;
       if (dx * dx + dy * dy < 144) {
-        if (proj.enemyRef && proj.enemyRef.isAlive()) {
+        if (proj.enemyRef?.isAlive()) {
           proj.enemyRef.onProjectileHit(player);
         }
         this.release(proj);
@@ -89,7 +88,7 @@ class ProjectilePool {
   }
 }
 
-// Classe de base pour tous les ennemis - CORRIGÉE
+// ========== CLASSE DE BASE ENEMY ==========
 export class Enemy {
   constructor(scene, x, y, config) {
     this.scene = scene;
@@ -117,10 +116,11 @@ export class Enemy {
       idleFrames: [0, 2],
       moveFrames: [0, 2],
       frameRate: 8,
+      spriteSheet: 'enemies',
       ...config
     };
 
-    this.sprite = scene.physics.add.sprite(x, y, 'enemies');
+    this.sprite = scene.physics.add.sprite(x, y, this.config.spriteSheet);
     this.sprite.setCollideWorldBounds(true);
     this.sprite.setDepth(5);
     this.sprite.setActive(true);
@@ -132,8 +132,8 @@ export class Enemy {
     this.sprite.enemyRef = this;
     this.sprite.setFrame(this.config.idleFrames[0]);
 
-    this.detectionRangeSq = this.config.detectionRange * this.config.detectionRange;
-    this.chargeRangeSq = this.config.chargeRange * this.config.chargeRange;
+    this.detectionRangeSq = this.config.detectionRange ** 2;
+    this.chargeRangeSq = this.config.chargeRange ** 2;
 
     this.state = ENEMY_STATE.IDLE;
     this.health = this.config.health;
@@ -146,28 +146,24 @@ export class Enemy {
   }
 
   isAlive() {
-    return this.alive && !this.markedForDeath && !this.isDestroying && this.sprite && this.sprite.active;
+    return this.alive && !this.markedForDeath && !this.isDestroying && this.sprite?.active;
   }
 
   updateAnimation(time, frames) {
-    if (!this.isAlive()) return;
+    if (!this.isAlive() || time <= this.animTimer) return;
     
-    if (time > this.animTimer) {
-      this.animFrame = (this.animFrame + 1) % frames.length;
-      this.sprite.setFrame(frames[this.animFrame]);
-      this.animTimer = time + (1000 / this.config.frameRate);
-    }
+    this.animFrame = (this.animFrame + 1) % frames.length;
+    this.sprite.setFrame(frames[this.animFrame]);
+    this.animTimer = time + (1000 / this.config.frameRate);
   }
 
   onWallCollision() {
-    if (!this.isAlive()) return;
+    if (!this.isAlive() || this.state !== ENEMY_STATE.CHARGING) return;
     
-    if (this.state === ENEMY_STATE.CHARGING) {
-      this.state = ENEMY_STATE.COOLDOWN;
-      this.stateTimer = this.scene.time.now + this.config.cooldownTime;
-      this.sprite.body.setVelocity(0, 0);
-      this.sprite.setAlpha(1);
-    }
+    this.state = ENEMY_STATE.COOLDOWN;
+    this.stateTimer = this.scene.time.now + this.config.cooldownTime;
+    this.sprite.body.setVelocity(0, 0);
+    this.sprite.setAlpha(1);
   }
 
   onPlayerContact(player) {
@@ -198,7 +194,7 @@ export class Enemy {
       const wallTile = this.scene.collisionLayer.getTileAt(tileX, tileY);
       const propTile = this.scene.propsCollisionLayer.getTileAt(tileX, tileY);
 
-      if ((wallTile && wallTile.properties.Solide) || (propTile && propTile.properties.Solide)) {
+      if ((wallTile?.properties.Solide) || (propTile?.properties.Solide)) {
         return false;
       }
     }
@@ -305,12 +301,11 @@ export class Enemy {
       const dy = this.sprite.y - attackerY;
       const len = Math.sqrt(dx * dx + dy * dy);
       if (len > 0) {
-        const invLen = 1 / len;
         const knockbackForce = 300;
         
         this.sprite.body.setVelocity(
-          dx * invLen * knockbackForce,
-          dy * invLen * knockbackForce
+          (dx / len) * knockbackForce,
+          (dy / len) * knockbackForce
         );
 
         this.scene.time.delayedCall(150, () => {
@@ -333,24 +328,18 @@ export class Enemy {
     this.alive = false;
     this.isDestroying = true;
     
-    // XP immédiat
     this.scene.addXP(this.config.xpValue);
     
-    // Arrêter toute physique IMMEDIATEMENT
-    if (this.sprite && this.sprite.body) {
+    if (this.sprite?.body) {
       this.sprite.body.setVelocity(0, 0);
       this.sprite.body.setEnable(false);
       this.sprite.setActive(false);
     }
     
-    // Retirer du groupe d'ennemis
-    if (this.scene.enemyGroup) {
-      this.scene.enemyGroup.remove(this.sprite, false, false);
-    }
+    this.scene.enemyGroup?.remove(this.sprite, false, false);
     
-    // Particules
     for (let i = 0; i < 3; i++) {
-      const particle = this.scene.getParticle();
+      const particle = this.scene.getParticle?.();
       if (!particle) continue;
       
       particle.setPosition(this.sprite.x, this.sprite.y);
@@ -362,11 +351,10 @@ export class Enemy {
         y: this.sprite.y + Math.sin(angle) * 15,
         alpha: 0,
         duration: 250,
-        onComplete: () => this.scene.releaseParticle(particle)
+        onComplete: () => this.scene.releaseParticle?.(particle)
       });
     }
 
-    // Fade out rapide
     if (this.sprite) {
       this.sprite.setTint(0x444444);
       this.scene.tweens.add({
@@ -376,10 +364,8 @@ export class Enemy {
         duration: 150,
         ease: 'Power2',
         onComplete: () => {
-          if (this.sprite) {
-            this.sprite.destroy();
-            this.sprite = null;
-          }
+          this.sprite?.destroy();
+          this.sprite = null;
           this.isDestroying = false;
         }
       });
@@ -394,16 +380,18 @@ export class Enemy {
     this.isDestroying = true;
     
     if (this.sprite) {
-      if (this.sprite.body) {
-        this.sprite.body.setEnable(false);
-      }
+      this.sprite.body?.setEnable(false);
       this.sprite.destroy();
       this.sprite = null;
     }
   }
 }
 
-// BAT - Chauve-souris
+// ========================================
+// ENNEMIS AÉRIENS
+// ========================================
+
+// BAT - Chauve-souris rapide avec charge
 export class Bat extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -425,12 +413,13 @@ export class Bat extends Enemy {
       xpValue: 15,
       idleFrames: [0, 1, 2],
       moveFrames: [0, 1, 2],
-      frameRate: 8
+      frameRate: 8,
+      spriteSheet: 'enemies'
     });
   }
 }
 
-// FLY - Mouche (très rapide, fragile)
+// FLY - Mouche très rapide et fragile
 export class Fly extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -447,7 +436,8 @@ export class Fly extends Enemy {
       xpValue: 10,
       idleFrames: [3, 4, 5],
       moveFrames: [3, 4, 5],
-      frameRate: 12
+      frameRate: 12,
+      spriteSheet: 'enemies'
     });
   }
 
@@ -468,7 +458,7 @@ export class Fly extends Enemy {
   }
 }
 
-// SKULL - Tête de squelette (tire des projectiles)
+// SKULL - Crâne qui tire des projectiles
 export class Skull extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -488,12 +478,13 @@ export class Skull extends Enemy {
       xpValue: 25,
       idleFrames: [6, 7, 8, 9],
       moveFrames: [6, 7, 8, 9],
-      frameRate: 6
+      frameRate: 6,
+      spriteSheet: 'enemies'
     });
     
     this.lastShootTime = 0;
-    this.shootRangeSq = this.config.shootRange * this.config.shootRange;
-    this.fleeRangeSq = this.config.fleeRange * this.config.fleeRange;
+    this.shootRangeSq = this.config.shootRange ** 2;
+    this.fleeRangeSq = this.config.fleeRange ** 2;
   }
 
   shoot(player) {
@@ -567,7 +558,7 @@ export class Skull extends Enemy {
   }
 }
 
-// GHOST - Fantôme (devient invincible périodiquement)
+// GHOST - Fantôme avec invincibilité périodique
 export class Ghost extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -583,30 +574,24 @@ export class Ghost extends Enemy {
       xpValue: 30,
       idleFrames: [11, 12, 13],
       moveFrames: [11, 12, 13],
-      frameRate: 6
+      frameRate: 6,
+      spriteSheet: 'enemies'
     });
     
     this.isInvincible = false;
-    this.ghostCycleDuration = 10000; // 10 secondes
-    this.ghostActiveDuration = 3000; // 3 secondes d'invincibilité
+    this.ghostCycleDuration = 10000;
+    this.ghostActiveDuration = 3000;
     this.nextGhostTime = scene.time.now + this.ghostCycleDuration;
   }
 
   takeDamage(damage, attackerX, attackerY) {
-    if (!this.isAlive()) return;
-    
-    // Ignorer les dégâts si invincible
-    if (this.isInvincible) return;
-    
+    if (!this.isAlive() || this.isInvincible) return;
     super.takeDamage(damage, attackerX, attackerY);
   }
 
   update(player, time) {
     if (!this.isAlive()) {
-      // Forcer l'alpha à 1 et désactiver l'invincibilité si mort
-      if (this.sprite) {
-        this.sprite.setAlpha(1);
-      }
+      if (this.sprite) this.sprite.setAlpha(1);
       this.isInvincible = false;
       return;
     }
@@ -615,22 +600,18 @@ export class Ghost extends Enemy {
     const dy = player.y - this.sprite.y;
     const distSq = dx * dx + dy * dy;
 
-    // Gérer le cycle d'invincibilité (tous les 10s pendant 3s)
     if (time >= this.nextGhostTime) {
       if (!this.isInvincible) {
-        // Activer l'invincibilité
         this.isInvincible = true;
         this.sprite.setAlpha(0.3);
         this.nextGhostTime = time + this.ghostActiveDuration;
       } else {
-        // Désactiver l'invincibilité
         this.isInvincible = false;
         this.sprite.setAlpha(1);
         this.nextGhostTime = time + this.ghostCycleDuration;
       }
     }
 
-    // Comportement normal de déplacement
     if (distSq > this.detectionRangeSq) {
       this.sprite.body.setVelocity(0, 0);
       this.updateAnimation(time, this.config.idleFrames);
@@ -641,38 +622,420 @@ export class Ghost extends Enemy {
   }
 }
 
-// Fonction pour créer des ennemis variés dans une scène
-export function createEnemies(scene, count = 4) {
+// ========================================
+// ENNEMIS TERRESTRES
+// ========================================
+
+// GOBLIN - Gobelin agressif avec charge
+export class Goblin extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 70,
+      maxHealth: 70,
+      normalSpeed: 70,
+      chargeSpeed: 220,
+      detectionRange: 200,
+      chargeRange: 90,
+      prepareTime: 700,
+      chargeDuration: 900,
+      cooldownTime: 600,
+      chargeCooldown: 8000,
+      attackDelay: 700,
+      contactDamage: 12,
+      chargeDamage: 22,
+      bodySize: { width: 12, height: 12 },
+      bodyOffset: { x: 2, y: 2 },
+      xpValue: 20,
+      idleFrames: [0, 1, 2, 3],
+      moveFrames: [4, 5, 6],
+      frameRate: 8,
+      spriteSheet: 'enemies_1'
+    });
+  }
+}
+
+// RAT - Rat rapide et faible
+export class Rat extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 30,
+      maxHealth: 30,
+      normalSpeed: 100,
+      chargeSpeed: 0,
+      detectionRange: 160,
+      chargeRange: 0,
+      attackDelay: 500,
+      contactDamage: 6,
+      bodySize: { width: 10, height: 10 },
+      bodyOffset: { x: 3, y: 3 },
+      xpValue: 12,
+      idleFrames: [7, 8],
+      moveFrames: [9, 10, 11],
+      frameRate: 10,
+      spriteSheet: 'enemies_1'
+    });
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
+// SKELETON - Squelette résistant avec charge puissante
+export class Skeleton extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 90,
+      maxHealth: 90,
+      normalSpeed: 50,
+      chargeSpeed: 240,
+      detectionRange: 220,
+      chargeRange: 100,
+      prepareTime: 800,
+      chargeDuration: 1000,
+      cooldownTime: 700,
+      chargeCooldown: 10000,
+      attackDelay: 900,
+      contactDamage: 15,
+      chargeDamage: 28,
+      bodySize: { width: 12, height: 12 },
+      bodyOffset: { x: 2, y: 2 },
+      xpValue: 30,
+      idleFrames: [12, 13, 14],
+      moveFrames: [15, 16, 17, 18],
+      frameRate: 7,
+      spriteSheet: 'enemies_1'
+    });
+  }
+}
+
+// ========================================
+// MINIBOSS
+// ========================================
+
+// SKULL KING - Miniboss crâne avec tir en rafale
+export class SkullKing extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 250,
+      maxHealth: 250,
+      normalSpeed: 50,
+      chargeSpeed: 0,
+      detectionRange: 300,
+      shootRange: 250,
+      fleeRange: 80,
+      shootCooldown: 1800,
+      attackDelay: 1200,
+      contactDamage: 20,
+      projectileDamage: 20,
+      bodySize: { width: 18, height: 18 },
+      bodyOffset: { x: -1, y: -1 },
+      xpValue: 100,
+      idleFrames: [6, 7, 8, 9],
+      moveFrames: [6, 7, 8, 9],
+      frameRate: 5,
+      spriteSheet: 'enemies'
+    });
+    
+    this.sprite.setScale(2);
+    this.lastShootTime = 0;
+    this.shootRangeSq = this.config.shootRange ** 2;
+    this.fleeRangeSq = this.config.fleeRange ** 2;
+  }
+
+  shootBurst(player) {
+    if (!this.isAlive() || !this.scene.projectilePool) return;
+    
+    const now = this.scene.time.now;
+    if (now - this.lastShootTime < this.config.shootCooldown) return;
+    
+    this.lastShootTime = now;
+    
+    // Tir en rafale de 3 projectiles
+    for (let i = 0; i < 3; i++) {
+      this.scene.time.delayedCall(i * 150, () => {
+        if (!this.isAlive()) return;
+        
+        const proj = this.scene.projectilePool.get();
+        proj.setPosition(this.sprite.x, this.sprite.y);
+        proj.setFrame(10);
+        proj.setScale(1.3);
+        proj.setTint(0xff6600);
+        proj.enemyRef = this;
+        proj.destroyTime = now + 4000;
+        proj.setDepth(10);
+        
+        const dx = player.x - this.sprite.x;
+        const dy = player.y - this.sprite.y;
+        const angle = Math.atan2(dy, dx) + (i - 1) * 0.15;
+        
+        proj.body.setVelocity(
+          Math.cos(angle) * 140,
+          Math.sin(angle) * 140
+        );
+      });
+    }
+  }
+
+  onProjectileHit(player) {
+    if (!this.isAlive()) return;
+    this.scene.damagePlayer(this.config.projectileDamage);
+  }
+
+  fleeFromPlayer(player) {
+    if (!this.isAlive()) return;
+    
+    const dx = this.sprite.x - player.x;
+    const dy = this.sprite.y - player.y;
+    
+    const angle = Math.atan2(dy, dx);
+    this.sprite.body.setVelocity(
+      Math.cos(angle) * this.config.normalSpeed,
+      Math.sin(angle) * this.config.normalSpeed
+    );
+    this.sprite.setFlipX(dx > 0);
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else if (distSq <= this.fleeRangeSq) {
+      this.fleeFromPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    } else if (distSq <= this.shootRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+      this.shootBurst(player);
+      this.sprite.setFlipX(dx < 0);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
+// BAT LORD - Miniboss chauve-souris avec charge rapide multiple
+export class BatLord extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 250,
+      maxHealth: 250,
+      normalSpeed: 90,
+      chargeSpeed: 320,
+      detectionRange: 250,
+      chargeRange: 100,
+      prepareTime: 400,
+      chargeDuration: 600,
+      cooldownTime: 300,
+      chargeCooldown: 6000,
+      attackDelay: 800,
+      contactDamage: 25,
+      chargeDamage: 40,
+      bodySize: { width: 18, height: 18 },
+      bodyOffset: { x: -1, y: -1 },
+      xpValue: 100,
+      idleFrames: [0, 1, 2],
+      moveFrames: [0, 1, 2],
+      frameRate: 10,
+      spriteSheet: 'enemies'
+    });
+    
+    this.sprite.setScale(2);
+    this.chargesRemaining = 0;
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    switch (this.state) {
+      case ENEMY_STATE.IDLE:
+      case ENEMY_STATE.CHASE:
+        if (distSq > this.detectionRangeSq) {
+          this.state = ENEMY_STATE.IDLE;
+          this.sprite.body.setVelocity(0, 0);
+          this.updateAnimation(time, this.config.idleFrames);
+        } else {
+          if (distSq <= this.chargeRangeSq && distSq > 400 && (time - this.lastChargeTime) >= this.config.chargeCooldown) {
+            if (this.checkChargePath(player.x, player.y)) {
+              this.state = ENEMY_STATE.PREPARE_CHARGE;
+              this.stateTimer = time + this.config.prepareTime;
+              this.chargeAngle = Math.atan2(dy, dx);
+              this.sprite.body.setVelocity(0, 0);
+              this.lastChargeTime = time;
+              this.chargesRemaining = 2; // Charge double
+              this.sprite.setAlpha(0.5);
+            } else {
+              this.moveToPlayer(player);
+              this.updateAnimation(time, this.config.moveFrames);
+            }
+          } else {
+            this.moveToPlayer(player);
+            this.updateAnimation(time, this.config.moveFrames);
+          }
+        }
+        this.sprite.setFlipX(dx < 0);
+        break;
+
+      case ENEMY_STATE.PREPARE_CHARGE:
+        this.updateAnimation(time, this.config.idleFrames);
+        if (time >= this.stateTimer) {
+          this.state = ENEMY_STATE.CHARGING;
+          this.stateTimer = time + this.config.chargeDuration;
+          this.sprite.setAlpha(1);
+          
+          this.sprite.body.setVelocity(
+            Math.cos(this.chargeAngle) * this.config.chargeSpeed,
+            Math.sin(this.chargeAngle) * this.config.chargeSpeed
+          );
+        }
+        break;
+
+      case ENEMY_STATE.CHARGING:
+        this.updateAnimation(time, this.config.moveFrames);
+        if (time >= this.stateTimer) {
+          this.chargesRemaining--;
+          
+          if (this.chargesRemaining > 0) {
+            // Prépare une nouvelle charge
+            this.state = ENEMY_STATE.PREPARE_CHARGE;
+            this.stateTimer = time + 200;
+            this.chargeAngle = Math.atan2(player.y - this.sprite.y, player.x - this.sprite.x);
+            this.sprite.body.setVelocity(0, 0);
+            this.sprite.setAlpha(0.5);
+          } else {
+            this.state = ENEMY_STATE.COOLDOWN;
+            this.stateTimer = time + this.config.cooldownTime;
+            this.sprite.body.setVelocity(0, 0);
+            this.sprite.setAlpha(1);
+          }
+        }
+        break;
+
+      case ENEMY_STATE.COOLDOWN:
+        this.updateAnimation(time, this.config.idleFrames);
+        if (time >= this.stateTimer) {
+          this.state = ENEMY_STATE.IDLE;
+        }
+        break;
+    }
+  }
+}
+
+// RAT KING - Miniboss rat avec vitesse extrême et esquive
+export class RatKing extends Enemy {
+  constructor(scene, x, y) {
+    super(scene, x, y, {
+      health: 150,
+      maxHealth: 150,
+      normalSpeed: 125,
+      chargeSpeed: 0,
+      detectionRange: 200,
+      chargeRange: 0,
+      attackDelay: 500,
+      contactDamage: 15,
+      bodySize: { width: 16, height: 16 },
+      bodyOffset: { x: 0, y: 0 },
+      xpValue: 100,
+      idleFrames: [7, 8],
+      moveFrames: [9, 10, 11],
+      frameRate: 12,
+      spriteSheet: 'enemies_1'
+    });
+    
+    this.sprite.setScale(2);
+    this.dodgeCooldown = 0;
+    this.dodgeDuration = 2000;
+  }
+
+  takeDamage(damage, attackerX, attackerY) {
+    if (!this.isAlive()) return;
+    
+    const now = this.scene.time.now;
+    
+    // Chance d'esquiver (50%)
+    if (now >= this.dodgeCooldown && Math.random() < 0.5) {
+      this.dodgeCooldown = now + this.dodgeDuration;
+      
+      // Esquive rapide
+      const dx = this.sprite.x - attackerX;
+      const dy = this.sprite.y - attackerY;
+      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * Math.PI;
+      
+      this.sprite.body.setVelocity(
+        Math.cos(angle) * 400,
+        Math.sin(angle) * 400
+      );
+      
+      this.sprite.setTint(0xffff00);
+      this.scene.time.delayedCall(200, () => {
+        if (this.isAlive()) {
+          this.sprite.setTint(0x00ff00);
+        }
+      });
+      
+      return; // Esquive réussie, pas de dégâts
+    }
+    
+    super.takeDamage(damage, attackerX, attackerY);
+  }
+
+  update(player, time) {
+    if (!this.isAlive()) return;
+    
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq > this.detectionRangeSq) {
+      this.sprite.body.setVelocity(0, 0);
+      this.updateAnimation(time, this.config.idleFrames);
+    } else {
+      this.moveToPlayer(player);
+      this.updateAnimation(time, this.config.moveFrames);
+    }
+  }
+}
+
+// ========================================
+// FONCTION DE CRÉATION
+// ========================================
+
+function spawnEnemies(scene, spawns, types, count) {
   const enemies = [];
-  const enemySpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi');
-  
-  if (enemySpawns.length === 0) {
-    console.warn('Aucun point de spawn trouvé');
-    return enemies;
-  }
-
-  const enemyTypes = [
-    { class: Bat, weight: 30 },
-    { class: Fly, weight: 25 },
-    { class: Skull, weight: 25 },
-    { class: Ghost, weight: 20 }
-  ];
-
-  const totalWeight = enemyTypes.reduce((sum, t) => sum + t.weight, 0);
-
-  if (!scene.projectilePool) {
-    scene.projectilePool = new ProjectilePool(scene, 15);
-  }
+  const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
 
   for (let i = 0; i < count; i++) {
-    const spawn = Phaser.Utils.Array.GetRandom(enemySpawns);
+    const spawn = Phaser.Utils.Array.GetRandom(spawns);
     const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
     const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);
     
     let random = Math.random() * totalWeight;
-    let selectedType = Fly;
+    let selectedType = types[0].class;
     
-    for (const type of enemyTypes) {
+    for (const type of types) {
       random -= type.weight;
       if (random <= 0) {
         selectedType = type.class;
@@ -680,8 +1043,78 @@ export function createEnemies(scene, count = 4) {
       }
     }
     
-    const enemy = new selectedType(scene, randomX, randomY);
-    enemies.push(enemy);
+    enemies.push(new selectedType(scene, randomX, randomY));
+  }
+
+  return enemies;
+}
+
+export function createEnemies(scene, airCount = 4, groundCount = 4) {
+  const enemies = [];
+  
+  const airSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_1');
+  const groundSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_2');
+  const minibossSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_miniboss');
+  
+  if (airSpawns.length === 0 && groundSpawns.length === 0 && minibossSpawns.length === 0) {
+    console.warn('Aucun point de spawn trouvé');
+    return enemies;
+  }
+
+  if (!scene.projectilePool) {
+    scene.projectilePool = new ProjectilePool(scene, 20);
+  }
+
+  // Ennemis aériens
+  if (airSpawns.length > 0) {
+    const airTypes = [
+      { class: Bat, weight: 30 },
+      { class: Fly, weight: 25 },
+      { class: Skull, weight: 25 },
+      { class: Ghost, weight: 20 }
+    ];
+    
+    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, airCount));
+  }
+
+  // Ennemis terrestres
+  if (groundSpawns.length > 0) {
+    const groundTypes = [
+      { class: Goblin, weight: 15 },
+      { class: Rat, weight: 50 },
+      { class: Skeleton, weight: 35 }
+    ];
+    
+    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, groundCount));
+  }
+
+  // Miniboss
+  if (minibossSpawns.length > 0) {
+    const minibossTypes = [
+      { class: SkullKing, weight: 30 },
+      { class: BatLord, weight: 40 },
+      { class: RatKing, weight: 30 },
+    ];
+    
+    // Spawn 1 miniboss par point de spawn
+    for (const spawn of minibossSpawns) {
+      const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
+      const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);
+      
+      const totalWeight = minibossTypes.reduce((sum, t) => sum + t.weight, 0);
+      let random = Math.random() * totalWeight;
+      let selectedType = minibossTypes[0].class;
+      
+      for (const type of minibossTypes) {
+        random -= type.weight;
+        if (random <= 0) {
+          selectedType = type.class;
+          break;
+        }
+      }
+      
+      enemies.push(new selectedType(scene, randomX, randomY));
+    }
   }
 
   return enemies;

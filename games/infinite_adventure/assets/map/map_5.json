@@ -248,49 +248,15 @@
         }, 
         {
          "draworder":"topdown",
-         "id":5,
-         "name":"calque_joueur",
-         "objects":[
-                {
-                 "height":0,
-                 "id":2,
-                 "name":"spawn_joueur",
-                 "point":true,
-                 "rotation":0,
-                 "type":"spawn_joueur",
-                 "visible":true,
-                 "width":0,
-                 "x":64,
-                 "y":80
-                }, 
-                {
-                 "height":8.63636,
-                 "id":3,
-                 "name":"tp_out",
-                 "rotation":-90,
-                 "type":"tp_out",
-                 "visible":true,
-                 "width":23.5455,
-                 "x":488.121666666667,
-                 "y":532.848666666667
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
          "id":6,
          "name":"calque_ennemi",
          "objects":[
                 {
                  "height":152.75,
                  "id":5,
-                 "name":"spawn_ennemi",
+                 "name":"spawn_ennemi_2",
                  "rotation":0,
-                 "type":"spawn_ennemi",
+                 "type":"spawn_ennemi_2",
                  "visible":true,
                  "width":123.333333333333,
                  "x":346.833333333333,
@@ -301,9 +267,43 @@
          "visible":true,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":7,
+         "name":"calque_joueur",
+         "objects":[
+                {
+                 "height":0,
+                 "id":8,
+                 "name":"spawn_joueur",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":64,
+                 "y":80
+                }, 
+                {
+                 "height":25.3333333333333,
+                 "id":9,
+                 "name":"tp_out",
+                 "rotation":0,
+                 "type":"tp_out",
+                 "visible":true,
+                 "width":7.48484848484847,
+                 "x":489.242424242424,
+                 "y":508.272727272727
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":7,
- "nextobjectid":7,
+ "nextlayerid":8,
+ "nextobjectid":10,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

@@ -1,7 +1,7 @@
 import { createEnemies } from './enemies.js';
 import { LevelUpScene } from './levelup.js';
 
-export const AVAILABLE_MAPS = ['map_1', 'map_2', 'map_3', 'map_4', 'map_5', 'map_6', 'map_7'];
+export const AVAILABLE_MAPS = ['map_1', 'map_2', 'map_3', 'map_4', 'map_5', 'map_6', 'map_7', 'map_8'];
 export const TILE_SIZE = 16;
 
 const BAR_CONFIG = {
@@ -20,6 +20,7 @@ export class PreloadScene extends Phaser.Scene {
     const assets = [
       { type: 'spritesheet', key: 'dude', path: 'assets/dude.png', config: { frameWidth: 16, frameHeight: 16 } },
       { type: 'spritesheet', key: 'enemies', path: 'assets/enemies.png', config: { frameWidth: 16, frameHeight: 16 } },
+      { type: 'spritesheet', key: 'enemies_1', path: 'assets/enemies_1.png', config: { frameWidth: 16, frameHeight: 16 } },
       { type: 'spritesheet', key: 'weapons_animated', path: 'assets/weapons_animated.png', config: { frameWidth: 48, frameHeight: 48 } },
       { type: 'spritesheet', key: 'barre', path: 'assets/barre.png', config: { frameWidth: 64, frameHeight: 16 } },
       { type: 'spritesheet', key: 'levelup', path: 'assets/levelup.png', config: { frameWidth: 48, frameHeight: 64 } },
@@ -28,7 +29,7 @@ export class PreloadScene extends Phaser.Scene {
       { type: 'image', key: 'props', path: 'assets/props.png' },
       { type: 'image', key: 'surground', path: 'assets/surground.png' },
       { type: 'image', key: 'walls', path: 'assets/walls.png' }
-    ];
+    ];   
 
     assets.forEach(({ type, key, path, config }) => {
       this.load[type](key, path, config);
@@ -97,27 +98,11 @@ export class GameOverScene extends Phaser.Scene {
       ease: 'Sine.easeIn'
     });
 
-    // Particules de cendres
-    for (let i = 0; i < 15; i++) {
-      const x = Phaser.Math.Between(0, width);
-      const ash = this.add.circle(x, Phaser.Math.Between(0, height), 1, 0x666666, 0.4)
-        .setScrollFactor(0);
-
-      this.tweens.add({
-        targets: ash,
-        y: height + 50,
-        alpha: 0,
-        duration: Phaser.Math.Between(3000, 5000),
-        ease: 'Sine.easeIn',
-        repeat: -1
-      });
-    }
-
     this.showGameOver(centerX, centerY);
   }
 
   showGameOver(centerX, centerY) {
-    // Texte "GAME OVER" avec apparition brutale
+    // Texte "GAME OVER" simplifié (pas de shake)
     const gameOverText = this.add.text(centerX, centerY - 80, 'GAME OVER', {
       fontSize: '72px',
       fill: '#ff0000',
@@ -125,40 +110,14 @@ export class GameOverScene extends Phaser.Scene {
       fontStyle: 'bold',
       stroke: '#4a0000',
       strokeThickness: 8
-    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0).setScale(1.5);
+    }).setOrigin(0.5).setScrollFactor(0).setAlpha(0).setScale(1.2);
 
     this.tweens.add({
       targets: gameOverText,
       alpha: 1,
       scale: 1,
-      duration: 400,
-      ease: 'Back.easeOut',
-      onComplete: () => {
-        // Shake rapide
-        this.tweens.add({
-          targets: gameOverText,
-          x: centerX + 4,
-          duration: 40,
-          yoyo: true,
-          repeat: 3
-        });
-      }
-    });
-
-    // Lueur rouge pulsante
-    const glow = this.add.circle(centerX, centerY - 80, 100, 0xff0000, 0)
-      .setScrollFactor(0)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    
-    this.tweens.add({
-      targets: glow,
-      alpha: 0.2,
-      scale: 1.4,
-      duration: 1200,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-      delay: 400
+      duration: 300,
+      ease: 'Power2'
     });
 
     // Statistiques
@@ -176,13 +135,13 @@ export class GameOverScene extends Phaser.Scene {
       this.tweens.add({
         targets: statsText,
         alpha: 1,
-        duration: 400,
-        delay: 600
+        duration: 300,
+        delay: 400
       });
     }
 
     // Texte restart
-    const restartText = this.add.text(centerX, centerY + 70, 'Appuyez sur D pour recommencer', {
+    const restartText = this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
       fontSize: '18px',
       fill: '#ffffff',
       fontFamily: 'Arial',
@@ -193,42 +152,31 @@ export class GameOverScene extends Phaser.Scene {
     this.tweens.add({
       targets: restartText,
       alpha: 1,
-      duration: 400,
-      delay: 800
+      duration: 300,
+      delay: 600
     });
 
-    // Pulse du restart
+    // Pulse du restart (simplifié)
     this.tweens.add({
       targets: restartText,
-      alpha: 0.6,
-      duration: 800,
+      alpha: 0.5,
+      duration: 1000,
       yoyo: true,
       repeat: -1,
-      delay: 1200
+      delay: 900
     });
 
-    // Contrôle D
+    // Contrôle K
     this.input.keyboard.once('keydown-K', () => {
-      const flash = this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height, 0xff0000, 0)
-        .setOrigin(0, 0)
-        .setScrollFactor(0);
-
-      this.tweens.add({
-        targets: flash,
-        alpha: 0.7,
-        duration: 150,
-        yoyo: true,
-        onComplete: () => {
-          if (gameScene && gameScene.cameras && gameScene.cameras.main) {
-            gameScene.cameras.main.alpha = 1;
-          }
-          
-          this.scene.stop('GameOverScene');
-          this.scene.stop('GameScene');
-          this.scene.stop('UIScene');
-          this.scene.start('PreloadScene');
-        }
-      });
+      // Pas de flash, transition directe
+      if (gameScene && gameScene.cameras && gameScene.cameras.main) {
+        gameScene.cameras.main.alpha = 1;
+      }
+      
+      this.scene.stop('GameOverScene');
+      this.scene.stop('GameScene');
+      this.scene.stop('UIScene');
+      this.scene.start('PreloadScene');
     });
   }
 }
@@ -317,11 +265,11 @@ export class GameScene extends Phaser.Scene {
       visitedRooms: [],
       currentMap: null,
       isFirstSpawn: true,
-      playerHealth: 100,
-      maxHealth: 100,
+      playerHealth: 200,
+      maxHealth: 200,
       playerXP: 0,
       maxXP: 100,
-      playerSpeed: 100,
+      playerSpeed: 90,
       healthRegen: 0.5,
       lastRegenTime: 0,
       enemies: [],
@@ -332,7 +280,7 @@ export class GameScene extends Phaser.Scene {
       isFalling: false,
       isAttacking: false,
       attackCooldown: 0,
-      attackDelay: 800,
+      attackDelay: 750,
       attackRange: 70,
       attackRangeSq: 1600,
       attackDamage: 20,
@@ -380,11 +328,11 @@ export class GameScene extends Phaser.Scene {
 
   createAnimations() {
     const animations = [
-      { key: 'walk', sheet: 'dude', start: 2, end: 6, frameRate: 10, repeat: -1 },
+      { key: 'walk', sheet: 'dude', start: 2, end: 6, frameRate: 12, repeat: -1 },
       { key: 'idle', sheet: 'dude', start: 0, end: 1, frameRate: 5, repeat: -1 },
       { key: 'death', sheet: 'dude', start: 7, end: 8, frameRate: 6, repeat: 0 },
       { key: 'fall', sheet: 'dude', start: 9, end: 15, frameRate: 10, repeat: 0 },
-      { key: 'sword_slash', sheet: 'weapons_animated', start: 0, end: 4, frameRate: 26, repeat: 0 }
+      { key: 'sword_slash', sheet: 'weapons_animated', start: 0, end: 4, frameRate: 30, repeat: 0 }
     ];
 
     animations.forEach(({ key, sheet, start, end, frameRate, repeat }) => {
@@ -607,16 +555,6 @@ export class GameScene extends Phaser.Scene {
         }
       });
     });
-    
-    const fallZones = this.map.filterObjects('calque_joueur', obj => obj.type === 'fall');
-    
-    fallZones.forEach(fall => {
-      const zone = this.add.zone(fall.x, fall.y, fall.width, fall.height).setOrigin(0, 0);
-      this.physics.world.enable(zone);
-      this.physics.add.overlap(this.player, zone, () => {
-        this.playerFall();
-      });
-    });
   }
 
   update(time) {
@@ -639,48 +577,49 @@ export class GameScene extends Phaser.Scene {
   }
 
   checkGroundSupport() {
-    if (!this.surgroundLayer) return;
-    
-    const playerBody = this.player.body;
-    const playerLeft = playerBody.left;
-    const playerRight = playerBody.right;
-    const playerBottom = playerBody.bottom;
-    const playerWidth = playerBody.width;
-    
-    const tileY = Math.floor(playerBottom / TILE_SIZE);
-    const tileLeftX = Math.floor(playerLeft / TILE_SIZE);
-    const tileRightX = Math.floor(playerRight / TILE_SIZE);
-    
-    let supportWidth = 0;
-    let totalWidth = 0;
-    
-    for (let tileX = tileLeftX; tileX <= tileRightX; tileX++) {
+  if (!this.surgroundLayer) return;
+  
+  const playerBody = this.player.body;
+  const playerWidth = playerBody.width;
+  const playerHeight = playerBody.height;
+  
+  // Zone centrale de 40% du corps en largeur et hauteur (30% de marge de chaque côté)
+  const centerMarginX = playerWidth * 0.60;
+  const centerMarginY = playerHeight * 0.50;
+  
+  const centerLeft = playerBody.left + centerMarginX;
+  const centerRight = playerBody.right - centerMarginX;
+  const centerTop = playerBody.top + centerMarginY;
+  const centerBottom = playerBody.bottom - centerMarginY;
+  
+  const tileLeftX = Math.floor(centerLeft / TILE_SIZE);
+  const tileRightX = Math.floor(centerRight / TILE_SIZE);
+  const tileTopY = Math.floor(centerTop / TILE_SIZE);
+  const tileBottomY = Math.floor(centerBottom / TILE_SIZE);
+  
+  let hasSolidSupport = false;
+  let hasTiles = false;
+  
+  // Vérifier toutes les tuiles dans la zone centrale 2D
+  for (let tileX = tileLeftX; tileX <= tileRightX; tileX++) {
+    for (let tileY = tileTopY; tileY <= tileBottomY; tileY++) {
       const tile = this.surgroundLayer.getTileAt(tileX, tileY);
       if (tile && tile.index !== -1) {
-        const tileLeft = tileX * TILE_SIZE;
-        const tileRight = (tileX + 1) * TILE_SIZE;
-        
-        const overlapLeft = Math.max(playerLeft, tileLeft);
-        const overlapRight = Math.min(playerRight, tileRight);
-        
-        if (overlapRight > overlapLeft) {
-          const overlapWidth = overlapRight - overlapLeft;
-          totalWidth += overlapWidth;
-          
-          if (!tile.properties.fall) {
-            supportWidth += overlapWidth;
-          }
+        hasTiles = true;
+        if (!tile.properties || !tile.properties.fall) {
+          hasSolidSupport = true;
+          break;
         }
       }
     }
-    
-    if (totalWidth > 0) {
-      const supportPercent = supportWidth / playerWidth;
-      if (supportPercent < 0.05) {
-        this.playerFall();
-      }
-    }
+    if (hasSolidSupport) break;
   }
+  
+  // Le joueur tombe uniquement si des tuiles existent ET toute la zone centrale est sur des tuiles fall
+  if (hasTiles && !hasSolidSupport) {
+    this.playerFall();
+  }
+}
 
   updateHealthRegen(time) {
     if (this.healthRegen > 0 && this.playerHealth < this.maxHealth && time - this.lastRegenTime >= 1000) {

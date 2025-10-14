@@ -288,9 +288,9 @@
                 {
                  "height":80,
                  "id":5,
-                 "name":"spawn_ennemi",
+                 "name":"spawn_ennemi_2",
                  "rotation":0,
-                 "type":"spawn_ennemi",
+                 "type":"spawn_ennemi_2",
                  "visible":true,
                  "width":206,
                  "x":439.5,

@@ -1,7 +1,7 @@
 {
-	"title": "Infinite Adventure v2",
-	"description": "Exploration d'un donjon infini",
-	"genre" : "Rogue-like",
-	"authors": ["Hugo DELPUECH", "Dylan BELLEDENT, Yoann MALOR, Mathieu SERES"]
+	"title": "infinite adventure",
+	"description": "Un aventurier bloque dans un donjon infinis harcelé par des vagues de monstres jusqu'a sa mort",
+	"genre" : "rogue like",
+	"authors": ["BELLEDENT Dylan", "DELPUECH Hugo", "SERES-PEREA Mathieu", "MALAURE Yoan"]
 }
 
