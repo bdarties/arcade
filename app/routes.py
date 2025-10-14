@@ -4,7 +4,7 @@ from typing import Dict, List, Any
 
 from flask import Blueprint, current_app, render_template, abort, send_from_directory, url_for, request, jsonify
 
-from .db import get_top_scores, add_score
+from .db import get_top_scores, add_score, init_db
 bp = Blueprint("routes", __name__)
 bp_api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -137,4 +137,15 @@ def save_score():
         'success': success,
         'error': None if success else 'Erreur lors de l\'ajout du score'
     }), 200 if success else 500
+
+@bp.route('/init-db', methods=['POST'])
+def initialize_database():
+    """
+    Route pour initialiser ou réinitialiser la base de données des scores.
+    """
+    try:
+        init_db()
+        return jsonify({"success": True, "message": "Base de données initialisée avec succès."}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
