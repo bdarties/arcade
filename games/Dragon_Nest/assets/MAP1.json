@@ -639,18 +639,6 @@
          "objects":[
                 {
                  "height":0,
-                 "id":11,
-                 "name":"target",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":846.667,
-                 "y":1894.67
-                }, 
-                {
-                 "height":0,
                  "id":12,
                  "name":"slime_rouge",
                  "point":true,

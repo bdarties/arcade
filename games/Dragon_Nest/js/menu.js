@@ -10,7 +10,7 @@ export default class menu extends Phaser.Scene {
     this.load.setBaseURL(baseURL);
 
     // image de fond
-    this.load.image("menu_bg", "./presentation.jpg");
+    this.load.image("menu_bg", "./presentation.png");
 
     // images des boutons
     this.load.image("btn_jouer", "./assets/bouton_jouer.png");

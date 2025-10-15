@@ -3,29 +3,22 @@ export default class controles extends Phaser.Scene {
     super({ key: "controles" });
   }
 
+  preload() {
+    // On charge l'image de fond
+    this.load.image("controlesImage", "assets/controles.jpg"); 
+    // ⚠️ Mets bien ton image dans le bon dossier (ex: public/assets/controles.jpg)
+  }
+
   create() {
     const { width, height } = this.scale;
 
-    // --- TITRE ---
-    this.add.text(width / 2, height * 0.2, "Contrôles", {
-      fontSize: "48px",
-      color: "#ffffff",
-    }).setOrigin(0.5);
-
-    // --- TEXTE DES CONTROLES ---
-    this.add.text(
-      width / 2,
-      height * 0.4,
-      "- Flèches pour se déplacer\n- Touche A pour intéragir et touche B pour attaquer",
-      {
-        fontSize: "28px",
-        color: "#ffffff",
-        align: "center"
-      }
-    ).setOrigin(0.5);
+    // --- IMAGE DE FOND ---
+    const background = this.add.image(width / 2, height / 2, "controlesImage");
+    background.setOrigin(0.5);
+    background.setDisplaySize(width, height); // pour qu'elle remplisse tout l'écran
 
     // --- BOUTON RETOUR ---
-    this.retour = this.add.text(width / 2, height * 0.8, "Retour au menu", {
+    this.retour = this.add.text(width / 2, height * 0.9, "Retour au menu", {
       fontSize: "32px",
       color: "#ffffff",
       backgroundColor: "#00000066",
@@ -46,7 +39,6 @@ export default class controles extends Phaser.Scene {
     });
 
     // --- CLAVIER ---
-    // touche I comme touche de confirmation
     this.confirmKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
     // Sélection du bouton dès le lancement
@@ -67,7 +59,6 @@ export default class controles extends Phaser.Scene {
   }
 
   update() {
-    // Valider uniquement avec la touche I
     if (this.isSelected && Phaser.Input.Keyboard.JustDown(this.confirmKey)) {
       this.scene.start("menu");
     }
