@@ -14,26 +14,52 @@ import credits from "./js/credits.js";
 import controls from "./js/controls.js";
 
 // configuration générale du jeu
-var config = {
+const config = {
   width: 1280,
   height: 720,
-  pixelArt: true,
-  roundPixels: true,
   type: Phaser.AUTO,
+  antialias: false,
+  roundPixels: true,
+
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    fullscreenTarget: 'game-container',
+    expandParent: true
   },
+
   physics: {
-    default: "arcade",
+    default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: false
+      debug: false, 
+      fps: 60,
+      overlapBias: 4
     }
   },
+
   scene: [hud, menu, credits, controls, intro, gameover, selection, salleporte, niveau1, niveau2, niveau3, niveau4, PauseManager],
-  baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, ''),
+
+  pixelArt: true,
+  
+  fps: {
+    target: 60,
+  },
+
+  banner: false,
+
+  render: {
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true,
+    transparent: false,
+    clearBeforeRender: true,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: false
+  }
+
 };
 
 //let game = null;
