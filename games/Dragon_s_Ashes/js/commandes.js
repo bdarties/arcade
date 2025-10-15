@@ -9,6 +9,13 @@ export default class commandes extends Phaser.Scene {
   }
 
   create() {
+this.cameras.main.fadeIn(1000, 0, 0, 0);
+
+  const musiqueMenu = this.sound.get("musique_menu");
+  if (musiqueMenu && !musiqueMenu.isPlaying) {
+    musiqueMenu.play();
+  }
+
     // Fond
     this.add.image(0, 0, "commandes_fond").setOrigin(0);
 

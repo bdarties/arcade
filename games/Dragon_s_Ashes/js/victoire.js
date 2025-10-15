@@ -7,11 +7,17 @@ export default class commandes extends Phaser.Scene {
     this.load.image("victoire_fond", "./assets/victoire.jpg");
     this.load.image("imageBoutonRejouer", "./assets/bouton_rejouer.png");
     this.load.image("imageBoutonMenu", "./assets/bouton_menu.png");
+
+    this.load.audio("musique_victoire", "./assets/victoire.ogg");
   }
 
   create() {
+
+this.sound.stopAll(); // <-- essentiel
+this.musiqueVictoire = this.sound.add("musique_victoire", { volume: 0.3 });
+this.musiqueVictoire.play();
     
-    this.cameras.main.fadeIn(500, 0, 0, 0);
+    this.cameras.main.fadeIn(1000, 0, 0, 0);
 
     // Fond
     this.add.image(0, 0, "victoire_fond").setOrigin(0).setDepth(0);
@@ -39,7 +45,6 @@ export default class commandes extends Phaser.Scene {
     // Gestion clavier
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    this.cameras.main.fadeIn(500, 0, 0, 0);
   }
 
   update() {

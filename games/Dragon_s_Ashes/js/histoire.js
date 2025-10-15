@@ -19,6 +19,10 @@ export default class commandes extends Phaser.Scene {
 
     // Clique souris
     this.boutonRetour.on("pointerup", () => {
+              let musique = this.sound.get("musique_menu");
+            if (musique && musique.isPlaying) {
+                musique.stop();
+        }
       this.scene.start("selection");
     });
 

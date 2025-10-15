@@ -14,9 +14,29 @@ var config = {
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  
+    autoCenter: Phaser.Scale.CENTER_BOTH,  
   },
+
+  pixelArt: true,
+  antialias: false,
+  autoRound: true,
+  roundPixels: true,
+
+// ⚙️ Rendu
+  powerPreference: 'high-performance', // hint GPU “perf”
+  antialias: false,                    // pas de lissage → moins cher
+  pixelArt: true,                      // utile si assets pixel → pas de filtrage
+  roundPixels: true,                   // évite le subpixel (cache)
+  failIfMajorPerformanceCaveat: true,  // refuse les fallback très lents (software)
+  clearBeforeRender: true,             // par défaut; garde propre entre frames
+
+  // ⚙️ WebGL batch
+  batchSize: 4096,                     // augmente si énormément de sprites
+  maxLights: 1,                        // mets 0/1 si tu n’utilises pas le système de lights
+
+  // ⚙️ FPS
+  fps: { target: 60, min: 30 },
+
   physics: {
     // définition des parametres physiques
     default: "arcade", // mode arcade : le plus simple : des rectangles pour gérer les collisions. Pas de pentes
