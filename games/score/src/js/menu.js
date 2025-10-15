@@ -1,3 +1,5 @@
+import { get_tab_score, ajoute_score } from '/static/js/score2.js';
+
 export default class Menu extends Phaser.Scene {
     constructor() {
         super({ key: "menu" });
@@ -48,5 +50,16 @@ export default class Menu extends Phaser.Scene {
         this.input.keyboard.on("keydown-F", () => {
             this.scene.start("main_scene"); // Passe à la scène principale
         });
-    }
+
+    console.log(this.game.config.idGame)
+    var tab = get_tab_score(this.game.config.idGame);
+    console.log("tableau des scores :", tab);
+
+    const randomName = `Player${Math.floor(Math.random() * 1000)}`; // Nom aléatoire
+    const randomScore = Math.floor(Math.random() * 10000); // Score aléatoire
+    ajoute_score(this.game.config.idGame, randomName, randomScore);
+    // Exemple d'utilisation
+
 }
+}
+

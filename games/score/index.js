@@ -25,10 +25,11 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [InputManager, menu, main_scene]
+  scene: [InputManager, menu, main_scene],
 };
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config);
 game.scene.start("menu");
+game.config.idGame = 57; // Exemple d'ID de jeu, à remplacer par l'ID réel
 

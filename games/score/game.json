@@ -1,6 +1,6 @@
 {
-	"title": "Mobilité",
-	"description": "Cette démo permet de tester differents modèles de mobilité.",
+	"title": "Score",
+	"description": "Cette démo permet de tester l'enregistrement d'un score.",
 	"genre" : "Demo",
 	"authors": ["Benoit Darties"]
 }

@@ -74,4 +74,3 @@ export default class ConfirmationExit extends Phaser.Scene {
         }
     }
 }
-
