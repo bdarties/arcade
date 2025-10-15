@@ -76,14 +76,12 @@ export default class niveau4 extends Phaser.Scene {
     this.animatePics();
 
     // Charger les animations des projectiles
-    if (!this.anims.exists("fireball_anim")) {
-      this.anims.create({
-        key: "fireball_anim",
-        frames: this.anims.generateFrameNumbers("fireball", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1
-      });
-    }
+    this.anims.create({
+      key: "fireball_anim",
+      frames: this.anims.generateFrameNumbers("fireball", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
 
     // --- Joueur
     this.player = this.physics.add.sprite(220, 250, "mage1");

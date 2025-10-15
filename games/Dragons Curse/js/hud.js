@@ -8,14 +8,11 @@ export default class hud extends Phaser.Scene {
     this.load.image('heart_1q', './assets/hud/health/heart_1q.png');
     this.load.image('heart_3q', './assets/hud/health/heart_3q.png');
     this.load.image('heart_half', './assets/hud/health/heart_half.png');
-    this.load.image('potion_icon', './assets/hud/health/heart_3q.png'); // Utilise le coeur comme icône temporaire
+    this.load.image('potion_icon', './assets/items/potion.png');
   }
 
   create() {
     const { width, height } = this.cameras.main;
-
-    // Création de l'effet de vignette (assombrissement des bords comme Minecraft)
-    this.createVignette();
 
     // Use an available texture as initial (heart_full does not exist)
     this.heart = this.add.image(width / 2, height - 50, 'heart_3q')
@@ -71,7 +68,7 @@ export default class hud extends Phaser.Scene {
     // Affichage des potions en bas à gauche
     this.potionIcon = this.add.image(50, height - 50, 'potion_icon')
       .setScrollFactor(0)
-      .setScale(0.4)
+      .setScale(1)
       .setDepth(1000)
       .setTint(0xff00ff); // Teinte magenta pour différencier des coeurs
 
@@ -86,44 +83,6 @@ export default class hud extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setScrollFactor(0)
       .setDepth(1000);
-  }
-
-  createVignette() {
-    const { width, height } = this.cameras.main;
-    
-    // Créer une texture de vignette avec un canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    
-    // Créer un dégradé radial du centre vers les bords
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.sqrt(centerX * centerX + centerY * centerY);
-    
-    const gradient = ctx.createRadialGradient(
-      centerX, centerY, radius * 0.3,  // Point de départ (30% du rayon)
-      centerX, centerY, radius * 1.2   // Point final (120% du rayon)
-    );
-    
-    // Transparent au centre, noir sur les bords
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.1)');
-    gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.4)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    
-    // Créer une texture à partir du canvas
-    this.textures.addCanvas('vignette', canvas);
-    
-    // Ajouter l'image de vignette
-    this.vignette = this.add.image(width / 2, height / 2, 'vignette')
-      .setScrollFactor(0)
-      .setDepth(999)
-      .setOrigin(0.5);
   }
 
   update() {

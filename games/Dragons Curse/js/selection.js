@@ -13,7 +13,6 @@ export default class selection extends Phaser.Scene {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
 
-    // Charger les tilesets pour salle_cles
     this.load.image("piege", "./assets/maps/tiles/piege.png");
     this.load.image("animations", "./assets/maps/tiles/animations.png");
     this.load.image("tileset1", "./assets/maps/tiles/tileset1.png");
@@ -45,8 +44,7 @@ export default class selection extends Phaser.Scene {
     });
     this.load.audio("damageSound", "./assets/sounds/givedamage.mp3");
 
-    // Charger l'image de la potion (on utilise le coeur comme placeholder)
-    this.load.image("potion", "./assets/hud/health/heart_3q.png");
+    this.load.image("potion", "./assets/hud/items/potion.png");
   }
 
   create() {
@@ -55,16 +53,13 @@ export default class selection extends Phaser.Scene {
     this.nombreClesTotales = 5;
     this.porteDeverrouillee = false;
     
-    // Création du monde + plateformes
     this.map = this.add.tilemap("salle_cles");
     
-    // Ajouter les tilesets (dans l'ordre défini dans le JSON)
     const tilesetPiege = this.map.addTilesetImage("piege", "piege");
     const tilesetAnimations = this.map.addTilesetImage("animations", "animations");
     const tileset1 = this.map.addTilesetImage("tileset1", "tileset1");
     const tileset2 = this.map.addTilesetImage("tileset2", "tileset2");
     
-    // Créer les calques dans l'ordre (du fond vers le haut)
     this.calque_sol = this.map.createLayer("calque_sol", [tilesetPiege, tilesetAnimations, tileset1, tileset2]);
     this.calque_mur = this.map.createLayer("calque_mur", [tilesetPiege, tilesetAnimations, tileset1, tileset2]);
     this.calque_fenetres = this.map.createLayer("calque_fenetres", [tilesetPiege, tilesetAnimations, tileset1, tileset2]);
@@ -73,7 +68,7 @@ export default class selection extends Phaser.Scene {
     this.calque_trap = this.map.createLayer("calque_trap", [tilesetPiege, tilesetAnimations, tileset1, tileset2]);
     this.calque_mur_haut = this.map.createLayer("calque_mur_haut", [tilesetPiege, tilesetAnimations, tileset1, tileset2]);
 
-    // Définir la profondeur des calques
+    // Ajuster la profondeur des calques pour le rendu correct
     this.calque_mur_haut.setDepth(10);
     
     // Groupe pour les potions au sol
@@ -144,6 +139,7 @@ export default class selection extends Phaser.Scene {
     // Configuration des levels
     //
     // ==========================
+
     // Initialiser le système de level (3 ennemis = 1 level)
     this.levelManager = new fct.LevelManager(this, { enemiesPerLevel: 3 });
 
@@ -156,8 +152,7 @@ export default class selection extends Phaser.Scene {
     //
     // ===========================
 
-    // Collisions avec les murs - tous les tiles non-vides du calque_mur sont solides
-  if (this.calque_mur) {
+    if (this.calque_mur) {
       this.calque_mur.setCollisionByProperty({ estSolide: true });
       this.physics.add.collider(this.player, this.calque_mur);
     }
@@ -167,41 +162,11 @@ export default class selection extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, 1280, 736);
     this.cameras.main.setBounds(0, 0, 1280, 736);
-    this.cameras.main.startFollow(this.player); // Caméra verrouillée
+    this.cameras.main.startFollow(this.player);
     this.lastDirection = "right";
     this.scene.bringToTop("hud");
 
-    // ===========================
-    // Création de la minimap
-    const minimapWidth = 50;
-    const minimapHeight = 50;
-    const minimapX = this.cameras.main.width - minimapWidth - 10;
-    const minimapY = 10;
-
-    this.minimap = this.cameras.add(
-      minimapX,
-      minimapY,
-      minimapWidth,
-      minimapHeight
-    );
-    this.minimap.setZoom(.0625); // Zoom pour voir toute la carte
-    this.minimap.setBounds(0, 0, 3200, 640);
-    this.minimap.startFollow(this.player);
-    this.minimap.setBackgroundColor(0x002244);
-
-    // Bordure de la minimap
-    this.minimapBorder = this.add.graphics();
-    this.minimapBorder.lineStyle(2, 0xffffff, 1);
-    this.minimapBorder.strokeRect(
-      minimapX,
-      minimapY,
-      minimapWidth,
-      minimapHeight
-    );
-    this.minimapBorder.setScrollFactor(0);
-    this.minimapBorder.setDepth(1001);
-
-    // Animations    // Animations
+    // Animations
     this.anims.create({
       key: "mage_idle",
       frames: this.anims.generateFrameNumbers("mage1", { start: 0, end: 3 }),
@@ -233,18 +198,10 @@ export default class selection extends Phaser.Scene {
     //
     //============================
     this.clavier = this.input.keyboard.createCursorKeys();
-    this.clavier.O = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.O
-    );
-    this.clavier.I = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.I
-    );
-    this.clavier.F = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.F
-    );
-    this.clavier.P = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.P
-  );
+    this.clavier.O = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+    this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
     // ===========================
     //
     // Création des ennemis
@@ -294,7 +251,6 @@ export default class selection extends Phaser.Scene {
       this
     );
 
-    // Appliquer Light2D aux ennemis existants et futurs
     if (this.groupeEnnemis && this.groupeEnnemis.getChildren) {
       this.groupeEnnemis.getChildren().forEach((child) => {
         if (child && child.setPipeline) {
@@ -314,7 +270,6 @@ export default class selection extends Phaser.Scene {
     this.damageSound = this.sound.add("damageSound");
     this.damageSound.setVolume(0.5);
 
-    // Collision avec les potions
     this.physics.add.overlap(
       this.player,
       this.groupePotions,
@@ -323,38 +278,60 @@ export default class selection extends Phaser.Scene {
       this
     );
 
-    // Configurer l'overlap avec les clés
     if (this.calques_cles) {
-      // Activer la collision uniquement pour les tuiles de clés (index 1161)
       this.calques_cles.setTileIndexCallback(1161, this.collecterCle, this);
       this.physics.add.overlap(this.player, this.calques_cles);
     }
 
-    // Animer les pics
     this.animatePics();
+
+    // ==========================
+    // OPTIMISATION: Configurer les listeners Light2D une seule fois
+    // ==========================
+    this.setupLight2DListeners();
   }
 
+  setupLight2DListeners() {
+    // Configurer les listeners pour appliquer Light2D aux nouveaux objets
+    if (this.groupeFlechesEnnemis && this.groupeFlechesEnnemis.on && !this._flechesListenerSet) {
+      this.groupeFlechesEnnemis.on("add", (group, child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      this._flechesListenerSet = true;
+    }
+
+    if (this.groupeBullets && this.groupeBullets.on && !this._bulletsListenerSet) {
+      this.groupeBullets.on("add", (group, child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      this._bulletsListenerSet = true;
+    }
+  }
+
+
+  // ===========================
+  //
+  // Fonctions de gestion des clés et de la porte
+  //
+  // ===========================
   collecterCle(sprite, tile) {
-    // Incrémenter le compteur de clés
     this.nombreClesRecuperees++;
     
-    // Afficher dans la console
-    console.log(`Clé récupérée ! Nombre de clés : ${this.nombreClesRecuperees}/${this.nombreClesTotales}`);
-    
-    // Vérifier si toutes les clés sont récupérées
     if (this.nombreClesRecuperees >= this.nombreClesTotales) {
       this.porteDeverrouillee = true;
       console.log("🔓 Toutes les clés récupérées ! La porte est maintenant déverrouillée !");
     }
     
-    // Supprimer la tuile (la clé disparaît)
     this.calques_cles.removeTileAt(tile.x, tile.y);
     
     return false;
   }
 
   verifierContactPorte() {
-    // Calculer la position du joueur en tuiles
     const tileX = this.calque_mur.worldToTileX(this.player.x);
     const tileY = this.calque_mur.worldToTileY(this.player.y);
     
@@ -376,7 +353,7 @@ export default class selection extends Phaser.Scene {
             } else {
               console.log(`🔒 Porte verrouillée ! Il vous manque ${this.nombreClesTotales - this.nombreClesRecuperees} clé(s).`);
             }
-            this.messageCooldown = this.time.now + 2000; // Cooldown de 2 secondes
+            this.messageCooldown = this.time.now + 2000;
           }
           return;
         }
@@ -385,48 +362,38 @@ export default class selection extends Phaser.Scene {
   }
 
   utiliserPorte() {
-    // Vérifier si le joueur est sur une porte
     if (this.surPorte && this.porteDeverrouillee) {
-      console.log("🚪 Téléportation vers le niveau 1...");
       this.scene.start("niveau1");
     } else if (this.surPorte && !this.porteDeverrouillee) {
-      console.log(`🔒 Vous devez d'abord récupérer toutes les clés ! (${this.nombreClesRecuperees}/${this.nombreClesTotales})`);
     }
   }
 
   verifierPorte(sprite, tile) {
-    // Vérifier si la tuile a la propriété estPorte
     if (tile.properties && tile.properties.estPorte === true) {
-      // Vérifier si toutes les clés ont été récupérées
-      if (this.porteDeverrouillee) {
-        console.log("🚪 Porte déverrouillée ! Téléportation vers le menu...");
-        
-        // Téléporter vers le menu
+      if (this.porteDeverrouillee) {        
         this.scene.start("menu");
+
       } else {
         console.log(`🔒 Porte verrouillée ! Il vous manque ${this.nombreClesTotales - this.nombreClesRecuperees} clé(s).`);
       }
     }
-    
     return false;
   }
 
   animatePics() {
     const frameCount = 14;
     const frameDuration = 100;
-    const firstGid = 1; // Premier GID du tileset "piege"
+    const firstGid = 1;
     
     let currentFrame = 0;
     this.picsToAnimate = [];
     
-    // Parcourir le calque_trap pour trouver les tiles à animer
     this.calque_trap.forEachTile(tile => {
       if (tile.index >= firstGid && tile.index < firstGid + frameCount) {
         this.picsToAnimate.push({ x: tile.x, y: tile.y });
       }
     });
 
-    // Créer l'animation en boucle
     this.time.addEvent({
       delay: frameDuration,
       callback: () => {
@@ -443,13 +410,11 @@ export default class selection extends Phaser.Scene {
   }
 
   update() {
-    // Ne pas bouger si les inputs sont bloqués
     if (this.inputsBlocked) {
       this.player.setVelocity(0, 0);
       return;
     }
 
-    // Mouvements avec bonus de vitesse
     let velociteX = 0;
     let velociteY = 0;
     const vitesseBase = 90;
@@ -484,7 +449,6 @@ export default class selection extends Phaser.Scene {
         this.lastDirection = "down";
       }
 
-      // Appliquer la vélocité avec interpolation
       const nouvelleVelociteX = Phaser.Math.Linear(
         this.player.body.velocity.x, 
         velociteX, 
@@ -497,7 +461,6 @@ export default class selection extends Phaser.Scene {
       );
       this.player.setVelocity(nouvelleVelociteX, nouvelleVelociteY);
 
-      // Animation : marche ou idle
       if (velociteX !== 0 || velociteY !== 0) {
         this.player.anims.play("mage_walk_left", true);
       } else {
@@ -524,11 +487,9 @@ export default class selection extends Phaser.Scene {
     // Gestion des coffres et de la porte (touche I)
     // ===========================
     if (Phaser.Input.Keyboard.JustDown(this.clavier.I)) {
-      // Vérifier d'abord si on est sur une porte
       if (this.surPorte) {
         this.utiliserPorte();
       } else {
-        // Sinon, gérer les coffres normalement
         fct.gererCoffre(this);
       }
     }
@@ -551,66 +512,36 @@ export default class selection extends Phaser.Scene {
         ennemi.update();
       });
     }
+    //============================
+    //
+    // Mise à jour du glow et de la lumière du joueur (OPTIMISÉ)
+    //
+    //==========================
 
-    // Synchroniser le glow avec le joueur : position, flip et animation
     if (this.playerGlow) {
       this.playerGlow.x = this.player.x;
       this.playerGlow.y = this.player.y;
       this.playerGlow.flipX = this.player.flipX;
+      
+      // Optimisation: Ne changer l'animation que si elle a changé
       if (this.player.anims && this.player.anims.currentAnim) {
         const key = this.player.anims.currentAnim.key;
-        if (
-          !this.playerGlow.anims.currentAnim ||
-          this.playerGlow.anims.currentAnim.key !== key
-        ) {
+        if (!this.playerGlow.anims.currentAnim || this.playerGlow.anims.currentAnim.key !== key) {
           this.playerGlow.anims.play(key, true);
         }
-      } else {
-        // si pas d'anim, forcer le frame courant
-        if (this.player.frame)
-          this.playerGlow.setFrame(
-            this.player.frame.name || this.player.frame.index
-          );
+      } else if (this.player.frame) {
+        // Cache le dernier frame pour éviter les setFrame inutiles
+        const frameName = this.player.frame.name || this.player.frame.index;
+        if (this._lastGlowFrame !== frameName) {
+          this.playerGlow.setFrame(frameName);
+          this._lastGlowFrame = frameName;
+        }
       }
     }
 
     if (this.playerLight) {
       this.playerLight.x = this.player.x;
       this.playerLight.y = this.player.y;
-    }
-
-    // Appliquer Light2D sur les flèches ennemies (existantes et futures)
-    if (this.groupeFlechesEnnemis && this.groupeFlechesEnnemis.getChildren) {
-      this.groupeFlechesEnnemis.getChildren().forEach((child) => {
-        if (child && child.setPipeline) {
-          child.setPipeline("Light2D");
-        }
-      });
-      
-      if (this.groupeFlechesEnnemis.on) {
-        this.groupeFlechesEnnemis.on("add", (group, child) => {
-          if (child && child.setPipeline) {
-            child.setPipeline("Light2D");
-          }
-        });
-      }
-    }
-
-    // Appliquer Light2D sur les projectiles déjà présents et futurs
-    if (this.groupeBullets && this.groupeBullets.getChildren) {
-      this.groupeBullets.getChildren().forEach((child) => {
-        if (child && child.setPipeline) {
-          child.setPipeline("Light2D");
-        }
-      });
-      
-      if (this.groupeBullets.on) {
-        this.groupeBullets.on("add", (group, child) => {
-          if (child && child.setPipeline) {
-            child.setPipeline("Light2D");
-          }
-        });
-      }
     }
   }
 
@@ -619,7 +550,6 @@ export default class selection extends Phaser.Scene {
   }
 
   balleToucheEnnemi(bullet, ennemi) {
-    // Calculer les dégâts avec le bonus de Force
     const degatsBase = 1;
     
     let bonusDegats = 0;
@@ -651,12 +581,10 @@ export default class selection extends Phaser.Scene {
   }
 
   flecheToucheEnnemi(fleche, ennemi) {
-    // Ne pas toucher son propre ennemi source
     if (fleche.origine === "ennemi" && fleche.ennemiSource === ennemi) {
       return;
     }
 
-    // Seulement les flèches du joueur blessent les ennemis
     if (fleche.origine !== "ennemi") {
       ennemi.prendreDegats(fleche.degats);
       fleche.destroy();

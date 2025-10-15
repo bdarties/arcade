@@ -46,6 +46,7 @@ const config = {
   
   fps: {
     target: 60,
+    min: 30,
   },
 
   banner: false,
@@ -57,7 +58,8 @@ const config = {
     transparent: false,
     clearBeforeRender: true,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: false
+    preserveDrawingBuffer: false,
+    powerPreference: 'high-performance'
   }
 
 };

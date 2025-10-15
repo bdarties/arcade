@@ -1,5 +1,6 @@
 import PauseManager from "./pause.js";
 import * as fct from "./fonctions.js";
+import Ennemi1 from "./ennemi.js";
 
 export default class niveau1 extends Phaser.Scene {
   constructor() {
@@ -29,6 +30,15 @@ export default class niveau1 extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
+    this.load.spritesheet("ennemi1", "./assets/ennemi1.png", {
+      frameWidth: 64,
+      frameHeight: 64
+    });
+    this.load.spritesheet("arrow", "./assets/arrow.png", {
+      frameWidth: 16,
+      frameHeight: 16
+    });
+    this.load.audio("damageSound", "./assets/sounds/givedamage.mp3");
     // Charger l'image de la potion (on utilise le coeur comme placeholder)
     this.load.image('potion', './assets/hud/health/heart_3q.png');
   }
@@ -37,11 +47,15 @@ export default class niveau1 extends Phaser.Scene {
     // --- PvManager
     this.pvManager = new fct.PvManager(this);
     
-    // --- Initialiser le système de skills (accès global)
-    this.skillManager = new fct.SkillManager(this);
+    // Initialiser le système de level (3 ennemis = 1 level)
+    this.levelManager = new fct.LevelManager(this, { enemiesPerLevel: 3 });
+
+    // Initialiser le système de skills
+    this.skillManager = this.levelManager.skillManager;
     
     // Variables pour le système de porte
     this.surPorte = false;
+    this.porteDeverrouillee = false; // La porte est verrouillée au départ
     
     // --- Groupe de potions au sol
     this.groupePotions = this.physics.add.group();
@@ -79,14 +93,18 @@ export default class niveau1 extends Phaser.Scene {
     this.animatePics();
 
     // Charger les animations des projectiles
-    if (!this.anims.exists("fireball_anim")) {
-      this.anims.create({
-        key: "fireball_anim",
-        frames: this.anims.generateFrameNumbers("fireball", { start: 0, end: 3 }),
-        frameRate: 10,
-        repeat: -1
-      });
-    }
+    this.anims.create({
+      key: "fireball_anim",
+      frames: this.anims.generateFrameNumbers("fireball", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
+    this.anims.create({
+      key: "arrow_anim",
+      frames: this.anims.generateFrameNumbers("arrow", { start: 0, end: 4 }),
+      frameRate: 10,
+      repeat: -1
+    });
 
     // --- Joueur
     this.player = this.physics.add.sprite(220, 250, "mage1");
@@ -134,6 +152,83 @@ export default class niveau1 extends Phaser.Scene {
     
     this.playerGlow.setDepth(this.player.depth - 1);
 
+    // --- Collision bullets avec les murs
+    this.physics.add.collider(this.groupeBullets, this.calque_mur, (bullet) => {
+      bullet.destroy();
+    });
+
+    // ===========================
+    // Création des ennemis
+    // ===========================
+    this.groupeEnnemis = fct.creerEnnemis(this, Ennemi1);
+
+    if (this.groupeEnnemis.getChildren().length === 0) {
+      console.log("Aucun ennemi trouvé dans Tiled, création manuelle...");
+      this.groupeEnnemis = this.physics.add.group();
+
+      // Créer 6 ennemis à des positions proches
+      const ennemi1 = new Ennemi1(this, 600, 250);
+      const ennemi2 = new Ennemi1(this, 420, 100);
+      const ennemi3 = new Ennemi1(this, 1100, 180);
+      const ennemi4 = new Ennemi1(this, 1100, 520);
+      const ennemi5 = new Ennemi1(this, 280, 590);
+      const ennemi6 = new Ennemi1(this, 600, 600);
+
+      this.groupeEnnemis.add(ennemi1);
+      this.groupeEnnemis.add(ennemi2);
+      this.groupeEnnemis.add(ennemi3);
+      this.groupeEnnemis.add(ennemi4);
+      this.groupeEnnemis.add(ennemi5);
+      this.groupeEnnemis.add(ennemi6);
+
+      console.log("6 ennemis créés manuellement");
+    }
+
+    this.physics.add.collider(this.groupeEnnemis, this.calque_mur);
+    this.physics.add.overlap(
+      this.groupeBullets,
+      this.groupeEnnemis,
+      this.balleToucheEnnemi,
+      null,
+      this
+    );
+
+    this.groupeFlechesEnnemis = this.physics.add.group();
+    this.physics.add.collider(
+      this.groupeFlechesEnnemis,
+      this.calque_mur,
+      (fleche) => {
+        fleche.destroy();
+      }
+    );
+    this.physics.add.overlap(
+      this.groupeFlechesEnnemis,
+      this.player,
+      this.flecheToucheJoueur,
+      null,
+      this
+    );
+
+    // Appliquer Light2D aux ennemis existants et futurs
+    if (this.groupeEnnemis && this.groupeEnnemis.getChildren) {
+      this.groupeEnnemis.getChildren().forEach((child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      
+      if (this.groupeEnnemis.on) {
+        this.groupeEnnemis.on("add", (group, child) => {
+          if (child && child.setPipeline) {
+            child.setPipeline("Light2D");
+          }
+        });
+      }
+    }
+
+    this.damageSound = this.sound.add("damageSound");
+    this.damageSound.setVolume(0.5);
+
     // --- Collision avec les murs et le sol
     if (this.calque_mur) {
       this.calque_mur.setCollisionByProperty({ estSolide: true });
@@ -148,10 +243,10 @@ export default class niveau1 extends Phaser.Scene {
     // Collision avec les potions
     this.physics.add.overlap(this.player, this.groupePotions, this.ramasserPotion, null, this);
 
-    // --- Collision bullets avec les murs
-    this.physics.add.collider(this.groupeBullets, this.calque_mur, (bullet) => {
-      bullet.destroy();
-    });
+    // --- Collision bullets avec les murs (redondant, déjà fait plus haut, on peut le retirer)
+    // this.physics.add.collider(this.groupeBullets, this.calque_mur, (bullet) => {
+    //   bullet.destroy();
+    // });
 
     // --- Collision danger (pièges) avec timer de vérification
     this.isDamaged = false;
@@ -300,9 +395,17 @@ export default class niveau1 extends Phaser.Scene {
         if (tile && tile.properties && tile.properties.estPorte === true) {
           this.surPorte = true;
           
+          // Vérifier si tous les ennemis sont éliminés
+          const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;
+          
           // Afficher un message d'indication
           if (!this.messageCooldown || this.time.now > this.messageCooldown) {
-            console.log("🚪 Porte trouvée ! Appuyez sur I pour passer au niveau suivant.");
+            if (ennemisRestants === 0) {
+              this.porteDeverrouillee = true;
+              console.log("🚪 Tous les ennemis éliminés ! Porte déverrouillée ! Appuyez sur I pour passer au niveau suivant.");
+            } else {
+              console.log(`🔒 Porte verrouillée ! Éliminez tous les ennemis pour l'ouvrir. (${ennemisRestants} restant(s))`);
+            }
             this.messageCooldown = this.time.now + 2000; // Cooldown de 2 secondes
           }
           return;
@@ -312,10 +415,13 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   utiliserPorte() {
-    // Vérifier si le joueur est sur une porte
-    if (this.surPorte) {
+    // Vérifier si le joueur est sur une porte et si elle est déverrouillée
+    if (this.surPorte && this.porteDeverrouillee) {
       console.log("🚪 Téléportation vers le niveau 2...");
       this.scene.start("niveau2");
+    } else if (this.surPorte && !this.porteDeverrouillee) {
+      const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;
+      console.log(`🔒 Vous devez d'abord éliminer tous les ennemis ! (${ennemisRestants} restant(s))`);
     }
   }
 
@@ -402,6 +508,13 @@ export default class niveau1 extends Phaser.Scene {
     // ===========================
     this.verifierContactPorte();
 
+    // Mise à jour des ennemis
+    if (this.groupeEnnemis) {
+      this.groupeEnnemis.getChildren().forEach((ennemi) => {
+        ennemi.update();
+      });
+    }
+
     // ===========================
     // Synchroniser le glow avec le joueur
     // ===========================
@@ -432,6 +545,23 @@ export default class niveau1 extends Phaser.Scene {
       this.playerLight.y = this.player.y - 6; // Offset Y
     }
 
+    // Appliquer Light2D sur les flèches ennemies (existantes et futures)
+    if (this.groupeFlechesEnnemis && this.groupeFlechesEnnemis.getChildren) {
+      this.groupeFlechesEnnemis.getChildren().forEach((child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      
+      if (this.groupeFlechesEnnemis.on) {
+        this.groupeFlechesEnnemis.on("add", (group, child) => {
+          if (child && child.setPipeline) {
+            child.setPipeline("Light2D");
+          }
+        });
+      }
+    }
+
     // Appliquer Light2D sur les bullets (existantes et futures)
     if (this.groupeBullets && this.groupeBullets.getChildren) {
       this.groupeBullets.getChildren().forEach((child) => {
@@ -449,6 +579,51 @@ export default class niveau1 extends Phaser.Scene {
           }
         });
       }
+    }
+  }
+
+  balleToucheEnnemi(bullet, ennemi) {
+    // Calculer les dégâts avec le bonus de Force
+    const degatsBase = 1;
+    
+    let bonusDegats = 0;
+    if (this.skillManager) {
+      bonusDegats = this.skillManager.getDamageBonus();
+    }
+    
+    const degatsTotal = degatsBase + bonusDegats;
+
+    ennemi.prendreDegats(degatsTotal);
+    bullet.destroy();
+    this.damageSound.play();
+  }
+
+  flecheToucheJoueur(player, fleche) {
+    if (fleche.origine === "ennemi") {
+      console.log("Joueur touché par une flèche !");
+      
+      const degats = fleche.degats || 1;
+      this.pvManager.damage(degats);
+
+      player.setTint(0xff0000);
+      this.time.delayedCall(200, () => {
+        player.clearTint();
+      });
+
+      fleche.destroy();
+    }
+  }
+
+  flecheToucheEnnemi(fleche, ennemi) {
+    // Ne pas toucher son propre ennemi source
+    if (fleche.origine === "ennemi" && fleche.ennemiSource === ennemi) {
+      return;
+    }
+
+    // Seulement les flèches du joueur blessent les ennemis
+    if (fleche.origine !== "ennemi") {
+      ennemi.prendreDegats(fleche.degats);
+      fleche.destroy();
     }
   }
 

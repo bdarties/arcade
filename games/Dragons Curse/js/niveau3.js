@@ -366,6 +366,11 @@ export default class niveau3 extends Phaser.Scene {
     }
 
     // ===========================
+    // TEMPORAIRE - Afficher les coordonnées en temps réel
+    // ===========================
+    fct.afficherCoordonneesJoueur(this);
+
+    // ===========================
     // Synchroniser le glow avec le joueur
     // ===========================
     if (this.playerGlow) {
