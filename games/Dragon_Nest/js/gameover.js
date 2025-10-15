@@ -94,8 +94,8 @@ export default class gameover extends Phaser.Scene {
   this.scene.stop();
   
   // Redémarrer la scène selection
-  this.scene.start("selection");
-}
+  const currentLevel = this.registry.get("currentLevel") || "selection"; 
+  this.scene.start(currentLevel);}
 
   goMenu() {
     this.registry.set("playerLives", 3);

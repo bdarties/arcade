@@ -570,42 +570,6 @@
                 }, 
                 {
                  "height":0,
-                 "id":17,
-                 "name":"petit_dragon",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":5204.42090909091,
-                 "y":1844.67
-                }, 
-                {
-                 "height":0,
-                 "id":18,
-                 "name":"petit_dragon",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":4422,
-                 "y":1843.33
-                }, 
-                {
-                 "height":0,
-                 "id":19,
-                 "name":"petit_dragon",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":3069.33,
-                 "y":1858
-                }, 
-                {
-                 "height":0,
                  "id":20,
                  "name":"potion",
                  "point":true,
@@ -615,18 +579,6 @@
                  "width":0,
                  "x":3888,
                  "y":1873.33
-                }, 
-                {
-                 "height":0,
-                 "id":26,
-                 "name":"slime_rouge",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":1335.33333333333,
-                 "y":1723.33666666667
                 }, 
                 {
                  "height":0,
@@ -654,18 +606,6 @@
                 }, 
                 {
                  "height":0,
-                 "id":39,
-                 "name":"petit_dragon",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":5900,
-                 "y":1812.12121212121
-                }, 
-                {
-                 "height":0,
                  "id":40,
                  "name":"dragon",
                  "point":true,
@@ -685,8 +625,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":6766,
-                 "y":1864
+                 "x":6759.93939393939,
+                 "y":1857.93939393939
                 }],
          "opacity":1,
          "type":"objectgroup",

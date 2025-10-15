@@ -54,7 +54,9 @@ export default class BaseLevel extends Phaser.Scene {
   create() {
     // 1. Initialiser l'état du jeu
     this.initializeGameState();
-    
+
+    this.registry.set("currentLevel", this.scene.key);
+
     // 2. Créer le monde (map, layers, caméra)
     this.setupWorld();
     
@@ -917,6 +919,9 @@ initializeGameState() {
     const offsetX = (this.lastDirection === "right") ? 40 : -40;
     this.attackHitbox.setPosition(this.player.x + offsetX, this.player.y);
     
+    // Jouer le son d'épée
+    this.sound.play('sword', { volume: 0.3 });
+
     // Activer la hitbox
     this.attackHitbox.active = true;
     this.attackHitbox.body.enable = true;
