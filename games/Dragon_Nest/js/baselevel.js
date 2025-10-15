@@ -479,7 +479,6 @@ initializeGameState() {
       this.physics.add.collider(this.champignons, platform);
       this.physics.add.collider(this.slimes, platform);
       this.physics.add.collider(this.dragons, platform);
-      this.physics.add.collider(this.bossDragons, platform);
     }
 
     // === COLLISIONS AVEC LA DEATH LAYER ===
@@ -1058,10 +1057,8 @@ initializeGameState() {
     
     // Mettre à jour les boss dragons
     this.bossDragons.getChildren().forEach(b => {
-      const dx = this.player.x - b.x;
-      b.setVelocityX(Math.abs(dx) < 300 ? Math.sign(dx) * 80 : 0);
-      b.setFlipX(dx > 0);
-    });
+    fct.updateBossDragon(b, this.player, this);
+  });
   }
 
   /**

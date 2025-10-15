@@ -1,7 +1,7 @@
 import { createEnemies } from './enemies.js';
 import { LevelUpScene } from './levelup.js';
 
-export const AVAILABLE_MAPS = ['map_1', 'map_2', 'map_3', 'map_4', 'map_5', 'map_6', 'map_7', 'map_8'];
+export const AVAILABLE_MAPS = ['map_1','map_2','map_3','map_4','map_5','map_7','map_8'];
 export const TILE_SIZE = 16;
 
 const BAR_CONFIG = {
@@ -28,17 +28,15 @@ export class PreloadScene extends Phaser.Scene {
       { type: 'image', key: 'grounds', path: 'assets/grounds.png' },
       { type: 'image', key: 'props', path: 'assets/props.png' },
       { type: 'image', key: 'surground', path: 'assets/surground.png' },
-      { type: 'image', key: 'walls', path: 'assets/walls.png' }
+      { type: 'image', key: 'walls', path: 'assets/walls.png' },
+      { type: 'image', key: 'doors', path: 'assets/doors.png' }
     ];   
 
     assets.forEach(({ type, key, path, config }) => {
       this.load[type](key, path, config);
     });
 
-    // Charger la map de spawn
     this.load.tilemapTiledJSON('map_spawn', 'assets/map/map_spawn.json');
-    
-    // Charger les autres maps
     AVAILABLE_MAPS.forEach(mapName => {
       this.load.tilemapTiledJSON(mapName, `assets/map/${mapName}.json`);
     });
@@ -59,67 +57,54 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = this.cameras.main;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  const { width, height } = this.cameras.main;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-    // Fond opaque solid pour ne pas voir le jeu
-    this.cameras.main.setBackgroundColor('#000000');
-    this.add.rectangle(0, 0, width, height, 0x000000, 1)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(0);
+  this.cameras.main.setBackgroundColor('#000000');
 
-    // GAME OVER
-    const gameOverText = this.add.text(centerX, centerY - 80, 'GAME OVER', {
-      fontSize: '72px',
-      fill: '#ff0000',
+  this.add.text(centerX, centerY - 80, 'GAME OVER', {
+    fontSize: '72px',
+    fill: '#ff0000',
+    fontFamily: 'Arial',
+    fontStyle: 'bold',
+    stroke: '#4a0000',
+    strokeThickness: 8
+  }).setOrigin(0.5);
+
+  const gameScene = this.scene.get('GameScene');
+  if (gameScene?.playerLevel) {
+    this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
+      fontSize: '22px',
+      fill: '#d4d29b',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      stroke: '#4a0000',
-      strokeThickness: 8
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
-
-    // Statistiques
-    const gameScene = this.scene.get('GameScene');
-    if (gameScene?.playerLevel) {
-      this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
-        fontSize: '22px',
-        fill: '#d4d29b',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 3
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
-    }
-
-    // Texte restart (pulse simple)
-    const restartText = this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
-      fontSize: '18px',
-      fill: '#ffffff',
-      fontFamily: 'Arial',
-      stroke: '#8b0000',
+      stroke: '#000000',
       strokeThickness: 3
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
-
-    // Pulse simple
-    this.tweens.add({
-      targets: restartText,
-      alpha: 0.5,
-      duration: 1000,
-      yoyo: true,
-      repeat: -1
-    });
-
-    // Contrôle K
-    this.input.keyboard.once('keydown-K', () => {
-      this.input.keyboard.removeAllListeners();
-      this.scene.stop('GameOverScene');
-      this.scene.stop('GameScene');
-      this.scene.stop('UIScene');
-      this.scene.start('MenuScene');
-    });
+    }).setOrigin(0.5);
   }
+
+  this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
+    fontSize: '18px',
+    fill: '#ffffff',
+    fontFamily: 'Arial',
+    stroke: '#8b0000',
+    strokeThickness: 3
+  }).setOrigin(0.5);
+
+  this.input.keyboard.once('keydown-K', () => {
+    // AJOUT: Réactiver tout avant de redémarrer
+    if (gameScene) {
+      gameScene.physics.resume();
+      gameScene.anims.resumeAll();
+    }
+    
+    this.scene.stop('GameOverScene');
+    this.scene.stop('GameScene');
+    this.scene.stop('UIScene');
+    this.scene.start('MenuScene');
+  });
+}
 
   shutdown() {
     this.input.keyboard.removeAllListeners();
@@ -211,13 +196,15 @@ export class GameScene extends Phaser.Scene {
       currentMap: null,
       isFirstSpawn: true,
       roomsCleared: 0,
-      playerHealth: 200,
-      maxHealth: 200,
+      playerHealth: 250,
+      maxHealth: 250,
       playerXP: 0,
       maxXP: 100,
       playerSpeed: 90,
-      healthRegen: 0.5,
+      healthRegen: 1,
       lastRegenTime: 0,
+      doorOutLayer: null,
+      tpOutZones: [],
       enemies: [],
       enemyGroup: null,
       projectilePool: null,
@@ -227,8 +214,8 @@ export class GameScene extends Phaser.Scene {
       isAttacking: false,
       attackCooldown: 0,
       attackDelay: 750,
-      attackRange: 70,
-      attackRangeSq: 1600,
+      attackRange: 45,
+      attackRangeSq: 1850,
       attackDamage: 20,
       particlePool: [],
       enemyUpdateCounter: 0,
@@ -236,7 +223,11 @@ export class GameScene extends Phaser.Scene {
       playerBody: null,
       swordSprite: null,
       spawnPoint: { x: 100, y: 100 },
-      surgroundLayer: null
+      surgroundLayer: null,
+      colliders: [],
+      groundCheckCounter: 0,
+      lastGroundCheckResult: true,
+      teleportZones: []
     });
   }
 
@@ -245,30 +236,34 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#584422');
     this.createAnimations();
     this.loadRoom('map_spawn');
-    this.initParticlePool(15);
+    this.initParticlePool(30);
   }
 
   initParticlePool(count) {
     for (let i = 0; i < count; i++) {
       const particle = this.add.rectangle(0, 0, 3, 3, 0xffffff);
-      particle.setActive(false).setVisible(false);
+      particle.setActive(false).setVisible(false).setDepth(100);
       this.particlePool.push(particle);
     }
   }
 
   getParticle() {
-    let particle = this.particlePool.find(p => !p.active);
-    if (!particle) {
-      particle = this.add.rectangle(0, 0, 3, 3, 0xffffff);
-      this.particlePool.push(particle);
+    for (let i = 0; i < this.particlePool.length; i++) {
+      const p = this.particlePool[i];
+      if (!p.active) {
+        return p.setActive(true).setVisible(true).setAlpha(1).setScale(1);
+      }
     }
+    
+    const particle = this.particlePool[0];
+    this.tweens.killTweensOf(particle);
     return particle.setActive(true).setVisible(true).setAlpha(1).setScale(1);
   }
   
   releaseParticle(particle) {
     if (particle?.active) {
-      particle.setActive(false).setVisible(false);
       this.tweens.killTweensOf(particle);
+      particle.setActive(false).setVisible(false);
     }
   }
 
@@ -308,22 +303,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   playerDeath() {
-    if (this.isDying) return;
-    this.isDying = true;
-    
-    this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
-    this.enemies.forEach(e => e.sprite?.body?.setVelocity(0, 0));
-    this.swordSprite?.setVisible(false);
-    this.player.anims.stop();
-    this.player.anims.play('death', true);
-    
-    this.player.once('animationcomplete', () => {
-      this.time.delayedCall(1000, () => {
-        this.isGameOver = true;
-        this.scene.launch('GameOverScene');
-      });
+  if (this.isDying) return;
+  this.isDying = true;
+  
+  this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
+  this.enemies.forEach(e => e.sprite?.body?.setVelocity(0, 0));
+  this.swordSprite?.setVisible(false);
+  this.player.anims.stop();
+  this.player.anims.play('death', true);
+  
+  this.player.once('animationcomplete', () => {
+    this.time.delayedCall(1000, () => {
+      this.isGameOver = true;
+      
+      this.tweens.killAll();
+      this.physics.pause();
+      this.anims.pauseAll();
+      
+      this.scene.pause('GameScene');
+      this.scene.launch('GameOverScene');
     });
-  }
+  });
+}
 
   playerFall() {
     if (this.isFalling || this.isDying || this.isGameOver) return;
@@ -341,6 +342,7 @@ export class GameScene extends Phaser.Scene {
       if (this.playerHealth <= 0) {
         this.isDying = true;
         this.isGameOver = true;
+        this.scene.pause('GameScene');
         this.scene.launch('GameOverScene');
         return;
       }
@@ -372,26 +374,101 @@ export class GameScene extends Phaser.Scene {
   }
 
   levelUp() {
-    this.playerLevel++;
-    this.scene.pause();
-    
-    if (!this.scene.get('LevelUpScene')) {
-      this.scene.add('LevelUpScene', LevelUpScene, true);
-    } else {
-      this.scene.launch('LevelUpScene');
+  this.playerLevel++;
+  
+  this.tweens.killAll();
+  this.physics.pause();
+
+  this.player?.anims?.pause();
+  this.enemies.forEach(e => e.sprite?.anims?.pause());
+
+  const overlay = this.add.rectangle(
+    this.cameras.main.scrollX + this.cameras.main.width / 2,
+    this.cameras.main.scrollY + this.cameras.main.height / 2,
+    this.cameras.main.width,
+    this.cameras.main.height,
+    0x000000,
+    0
+  ).setScrollFactor(0).setDepth(200);
+  
+  this.tweens.add({
+    targets: overlay,
+    alpha: 1,
+    duration: 300,
+    ease: 'Power2',
+    onComplete: () => {
+      this.scene.pause('GameScene');
+      
+      if (!this.scene.get('LevelUpScene')) {
+        this.scene.add('LevelUpScene', LevelUpScene, true);
+      } else {
+        this.scene.launch('LevelUpScene');
+      }
+      
+      this.time.delayedCall(100, () => {
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: 300,
+          ease: 'Power2',
+          onComplete: () => overlay.destroy()
+        });
+      });
     }
-  }
+  });
+}
 
   cleanupRoom() {
-    [this.map, this.player, this.sword, this.collisionLayer, this.propsCollisionLayer, this.surgroundLayer]
-      .forEach(obj => obj?.destroy());
+    this.tweens.killAll();
     
-    this.enemyGroup?.clear(true, true);
-    this.enemies.forEach(e => e.destroy());
+    // Nettoyer les colliders
+    for (let i = 0; i < this.colliders.length; i++) {
+      const collider = this.colliders[i];
+      if (collider && collider.destroy) {
+        collider.destroy();
+      }
+    }
+    this.colliders = [];
+    
+    // Nettoyer les zones de téléportation
+    for (let i = 0; i < this.teleportZones.length; i++) {
+      const zone = this.teleportZones[i];
+      if (zone && zone.destroy) {
+        zone.destroy();
+      }
+    }
+    this.teleportZones = [];
+    
+    // Détruire les objets de la map
+    [this.map, this.player, this.sword, this.collisionLayer, this.propsCollisionLayer, this.surgroundLayer]
+      .forEach(obj => {
+        if (obj) {
+          if (obj.body) {
+            obj.body.destroy();
+          }
+          obj.destroy();
+        }
+      });
+    
+    // Nettoyer les ennemis (boucle inverse optimisée)
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const e = this.enemies[i];
+      if (e && e.destroy) {
+        e.destroy();
+      }
+    }
     this.enemies = [];
     
+    // Nettoyer le groupe
+    if (this.enemyGroup) {
+      this.enemyGroup.clear(true, true);
+      this.enemyGroup = null;
+    }
+    
+    // Nettoyer projectiles
     if (this.projectilePool) {
       this.projectilePool.clear();
+      this.projectilePool = null;
     }
   }
 
@@ -402,17 +479,42 @@ export class GameScene extends Phaser.Scene {
     this.visitedRooms.push(mapName);
     this.map = this.make.tilemap({ key: mapName });
 
+    // OPTIMISATION CRITIQUE: Physics bounds AVANT createPlayer
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+
     const tilesets = {
       grounds: this.map.addTilesetImage('grounds', 'grounds'),
       walls: this.map.addTilesetImage('walls', 'walls'),
       surground: this.map.addTilesetImage('surground', 'surground'),
-      props: this.map.addTilesetImage('props', 'props')
+      props: this.map.addTilesetImage('props', 'props'),
+      doors: this.map.addTilesetImage('doors', 'doors')
     };
 
-    this.map.createLayer('calque_grounds', tilesets.grounds, 0, 0);
+    // OPTIMISATION CRITIQUE: Tile Culling activé
+    const groundsLayer = this.map.createLayer('calque_grounds', tilesets.grounds, 0, 0);
+    groundsLayer.setCullPadding(2, 2);
+
     const wallsLayer = this.map.createLayer('calque_walls', tilesets.walls, 0, 0);
+    wallsLayer.setCullPadding(2, 2);
+
     this.surgroundLayer = this.map.createLayer('calque_surground', tilesets.surground, 0, 0);
+    this.surgroundLayer.setCullPadding(2, 2);
+
     const propsLayer = this.map.createLayer('calque_props', tilesets.props, 0, 0);
+    propsLayer.setCullPadding(2, 2);
+
+    // Créer le calque door_in (fixe) s'il existe
+    if (this.map.getLayer('calque_door_in')) {
+      const doorInLayer = this.map.createLayer('calque_door_in', tilesets.doors, 0, 0);
+      doorInLayer.setCullPadding(2, 2);
+    }
+
+    // Créer le calque door_out (qui se cachera quand les ennemis sont morts)
+    if (this.map.getLayer('calque_door_out')) {
+      this.doorOutLayer = this.map.createLayer('calque_door_out', tilesets.doors, 0, 0);
+      this.doorOutLayer.setCullPadding(2, 2);
+      this.doorOutLayer.setVisible(true); // Visible au début
+    }
 
     wallsLayer.setCollisionByProperty({ Solide: true });
     propsLayer.setCollisionByProperty({ Solide: true });
@@ -423,30 +525,24 @@ export class GameScene extends Phaser.Scene {
     this.createPlayer();
     this.createEnemiesInRoom();
 
+    // OPTIMISATION: Smoothing réduit pour Pi4
     this.cameras.main.setZoom(3);
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
     this.setupTeleporters();
     
-    // Marquer que le premier spawn est terminé
     if (this.isFirstSpawn) {
       this.isFirstSpawn = false;
     }
   }
 
   loadRandomRoom() {
-    // Incrémenter le nombre de salles complétées
     this.roomsCleared++;
-    
-    // Filtrer les maps disponibles pour exclure la map actuelle
     const availableMaps = AVAILABLE_MAPS.filter(map => map !== this.currentMap);
-    
-    // Si toutes les maps sont déjà utilisées, prendre une au hasard
     const mapName = availableMaps.length > 0 
       ? Phaser.Utils.Array.GetRandom(availableMaps)
       : Phaser.Utils.Array.GetRandom(AVAILABLE_MAPS);
-    
     this.loadRoom(mapName);
   }
 
@@ -467,57 +563,48 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5);
     this.swordSprite = this.sword;
 
-    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
-    this.physics.add.collider(this.player, [this.collisionLayer, this.propsCollisionLayer]);
+    const playerCollider = this.physics.add.collider(this.player, [this.collisionLayer, this.propsCollisionLayer]);
+    this.colliders.push(playerCollider);
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.player.anims.play('idle', true);
   }
 
   createEnemiesInRoom() {
-    // Récupérez le nombre de salles complétées (à adapter selon votre système)
     const roomsCleared = this.roomsCleared || 0;
-    
     this.enemies = createEnemies(this, roomsCleared);
     this.enemyGroup = this.physics.add.group();
     this.enemies.forEach(e => this.enemyGroup.add(e.sprite));
 
-    this.physics.add.collider(
+    const enemyWallCollider = this.physics.add.collider(
       this.enemyGroup, 
       [this.collisionLayer, this.propsCollisionLayer],
       (enemySprite) => enemySprite.enemyRef?.onWallCollision()
     );
+    this.colliders.push(enemyWallCollider);
 
-    this.physics.add.overlap(
+    const enemyPlayerCollider = this.physics.add.overlap(
       this.player, 
       this.enemyGroup,
       (player, enemySprite) => enemySprite.enemyRef?.onPlayerContact(player)
     );
-  }
-
-  setupTeleporters() {
-    const teleporters = this.map.filterObjects('calque_joueur', obj => obj.type === 'tp_out');
-    
-    teleporters.forEach(tp => {
-      const zone = this.add.zone(tp.x, tp.y, tp.width, tp.height).setOrigin(0, 0);
-      this.physics.world.enable(zone);
-      this.physics.add.overlap(this.player, zone, () => {
-        if (!this.isGameOver && !this.isDying && !this.isFalling) {
-          this.loadRandomRoom();
-        }
-      });
-    });
+    this.colliders.push(enemyPlayerCollider);
   }
 
   update(time) {
     if (!this.player || this.isGameOver || this.isDying || this.isFalling) return;
 
     this.updatePlayer();
-    this.checkGroundSupport();
+    
+    if (++this.groundCheckCounter >= 5) {
+      this.checkGroundSupport();
+      this.groundCheckCounter = 0;
+    }
+    
     this.updateHealthRegen(time);
     
-    if (++this.enemyUpdateCounter >= 3) {
-      this.updateEnemies(time);
+    if (++this.enemyUpdateCounter >= 6) {
+      this.updateEnemiesOptimized(time);
       this.enemyUpdateCounter = 0;
     }
     
@@ -528,50 +615,88 @@ export class GameScene extends Phaser.Scene {
     this.updateAutoAttack();
   }
 
+  updateEnemiesOptimized(time) {
+    // OPTIMISATION: Boucle inverse in-place au lieu de filter()
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const e = this.enemies[i];
+      if (!e.isAlive()) {
+        e.destroy();
+        this.enemies.splice(i, 1);
+        continue;
+      }
+    }
+    
+    // Culling optimisé
+    const cam = this.cameras.main;
+    const viewRadius = Math.max(cam.width, cam.height) / cam.zoom + 100;
+    const viewRadiusSq = viewRadius * viewRadius;
+    const px = this.player.x;
+    const py = this.player.y;
+    
+    for (let i = 0; i < this.enemies.length; i++) {
+      const e = this.enemies[i];
+      const dx = e.sprite.x - px;
+      const dy = e.sprite.y - py;
+      const distSq = dx * dx + dy * dy;
+      
+      if (distSq < viewRadiusSq) {
+        e.update(this.player, time);
+      } else {
+        e.sprite.body?.setVelocity(0, 0);
+      }
+    }
+
+    // Vérifier s'il reste des ennemis vivants
+    const hasAliveEnemies = this.enemies.some(e => e.isAlive());
+
+    // Cacher la porte de sortie si tous les ennemis sont morts
+     if (this.doorOutLayer) {
+    this.doorOutLayer.setVisible(hasAliveEnemies); // ← SIMPLE CORRECTION ICI
+  }
+
+    this.updateTpOutCollisions();
+  }
+
   checkGroundSupport() {
-  if (!this.surgroundLayer) return;
-  
-  const playerBody = this.player.body;
-  const playerWidth = playerBody.width;
-  const playerHeight = playerBody.height;
-  
-  // Zone centrale de 40% du corps en largeur et hauteur (30% de marge de chaque côté)
-  const centerMarginX = playerWidth * 0.60;
-  const centerMarginY = playerHeight * 0.50;
-  
-  const centerLeft = playerBody.left + centerMarginX;
-  const centerRight = playerBody.right - centerMarginX;
-  const centerTop = playerBody.top + centerMarginY;
-  const centerBottom = playerBody.bottom - centerMarginY;
-  
-  const tileLeftX = Math.floor(centerLeft / TILE_SIZE);
-  const tileRightX = Math.floor(centerRight / TILE_SIZE);
-  const tileTopY = Math.floor(centerTop / TILE_SIZE);
-  const tileBottomY = Math.floor(centerBottom / TILE_SIZE);
-  
-  let hasSolidSupport = false;
-  let hasTiles = false;
-  
-  // Vérifier toutes les tuiles dans la zone centrale 2D
-  for (let tileX = tileLeftX; tileX <= tileRightX; tileX++) {
-    for (let tileY = tileTopY; tileY <= tileBottomY; tileY++) {
-      const tile = this.surgroundLayer.getTileAt(tileX, tileY);
-      if (tile && tile.index !== -1) {
-        hasTiles = true;
-        if (!tile.properties || !tile.properties.fall) {
-          hasSolidSupport = true;
-          break;
+    if (!this.surgroundLayer) return;
+    
+    const playerBody = this.player.body;
+    const playerWidth = playerBody.width;
+    const playerHeight = playerBody.height;
+    
+    const centerMarginX = playerWidth * 0.60;
+    const centerMarginY = playerHeight * 0.50;
+    
+    const centerLeft = playerBody.left + centerMarginX;
+    const centerRight = playerBody.right - centerMarginX;
+    const centerTop = playerBody.top + centerMarginY;
+    const centerBottom = playerBody.bottom - centerMarginY;
+    
+    const tileLeftX = Math.floor(centerLeft / TILE_SIZE);
+    const tileRightX = Math.floor(centerRight / TILE_SIZE);
+    const tileTopY = Math.floor(centerTop / TILE_SIZE);
+    const tileBottomY = Math.floor(centerBottom / TILE_SIZE);
+    
+    let hasSolidSupport = false;
+    let hasTiles = false;
+    
+    // OPTIMISATION: Break précoce dès qu'on trouve un support
+    for (let tileX = tileLeftX; tileX <= tileRightX && !hasSolidSupport; tileX++) {
+      for (let tileY = tileTopY; tileY <= tileBottomY && !hasSolidSupport; tileY++) {
+        const tile = this.surgroundLayer.getTileAt(tileX, tileY);
+        if (tile && tile.index !== -1) {
+          hasTiles = true;
+          if (!tile.properties || !tile.properties.fall) {
+            hasSolidSupport = true;
+          }
         }
       }
     }
-    if (hasSolidSupport) break;
+    
+    if (hasTiles && !hasSolidSupport) {
+      this.playerFall();
+    }
   }
-  
-  // Le joueur tombe uniquement si des tuiles existent ET toute la zone centrale est sur des tuiles fall
-  if (hasTiles && !hasSolidSupport) {
-    this.playerFall();
-  }
-}
 
   updateHealthRegen(time) {
     if (this.healthRegen > 0 && this.playerHealth < this.maxHealth && time - this.lastRegenTime >= 1000) {
@@ -590,8 +715,14 @@ export class GameScene extends Phaser.Scene {
     if (vx) this.player.setFlipX(vx < 0);
 
     if (vx || vy) {
-      const invLen = 1 / Math.sqrt(vx * vx + vy * vy);
-      this.playerBody.setAcceleration(vx * invLen * 500, vy * invLen * 500);
+      // OPTIMISATION: Éviter sqrt inutile si un seul axe
+      if (vx && vy) {
+        const invLen = 1 / Math.sqrt(vx * vx + vy * vy);
+        this.playerBody.setAcceleration(vx * invLen * 500, vy * invLen * 500);
+      } else {
+        this.playerBody.setAcceleration(vx * 500, vy * 500);
+      }
+      
       if (this.player.anims.currentAnim?.key !== 'walk') {
         this.player.anims.play('walk', true);
       }
@@ -600,15 +731,6 @@ export class GameScene extends Phaser.Scene {
       if (this.player.anims.currentAnim?.key !== 'idle') {
         this.player.anims.play('idle', true);
       }
-    }
-  }
-
-  updateEnemies(time) {
-    this.enemies = this.enemies.filter(e => e.isAlive());
-    
-    for (let i = 0; i < this.enemies.length; i++) {
-      const e = this.enemies[i];
-      e.update(this.player, time);
     }
   }
 
@@ -623,7 +745,9 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i];
       
-      if (!e.isAlive()) continue;
+      // OPTIMISATION: Variable locale pour isAlive
+      const alive = e.isAlive();
+      if (!alive) continue;
       
       const dx = e.sprite.x - px;
       const dy = e.sprite.y - py;
@@ -665,20 +789,136 @@ export class GameScene extends Phaser.Scene {
 
       const px = this.player.x;
       const py = this.player.y;
-      const rangeSq = this.attackRangeSq;
+      
+      const attackAngle = angle;
+      const coneAngle = Math.PI / 2.8; 
+      const attackRange = this.attackRange;
+      const attackRangeSq = this.attackRangeSq;
 
       for (let i = 0; i < this.enemies.length; i++) {
         const e = this.enemies[i];
         
-        if (!e.isAlive()) continue;
+        const alive = e.isAlive();
+        if (!alive) continue;
         
         const dx = e.sprite.x - px;
         const dy = e.sprite.y - py;
+        const distSq = dx * dx + dy * dy;
 
-        if (dx * dx + dy * dy <= rangeSq) {
+        if (distSq > attackRangeSq) continue;
+
+        const enemyAngle = Math.atan2(dy, dx);
+        let angleDiff = Math.abs(enemyAngle - attackAngle);
+        
+        if (angleDiff > Math.PI) {
+          angleDiff = 2 * Math.PI - angleDiff;
+        }
+
+        if (angleDiff <= coneAngle / 2) {
           e.takeDamage(this.attackDamage, px, py);
         }
       }
     });
+  }
+
+  setupTeleporters() {
+    const allObjects = this.map.getObjectLayer('calque_joueur')?.objects || [];
+    const teleporters = allObjects.filter(obj => obj.name && obj.name.startsWith('tp_'));
+    
+    teleporters.forEach(tp => {
+      const zone = this.add.zone(tp.x, tp.y, tp.width, tp.height).setOrigin(0, 0);
+      this.physics.world.enable(zone);
+      this.teleportZones.push(zone);
+      
+      const tpCollider = this.physics.add.overlap(this.player, zone, () => {
+        const now = this.time.now;
+        
+        if (this.isGameOver || this.isDying || this.isFalling || now < this.teleportCooldown) {
+          return;
+        }
+        
+        const tpNumber = parseInt(tp.name.split('_')[1]);
+        
+        if (tpNumber % 2 === 1) {
+          const targetTpName = `tp_${tpNumber + 1}`;
+          const targetTp = allObjects.find(obj => obj.name === targetTpName);
+          
+          if (targetTp) {
+            this.teleportCooldown = now + 500;  
+            this.player.setPosition(targetTp.x + targetTp.width / 2, targetTp.y + targetTp.height / 2);
+            this.player.setAlpha(0.3);
+            this.tweens.add({
+              targets: this.player,
+              alpha: 1,
+              duration: 200,
+              ease: 'Power2'
+            });
+          }
+        }
+        else {
+          const targetTpName = `tp_${tpNumber - 1}`;
+          const targetTp = allObjects.find(obj => obj.name === targetTpName);
+          
+          if (targetTp) {
+            this.teleportCooldown = now + 2000;
+            
+            this.player.setPosition(targetTp.x + targetTp.width / 2, targetTp.y + targetTp.height / 2);
+            
+            this.player.setAlpha(0.3);
+            this.tweens.add({
+              targets: this.player,
+              alpha: 1,
+              duration: 200,
+              ease: 'Power2'
+            });
+          }
+        }
+      });
+      this.colliders.push(tpCollider);
+    });
+    
+  const tpOuts = allObjects.filter(obj => obj.type === 'tp_out');
+  tpOuts.forEach(tp => {
+    const zone = this.add.zone(tp.x, tp.y, tp.width, tp.height).setOrigin(0, 0);
+    this.physics.world.enable(zone);
+    this.tpOutZones.push(zone);
+    
+    zone.tpCollider = this.physics.add.overlap(this.player, zone, () => {
+      if (this.isGameOver || this.isDying || this.isFalling) {
+        return;
+      }
+      
+      const hasAliveEnemies = this.enemies.some(e => e.isAlive());
+      
+      if (hasAliveEnemies) {
+        return;
+      }
+      
+      this.loadRandomRoom();
+    });
+    this.colliders.push(zone.tpCollider);
+  });
+  }
+
+  updateTpOutCollisions() {
+    const hasAliveEnemies = this.enemies.some(e => e.isAlive());
+    
+    this.tpOutZones.forEach(zone => {
+      if (zone.tpCollider) {
+        zone.tpCollider.active = !hasAliveEnemies;
+      }
+    });
+  }
+
+  shutdown() {
+    this.tweens.killAll();
+    this.cleanupRoom();
+    
+    for (let i = 0; i < this.particlePool.length; i++) {
+      const p = this.particlePool[i];
+      this.tweens.killTweensOf(p);
+      p.destroy();
+    }
+    this.particlePool = [];
   }
 }

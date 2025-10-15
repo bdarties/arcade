@@ -30,75 +30,52 @@ export class LevelUpScene extends Phaser.Scene {
   init() {
     this.selectedCardIndex = 1;
     this.cards = [];
-    this.isAnimating = false;
-    this.isClosing = false;
+    this.elementsUI = [];
   }
 
   create() {
-    const { width, height } = this.cameras.main;
-    
-    this.cameras.main.setBackgroundColor('#1a1a2e');
-    
-    // Fond simple opaque (pas de voir le jeu derrière)
-    this.add.rectangle(0, 0, width, height, 0x000000, 0.95)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(0);
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
 
-    // Texte "LEVEL UP!" sans animation complexe
-    this.add.text(width / 2, 60, 'LEVEL UP!', {
-      fontSize: '52px',
-      fill: '#9bbc0f',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      stroke: '#306230',
-      strokeThickness: 4
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1);
+    // Overlay
+    const overlay = this.add.rectangle(
+      gameWidth / 2, gameHeight / 2,
+      gameWidth, gameHeight,
+      0x000000, 0.70
+    ).setScrollFactor(0).setDepth(150);
+    this.elementsUI.push(overlay);
 
-    // Instructions
-    this.add.text(width / 2, height - 40, 'Flèches ← → | K ou ENTRÉE', {
-      fontSize: '14px',
-      fill: '#d4d29b',
-      fontFamily: 'Arial',
-      align: 'center'
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(1).setAlpha(0.7);
+    // Titre
+    const titre = this.add.text(
+      gameWidth / 2, 60,
+      'LEVEL UP!',
+      {
+        fontSize: '52px',
+        fill: '#9bbc0f',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#306230',
+        strokeThickness: 4
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(151);
+    this.elementsUI.push(titre);
 
-    // Générer les cartes
     this.generateUpgradeCards();
 
-    // Activer les contrôles
-    this.time.delayedCall(50, () => {
-      if (!this.isClosing) {
-        this.setupKeyboardControls();
-        this.updateCardSelection();
-      }
-    });
-  }
-
-  setupKeyboardControls() {
-    this.input.keyboard.removeAllListeners();
-
-    const handleLeft = () => {
-      if (this.isAnimating || this.isClosing) return;
+    this.input.keyboard.on('keydown-LEFT', () => {
       this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
       this.updateCardSelection();
-    };
+    });
 
-    const handleRight = () => {
-      if (this.isAnimating || this.isClosing) return;
+    this.input.keyboard.on('keydown-RIGHT', () => {
       this.selectedCardIndex = Math.min(2, this.selectedCardIndex + 1);
       this.updateCardSelection();
-    };
+    });
 
-    const handleConfirm = () => {
-      if (this.isAnimating || this.isClosing) return;
-      this.confirmSelection();
-    };
+    this.input.keyboard.on('keydown-K', () => this.confirmSelection());
+    this.input.keyboard.on('keydown-ENTER', () => this.confirmSelection());
 
-    this.input.keyboard.on('keydown-LEFT', handleLeft);
-    this.input.keyboard.on('keydown-RIGHT', handleRight);
-    this.input.keyboard.on('keydown-K', handleConfirm);
-    this.input.keyboard.on('keydown-ENTER', handleConfirm);
+    this.updateCardSelection();
   }
 
   generateUpgradeCards() {
@@ -134,7 +111,7 @@ export class LevelUpScene extends Phaser.Scene {
     
     const container = this.add.container(x, y)
       .setScrollFactor(0)
-      .setDepth(1);
+      .setDepth(151);
 
     const cardBg = this.add.sprite(0, 0, 'levelup', rarityFrame)
       .setScale(cardScale)
@@ -158,67 +135,48 @@ export class LevelUpScene extends Phaser.Scene {
     cardBg.setInteractive({ useHandCursor: true });
     
     cardBg.on('pointerover', () => {
-      if (this.isAnimating || this.isClosing) return;
       this.selectedCardIndex = index;
       this.updateCardSelection();
     });
 
-    cardBg.on('pointerdown', () => {
-      if (this.isAnimating || this.isClosing) return;
-      this.confirmSelection();
-    });
+    cardBg.on('pointerdown', () => this.confirmSelection());
 
-    this.cards.push({
-      container,
-      upgrade,
-      index,
-      baseY: y
-    });
+    this.cards.push({ container, upgrade, index });
+    this.elementsUI.push(container);
   }
 
   updateCardSelection() {
     this.cards.forEach((card, i) => {
       const isSelected = i === this.selectedCardIndex;
-      card.container.y = card.baseY + (isSelected ? -20 : 0);
-      card.container.setScale(isSelected ? 1.05 : 1);
+      card.container.setScale(isSelected ? 1.1 : 1);
     });
   }
 
   confirmSelection() {
-    if (this.isAnimating || this.isClosing) return;
-    
-    this.isAnimating = true;
-    this.isClosing = true;
-    
-    const selectedCard = this.cards[this.selectedCardIndex];
-    this.selectUpgrade(selectedCard.upgrade);
-    
-    // Flash rapide
-    const flash = this.add.rectangle(0, 0, 1280, 720, 0xffffff, 0.3)
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(100);
+  const selectedCard = this.cards[this.selectedCardIndex];
+  if (!selectedCard) return;
 
-    this.tweens.add({
-      targets: flash,
-      alpha: 0,
-      duration: 150,
-      onComplete: () => {
-        flash.destroy();
-        this.closeScene();
-      }
-    });
-  }
-
-  closeScene() {
-    this.input.keyboard.removeAllListeners();
-    this.scene.stop('LevelUpScene');
-    
-    const gameScene = this.scene.get('GameScene');
-    if (gameScene) {
-      gameScene.scene.resume();
+  this.selectUpgrade(selectedCard.upgrade);
+  
+  // Nettoyer TOUS les éléments UI
+  this.elementsUI.forEach(el => {
+    if (el && el.destroy) {
+      el.destroy();
     }
+  });
+  this.elementsUI = [];
+  this.cards = [];
+  
+  // AJOUT: Réactiver la physique et les animations
+  const gameScene = this.scene.get('GameScene');
+  if (gameScene) {
+    gameScene.physics.resume();
+    gameScene.anims.resumeAll();
+    gameScene.scene.resume();
   }
+  
+  this.scene.stop('LevelUpScene');
+}
 
   selectUpgrade(upgrade) {
     const gameScene = this.scene.get('GameScene');
@@ -246,6 +204,12 @@ export class LevelUpScene extends Phaser.Scene {
 
   shutdown() {
     this.input.keyboard.removeAllListeners();
+    this.elementsUI.forEach(el => {
+      if (el && el.destroy) {
+        el.destroy();
+      }
+    });
+    this.elementsUI = [];
     this.cards = [];
   }
 }

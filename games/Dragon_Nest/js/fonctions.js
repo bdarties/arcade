@@ -209,23 +209,91 @@ export function updateChampignon(champi, player, scene) {
         champi.play("champignon_walk", true);
 }
 
-// ------------------ BOSS DRAGON ------------------
+// ------------------ BOSS DRAGON (VERSION POURSUITE PERMANENTE) ------------------
 export function preloadBossDragon(scene) {
-    scene.load.spritesheet("boss_dragon", "assets/dragon.png", { frameWidth: 152, frameHeight: 128 });
+    scene.load.spritesheet("boss_dragon", "assets/dragon.png", { 
+        frameWidth: 144, 
+        frameHeight: 128 
+    });
 }
 
 export function createBossDragon(scene, x, y) {
+    // Créer l'animation si elle n'existe pas
+    if (!scene.anims.exists("anim_boss_dragon")) {
+        scene.anims.create({
+            key: "anim_boss_dragon",
+            frames: scene.anims.generateFrameNumbers("boss_dragon", { start: 0, end: 5 }),
+            frameRate: 8,
+            repeat: -1
+        });
+    }
+
     let boss = scene.physics.add.sprite(x, y, "boss_dragon");
-    boss.setOrigin(0.5, 1);
-    boss.setCollideWorldBounds(true);
-    boss.setBounce(0.2);
-    boss.setDisplaySize(128, 128);
-    boss.body.setSize(128, 128);
-    boss.health = 10;
-    boss.damage = 3; // points de dégâts infligés
+    boss.setOrigin(0.5, 0.5);
+    boss.setCollideWorldBounds(false); // Pas de collision avec les bords pour voler librement
+    boss.body.allowGravity = false; // Pas de gravité pour voler
+    boss.setDisplaySize(300, 300); // Taille d'affichage du sprite (modifiable)
+    boss.body.setSize(90, 40); // Taille de la hitbox pour les collisions (modifiable)
+    
+    // IMPORTANT : Marquer le boss comme "volant" pour éviter les collisions avec les tuiles
+    boss.isBoss = true; // Tag pour identifier le boss
+    boss.setDepth(100); // S'assure qu'il s'affiche au-dessus des autres éléments
+    
+    // Propriétés personnalisées
+    boss.startX = x;
+    boss.startY = y;
+    boss.chaseSpeed = 200; // Vitesse de poursuite (ajustable)
+    boss.health = 10000000000000000000;
+    boss.damage = 4;
+    
+    // IMPORTANT : Lancer l'animation
+    boss.play("anim_boss_dragon");
+    
     return boss;
 }
 
+// Fonction pour mettre à jour le comportement du boss dragon
+// Le boss suit TOUJOURS le joueur, peu importe la distance
+export function updateBossDragon(boss, player, scene) {
+    if (!boss || !boss.body) return;
+    
+    // --- MODE POURSUITE PERMANENTE ---
+    // Calculer la direction vers le joueur
+    const dx = player.x - boss.x;
+    const dy = player.y - boss.y;
+    const angle = Math.atan2(dy, dx);
+    
+    // Calculer la distance pour ajuster la vitesse (optionnel)
+    const distance = Phaser.Math.Distance.Between(player.x, player.y, boss.x, boss.y);
+    
+    // Vitesse adaptative : plus rapide quand le joueur est loin
+    let currentSpeed = boss.chaseSpeed;
+    if (distance > 400) {
+        currentSpeed = boss.chaseSpeed * 1.3; // 30% plus rapide si très loin
+    } else if (distance < 150) {
+        currentSpeed = boss.chaseSpeed * 0.7; // 30% plus lent si très proche
+    }
+    
+    // Mouvement avec composante horizontale et verticale
+    boss.setVelocityX(Math.cos(angle) * currentSpeed);
+    boss.setVelocityY(Math.sin(angle) * currentSpeed * 0.8); // Ratio vertical
+    
+    // Ajouter un léger effet de vol ondulé pour plus de naturel
+    const wavyOffset = Math.sin(scene.time.now / 400) * 8;
+    boss.setVelocityY(boss.body.velocity.y + wavyOffset);
+    
+    // Orientation automatique selon la direction
+    if (boss.body.velocity.x > 5) {
+        boss.setFlipX(true);
+    } else if (boss.body.velocity.x < -5) {
+        boss.setFlipX(false);
+    }
+    
+    // S'assurer que l'animation joue toujours
+    if (!boss.anims.isPlaying || boss.anims.currentAnim.key !== "anim_boss_dragon") {
+        boss.play("anim_boss_dragon", true);
+    }
+}
 // ------------------ POTION ------------------
 export function createPotion(scene, x, y) {
     let potion = scene.physics.add.sprite(x, y, "potion");
