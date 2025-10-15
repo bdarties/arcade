@@ -1,4 +1,5 @@
 import { createEnemies } from './enemies.js';
+import { LevelUpScene } from './levelup.js';
 
 export const AVAILABLE_MAPS = ['map_1','map_2','map_3','map_4','map_5','map_7','map_8'];
 export const TILE_SIZE = 16;
@@ -8,30 +9,6 @@ const BAR_CONFIG = {
   MARGIN_LEFT: 8,
   MARGIN_RIGHT: 8,
   get USABLE_WIDTH() { return this.WIDTH - this.MARGIN_LEFT - this.MARGIN_RIGHT; }
-};
-
-const UPGRADE_CONFIG = {
-  bronze: [
-    { type: 'health', value: 10, icon: 13, text: '+10 Vie Max' },
-    { type: 'damage', value: 5, icon: 6, text: '+5 Dégâts' },
-    { type: 'speed', value: 5, icon: 2, text: '+5 Vitesse' },
-    { type: 'regen', value: 0.5, icon: 16, text: '+0.5/s Régén.' },
-    { type: 'attackSpeed', value: 5, icon: 0, text: '+5% Vitesse Attaque' }
-  ],
-  silver: [
-    { type: 'health', value: 20, icon: 13, text: '+20 Vie Max' },
-    { type: 'damage', value: 10, icon: 6, text: '+10 Dégâts' },
-    { type: 'speed', value: 10, icon: 2, text: '+10 Vitesse' },
-    { type: 'regen', value: 1, icon: 16, text: '+1/s Régén.' },
-    { type: 'attackSpeed', value: 10, icon: 0, text: '+10% Vitesse Attaque' }
-  ],
-  gold: [
-    { type: 'health', value: 50, icon: 13, text: '+50 Vie Max' },
-    { type: 'damage', value: 20, icon: 6, text: '+20 Dégâts' },
-    { type: 'speed', value: 20, icon: 2, text: '+20 Vitesse' },
-    { type: 'regen', value: 3, icon: 16, text: '+3/s Régén.' },
-    { type: 'attackSpeed', value: 20, icon: 0, text: '+20% Vitesse Attaque' }
-  ]
 };
 
 export class PreloadScene extends Phaser.Scene {
@@ -66,6 +43,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create() {
+    if (!this.scene.get('LevelUpScene')) {
+      this.scene.add('LevelUpScene', LevelUpScene, false);
+    }
     this.scene.start('GameScene');
     this.scene.launch('UIScene');
   }
@@ -76,67 +56,58 @@ export class GameOverScene extends Phaser.Scene {
     super({ key: 'GameOverScene' });
   }
 
-  init(data) {
-    this.playerLevel = data?.playerLevel || 0;
-  }
-
   create() {
-    const { width, height } = this.cameras.main;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  const { width, height } = this.cameras.main;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-    this.cameras.main.setBackgroundColor('#000000');
+  this.cameras.main.setBackgroundColor('#000000');
 
-    this.add.text(centerX, centerY - 80, 'GAME OVER', {
-      fontSize: '72px',
-      fill: '#ff0000',
+  this.add.text(centerX, centerY - 80, 'GAME OVER', {
+    fontSize: '72px',
+    fill: '#ff0000',
+    fontFamily: 'Arial',
+    fontStyle: 'bold',
+    stroke: '#4a0000',
+    strokeThickness: 8
+  }).setOrigin(0.5);
+
+  const gameScene = this.scene.get('GameScene');
+  if (gameScene?.playerLevel) {
+    this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
+      fontSize: '22px',
+      fill: '#d4d29b',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      stroke: '#4a0000',
-      strokeThickness: 8
-    }).setOrigin(0.5);
-
-    if (this.playerLevel > 0) {
-      this.add.text(centerX, centerY + 10, `Niveau atteint: ${this.playerLevel}`, {
-        fontSize: '22px',
-        fill: '#d4d29b',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 3
-      }).setOrigin(0.5);
-    }
-
-    this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
-      fontSize: '18px',
-      fill: '#ffffff',
-      fontFamily: 'Arial',
-      stroke: '#8b0000',
+      stroke: '#000000',
       strokeThickness: 3
     }).setOrigin(0.5);
-
-    // Utiliser once pour éviter les listeners multiples
-    this.keyK = this.input.keyboard.addKey('K');
   }
 
-  update() {
-    if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
-      this.restartGame();
+  this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
+    fontSize: '18px',
+    fill: '#ffffff',
+    fontFamily: 'Arial',
+    stroke: '#8b0000',
+    strokeThickness: 3
+  }).setOrigin(0.5);
+
+  this.input.keyboard.once('keydown-K', () => {
+    // AJOUT: Réactiver tout avant de redémarrer
+    if (gameScene) {
+      gameScene.physics.resume();
+      gameScene.anims.resumeAll();
     }
-  }
-
-  restartGame() {
+    
     this.scene.stop('GameOverScene');
-    this.scene.stop('UIScene');
     this.scene.stop('GameScene');
+    this.scene.stop('UIScene');
     this.scene.start('MenuScene');
-  }
+  });
+}
 
   shutdown() {
-    if (this.keyK) {
-      this.input.keyboard.removeKey('K');
-      this.keyK = null;
-    }
+    this.input.keyboard.removeAllListeners();
   }
 }
 
@@ -256,11 +227,7 @@ export class GameScene extends Phaser.Scene {
       colliders: [],
       groundCheckCounter: 0,
       lastGroundCheckResult: true,
-      teleportZones: [],
-      levelUpOverlay: null,
-      levelUpCards: [],
-      selectedCardIndex: 1,
-      isLevelingUp: false
+      teleportZones: []
     });
   }
 
@@ -270,15 +237,10 @@ export class GameScene extends Phaser.Scene {
     this.createAnimations();
     this.loadRoom('map_spawn');
     this.initParticlePool(30);
-    
-    // Préparer les touches pour level-up (mais ne pas les activer)
-    this.keyLeft = this.input.keyboard.addKey('LEFT');
-    this.keyRight = this.input.keyboard.addKey('RIGHT');
-    this.keyK = this.input.keyboard.addKey('K');
-    this.keyEnter = this.input.keyboard.addKey('ENTER');
   }
 
   initParticlePool(count) {
+    // Pré-allocation de toutes les particules au démarrage
     for (let i = 0; i < count; i++) {
       const particle = this.add.rectangle(0, 0, 3, 3, 0xffffff);
       particle.setActive(false).setVisible(false).setDepth(100);
@@ -287,6 +249,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   getParticle() {
+    // Pool statique, pas de création dynamique
     for (let i = 0; i < this.particlePool.length; i++) {
       const p = this.particlePool[i];
       if (!p.active) {
@@ -294,6 +257,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
+    // Recycler la première particule si pool plein
     const particle = this.particlePool[0];
     this.tweens.killTweensOf(particle);
     return particle.setActive(true).setVisible(true).setAlpha(1).setScale(1);
@@ -328,7 +292,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   damagePlayer(amount = 10) {
-    if (this.isGameOver || this.isDying || this.isFalling || this.isLevelingUp) return;
+    if (this.isGameOver || this.isDying || this.isFalling) return;
     this.playerHealth = Math.max(0, this.playerHealth - amount);
     
     this.player.setTint(0xff0000);
@@ -342,25 +306,32 @@ export class GameScene extends Phaser.Scene {
   }
 
   playerDeath() {
-    if (this.isDying) return;
-    this.isDying = true;
-    
-    this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
-    this.enemies.forEach(e => e.sprite?.body?.setVelocity(0, 0));
-    this.swordSprite?.setVisible(false);
-    this.player.anims.stop();
-    this.player.anims.play('death', true);
-    
-    this.player.once('animationcomplete', () => {
-      this.time.delayedCall(1000, () => {
-        this.isGameOver = true;
-        this.scene.launch('GameOverScene', { playerLevel: this.playerLevel });
-      });
+  if (this.isDying) return;
+  this.isDying = true;
+  
+  this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
+  this.enemies.forEach(e => e.sprite?.body?.setVelocity(0, 0));
+  this.swordSprite?.setVisible(false);
+  this.player.anims.stop();
+  this.player.anims.play('death', true);
+  
+  this.player.once('animationcomplete', () => {
+    this.time.delayedCall(1000, () => {
+      this.isGameOver = true;
+      
+      // AJOUT: Arrêter tous les processus AVANT la pause
+      this.tweens.killAll();
+      this.physics.pause();
+      this.anims.pauseAll();
+      
+      this.scene.pause('GameScene');
+      this.scene.launch('GameOverScene');
     });
-  }
+  });
+}
 
   playerFall() {
-    if (this.isFalling || this.isDying || this.isGameOver || this.isLevelingUp) return;
+    if (this.isFalling || this.isDying || this.isGameOver) return;
     this.isFalling = true;
     
     this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
@@ -375,7 +346,8 @@ export class GameScene extends Phaser.Scene {
       if (this.playerHealth <= 0) {
         this.isDying = true;
         this.isGameOver = true;
-        this.scene.launch('GameOverScene', { playerLevel: this.playerLevel });
+        this.scene.pause('GameScene');
+        this.scene.launch('GameOverScene');
         return;
       }
       
@@ -406,170 +378,26 @@ export class GameScene extends Phaser.Scene {
   }
 
   levelUp() {
-    if (this.isLevelingUp) return;
-    
-    this.playerLevel++;
-    this.isLevelingUp = true;
-    
-    // Freeze le joueur et les ennemis
-    this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
-    this.enemies.forEach(e => e.sprite?.body?.setVelocity(0, 0));
-    
-    this.showLevelUpScreen();
+  this.playerLevel++;
+  
+  // AJOUT: Arrêter tous les processus AVANT la pause
+  this.tweens.killAll();
+  this.physics.pause();
+  this.anims.pauseAll();
+  
+  this.scene.pause('GameScene');
+  
+  if (!this.scene.get('LevelUpScene')) {
+    this.scene.add('LevelUpScene', LevelUpScene, true);
+  } else {
+    this.scene.launch('LevelUpScene');
   }
-
-  showLevelUpScreen() {
-    const { width, height } = this.cameras.main;
-    
-    // Overlay semi-transparent
-    this.levelUpOverlay = this.add.rectangle(
-      this.cameras.main.scrollX,
-      this.cameras.main.scrollY,
-      width, 
-      height, 
-      0x000000, 
-      0.95
-    ).setOrigin(0, 0).setDepth(200).setScrollFactor(0);
-
-    // Titre
-    this.add.text(width / 2, 60, 'LEVEL UP!', {
-      fontSize: '52px',
-      fill: '#9bbc0f',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      stroke: '#306230',
-      strokeThickness: 4
-    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-
-    // Instructions
-    this.add.text(width / 2, height - 40, 'Flèches ← → | K ou ENTRÉE', {
-      fontSize: '14px',
-      fill: '#d4d29b',
-      fontFamily: 'Arial',
-      align: 'center'
-    }).setOrigin(0.5).setAlpha(0.7).setDepth(201).setScrollFactor(0);
-
-    this.generateUpgradeCards();
-    this.selectedCardIndex = 1;
-    this.updateCardSelection();
-  }
-
-  generateUpgradeCards() {
-    const { width, height } = this.cameras.main;
-    const cardSpacing = 140;
-    const startX = width / 2 - cardSpacing;
-    const cardY = height / 2;
-
-    const selectedRarities = Array.from({ length: 3 }, () => {
-      const rand = Math.random();
-      return rand < 0.70 ? 'bronze' : rand < 0.95 ? 'silver' : 'gold';
-    });
-
-    const usedUpgrades = new Set();
-
-    selectedRarities.forEach((rarity, i) => {
-      const x = startX + i * cardSpacing;
-      const upgrades = UPGRADE_CONFIG[rarity];
-      
-      const availableUpgrades = upgrades.filter(up => !usedUpgrades.has(up.type));
-      const upgrade = availableUpgrades.length > 0 
-        ? Phaser.Utils.Array.GetRandom(availableUpgrades)
-        : Phaser.Utils.Array.GetRandom(upgrades);
-      
-      usedUpgrades.add(upgrade.type);
-      this.createCard(x, cardY, rarity, upgrade, i);
-    });
-  }
-
-  createCard(x, y, rarity, upgrade, index) {
-    const cardScale = 2;
-    const rarityFrame = rarity === 'bronze' ? 0 : rarity === 'silver' ? 1 : 2;
-    
-    const container = this.add.container(x, y)
-      .setDepth(2001)
-      .setScrollFactor(0);
-
-    const cardBg = this.add.sprite(0, 0, 'levelup', rarityFrame)
-      .setScale(cardScale)
-      .setOrigin(0.5, 0.5);
-    container.add(cardBg);
-
-    const icon = this.add.sprite(0, -53, 'icons_8x8', upgrade.icon)
-      .setScale(cardScale)
-      .setOrigin(0.5, 0.5);
-    container.add(icon);
-
-    const text = this.add.text(0, 103, upgrade.text, {
-      fontSize: '16px',
-      fill: '#d4d29b',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      align: 'center'
-    }).setOrigin(0.5);
-    container.add(text);
-
-    this.levelUpCards.push({ container, upgrade, index });
-  }
-
-  updateCardSelection() {
-    this.levelUpCards.forEach((card, i) => {
-      const isSelected = i === this.selectedCardIndex;
-      card.container.setScale(isSelected ? 1.1 : 1);
-    });
-  }
-
-  confirmLevelUpSelection() {
-    if (!this.isLevelingUp || this.levelUpCards.length === 0) return;
-    
-    const selectedCard = this.levelUpCards[this.selectedCardIndex];
-    this.applyUpgrade(selectedCard.upgrade);
-    
-    // Nettoyer l'écran de level-up
-    this.hideLevelUpScreen();
-  }
-
-  applyUpgrade(upgrade) {
-    switch(upgrade.type) {
-      case 'health':
-        this.maxHealth += upgrade.value;
-        this.playerHealth += upgrade.value;
-        break;
-      case 'damage':
-        this.attackDamage += upgrade.value;
-        break;
-      case 'speed':
-        this.playerSpeed += upgrade.value;
-        break;
-      case 'regen':
-        this.healthRegen += upgrade.value;
-        break;
-      case 'attackSpeed':
-        this.attackDelay = Math.max(100, this.attackDelay * (1 - upgrade.value / 100));
-        break;
-    }
-  }
-
-  hideLevelUpScreen() {
-    // Détruire tous les éléments visuels
-    if (this.levelUpOverlay) {
-      this.levelUpOverlay.destroy();
-      this.levelUpOverlay = null;
-    }
-    
-    this.levelUpCards.forEach(card => {
-      if (card.container) {
-        card.container.destroy();
-      }
-    });
-    this.levelUpCards = [];
-    
-    // Remettre le jeu en marche
-    this.isLevelingUp = false;
-  }
+}
 
   cleanupRoom() {
     this.tweens.killAll();
     
+    // Nettoyer les colliders
     for (let i = 0; i < this.colliders.length; i++) {
       const collider = this.colliders[i];
       if (collider && collider.destroy) {
@@ -578,6 +406,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.colliders = [];
     
+    // Nettoyer les zones de téléportation
     for (let i = 0; i < this.teleportZones.length; i++) {
       const zone = this.teleportZones[i];
       if (zone && zone.destroy) {
@@ -586,6 +415,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.teleportZones = [];
     
+    // Détruire les objets de la map
     [this.map, this.player, this.sword, this.collisionLayer, this.propsCollisionLayer, this.surgroundLayer]
       .forEach(obj => {
         if (obj) {
@@ -596,6 +426,7 @@ export class GameScene extends Phaser.Scene {
         }
       });
     
+    // Nettoyer les ennemis (boucle inverse optimisée)
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
       if (e && e.destroy) {
@@ -604,11 +435,13 @@ export class GameScene extends Phaser.Scene {
     }
     this.enemies = [];
     
+    // Nettoyer le groupe
     if (this.enemyGroup) {
       this.enemyGroup.clear(true, true);
       this.enemyGroup = null;
     }
     
+    // Nettoyer projectiles
     if (this.projectilePool) {
       this.projectilePool.clear();
       this.projectilePool = null;
@@ -622,6 +455,7 @@ export class GameScene extends Phaser.Scene {
     this.visitedRooms.push(mapName);
     this.map = this.make.tilemap({ key: mapName });
 
+    // OPTIMISATION CRITIQUE: Physics bounds AVANT createPlayer
     this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
     const tilesets = {
@@ -632,6 +466,7 @@ export class GameScene extends Phaser.Scene {
       doors: this.map.addTilesetImage('doors', 'doors')
     };
 
+    // OPTIMISATION CRITIQUE: Tile Culling activé
     const groundsLayer = this.map.createLayer('calque_grounds', tilesets.grounds, 0, 0);
     groundsLayer.setCullPadding(2, 2);
 
@@ -644,15 +479,17 @@ export class GameScene extends Phaser.Scene {
     const propsLayer = this.map.createLayer('calque_props', tilesets.props, 0, 0);
     propsLayer.setCullPadding(2, 2);
 
+    // Créer le calque door_in (fixe) s'il existe
     if (this.map.getLayer('calque_door_in')) {
       const doorInLayer = this.map.createLayer('calque_door_in', tilesets.doors, 0, 0);
       doorInLayer.setCullPadding(2, 2);
     }
 
+    // Créer le calque door_out (qui se cachera quand les ennemis sont morts)
     if (this.map.getLayer('calque_door_out')) {
       this.doorOutLayer = this.map.createLayer('calque_door_out', tilesets.doors, 0, 0);
       this.doorOutLayer.setCullPadding(2, 2);
-      this.doorOutLayer.setVisible(true);
+      this.doorOutLayer.setVisible(true); // Visible au début
     }
 
     wallsLayer.setCollisionByProperty({ Solide: true });
@@ -664,6 +501,7 @@ export class GameScene extends Phaser.Scene {
     this.createPlayer();
     this.createEnemiesInRoom();
 
+    // OPTIMISATION: Smoothing réduit pour Pi4
     this.cameras.main.setZoom(3);
     this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
@@ -732,12 +570,6 @@ export class GameScene extends Phaser.Scene {
   update(time) {
     if (!this.player || this.isGameOver || this.isDying || this.isFalling) return;
 
-    // Gestion du level-up
-    if (this.isLevelingUp) {
-      this.updateLevelUpInput();
-      return;
-    }
-
     this.updatePlayer();
     
     if (++this.groundCheckCounter >= 5) {
@@ -759,25 +591,8 @@ export class GameScene extends Phaser.Scene {
     this.updateAutoAttack();
   }
 
-  updateLevelUpInput() {
-    // Navigation avec les flèches
-    if (Phaser.Input.Keyboard.JustDown(this.keyLeft)) {
-      this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
-      this.updateCardSelection();
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.keyRight)) {
-      this.selectedCardIndex = Math.min(2, this.selectedCardIndex + 1);
-      this.updateCardSelection();
-    }
-
-    // Confirmation avec K ou ENTER
-    if (Phaser.Input.Keyboard.JustDown(this.keyK) || Phaser.Input.Keyboard.JustDown(this.keyEnter)) {
-      this.confirmLevelUpSelection();
-    }
-  }
-
   updateEnemiesOptimized(time) {
+    // OPTIMISATION: Boucle inverse in-place au lieu de filter()
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
       if (!e.isAlive()) {
@@ -787,6 +602,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
+    // Culling optimisé
     const cam = this.cameras.main;
     const viewRadius = Math.max(cam.width, cam.height) / cam.zoom + 100;
     const viewRadiusSq = viewRadius * viewRadius;
@@ -806,11 +622,13 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Vérifier s'il reste des ennemis vivants
     const hasAliveEnemies = this.enemies.some(e => e.isAlive());
 
-    if (this.doorOutLayer) {
-      this.doorOutLayer.setVisible(hasAliveEnemies);
-    }
+    // Cacher la porte de sortie si tous les ennemis sont morts
+     if (this.doorOutLayer) {
+    this.doorOutLayer.setVisible(hasAliveEnemies); // ← SIMPLE CORRECTION ICI
+  }
 
     this.updateTpOutCollisions();
   }
@@ -838,6 +656,7 @@ export class GameScene extends Phaser.Scene {
     let hasSolidSupport = false;
     let hasTiles = false;
     
+    // OPTIMISATION: Break précoce dès qu'on trouve un support
     for (let tileX = tileLeftX; tileX <= tileRightX && !hasSolidSupport; tileX++) {
       for (let tileY = tileTopY; tileY <= tileBottomY && !hasSolidSupport; tileY++) {
         const tile = this.surgroundLayer.getTileAt(tileX, tileY);
@@ -872,6 +691,7 @@ export class GameScene extends Phaser.Scene {
     if (vx) this.player.setFlipX(vx < 0);
 
     if (vx || vy) {
+      // OPTIMISATION: Éviter sqrt inutile si un seul axe
       if (vx && vy) {
         const invLen = 1 / Math.sqrt(vx * vx + vy * vy);
         this.playerBody.setAcceleration(vx * invLen * 500, vy * invLen * 500);
@@ -901,6 +721,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < this.enemies.length; i++) {
       const e = this.enemies[i];
       
+      // OPTIMISATION: Variable locale pour isAlive
       const alive = e.isAlive();
       if (!alive) continue;
       
@@ -945,10 +766,13 @@ export class GameScene extends Phaser.Scene {
       const px = this.player.x;
       const py = this.player.y;
       
+      // Zone de damage en cône dans la direction de l'attaque
       const attackAngle = angle;
-      const coneAngle = Math.PI / 3;
+      const coneAngle = Math.PI / 3; // 60 degrés de cône
+      const attackRange = this.attackRange;
       const attackRangeSq = this.attackRangeSq;
 
+      // OPTIMISATION: Boucle optimisée avec variable locale
       for (let i = 0; i < this.enemies.length; i++) {
         const e = this.enemies[i];
         
@@ -959,15 +783,19 @@ export class GameScene extends Phaser.Scene {
         const dy = e.sprite.y - py;
         const distSq = dx * dx + dy * dy;
 
+        // Vérifier d'abord la distance
         if (distSq > attackRangeSq) continue;
 
+        // Vérifier l'angle (dans le cône d'attaque)
         const enemyAngle = Math.atan2(dy, dx);
         let angleDiff = Math.abs(enemyAngle - attackAngle);
         
+        // Normaliser l'angle entre -PI et PI
         if (angleDiff > Math.PI) {
           angleDiff = 2 * Math.PI - angleDiff;
         }
 
+        // Si l'ennemi est dans le cône d'attaque
         if (angleDiff <= coneAngle / 2) {
           e.takeDamage(this.attackDamage, px, py);
         }
@@ -1031,27 +859,27 @@ export class GameScene extends Phaser.Scene {
       this.colliders.push(tpCollider);
     });
     
-    const tpOuts = allObjects.filter(obj => obj.type === 'tp_out');
-    tpOuts.forEach(tp => {
-      const zone = this.add.zone(tp.x, tp.y, tp.width, tp.height).setOrigin(0, 0);
-      this.physics.world.enable(zone);
-      this.tpOutZones.push(zone);
+  const tpOuts = allObjects.filter(obj => obj.type === 'tp_out');
+  tpOuts.forEach(tp => {
+    const zone = this.add.zone(tp.x, tp.y, tp.width, tp.height).setOrigin(0, 0);
+    this.physics.world.enable(zone);
+    this.tpOutZones.push(zone);
+    
+    zone.tpCollider = this.physics.add.overlap(this.player, zone, () => {
+      if (this.isGameOver || this.isDying || this.isFalling) {
+        return;
+      }
       
-      zone.tpCollider = this.physics.add.overlap(this.player, zone, () => {
-        if (this.isGameOver || this.isDying || this.isFalling) {
-          return;
-        }
-        
-        const hasAliveEnemies = this.enemies.some(e => e.isAlive());
-        
-        if (hasAliveEnemies) {
-          return;
-        }
-        
-        this.loadRandomRoom();
-      });
-      this.colliders.push(zone.tpCollider);
+      const hasAliveEnemies = this.enemies.some(e => e.isAlive());
+      
+      if (hasAliveEnemies) {
+        return;
+      }
+      
+      this.loadRandomRoom();
     });
+    this.colliders.push(zone.tpCollider);
+  });
   }
 
   updateTpOutCollisions() {
@@ -1068,32 +896,11 @@ export class GameScene extends Phaser.Scene {
     this.tweens.killAll();
     this.cleanupRoom();
     
-    // Nettoyer le level-up screen si actif
-    this.hideLevelUpScreen();
-    
     for (let i = 0; i < this.particlePool.length; i++) {
       const p = this.particlePool[i];
       this.tweens.killTweensOf(p);
       p.destroy();
     }
     this.particlePool = [];
-    
-    // Nettoyer les touches
-    if (this.keyLeft) {
-      this.input.keyboard.removeKey('LEFT');
-      this.keyLeft = null;
-    }
-    if (this.keyRight) {
-      this.input.keyboard.removeKey('RIGHT');
-      this.keyRight = null;
-    }
-    if (this.keyK) {
-      this.input.keyboard.removeKey('K');
-      this.keyK = null;
-    }
-    if (this.keyEnter) {
-      this.input.keyboard.removeKey('ENTER');
-      this.keyEnter = null;
-    }
   }
 }

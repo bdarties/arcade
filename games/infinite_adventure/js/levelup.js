@@ -30,37 +30,53 @@ export class LevelUpScene extends Phaser.Scene {
   init() {
     this.selectedCardIndex = 1;
     this.cards = [];
+    this.elementsUI = [];
   }
 
   create() {
-    const { width, height } = this.cameras.main;
-    
-    this.cameras.main.setBackgroundColor('#1a1a2e');
-    
-    this.add.rectangle(0, 0, width, height, 0x000000, 0.95).setOrigin(0, 0);
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
 
-    this.add.text(width / 2, 60, 'LEVEL UP!', {
-      fontSize: '52px',
-      fill: '#9bbc0f',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      stroke: '#306230',
-      strokeThickness: 4
-    }).setOrigin(0.5);
+    // Overlay
+    const overlay = this.add.rectangle(
+      gameWidth / 2, gameHeight / 2,
+      gameWidth, gameHeight,
+      0x000000, 0.95
+    ).setScrollFactor(0).setDepth(150);
+    this.elementsUI.push(overlay);
 
-    this.add.text(width / 2, height - 40, 'Flèches ← → | K ou ENTRÉE', {
-      fontSize: '14px',
-      fill: '#d4d29b',
-      fontFamily: 'Arial',
-      align: 'center'
-    }).setOrigin(0.5).setAlpha(0.7);
+    // Titre
+    const titre = this.add.text(
+      gameWidth / 2, 60,
+      'LEVEL UP!',
+      {
+        fontSize: '52px',
+        fill: '#9bbc0f',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#306230',
+        strokeThickness: 4
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(151);
+    this.elementsUI.push(titre);
 
+    // Instructions
+    const instructions = this.add.text(
+      gameWidth / 2, gameHeight - 40,
+      'Flèches ← → | K ou ENTRÉE',
+      {
+        fontSize: '14px',
+        fill: '#d4d29b',
+        fontFamily: 'Arial',
+        align: 'center'
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0.7);
+    this.elementsUI.push(instructions);
+
+    // Générer les cartes
     this.generateUpgradeCards();
-    this.setupKeyboardControls();
-    this.updateCardSelection();
-  }
 
-  setupKeyboardControls() {
+    // Clavier
     this.input.keyboard.on('keydown-LEFT', () => {
       this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
       this.updateCardSelection();
@@ -73,6 +89,9 @@ export class LevelUpScene extends Phaser.Scene {
 
     this.input.keyboard.on('keydown-K', () => this.confirmSelection());
     this.input.keyboard.on('keydown-ENTER', () => this.confirmSelection());
+
+    // Sélection initiale
+    this.updateCardSelection();
   }
 
   generateUpgradeCards() {
@@ -106,7 +125,9 @@ export class LevelUpScene extends Phaser.Scene {
     const cardScale = 6.5;
     const rarityFrame = rarity === 'bronze' ? 0 : rarity === 'silver' ? 1 : 2;
     
-    const container = this.add.container(x, y);
+    const container = this.add.container(x, y)
+      .setScrollFactor(0)
+      .setDepth(151);
 
     const cardBg = this.add.sprite(0, 0, 'levelup', rarityFrame)
       .setScale(cardScale)
@@ -137,6 +158,7 @@ export class LevelUpScene extends Phaser.Scene {
     cardBg.on('pointerdown', () => this.confirmSelection());
 
     this.cards.push({ container, upgrade, index });
+    this.elementsUI.push(container);
   }
 
   updateCardSelection() {
@@ -147,16 +169,30 @@ export class LevelUpScene extends Phaser.Scene {
   }
 
   confirmSelection() {
-    const selectedCard = this.cards[this.selectedCardIndex];
-    this.selectUpgrade(selectedCard.upgrade);
-    
-    this.scene.stop('LevelUpScene');
-    
-    const gameScene = this.scene.get('GameScene');
-    if (gameScene) {
-      gameScene.scene.resume();
+  const selectedCard = this.cards[this.selectedCardIndex];
+  if (!selectedCard) return;
+
+  this.selectUpgrade(selectedCard.upgrade);
+  
+  // Nettoyer TOUS les éléments UI
+  this.elementsUI.forEach(el => {
+    if (el && el.destroy) {
+      el.destroy();
     }
+  });
+  this.elementsUI = [];
+  this.cards = [];
+  
+  // AJOUT: Réactiver la physique et les animations
+  const gameScene = this.scene.get('GameScene');
+  if (gameScene) {
+    gameScene.physics.resume();
+    gameScene.anims.resumeAll();
+    gameScene.scene.resume();
   }
+  
+  this.scene.stop('LevelUpScene');
+}
 
   selectUpgrade(upgrade) {
     const gameScene = this.scene.get('GameScene');
@@ -184,5 +220,12 @@ export class LevelUpScene extends Phaser.Scene {
 
   shutdown() {
     this.input.keyboard.removeAllListeners();
+    this.elementsUI.forEach(el => {
+      if (el && el.destroy) {
+        el.destroy();
+      }
+    });
+    this.elementsUI = [];
+    this.cards = [];
   }
 }
