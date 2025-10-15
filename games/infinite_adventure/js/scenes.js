@@ -196,12 +196,12 @@ export class GameScene extends Phaser.Scene {
       currentMap: null,
       isFirstSpawn: true,
       roomsCleared: 0,
-      playerHealth: 200,
-      maxHealth: 200,
+      playerHealth: 250,
+      maxHealth: 250,
       playerXP: 0,
       maxXP: 100,
       playerSpeed: 90,
-      healthRegen: 0.5,
+      healthRegen: 1,
       lastRegenTime: 0,
       doorOutLayer: null,
       tpOutZones: [],
@@ -215,7 +215,7 @@ export class GameScene extends Phaser.Scene {
       attackCooldown: 0,
       attackDelay: 750,
       attackRange: 45,
-      attackRangeSq: 2025,
+      attackRangeSq: 1850,
       attackDamage: 20,
       particlePool: [],
       enemyUpdateCounter: 0,
@@ -240,7 +240,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   initParticlePool(count) {
-    // Pré-allocation de toutes les particules au démarrage
     for (let i = 0; i < count; i++) {
       const particle = this.add.rectangle(0, 0, 3, 3, 0xffffff);
       particle.setActive(false).setVisible(false).setDepth(100);
@@ -249,7 +248,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   getParticle() {
-    // Pool statique, pas de création dynamique
     for (let i = 0; i < this.particlePool.length; i++) {
       const p = this.particlePool[i];
       if (!p.active) {
@@ -257,7 +255,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
     
-    // Recycler la première particule si pool plein
     const particle = this.particlePool[0];
     this.tweens.killTweensOf(particle);
     return particle.setActive(true).setVisible(true).setAlpha(1).setScale(1);
@@ -319,7 +316,6 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.isGameOver = true;
       
-      // AJOUT: Arrêter tous les processus AVANT la pause
       this.tweens.killAll();
       this.physics.pause();
       this.anims.pauseAll();
@@ -380,18 +376,46 @@ export class GameScene extends Phaser.Scene {
   levelUp() {
   this.playerLevel++;
   
-  // AJOUT: Arrêter tous les processus AVANT la pause
   this.tweens.killAll();
   this.physics.pause();
-  this.anims.pauseAll();
+
+  this.player?.anims?.pause();
+  this.enemies.forEach(e => e.sprite?.anims?.pause());
+
+  const overlay = this.add.rectangle(
+    this.cameras.main.scrollX + this.cameras.main.width / 2,
+    this.cameras.main.scrollY + this.cameras.main.height / 2,
+    this.cameras.main.width,
+    this.cameras.main.height,
+    0x000000,
+    0
+  ).setScrollFactor(0).setDepth(200);
   
-  this.scene.pause('GameScene');
-  
-  if (!this.scene.get('LevelUpScene')) {
-    this.scene.add('LevelUpScene', LevelUpScene, true);
-  } else {
-    this.scene.launch('LevelUpScene');
-  }
+  this.tweens.add({
+    targets: overlay,
+    alpha: 1,
+    duration: 300,
+    ease: 'Power2',
+    onComplete: () => {
+      this.scene.pause('GameScene');
+      
+      if (!this.scene.get('LevelUpScene')) {
+        this.scene.add('LevelUpScene', LevelUpScene, true);
+      } else {
+        this.scene.launch('LevelUpScene');
+      }
+      
+      this.time.delayedCall(100, () => {
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: 300,
+          ease: 'Power2',
+          onComplete: () => overlay.destroy()
+        });
+      });
+    }
+  });
 }
 
   cleanupRoom() {
@@ -766,13 +790,11 @@ export class GameScene extends Phaser.Scene {
       const px = this.player.x;
       const py = this.player.y;
       
-      // Zone de damage en cône dans la direction de l'attaque
       const attackAngle = angle;
-      const coneAngle = Math.PI / 3; // 60 degrés de cône
+      const coneAngle = Math.PI / 2.8; 
       const attackRange = this.attackRange;
       const attackRangeSq = this.attackRangeSq;
 
-      // OPTIMISATION: Boucle optimisée avec variable locale
       for (let i = 0; i < this.enemies.length; i++) {
         const e = this.enemies[i];
         
@@ -783,19 +805,15 @@ export class GameScene extends Phaser.Scene {
         const dy = e.sprite.y - py;
         const distSq = dx * dx + dy * dy;
 
-        // Vérifier d'abord la distance
         if (distSq > attackRangeSq) continue;
 
-        // Vérifier l'angle (dans le cône d'attaque)
         const enemyAngle = Math.atan2(dy, dx);
         let angleDiff = Math.abs(enemyAngle - attackAngle);
         
-        // Normaliser l'angle entre -PI et PI
         if (angleDiff > Math.PI) {
           angleDiff = 2 * Math.PI - angleDiff;
         }
 
-        // Si l'ennemi est dans le cône d'attaque
         if (angleDiff <= coneAngle / 2) {
           e.takeDamage(this.attackDamage, px, py);
         }

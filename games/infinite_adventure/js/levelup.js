@@ -41,7 +41,7 @@ export class LevelUpScene extends Phaser.Scene {
     const overlay = this.add.rectangle(
       gameWidth / 2, gameHeight / 2,
       gameWidth, gameHeight,
-      0x000000, 0.95
+      0x000000, 0.70
     ).setScrollFactor(0).setDepth(150);
     this.elementsUI.push(overlay);
 
@@ -60,23 +60,8 @@ export class LevelUpScene extends Phaser.Scene {
     ).setOrigin(0.5).setScrollFactor(0).setDepth(151);
     this.elementsUI.push(titre);
 
-    // Instructions
-    const instructions = this.add.text(
-      gameWidth / 2, gameHeight - 40,
-      'Flèches ← → | K ou ENTRÉE',
-      {
-        fontSize: '14px',
-        fill: '#d4d29b',
-        fontFamily: 'Arial',
-        align: 'center'
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0.7);
-    this.elementsUI.push(instructions);
-
-    // Générer les cartes
     this.generateUpgradeCards();
 
-    // Clavier
     this.input.keyboard.on('keydown-LEFT', () => {
       this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
       this.updateCardSelection();
@@ -90,7 +75,6 @@ export class LevelUpScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-K', () => this.confirmSelection());
     this.input.keyboard.on('keydown-ENTER', () => this.confirmSelection());
 
-    // Sélection initiale
     this.updateCardSelection();
   }
 

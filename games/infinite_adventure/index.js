@@ -76,7 +76,6 @@ const config = {
   type: Phaser.AUTO,
   antialias: false,
   roundPixels: true,
-  batchSize: 1024, 
   
   scale: {
     mode: Phaser.Scale.FIT,
@@ -90,11 +89,9 @@ const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: false,
+      debug: false, 
       fps: 60,
-      timeScale: 1,
-      overlapBias: 4,
-      maxEntities: 256 
+      overlapBias: 4
     }
   },
   
@@ -103,8 +100,6 @@ const config = {
   
   fps: {
     target: 60,
-    forceSetTimeOut: true,
-    smoothStep: false
   },
   
   banner: false,
@@ -116,14 +111,7 @@ const config = {
     transparent: false,
     clearBeforeRender: true,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: false,
-    failIfMajorPerformanceCaveat: true,
-    powerPreference: 'low-power',
-    maxLights: 1 
-  },
-  
-  plugins: {
-    global: []
+    preserveDrawingBuffer: false
   }
 };
 
