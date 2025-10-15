@@ -1,10 +1,10 @@
 import { PreloadScene, GameScene, UIScene, GameOverScene } from './js/scenes.js';
 import { MenuScene } from './js/menuscene.js';
 
-// Scène de chargement minimaliste pour Pi3
 class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
+    this.luckyNumbers = [42];
   }
   
   preload() {
@@ -18,8 +18,8 @@ class BootScene extends Phaser.Scene {
     // Fond simple sans dégradé
     this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0, 0);
     
-    // Titre sans animations complexes
-    const title = this.add.image(width / 2, height / 2 - 80, 'title')
+    // Titre optimisé
+    this.add.image(width / 2, height / 2 - 80, 'title')
       .setOrigin(0.5)
       .setScale(2);
     
@@ -42,21 +42,26 @@ class BootScene extends Phaser.Scene {
       fontFamily: 'Arial'
     }).setOrigin(0.5);
     
-    // Chargement simplifié
+    const luckyNumber = this.luckyNumbers[Math.floor(Math.random() * this.luckyNumbers.length)];
+    
+    // Chargement optimisé
     let progress = 0;
+    const totalSteps = 100;
+    
     this.time.addEvent({
       delay: 30,
-      repeat: 100,
+      repeat: totalSteps,
       callback: () => {
         progress += 1;
-        const percent = progress / 100;
+        const percent = progress / totalSteps;
         const visibleWidth = 8 + (48 * percent);
         progressBar.setCrop(0, 0, visibleWidth, 16);
-        loadingText.setText(`Chargement... ${Math.floor(percent * 100)}%`);
         
-        if (progress >= 100) {
-          this.time.delayedCall(200, () => {
-            // Aller au menu au lieu de PreloadScene
+        const displayPercent = Math.floor(percent * 100) > 99 ? luckyNumber : Math.floor(percent * 100);
+        loadingText.setText(`Chargement... ${displayPercent}%`);
+        
+        if (progress >= totalSteps) {
+          this.time.delayedCall(500, () => {
             this.scene.start('MenuScene');
           });
         }
@@ -65,33 +70,31 @@ class BootScene extends Phaser.Scene {
   }
 }
 
-var config = {
+const config = {
   width: 1280,
   height: 720,
   type: Phaser.AUTO,
-  
-  // Désactiver l'antialiasing (inutile pour pixel art)
   antialias: false,
   roundPixels: true,
-  
-  // Réduire la taille des batches
-  batchSize: 2048,
+  batchSize: 1024, 
   
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    fullscreenTarget: 'game-container',
+    expandParent: true
   },
   
   physics: {
-    default: "arcade",
+    default: 'arcade',
     arcade: {
       gravity: { y: 0 },
       debug: false,
       fps: 60,
-      // Optimisation physique
       timeScale: 1,
-      overlapBias: 4
+      overlapBias: 4,
+      maxEntities: 256 
     }
   },
   
@@ -106,7 +109,6 @@ var config = {
   
   banner: false,
   
-  // Optimisation mémoire
   render: {
     pixelArt: true,
     antialias: false,
@@ -115,9 +117,14 @@ var config = {
     clearBeforeRender: true,
     premultipliedAlpha: false,
     preserveDrawingBuffer: false,
-    failIfMajorPerformanceCaveat: false,
-    powerPreference: 'low-power' 
+    failIfMajorPerformanceCaveat: true,
+    powerPreference: 'low-power',
+    maxLights: 1 
+  },
+  
+  plugins: {
+    global: []
   }
 };
 
-export var game = new Phaser.Game(config);
+export const game = new Phaser.Game(config);

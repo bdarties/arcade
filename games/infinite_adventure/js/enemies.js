@@ -8,12 +8,12 @@ export const ENEMY_STATE = {
   GHOSTING: 6
 };
 
-// ========== PROJECTILE POOL ==========
 class ProjectilePool {
   constructor(scene, maxSize = 20) {
     this.scene = scene;
     this.pool = [];
-    this.active = [];
+    this.active = new Set();
+    this.tileSize = 16;
     
     for (let i = 0; i < maxSize; i++) {
       const proj = scene.physics.add.sprite(-100, -100, 'enemies');
@@ -32,14 +32,12 @@ class ProjectilePool {
     }
     proj.setActive(true).setVisible(true);
     proj.body.enable = true;
-    this.active.push(proj);
+    this.active.add(proj);
     return proj;
   }
 
   release(proj) {
-    const idx = this.active.indexOf(proj);
-    if (idx > -1) this.active.splice(idx, 1);
-    
+    this.active.delete(proj);
     proj.setActive(false).setVisible(false);
     proj.body.enable = false;
     proj.body.setVelocity(0, 0);
@@ -48,47 +46,76 @@ class ProjectilePool {
   }
 
   updateAll(player, collisionLayer, propsCollisionLayer) {
-    for (let i = this.active.length - 1; i >= 0; i--) {
-      const proj = this.active[i];
-      if (!proj.active) continue;
-      
-      proj.rotation += 0.15;
-      
-      const tileX = Math.floor(proj.x / 16);
-      const tileY = Math.floor(proj.y / 16);
-      
-      const wallTile = collisionLayer?.getTileAt(tileX, tileY);
-      const propTile = propsCollisionLayer?.getTileAt(tileX, tileY);
-      
-      if ((wallTile?.properties.Solide) || (propTile?.properties.Solide)) {
-        this.release(proj);
+    const now = this.scene.time.now;
+    const px = player.x;
+    const py = player.y;
+    const cam = this.scene.cameras.main;
+    const viewLeft = cam.scrollX - 50;
+    const viewRight = cam.scrollX + cam.width + 50;
+    const viewTop = cam.scrollY - 50;
+    const viewBottom = cam.scrollY + cam.height + 50;
+    
+    const toRelease = [];
+    
+    for (const proj of this.active) {
+      if (!proj.active) {
+        toRelease.push(proj);
         continue;
       }
       
-      const dx = proj.x - player.x;
-      const dy = proj.y - player.y;
+      const projX = proj.x;
+      const projY = proj.y;
+      
+      if (projX < viewLeft || projX > viewRight || projY < viewTop || projY > viewBottom) {
+        toRelease.push(proj);
+        continue;
+      }
+      
+      proj.rotation += 0.15;
+      
+      const tileX = Math.floor(projX / this.tileSize);
+      const tileY = Math.floor(projY / this.tileSize);
+      
+      const wallTile = collisionLayer?.getTileAt(tileX, tileY);
+      if (wallTile?.properties?.Solide) {
+        toRelease.push(proj);
+        continue;
+      }
+      
+      const propTile = propsCollisionLayer?.getTileAt(tileX, tileY);
+      if (propTile?.properties?.Solide) {
+        toRelease.push(proj);
+        continue;
+      }
+      
+      const dx = projX - px;
+      const dy = projY - py;
       if (dx * dx + dy * dy < 144) {
         if (proj.enemyRef?.isAlive()) {
           proj.enemyRef.onProjectileHit(player);
         }
-        this.release(proj);
+        toRelease.push(proj);
         continue;
       }
       
-      if (this.scene.time.now > proj.destroyTime) {
-        this.release(proj);
+      if (now > proj.destroyTime) {
+        toRelease.push(proj);
       }
+    }
+    
+    for (let i = 0; i < toRelease.length; i++) {
+      this.release(toRelease[i]);
     }
   }
 
   clear() {
-    while (this.active.length > 0) {
-      this.release(this.active[0]);
+    const toRelease = Array.from(this.active);
+    for (let i = 0; i < toRelease.length; i++) {
+      this.release(toRelease[i]);
     }
   }
 }
 
-// ========== CLASSE DE BASE ENEMY ==========
 export class Enemy {
   constructor(scene, x, y, config) {
     this.scene = scene;
@@ -143,6 +170,9 @@ export class Enemy {
     this.lastChargeTime = 0;
     this.animFrame = 0;
     this.animTimer = 0;
+    this.tintTimer = null;
+    this.knockbackTimer = null;
+    this.tileSize = 16;
   }
 
   isAlive() {
@@ -172,7 +202,10 @@ export class Enemy {
     const currentTime = this.scene.time.now;
     if (currentTime >= this.attackCooldown) {
       const damage = this.state === ENEMY_STATE.CHARGING ? this.config.chargeDamage : this.config.contactDamage;
-      this.scene.damagePlayer(damage);
+      
+      const playerIndex = player === this.scene.player1 ? 1 : 2;
+      this.scene.damagePlayer(damage, playerIndex);
+      
       this.attackCooldown = currentTime + this.config.attackDelay;
     }
   }
@@ -182,21 +215,26 @@ export class Enemy {
     
     const dx = targetX - this.sprite.x;
     const dy = targetY - this.sprite.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const steps = Math.ceil(distance / 16);
+    const distSq = dx * dx + dy * dy;
+    const distance = Math.sqrt(distSq);
+    const steps = Math.ceil(distance / this.tileSize);
+    
+    if (steps === 0) return false;
+    
     const stepX = dx / steps;
     const stepY = dy / steps;
 
     for (let i = 1; i <= steps; i++) {
-      const tileX = Math.floor((this.sprite.x + stepX * i) / 16);
-      const tileY = Math.floor((this.sprite.y + stepY * i) / 16);
+      const checkX = this.sprite.x + stepX * i;
+      const checkY = this.sprite.y + stepY * i;
+      const tileX = Math.floor(checkX / this.tileSize);
+      const tileY = Math.floor(checkY / this.tileSize);
 
       const wallTile = this.scene.collisionLayer.getTileAt(tileX, tileY);
-      const propTile = this.scene.propsCollisionLayer.getTileAt(tileX, tileY);
+      if (wallTile?.properties?.Solide) return false;
 
-      if ((wallTile?.properties.Solide) || (propTile?.properties.Solide)) {
-        return false;
-      }
+      const propTile = this.scene.propsCollisionLayer.getTileAt(tileX, tileY);
+      if (propTile?.properties?.Solide) return false;
     }
     return true;
   }
@@ -206,14 +244,17 @@ export class Enemy {
     
     const dx = player.x - this.sprite.x;
     const dy = player.y - this.sprite.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
     
-    this.state = ENEMY_STATE.CHASE;
-    const angle = Math.atan2(dy, dx);
-    this.sprite.body.setVelocity(
-      Math.cos(angle) * this.config.normalSpeed,
-      Math.sin(angle) * this.config.normalSpeed
-    );
-    this.sprite.setFlipX(dx < 0);
+    if (dist > 0) {
+      this.state = ENEMY_STATE.CHASE;
+      const speed = this.config.normalSpeed;
+      this.sprite.body.setVelocity(
+        (dx / dist) * speed,
+        (dy / dist) * speed
+      );
+      this.sprite.setFlipX(dx < 0);
+    }
   }
 
   update(player, time) {
@@ -235,7 +276,9 @@ export class Enemy {
             if (this.checkChargePath(player.x, player.y)) {
               this.state = ENEMY_STATE.PREPARE_CHARGE;
               this.stateTimer = time + this.config.prepareTime;
-              this.chargeAngle = Math.atan2(dy, dx);
+              const dist = Math.sqrt(distSq);
+              this.chargeVelX = (dx / dist) * this.config.chargeSpeed;
+              this.chargeVelY = (dy / dist) * this.config.chargeSpeed;
               this.sprite.body.setVelocity(0, 0);
               this.lastChargeTime = time;
               this.sprite.setAlpha(0.5);
@@ -257,11 +300,7 @@ export class Enemy {
           this.state = ENEMY_STATE.CHARGING;
           this.stateTimer = time + this.config.chargeDuration;
           this.sprite.setAlpha(1);
-          
-          this.sprite.body.setVelocity(
-            Math.cos(this.chargeAngle) * this.config.chargeSpeed,
-            Math.sin(this.chargeAngle) * this.config.chargeSpeed
-          );
+          this.sprite.body.setVelocity(this.chargeVelX, this.chargeVelY);
         }
         break;
 
@@ -290,28 +329,39 @@ export class Enemy {
     this.health -= damage;
     this.sprite.setTint(0xff0000);
 
-    this.scene.time.delayedCall(100, () => {
+    if (this.tintTimer) {
+      this.tintTimer.remove();
+    }
+    
+    this.tintTimer = this.scene.time.delayedCall(100, () => {
       if (this.isAlive()) {
         this.sprite.clearTint();
       }
+      this.tintTimer = null;
     });
 
     if (this.state !== ENEMY_STATE.CHARGING && this.state !== ENEMY_STATE.PREPARE_CHARGE) {
       const dx = this.sprite.x - attackerX;
       const dy = this.sprite.y - attackerY;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len > 0) {
+      const distSq = dx * dx + dy * dy;
+      const dist = Math.sqrt(distSq);
+      
+      if (dist > 0) {
         const knockbackForce = 300;
-        
         this.sprite.body.setVelocity(
-          (dx / len) * knockbackForce,
-          (dy / len) * knockbackForce
+          (dx / dist) * knockbackForce,
+          (dy / dist) * knockbackForce
         );
 
-        this.scene.time.delayedCall(150, () => {
+        if (this.knockbackTimer) {
+          this.knockbackTimer.remove();
+        }
+        
+        this.knockbackTimer = this.scene.time.delayedCall(150, () => {
           if (this.isAlive() && this.state !== ENEMY_STATE.CHARGING) {
             this.sprite.body.setVelocity(0, 0);
           }
+          this.knockbackTimer = null;
         });
       }
     }
@@ -328,6 +378,15 @@ export class Enemy {
     this.alive = false;
     this.isDestroying = true;
     
+    if (this.tintTimer) {
+      this.tintTimer.remove();
+      this.tintTimer = null;
+    }
+    if (this.knockbackTimer) {
+      this.knockbackTimer.remove();
+      this.knockbackTimer = null;
+    }
+    
     this.scene.addXP(this.config.xpValue);
     
     if (this.sprite?.body) {
@@ -338,12 +397,13 @@ export class Enemy {
     
     this.scene.enemyGroup?.remove(this.sprite, false, false);
     
-    for (let i = 0; i < 3; i++) {
+    const particleCount = 3;
+    for (let i = 0; i < particleCount; i++) {
       const particle = this.scene.getParticle?.();
       if (!particle) continue;
       
       particle.setPosition(this.sprite.x, this.sprite.y);
-      const angle = (Math.PI * 2 * i) / 3;
+      const angle = (Math.PI * 2 * i) / particleCount;
       
       this.scene.tweens.add({
         targets: particle,
@@ -364,8 +424,10 @@ export class Enemy {
         duration: 150,
         ease: 'Power2',
         onComplete: () => {
-          this.sprite?.destroy();
-          this.sprite = null;
+          if (this.sprite) {
+            this.sprite.destroy();
+            this.sprite = null;
+          }
           this.isDestroying = false;
         }
       });
@@ -379,6 +441,15 @@ export class Enemy {
     this.markedForDeath = true;
     this.isDestroying = true;
     
+    if (this.tintTimer) {
+      this.tintTimer.remove();
+      this.tintTimer = null;
+    }
+    if (this.knockbackTimer) {
+      this.knockbackTimer.remove();
+      this.knockbackTimer = null;
+    }
+    
     if (this.sprite) {
       this.sprite.body?.setEnable(false);
       this.sprite.destroy();
@@ -391,7 +462,6 @@ export class Enemy {
 // ENNEMIS AÉRIENS
 // ========================================
 
-// BAT - Chauve-souris rapide avec charge
 export class Bat extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -419,7 +489,6 @@ export class Bat extends Enemy {
   }
 }
 
-// FLY - Mouche très rapide et fragile
 export class Fly extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -458,17 +527,16 @@ export class Fly extends Enemy {
   }
 }
 
-// SKULL - Crâne qui tire des projectiles
 export class Skull extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
       health: 60,
       maxHealth: 60,
-      normalSpeed: 40,
+      normalSpeed: 30,
       chargeSpeed: 0,
       detectionRange: 250,
       shootRange: 200,
-      fleeRange: 60,
+      fleeRange: 50,
       shootCooldown: 2500,
       attackDelay: 1000,
       contactDamage: 12,
@@ -488,16 +556,16 @@ export class Skull extends Enemy {
   }
 
   shoot(player) {
-    if (!this.isAlive()) return;
+    if (!this.isAlive() || !this.scene.projectilePool) return;
     
     const now = this.scene.time.now;
     if (now - this.lastShootTime < this.config.shootCooldown) return;
     
     this.lastShootTime = now;
     
-    if (!this.scene.projectilePool) return;
-    
     const proj = this.scene.projectilePool.get();
+    if (!proj) return;
+    
     proj.setPosition(this.sprite.x, this.sprite.y);
     proj.setFrame(10);
     proj.enemyRef = this;
@@ -506,12 +574,15 @@ export class Skull extends Enemy {
     
     const dx = player.x - this.sprite.x;
     const dy = player.y - this.sprite.y;
-    const angle = Math.atan2(dy, dx);
+    const dist = Math.sqrt(dx * dx + dy * dy);
     
-    proj.body.setVelocity(
-      Math.cos(angle) * 120,
-      Math.sin(angle) * 120
-    );
+    if (dist > 0) {
+      const speed = 120;
+      proj.body.setVelocity(
+        (dx / dist) * speed,
+        (dy / dist) * speed
+      );
+    }
   }
 
   onProjectileHit(player) {
@@ -524,13 +595,16 @@ export class Skull extends Enemy {
     
     const dx = this.sprite.x - player.x;
     const dy = this.sprite.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
     
-    const angle = Math.atan2(dy, dx);
-    this.sprite.body.setVelocity(
-      Math.cos(angle) * this.config.normalSpeed,
-      Math.sin(angle) * this.config.normalSpeed
-    );
-    this.sprite.setFlipX(dx > 0);
+    if (dist > 0) {
+      const speed = this.config.normalSpeed;
+      this.sprite.body.setVelocity(
+        (dx / dist) * speed,
+        (dy / dist) * speed
+      );
+      this.sprite.setFlipX(dx > 0);
+    }
   }
 
   update(player, time) {
@@ -549,7 +623,12 @@ export class Skull extends Enemy {
     } else if (distSq <= this.shootRangeSq) {
       this.sprite.body.setVelocity(0, 0);
       this.updateAnimation(time, this.config.idleFrames);
-      this.shoot(player);
+      
+      const now = this.scene.time.now;
+      if (now - this.lastShootTime >= this.config.shootCooldown) {
+        this.shoot(player);
+      }
+      
       this.sprite.setFlipX(dx < 0);
     } else {
       this.moveToPlayer(player);
@@ -558,7 +637,6 @@ export class Skull extends Enemy {
   }
 }
 
-// GHOST - Fantôme avec invincibilité périodique
 export class Ghost extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -582,6 +660,7 @@ export class Ghost extends Enemy {
     this.ghostCycleDuration = 10000;
     this.ghostActiveDuration = 3000;
     this.nextGhostTime = scene.time.now + this.ghostCycleDuration;
+    this.lastGhostCheck = 0;
   }
 
   takeDamage(damage, attackerX, attackerY) {
@@ -596,21 +675,25 @@ export class Ghost extends Enemy {
       return;
     }
     
+    if (time - this.lastGhostCheck >= 100) {
+      this.lastGhostCheck = time;
+      
+      if (time >= this.nextGhostTime) {
+        if (!this.isInvincible) {
+          this.isInvincible = true;
+          this.sprite.setAlpha(0.3);
+          this.nextGhostTime = time + this.ghostActiveDuration;
+        } else {
+          this.isInvincible = false;
+          this.sprite.setAlpha(1);
+          this.nextGhostTime = time + this.ghostCycleDuration;
+        }
+      }
+    }
+    
     const dx = player.x - this.sprite.x;
     const dy = player.y - this.sprite.y;
     const distSq = dx * dx + dy * dy;
-
-    if (time >= this.nextGhostTime) {
-      if (!this.isInvincible) {
-        this.isInvincible = true;
-        this.sprite.setAlpha(0.3);
-        this.nextGhostTime = time + this.ghostActiveDuration;
-      } else {
-        this.isInvincible = false;
-        this.sprite.setAlpha(1);
-        this.nextGhostTime = time + this.ghostCycleDuration;
-      }
-    }
 
     if (distSq > this.detectionRangeSq) {
       this.sprite.body.setVelocity(0, 0);
@@ -626,7 +709,6 @@ export class Ghost extends Enemy {
 // ENNEMIS TERRESTRES
 // ========================================
 
-// GOBLIN - Gobelin agressif avec charge
 export class Goblin extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -654,13 +736,12 @@ export class Goblin extends Enemy {
   }
 }
 
-// RAT - Rat rapide et faible
 export class Rat extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
       health: 30,
       maxHealth: 30,
-      normalSpeed: 100,
+      normalSpeed: 90,
       chargeSpeed: 0,
       detectionRange: 160,
       chargeRange: 0,
@@ -693,7 +774,6 @@ export class Rat extends Enemy {
   }
 }
 
-// SKELETON - Squelette résistant avec charge puissante
 export class Skeleton extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -721,7 +801,6 @@ export class Skeleton extends Enemy {
   }
 }
 
-// SLIME - Slime gélatineux lent mais résistant
 export class Slime extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -736,8 +815,8 @@ export class Slime extends Enemy {
       bodySize: { width: 14, height: 14 },
       bodyOffset: { x: 1, y: 1 },
       xpValue: 15,
-      idleFrames: [19, 20], // sprite idle slime
-      moveFrames: [21, 22, 23], // sprite run slime
+      idleFrames: [19, 20],
+      moveFrames: [21, 22, 23],
       frameRate: 6,
       spriteSheet: 'enemies_1'
     });
@@ -760,7 +839,6 @@ export class Slime extends Enemy {
   }
 }
 
-// SPIDER - Araignée rapide avec saut
 export class Spider extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -775,8 +853,8 @@ export class Spider extends Enemy {
       bodySize: { width: 12, height: 12 },
       bodyOffset: { x: 2, y: 2 },
       xpValue: 14,
-      idleFrames: [24, 25], // sprite idle araignée
-      moveFrames: [26, 27, 28, 29], // sprite run araignée
+      idleFrames: [24, 25],
+      moveFrames: [26, 27, 28, 29],
       frameRate: 8,
       spriteSheet: 'enemies_1'
     });
@@ -803,7 +881,6 @@ export class Spider extends Enemy {
 // MINIBOSS
 // ========================================
 
-// SKULL KING - Miniboss crâne avec tir en rafale
 export class SkullKing extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -831,6 +908,7 @@ export class SkullKing extends Enemy {
     this.lastShootTime = 0;
     this.shootRangeSq = this.config.shootRange ** 2;
     this.fleeRangeSq = this.config.fleeRange ** 2;
+    this.burstTimers = [];
   }
 
   shootBurst(player) {
@@ -841,12 +919,22 @@ export class SkullKing extends Enemy {
     
     this.lastShootTime = now;
     
-    // Tir en rafale de 3 projectiles
+    const dx = player.x - this.sprite.x;
+    const dy = player.y - this.sprite.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist === 0) return;
+    
+    const baseAngle = Math.atan2(dy, dx);
+    const speed = 140;
+    
     for (let i = 0; i < 3; i++) {
-      this.scene.time.delayedCall(i * 150, () => {
+      const timer = this.scene.time.delayedCall(i * 150, () => {
         if (!this.isAlive()) return;
         
         const proj = this.scene.projectilePool.get();
+        if (!proj) return;
+        
         proj.setPosition(this.sprite.x, this.sprite.y);
         proj.setFrame(10);
         proj.setScale(1.3);
@@ -855,15 +943,14 @@ export class SkullKing extends Enemy {
         proj.destroyTime = now + 4000;
         proj.setDepth(10);
         
-        const dx = player.x - this.sprite.x;
-        const dy = player.y - this.sprite.y;
-        const angle = Math.atan2(dy, dx) + (i - 1) * 0.15;
+        const angle = baseAngle + (i - 1) * 0.15;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
         
-        proj.body.setVelocity(
-          Math.cos(angle) * 140,
-          Math.sin(angle) * 140
-        );
+        proj.body.setVelocity(cos * speed, sin * speed);
       });
+      
+      this.burstTimers.push(timer);
     }
   }
 
@@ -877,13 +964,16 @@ export class SkullKing extends Enemy {
     
     const dx = this.sprite.x - player.x;
     const dy = this.sprite.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
     
-    const angle = Math.atan2(dy, dx);
-    this.sprite.body.setVelocity(
-      Math.cos(angle) * this.config.normalSpeed,
-      Math.sin(angle) * this.config.normalSpeed
-    );
-    this.sprite.setFlipX(dx > 0);
+    if (dist > 0) {
+      const speed = this.config.normalSpeed;
+      this.sprite.body.setVelocity(
+        (dx / dist) * speed,
+        (dy / dist) * speed
+      );
+      this.sprite.setFlipX(dx > 0);
+    }
   }
 
   update(player, time) {
@@ -902,16 +992,30 @@ export class SkullKing extends Enemy {
     } else if (distSq <= this.shootRangeSq) {
       this.sprite.body.setVelocity(0, 0);
       this.updateAnimation(time, this.config.idleFrames);
-      this.shootBurst(player);
+      
+      const now = this.scene.time.now;
+      if (now - this.lastShootTime >= this.config.shootCooldown) {
+        this.shootBurst(player);
+      }
+      
       this.sprite.setFlipX(dx < 0);
     } else {
       this.moveToPlayer(player);
       this.updateAnimation(time, this.config.moveFrames);
     }
   }
+
+  destroy() {
+    for (let i = 0; i < this.burstTimers.length; i++) {
+      if (this.burstTimers[i]) {
+        this.burstTimers[i].remove();
+      }
+    }
+    this.burstTimers = [];
+    super.destroy();
+  }
 }
 
-// BAT LORD - Miniboss chauve-souris avec charge rapide multiple
 export class BatLord extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -960,10 +1064,14 @@ export class BatLord extends Enemy {
             if (this.checkChargePath(player.x, player.y)) {
               this.state = ENEMY_STATE.PREPARE_CHARGE;
               this.stateTimer = time + this.config.prepareTime;
-              this.chargeAngle = Math.atan2(dy, dx);
+              
+              const dist = Math.sqrt(distSq);
+              this.chargeVelX = (dx / dist) * this.config.chargeSpeed;
+              this.chargeVelY = (dy / dist) * this.config.chargeSpeed;
+              
               this.sprite.body.setVelocity(0, 0);
               this.lastChargeTime = time;
-              this.chargesRemaining = 2; // Charge double
+              this.chargesRemaining = 2;
               this.sprite.setAlpha(0.5);
             } else {
               this.moveToPlayer(player);
@@ -983,11 +1091,7 @@ export class BatLord extends Enemy {
           this.state = ENEMY_STATE.CHARGING;
           this.stateTimer = time + this.config.chargeDuration;
           this.sprite.setAlpha(1);
-          
-          this.sprite.body.setVelocity(
-            Math.cos(this.chargeAngle) * this.config.chargeSpeed,
-            Math.sin(this.chargeAngle) * this.config.chargeSpeed
-          );
+          this.sprite.body.setVelocity(this.chargeVelX, this.chargeVelY);
         }
         break;
 
@@ -997,10 +1101,18 @@ export class BatLord extends Enemy {
           this.chargesRemaining--;
           
           if (this.chargesRemaining > 0) {
-            // Prépare une nouvelle charge
             this.state = ENEMY_STATE.PREPARE_CHARGE;
             this.stateTimer = time + 200;
-            this.chargeAngle = Math.atan2(player.y - this.sprite.y, player.x - this.sprite.x);
+            
+            const dx2 = player.x - this.sprite.x;
+            const dy2 = player.y - this.sprite.y;
+            const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+            
+            if (dist2 > 0) {
+              this.chargeVelX = (dx2 / dist2) * this.config.chargeSpeed;
+              this.chargeVelY = (dy2 / dist2) * this.config.chargeSpeed;
+            }
+            
             this.sprite.body.setVelocity(0, 0);
             this.sprite.setAlpha(0.5);
           } else {
@@ -1022,7 +1134,6 @@ export class BatLord extends Enemy {
   }
 }
 
-// RAT KING - Miniboss rat avec vitesse extrême et esquive
 export class RatKing extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -1046,6 +1157,7 @@ export class RatKing extends Enemy {
     this.sprite.setScale(2);
     this.dodgeCooldown = 0;
     this.dodgeDuration = 2000;
+    this.dodgeTintTimer = null;
   }
 
   takeDamage(damage, attackerX, attackerY) {
@@ -1053,28 +1165,36 @@ export class RatKing extends Enemy {
     
     const now = this.scene.time.now;
     
-    // Chance d'esquiver (50%)
     if (now >= this.dodgeCooldown && Math.random() < 0.5) {
       this.dodgeCooldown = now + this.dodgeDuration;
       
-      // Esquive rapide
       const dx = this.sprite.x - attackerX;
       const dy = this.sprite.y - attackerY;
-      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * Math.PI;
+      const distSq = dx * dx + dy * dy;
+      const dist = Math.sqrt(distSq);
       
-      this.sprite.body.setVelocity(
-        Math.cos(angle) * 400,
-        Math.sin(angle) * 400
-      );
-      
-      this.sprite.setTint(0xffff00);
-      this.scene.time.delayedCall(200, () => {
-        if (this.isAlive()) {
-          this.sprite.setTint(0x00ff00);
+      if (dist > 0) {
+        const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * Math.PI;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        
+        this.sprite.body.setVelocity(cos * 400, sin * 400);
+        
+        this.sprite.setTint(0xffff00);
+        
+        if (this.dodgeTintTimer) {
+          this.dodgeTintTimer.remove();
         }
-      });
-      
-      return; // Esquive réussie, pas de dégâts
+        
+        this.dodgeTintTimer = this.scene.time.delayedCall(200, () => {
+          if (this.isAlive()) {
+            this.sprite.setTint(0x00ff00);
+          }
+          this.dodgeTintTimer = null;
+        });
+        
+        return;
+      }
     }
     
     super.takeDamage(damage, attackerX, attackerY);
@@ -1095,9 +1215,16 @@ export class RatKing extends Enemy {
       this.updateAnimation(time, this.config.moveFrames);
     }
   }
+
+  destroy() {
+    if (this.dodgeTintTimer) {
+      this.dodgeTintTimer.remove();
+      this.dodgeTintTimer = null;
+    }
+    super.destroy();
+  }
 }
 
-// SLIME KING - Miniboss slime gélatineux avec split
 export class SlimeKing extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, {
@@ -1119,7 +1246,7 @@ export class SlimeKing extends Enemy {
     });
     
     this.sprite.setScale(2.5);
-    this.splitThreshold = this.config.maxHealth / 2;
+    this.splitThreshold = this.config.maxHealth * 0.5;
     this.hasSplit = false;
   }
 
@@ -1128,8 +1255,7 @@ export class SlimeKing extends Enemy {
     
     super.takeDamage(damage, attackerX, attackerY);
     
-    // Split quand santé <= 50%
-    if (!this.hasSplit && this.health <= this.splitThreshold) {
+    if (!this.hasSplit && this.health <= this.splitThreshold && this.health > 0) {
       this.hasSplit = true;
       this.split();
     }
@@ -1138,14 +1264,22 @@ export class SlimeKing extends Enemy {
   split() {
     if (!this.isAlive()) return;
     
-    // Crée 2 petits slimes
+    const angles = [0, Math.PI];
+    const spawnRadius = 30;
+    
     for (let i = 0; i < 2; i++) {
-      const angle = (Math.PI * i) / 1;
-      const newSlime = new Slime(this.scene, 
-        this.sprite.x + Math.cos(angle) * 30,
-        this.sprite.y + Math.sin(angle) * 30
+      const angle = angles[i];
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      
+      const newSlime = new Slime(
+        this.scene,
+        this.sprite.x + cos * spawnRadius,
+        this.sprite.y + sin * spawnRadius
       );
+      
       this.scene.enemies.push(newSlime);
+      this.scene.enemyGroup?.add(newSlime.sprite);
     }
   }
 
@@ -1170,26 +1304,27 @@ export class SlimeKing extends Enemy {
 // FONCTION DE CRÉATION
 // ========================================
 
-function spawnEnemies(scene, spawns, types, totalCount) {
+function selectWeightedType(types, totalWeight, random) {
+  let remaining = random * totalWeight;
+  for (let i = 0; i < types.length; i++) {
+    remaining -= types[i].weight;
+    if (remaining <= 0) {
+      return types[i].class;
+    }
+  }
+  return types[0].class;
+}
+
+function spawnEnemies(scene, spawns, types, totalCount, totalWeight) {
   const enemies = [];
-  const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
+  const spawnCount = spawns.length;
 
   for (let i = 0; i < totalCount; i++) {
-    const spawn = Phaser.Utils.Array.GetRandom(spawns);
-    const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
-    const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);
+    const spawn = spawns[i % spawnCount];
+    const randomX = spawn.x + Math.floor(Math.random() * (spawn.width || 16));
+    const randomY = spawn.y + Math.floor(Math.random() * (spawn.height || 16));
     
-    let random = Math.random() * totalWeight;
-    let selectedType = types[0].class;
-    
-    for (const type of types) {
-      random -= type.weight;
-      if (random <= 0) {
-        selectedType = type.class;
-        break;
-      }
-    }
-    
+    const selectedType = selectWeightedType(types, totalWeight, Math.random());
     enemies.push(new selectedType(scene, randomX, randomY));
   }
 
@@ -1199,12 +1334,28 @@ function spawnEnemies(scene, spawns, types, totalCount) {
 export function createEnemies(scene, roomCount = 0) {
   const enemies = [];
   
-  // Calcul du nombre d'ennemis : 6 de base + 1 par 2 salles
-  const baseEnemyCount = 5 + Math.floor(roomCount / 2);
+  const baseEnemyCount = 5 + Math.floor(roomCount * 0.5);
   
-  const airSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_1');
-  const groundSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_ennemi_2');
-  const minibossSpawns = scene.map.filterObjects('calque_ennemi', obj => obj.name === 'spawn_miniboss');
+  const spawnLayer = scene.map.getObjectLayer('calque_ennemi');
+  if (!spawnLayer || !spawnLayer.objects) {
+    console.warn('Aucun calque ennemi trouvé');
+    return enemies;
+  }
+
+  const airSpawns = [];
+  const groundSpawns = [];
+  const minibossSpawns = [];
+  
+  for (let i = 0; i < spawnLayer.objects.length; i++) {
+    const obj = spawnLayer.objects[i];
+    if (obj.name === 'spawn_ennemi_1') {
+      airSpawns.push(obj);
+    } else if (obj.name === 'spawn_ennemi_2') {
+      groundSpawns.push(obj);
+    } else if (obj.name === 'spawn_miniboss') {
+      minibossSpawns.push(obj);
+    }
+  }
   
   if (airSpawns.length === 0 && groundSpawns.length === 0 && minibossSpawns.length === 0) {
     console.warn('Aucun point de spawn trouvé');
@@ -1215,56 +1366,39 @@ export function createEnemies(scene, roomCount = 0) {
     scene.projectilePool = new ProjectilePool(scene, 20);
   }
 
-  // Déterminer quelle zone de spawn est disponible et répartir tous les ennemis
+  const airTypes = [
+    { class: Bat, weight: 30 },
+    { class: Fly, weight: 25 },
+    { class: Skull, weight: 25 },
+    { class: Ghost, weight: 20 }
+  ];
+  
+  const groundTypes = [
+    { class: Goblin, weight: 10 },
+    { class: Rat, weight: 20 },
+    { class: Skeleton, weight: 10 },
+    { class: Slime, weight: 40 },
+    { class: Spider, weight: 20 }
+  ];
+
+  const airTotalWeight = 100;
+  const groundTotalWeight = 100;
+
   const hasAirSpawns = airSpawns.length > 0;
   const hasGroundSpawns = groundSpawns.length > 0;
 
   if (hasAirSpawns && hasGroundSpawns) {
-    // Les deux zones existent : répartir 40% aérien, 60% terrestre
     const airCount = Math.ceil(baseEnemyCount * 0.4);
     const groundCount = baseEnemyCount - airCount;
-
-    const airTypes = [
-      { class: Bat, weight: 30 },
-      { class: Fly, weight: 25 },
-      { class: Skull, weight: 25 },
-      { class: Ghost, weight: 20 }
-    ];
     
-    const groundTypes = [
-      { class: Goblin, weight: 10 },
-      { class: Rat, weight: 20 },
-      { class: Skeleton, weight: 10 },
-      { class: Slime, weight: 40 },
-      { class: Spider, weight: 20 }
-    ];
-    
-    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, airCount));
-    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, groundCount));
+    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, airCount, airTotalWeight));
+    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, groundCount, groundTotalWeight));
   } else if (hasAirSpawns) {
-    // Seulement des spawns aériens : tous les ennemis sont aériens
-    const airTypes = [
-      { class: Bat, weight: 30 },
-      { class: Fly, weight: 25 },
-      { class: Skull, weight: 25 },
-      { class: Ghost, weight: 20 }
-    ];
-    
-    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, baseEnemyCount));
+    enemies.push(...spawnEnemies(scene, airSpawns, airTypes, baseEnemyCount, airTotalWeight));
   } else if (hasGroundSpawns) {
-    // Seulement des spawns terrestres : tous les ennemis sont terrestres
-    const groundTypes = [
-      { class: Goblin, weight: 10 },
-      { class: Rat, weight: 20 },
-      { class: Skeleton, weight: 10 },
-      { class: Slime, weight: 40 },
-      { class: Spider, weight: 20 }
-    ];
-    
-    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, baseEnemyCount));
+    enemies.push(...spawnEnemies(scene, groundSpawns, groundTypes, baseEnemyCount, groundTotalWeight));
   }
 
-  // Miniboss (indépendant du nombre d'ennemis basiques)
   if (minibossSpawns.length > 0) {
     const minibossTypes = [
       { class: SkullKing, weight: 25 },
@@ -1273,22 +1407,14 @@ export function createEnemies(scene, roomCount = 0) {
       { class: SlimeKing, weight: 15 }
     ];
     
-    for (const spawn of minibossSpawns) {
-      const randomX = spawn.x + Phaser.Math.Between(0, spawn.width || 16);
-      const randomY = spawn.y + Phaser.Math.Between(0, spawn.height || 16);
+    const minibossTotalWeight = 100;
+    
+    for (let i = 0; i < minibossSpawns.length; i++) {
+      const spawn = minibossSpawns[i];
+      const randomX = spawn.x + Math.floor(Math.random() * (spawn.width || 16));
+      const randomY = spawn.y + Math.floor(Math.random() * (spawn.height || 16));
       
-      const totalWeight = minibossTypes.reduce((sum, t) => sum + t.weight, 0);
-      let random = Math.random() * totalWeight;
-      let selectedType = minibossTypes[0].class;
-      
-      for (const type of minibossTypes) {
-        random -= type.weight;
-        if (random <= 0) {
-          selectedType = type.class;
-          break;
-        }
-      }
-      
+      const selectedType = selectWeightedType(minibossTypes, minibossTotalWeight, Math.random());
       enemies.push(new selectedType(scene, randomX, randomY));
     }
   }
