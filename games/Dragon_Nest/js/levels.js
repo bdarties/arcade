@@ -1,4 +1,4 @@
-import BaseLevel from "./BaseLevel.js";
+import BaseLevel from "./baselevel.js";
 import * as fct from "./fonctions.js";
 
 /**
