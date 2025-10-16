@@ -55,5 +55,5 @@ var config = {
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config);
-game.scene.start("menu");
 game.config.idGame = 2476566;
+game.scene.start("menu");
