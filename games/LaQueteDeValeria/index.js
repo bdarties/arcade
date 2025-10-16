@@ -5,6 +5,9 @@ import controles from "./js/controles.js";
 import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
+import story1 from "./js/story1.js";
+import story2 from "./js/story2.js";
+import story3 from "./js/story3.js";
 
 // configuration générale du jeu
 var config = {
@@ -28,7 +31,7 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [menu,selection,controles, niveau1, niveau2, niveau3],
+  scene: [menu,selection,controles, story1, story2, story3, niveau1, niveau2, niveau3],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

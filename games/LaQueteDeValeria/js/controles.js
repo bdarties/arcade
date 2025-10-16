@@ -3,7 +3,7 @@ export default class controles extends Phaser.Scene {
     super({ key: "controles" }); // mettre le meme nom que le nom de la classe
   }
 preload() {
-this.load.image("ex_controle", "./assets/controle.png");
+this.load.image("ex_controle", "./assets/controle.jpg");
 }
 
 

@@ -1,4 +1,3 @@
-import * as fct from "./fonctions.js";
 
 /***********************************************************************/
 /** VARIABLES GLOBALES 
@@ -23,9 +22,9 @@ export default class selection extends Phaser.Scene {
     
     this.load.setBaseURL(baseURL);
 
-    this.load.image("img_porte1", "./assets/door1.png");
-    this.load.image("img_porte2", "./assets/door2.png");
-    this.load.image("img_porte3", "./assets/door3.png");
+    this.load.image("img_porte1", "./assets/door1.jpg");
+    this.load.image("img_porte2", "./assets/door2.jpg");
+    this.load.image("img_porte3", "./assets/door3.jpg");
     this.load.image("room", "./assets/room.jpg");
   }
 
@@ -33,9 +32,6 @@ export default class selection extends Phaser.Scene {
   /** FONCTION CREATE 
 /***********************************************************************/
   create() {
-      fct.doNothing();
-      fct.doAlsoNothing();
-
  this.add
       .image(0, 0, "room")
       .setOrigin(0)
@@ -71,7 +67,7 @@ export default class selection extends Phaser.Scene {
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
-      const sceneName = "niveau" + (this.indexSelection + 1);
+      const sceneName = "story" + (this.indexSelection + 1);
       this.scene.switch(sceneName);
     } if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
       this.scene.switch("menu");  
