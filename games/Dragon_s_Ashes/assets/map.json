@@ -1792,8 +1792,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":2730.66666666667,
-                 "y":6188.00666666667
+                 "x":2730.67,
+                 "y":6188.01
                 }, 
                 {
                  "height":0,
@@ -1865,7 +1865,7 @@
                  "visible":true,
                  "width":0,
                  "x":2254.67,
-                 "y":3655.99666666667
+                 "y":3656
                 }, 
                 {
                  "height":0,
@@ -1900,8 +1900,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":2831.33666666667,
-                 "y":3189.00333333333
+                 "x":2831.34,
+                 "y":3189
                 }, 
                 {
                  "height":0,
@@ -1936,8 +1936,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":2362.33333333333,
-                 "y":4122.33333333333
+                 "x":2362.33,
+                 "y":4122.33
                 }, 
                 {
                  "height":0,
@@ -2288,7 +2288,7 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":19,
+ "nextlayerid":20,
  "nextobjectid":36,
  "orientation":"orthogonal",
  "renderorder":"right-down",
@@ -7139,7 +7139,166 @@
                         {
                          "name":"mortel",
                          "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
                          "value":true
+                        }]
+                }, 
+                {
+                 "id":1,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":2,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":3,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":4,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":5,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":6,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":7,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":8,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":9,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":10,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":true
+                        }]
+                }, 
+                {
+                 "id":11,
+                 "properties":[
+                        {
+                         "name":"estSolide",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"spikes",
+                         "type":"bool",
+                         "value":false
                         }]
                 }],
          "tilewidth":32
@@ -7206,7 +7365,7 @@
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
                          "value":true
                         }]
@@ -7217,12 +7376,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7231,12 +7390,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7245,12 +7404,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7259,12 +7418,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7273,12 +7432,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7287,12 +7446,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7301,12 +7460,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7315,12 +7474,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7329,12 +7488,12 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }]
                 }, 
                 {
@@ -7346,7 +7505,7 @@
                          "value":false
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
                          "value":false
                         }]
@@ -7360,7 +7519,7 @@
                          "value":false
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"lavemortel",
                          "type":"bool",
                          "value":false
                         }]
@@ -7412,12 +7571,12 @@
                  "id":0,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7426,12 +7585,12 @@
                  "id":1,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7440,12 +7599,12 @@
                  "id":2,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7454,12 +7613,12 @@
                  "id":3,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7468,12 +7627,12 @@
                  "id":4,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7482,12 +7641,12 @@
                  "id":5,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7496,12 +7655,12 @@
                  "id":6,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":true
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":true
                         }]
@@ -7510,12 +7669,12 @@
                  "id":7,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":false
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":false
                         }]
@@ -7524,12 +7683,12 @@
                  "id":8,
                  "properties":[
                         {
-                         "name":"estSolide",
+                         "name":"eaumortel",
                          "type":"bool",
                          "value":false
                         }, 
                         {
-                         "name":"mortel",
+                         "name":"estSolide",
                          "type":"bool",
                          "value":false
                         }]

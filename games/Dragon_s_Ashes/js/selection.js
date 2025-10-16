@@ -27,12 +27,7 @@ export default class selection extends Phaser.Scene {
    */
   preload() {
     const baseURL = this.sys.game.config.baseURL;
-    this.load.scenePlugin(
-        'AnimatedTilesPlugin', // nom interne
-        './plugins/AnimatedTiles.js', // chemin vers ton fichier
-        'animatedTiles', // clé d’accès
-        'animatedTiles'  // propriété dans ta scène
-    );
+
     this.load.setBaseURL(baseURL);
 
     this.load.audio("musique_jeu", "./assets/musique_jeu.ogg");
@@ -136,7 +131,18 @@ export default class selection extends Phaser.Scene {
       frameWidth: 50,
       frameHeight: 70
     });
-
+    this.load.spritesheet("spikes", "./assets/pique.png", {
+            frameWidth: 32,
+            frameHeight: 32
+        });
+    this.load.spritesheet("anim_eau", "./assets/animeau1.png", {
+            frameWidth: 96,
+            frameHeight: 96
+        });
+    this.load.spritesheet("anim_lave", "./assets/animlave1.png", {
+            frameWidth: 96,
+            frameHeight: 96
+        });
     this.load.image("coeur", "./assets/heart.png");
     this.load.image("img_chest1", "./assets/chest1.png");
     this.load.image("img_chest2", "./assets/chest2.png");
@@ -155,13 +161,12 @@ export default class selection extends Phaser.Scene {
     this.load.image("background02", "./assets/background2.jpg");
     this.load.image("background03", "./assets/background3.jpg");
     this.load.image("background04", "./assets/background4.jpg");
-    this.load.image("background05", "./assets/background5.jpg");
+    this.load.image("background05", "./assets/background_5.jpg");
     this.load.image("Tuiles_Decors01", "./assets/TilsetdecorV1.png");
     this.load.image("Tuiles_Decors02", "./assets/tilsetdecorv2.png");
     this.load.image("Tuiles_Decors03", "./assets/tilsetdecorv3.png");
-    this.load.image("anim_pique", "./assets/pique.png");
+   
     this.load.image("anim_lave", "./assets/animLave.png");
-    this.load.image("anim_eau", "./assets/animEau2.png");
 
 // chargement de la carte
 this.load.tilemapTiledJSON("carte", "./assets/map.json");  
@@ -209,8 +214,6 @@ const calque_background01 = carteDuNiveau.createLayer(
 const calque_background02 = carteDuNiveau.createLayer("calque_background02", tilesetdecorsv2);
 const calque_decors      = carteDuNiveau.createLayer("calque_decors", [tilesetDecors, tilesetdecorsv2, tilesetdecorsv3, anim_pique, anim_lave, anim_eau ],0,0);
 const calque_decorations      = carteDuNiveau.createLayer("calque_decorations", [tilesetdecorsv2, tilesetDecors, tilesetdecorsv3, anim_pique, anim_lave, anim_eau ],0,0);
-
-
 
 
 
@@ -386,7 +389,7 @@ this.popupTexte = this.add.text(
     "Vous avez trouvé un écrit de vos ancêtres !\n\n\nVous pouvez maintenant cracher du feu avec B. \n\n\n\n\n\nAppuyez sur D pour fermer le coffre.\n", 
     {
         fontFamily: "Typewriter",
-        fontSize: "20px",
+        fontSize: "30px",
         fill: "#ffffff",
         align: "center",
         wordWrap: { width: largeur * 0.65 } // texte dans la zone
@@ -437,7 +440,7 @@ this.popupTexteSaut = this.add.text(
     "Vos aventures vous ont endurcis, vous êtes maintenant prêt pour votre vengeance !\n\n\nVous pouvez maintenant voler en appuyant plusieurs fois sur C, mais gare à votre endurance. \n\n\n\n\n\nAppuyez sur D pour fermer la fenetre.\n",
     {
         fontFamily: "Typewriter",
-        fontSize: "20px",
+        fontSize: "30px",
         fill: "#ffffff",
         align: "center",
         wordWrap: { width: this.cameras.main.width * 0.65 }
@@ -473,10 +476,10 @@ this.zonePanneau.body.setImmovable(true);
 // --- Création du texte ---
 this.textePanneau = this.add.text(
     2205, 6940, // position du texte au-dessus du panneau
-    "Appuyez sur K pour interagir", 
+    "Appuyez sur D pour interagir", 
     {
         fontFamily: "Typewriter",
-        fontSize: "20px",
+        fontSize: "26px",
         color: "#ffffff",
         backgroundColor: "rgba(0,0,0,0.5)",
         padding: { x: 10, y: 5 }
@@ -681,7 +684,10 @@ this.imgCommandePause = this.add.image(
 .setDepth(1001)
 .setVisible(false); // masquée au départ
 
-
+   // définition des tuiles de plateformes qui sont solides
+    // utilisation de la propriété estSolide
+        calque_decors.setCollisionByProperty({ estSolide: true });
+        calque_decorations.setCollisionByProperty({ estSolide: true });
     /***************************
      *  CREATION DES ANIMATIONS *
      ****************************/
@@ -899,111 +905,34 @@ this.anims.create({
       repeat: 0
     });
 
+    this.anims.create({
+    key: "spikesAnim",
+    frames: this.anims.generateFrameNumbers("spikes", { start: 0, end: 10
+     }),
+    frameRate: 6,
+    repeat: -1
+});
+
+    this.anims.create({
+    key: "anim_eauMortelle",
+    frames: this.anims.generateFrameNumbers("anim_eau", { start: 0, end: 6 }),
+    frameRate: 6,
+    repeat: -1
+});
+    this.anims.create({
+    key: "anim_laveMortelle",
+    frames: this.anims.generateFrameNumbers("anim_lave", { start: 0, end: 9 }),
+    frameRate: 6,
+    repeat: -1
+});
+
+this.createAnimatedSpikes(calque_decors);
+this.createAnimatedWater(calque_decorations);
+this.createAnimatedLava(calque_decorations);
+
  
-     // définition des tuiles de plateformes qui sont solides
-    // utilisation de la propriété estSolide
-        calque_decors.setCollisionByProperty({ estSolide: true });
-        calque_decorations.setCollisionByProperty({ estSolide: true });
+  
 
-calque_decors.forEachTile(tile => {
-    if (tile && tile.properties && tile.properties.mortel === true) {
-        tile.setCollision(true);
-    }
-});
-
-// 3. UN SEUL COLLIDER pour calque_decors avec callback
-this.physics.add.collider(player, calque_decors, (playerObj, tile) => {
-    // Vérifier si c'est une tuile mortelle
-    if (tile.properties && tile.properties.mortel === true) {
-      
-        if (!playerObj.invincible) {
-            this.sonHit2.play();
-            
-            // Perte d'un PV
-            playerObj.hp--;
-            playerObj.invincible = true;
-            playerObj.setTint(0xff0000);
-
-            // Knockback vers le haut
-            playerObj.setVelocityY(-250);
-
-            this.time.delayedCall(1000, () => {
-                playerObj.clearTint();
-                playerObj.invincible = false;
-            });
-
-            // Mise à jour affichage
-            fct.updatePV.call(this);
-
-            // Vérification si PV épuisés
-            if (playerObj.hp <= 0) {
-                playerObj.vies--;
-                fct.updateVies.call(this);
-
-                if (playerObj.vies > 0) {
-                    playerObj.hp = 3;
-                    fct.updatePV.call(this);
-                } else {
-                    this.cameras.main.fadeOut(500, 0, 0, 0);
-                    this.cameras.main.once("camerafadeoutcomplete", () => {
-                        this.musiqueJeu.stop();
-                        this.scene.start("defaite");
-                    });
-                }
-            }
-        }
-    }
-}, null, this);
-
-calque_decorations.forEachTile(tile => {
-    if (tile && tile.properties && tile.properties.mortel === true) {
-        tile.setCollision(true);
-    }
-});
-
-// 3. UN SEUL COLLIDER pour calque_decors avec callback
-this.physics.add.collider(player, calque_decorations, (playerObj, tile) => {
-    // Vérifier si c'est une tuile mortelle
-    if (tile.properties && tile.properties.mortel === true) {
-      
-        if (!playerObj.invincible) {
-            this.sonHit2.play();
-            
-            // Perte d'un PV
-            playerObj.hp--;
-            playerObj.invincible = true;
-            playerObj.setTint(0xff0000);
-
-            // Knockback vers le haut
-            playerObj.setVelocityY(-250);
-
-            this.time.delayedCall(1000, () => {
-                playerObj.clearTint();
-                playerObj.invincible = false;
-            });
-
-            // Mise à jour affichage
-            fct.updatePV.call(this);
-
-            // Vérification si PV épuisés
-            if (playerObj.hp <= 0) {
-                playerObj.vies--;
-                fct.updateVies.call(this);
-
-                if (playerObj.vies > 0) {
-                    playerObj.hp = 3;
-                    fct.updatePV.call(this);
-                } else {
-                    this.cameras.main.fadeOut(500, 0, 0, 0);
-                    this.cameras.main.once("camerafadeoutcomplete", () => {
-                        this.musiqueJeu.stop();
-                        this.scene.start("defaite");
-                    });
-                }
-            }
-        }
-    }
-}, null, this);
 
     /***********************
      *  CREATION DU CLAVIER *
@@ -1025,14 +954,165 @@ this.physics.add.collider(player, calque_decorations, (playerObj, tile) => {
     this.cameras.main.startFollow(player); 
 
   
+}
+createAnimatedWater(layer) {
+    // Groupe statique pour l'eau mortelle
+    this.eauGroup = this.physics.add.staticGroup();
 
-    if (this.animatedTiles) {
-        this.animatedTiles.init(carteDuNiveau);
-        console.log("✅ Plugin AnimatedTiles initialisé !");
-    } else {
-        console.error("❌ Plugin AnimatedTiles non disponible !");
-        console.log("Plugins disponibles:", this.plugins);
+    layer.forEachTile(tile => {
+        if (tile.properties.eaumortel === true) {
+            const eau = this.eauGroup.create(tile.getCenterX(), tile.getCenterY(), "anim_eau");
+            eau.play("anim_eauMortelle");
+            eau.setOrigin(0.5, 0.5);
+            eau.body.width = tile.width;
+            eau.body.height = tile.height;
+            // 🟦 Ajoute ceci : rendre le corps solide
+            eau.refreshBody(); // met à jour la hitbox du sprite
+            // Désactive la collision de la tuile originale
+            tile.setCollision(false, false, false, false);
+        }
+    });
+
+    // Collision mortelle entre le joueur et l'eau
+    this.physics.add.collider(this.player, this.eauGroup, this.hitByWater, null, this);
+}
+hitByWater(player, eau) {
+    if (player.invincible) return;
+
+    this.sonHit1.play();
+        player.hp--;
+        player.invincible = true;
+        player.setTint(0xff0000);
+        player.setVelocityY(-280);
+        this.time.delayedCall(1000, () => {
+            player.clearTint();
+            player.invincible = false;
+        });
+
+        fct.updatePV.call(this);
+
+        if (player.hp <= 0) {
+            player.vies--;
+            fct.updateVies.call(this);
+
+            if (player.vies > 0) {
+                player.hp = 3;
+                fct.updatePV.call(this);
+            } else {
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("defaite");
+                });
+            }
+        }
+}
+createAnimatedLava(layer) {
+    // Groupe statique pour la lave mortelle
+    this.lavaGroup = this.physics.add.staticGroup();
+
+    layer.forEachTile(tile => {
+        if (tile.properties.lavemortel === true) { // propriété Tiled : lavemortel = true
+            const lava = this.lavaGroup.create(tile.getCenterX(), tile.getCenterY(), "anim_lave");
+            lava.play("anim_laveMortelle");
+            lava.setOrigin(0.5, 0.5);
+            lava.body.width = tile.width;
+            lava.body.height = tile.height;
+            lava.refreshBody(); // rendre le corps solide
+            tile.setCollision(false, false, false, false);
+        }
+    });
+
+    // Collision physique + dégâts
+    this.physics.add.collider(this.player, this.lavaGroup, this.hitByLava, null, this);
+}
+hitByLava(player, lava) {
+    if (player.invincible) return;
+
+   this.sonHit1.play();
+        player.hp--;
+        player.invincible = true;
+        player.setTint(0xff0000);
+        player.setVelocityY(-280);
+        this.time.delayedCall(1000, () => {
+            player.clearTint();
+            player.invincible = false;
+        });
+
+        fct.updatePV.call(this);
+
+        if (player.hp <= 0) {
+            player.vies--;
+            fct.updateVies.call(this);
+
+            if (player.vies > 0) {
+                player.hp = 3;
+                fct.updatePV.call(this);
+            } else {
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("defaite");
+                });
+        }
     }
+}
+createAnimatedSpikes(layer) {
+    // Groupe statique pour les piques
+    this.spikeGroup = this.physics.add.staticGroup();
+
+    // Parcourt toutes les tuiles du calque décor
+    layer.forEachTile(tile => {
+        // Si la tuile a la propriété "spikes" dans Tiled
+        if (tile.properties.spikes === true) {
+            // Crée un sprite animé à sa position
+            const spike = this.spikeGroup.create(tile.getCenterX(), tile.getCenterY(), "spikes");
+            spike.play("spikesAnim");
+            spike.setOrigin(0.5, 0.5);
+            spike.body.width = tile.width;
+            spike.body.height = tile.height;
+        }
+    });
+
+    // Supprime la collision de ces tuiles dans le layer (pour éviter double collision)
+    layer.forEachTile(tile => {
+        if (tile.properties.spikes === true) {
+            tile.setCollision(false, false, false, false);
+        }
+    });
+
+    // Collision mortelle entre le joueur et les piques
+    this.physics.add.collider(this.player, this.spikeGroup, this.hitBySpike, null, this);
+}
+hitBySpike(player, spike) {
+    if (player.invincible) return;
+
+   this.sonHit1.play();
+        player.hp--;
+        player.invincible = true;
+        player.setTint(0xff0000);
+        player.setVelocityY(-280);
+    
+    
+        this.time.delayedCall(1000, () => {
+            player.clearTint();
+            player.invincible = false;
+        });
+
+        fct.updatePV.call(this);
+
+        if (player.hp <= 0) {
+            player.vies--;
+            fct.updateVies.call(this);
+
+            if (player.vies > 0) {
+                player.hp = 3;
+                fct.updatePV.call(this);
+            } else {
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once("camerafadeoutcomplete", () => {
+                    this.scene.start("defaite");
+                });
+            }
+        }
 }
 
   /***********************************************************************/
