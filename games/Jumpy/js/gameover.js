@@ -173,9 +173,6 @@ export default class GameOver extends Phaser.Scene {
     if (!this.isNewHighScore || this.saved) return;
     const playerName = this.name.join("");
     this.instructionText.setText("Envoi du score...");
-    console.log("id game : " + this.game.config.idGame);
-    console.log("nom joueur : " + playerName);
-    console.log("score : " + this.score);
     try {
       await ajoute_score(this.game.config.idGame, playerName, this.score);
       this.saved = true;
