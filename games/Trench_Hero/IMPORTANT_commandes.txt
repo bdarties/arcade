@@ -1,0 +1,12 @@
+Pour jeu sur pc :
+
+- déplacements : flèches
+- choix des menus/ bonus : flèches 
+- choisir/ sélection : K
+
+Pour jeu sur arcade :
+
+- déplacements : joystick
+- choix des menus/ bonus : joystick 
+- choisir/ sélection : D
+
