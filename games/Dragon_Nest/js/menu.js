@@ -20,6 +20,8 @@ export default class menu extends Phaser.Scene {
     // --- CHARGEMENT DU SON ---
     this.load.audio('musiqueMenu', './assets/MusiqueMenu.mp3');
     this.load.audio('sword', 'assets/sword.mp3');
+    this.load.audio('jump', 'assets/jump.mp3'); // Ajustez le chemin selon votre structure
+    this.load.audio('degat', 'assets/degat.mp3');
 
   }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="40" height="23" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="1">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="40" height="23" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="1">
  <editorsettings>
   <export target="salle_leviers.json" format="json"/>
  </editorsettings>
@@ -506,7 +506,7 @@
   <tile id="83">
    <properties>
     <property name="estPorte" type="bool" value="false"/>
-    <property name="estSolide" type="bool" value="true"/>
+    <property name="estSolide" type="bool" value="false"/>
    </properties>
   </tile>
   <tile id="84">

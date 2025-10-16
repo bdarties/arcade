@@ -11,6 +11,11 @@ class menu extends Phaser.Scene {
   }
 
   create() {
+    // S'assurer que le HUD est bien stoppé quand on arrive au menu
+    if (this.scene.isActive('hud')) {
+      this.scene.stop('hud');
+    }
+    
    // on place les éléments de fond
     this.add
       .image(0, 0, "menu_fond")

@@ -1,4 +1,6 @@
 // pause.js
+import * as fct from "./fonctions.js";
+
 export default class PauseManager extends Phaser.Scene {
   constructor() {
     super({ key: "PauseScene" });
@@ -31,7 +33,7 @@ export default class PauseManager extends Phaser.Scene {
       color: "#ffffff"
     });
 
-    // Créer les touches R et Q pour pouvoir les vérifier dans update()
+    // Créer les touches pour pouvoir les vérifier dans update()
     this.keyI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
   }
@@ -43,11 +45,33 @@ export default class PauseManager extends Phaser.Scene {
       this.scene.resume(this.currentLevel); // reprend le niveau courant
     }
 
-    // Touche A → Quitter vers menu principal
-    if (Phaser.Input.Keyboard.JustDown(this.keyA)) {
+    // Touche Q → Quitter vers menu principal
+    if (Phaser.Input.Keyboard.JustDown(this.keyM)) {
+      // Réinitialiser toutes les stats du registry
+      this.registry.set('playerHealth', 5);
+      this.registry.set('playerMaxHealth', 5);
+      this.registry.set('playerLevel', 1);
+      this.registry.set('playerXP', 0);
+      this.registry.set('enemiesKilled', 0);
+      
+      // Réinitialiser les skills
+      this.registry.set('skillPointsAvailable', 0);
+      this.registry.set('skillForce', 0);
+      this.registry.set('skillVitesse', 0);
+      this.registry.set('skillVie', 0);
+      
+      // Réinitialiser les potions
+      fct.resetNbPotions();
+      
+      // Stopper la scène HUD
+      this.scene.stop('hud');
+      
+      // Stopper la scène de pause et le niveau actuel
       this.scene.stop();
-      this.scene.stop(this.currentLevel); // stoppe aussi le niveau en pause
-      this.scene.start("menu"); // ou "selection" si c'est ton hub
+      this.scene.stop(this.currentLevel);
+      
+      // Retourner au menu
+      this.scene.start("menu");
     }
   }
 }

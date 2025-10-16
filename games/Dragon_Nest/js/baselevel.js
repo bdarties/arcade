@@ -230,6 +230,8 @@ initializeGameState() {
     this.slimes = this.physics.add.group();
     this.dragons = this.physics.add.group();
     this.bossDragons = this.physics.add.group();
+    this.dragons2 = this.physics.add.group(); // 👈 AJOUTER CETTE LIGNE
+
   }
 
   /**
@@ -299,6 +301,13 @@ initializeGameState() {
           this.enemies.add(goblin);
           this.goblins.add(goblin);
           break;
+
+        // === DRAGON2 ===
+      case "dragon2":
+        const dragon2 = fct.createDragon2(this, obj.x, obj.y);
+        this.enemies.add(dragon2);
+        this.dragons2.add(dragon2);
+        break;
 
         // === CHAMPIGNON ===
         case "champignon":
@@ -483,11 +492,28 @@ initializeGameState() {
       this.physics.add.collider(this.dragons, platform);
     }
 
+          // Collisions avec plateformes (si nécessaire)
+    this.physics.add.collider(this.dragons2, platform);
+
+    // Overlap pour l'attaque du joueur
+    this.physics.add.overlap(this.attackHitbox, this.dragons2, (hitbox, d) => {
+        if (this.attackHitbox.active) {
+            this.hitEnemy(d);
+        }
+    });
+
+    // Overlap pour les dégâts au joueur
+    this.physics.add.overlap(this.player, this.dragons2, (p, dragon) => {
+        this.takeDamage(dragon.damage || 4);
+        const knockback = (p.x < dragon.x) ? -200 : 200;
+        p.setVelocityX(knockback);
+    });
+
     // === COLLISIONS AVEC LA DEATH LAYER ===
     if (death) {
       // Le joueur prend des dégâts
-      this.physics.add.collider(this.player, death, () => this.takeDamage());
-      
+    this.physics.add.collider(this.player, death, () => this.instantDeath()); 
+
       // Les ennemis ne tombent pas dans le vide
       this.physics.add.collider(this.enemies, death);
       this.physics.add.collider(this.goblins, death);
@@ -550,6 +576,7 @@ initializeGameState() {
       const knockback = (p.x < slime.x) ? -200 : 200;
       p.setVelocityX(knockback);
     });
+
     this.physics.add.overlap(this.player, this.dragons, (p, dragon) => {
       this.takeDamage(dragon.damage || 1);
       const knockback = (p.x < dragon.x) ? -200 : 200;
@@ -786,61 +813,73 @@ initializeGameState() {
    * PRENDRE DES DÉGÂTS
    * ============================================
    */
-  takeDamage(damageAmount = 1) {
-    // Cooldown des dégâts (1 seconde)
-    const now = this.time.now;
-    if (!this.lastDamageTime) this.lastDamageTime = 0;
-    if (now - this.lastDamageTime < 1000) return;
-    this.lastDamageTime = now;
+ takeDamage(damageAmount = 1) {
+  const now = this.time.now;
+  if (!this.lastDamageTime) this.lastDamageTime = 0;
+  if (now - this.lastDamageTime < 1000) return;
+  this.lastDamageTime = now;
 
-    // Effet visuel de dégâts
-    this.player.setTintFill(0xffffff);
-    this.time.delayedCall(200, () => this.player.clearTint());
+  // Joue le son de dégâts
+  this.sound.play("degat", { volume: 1 });
 
-    // Si on a encore des potions, elles absorbent les dégâts
-    if (this.playerPotions > 1) {
-        this.playerPotions -= 1;
-        this.registry.set("playerPotions", this.playerPotions);
-        if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
-        return; // on ne perd pas de vie tant qu'il reste des potions
-    }
+  
+  // Effet visuel
+  this.player.setTintFill(0xffffff);
+  this.time.delayedCall(200, () => this.player.clearTint());
 
-    // S’il n’y a plus de potions, on perd une vie
-    this.playerLives -= 1;
-    this.registry.set("playerLives", this.playerLives);
-    if (this.lifeText) this.lifeText.setText("Vies: " + this.playerLives);
+  // Si le joueur a encore des potions, elles absorbent les dégâts
+  if (this.playerPotions > 1) {
+    this.playerPotions -= 1;
+    this.registry.set("playerPotions", this.playerPotions);
+    if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
+    return;
+  }
 
-    // Si on n’a plus de vies → Game Over
-    if (this.playerLives <= 0) {
-        this.registry.set("eggsCollected", 0);
-        this.scene.start("gameover");
-        return;
-    }
+  // Sinon, perte d'une vie
+  this.playerLives -= 1;
+  this.registry.set("playerLives", this.playerLives);
+  if (this.lifeText) this.lifeText.setText("Vies: " + this.playerLives);
 
-    // Sinon, respawn au dernier checkpoint et régénération des potions
+  // Si plus de vies → Game Over
+  if (this.playerLives <= 0) {
+    this.registry.set("eggsCollected", 0);
+    this.scene.start("gameover");
+    return;
+  }
+
+  // ✅ Cas spécial : Niveau 2 → pas de respawn, juste recharge de potions
+  if (this.scene.key === "niveau2") {
     this.playerPotions = 4;
     this.registry.set("playerPotions", this.playerPotions);
     if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
 
-    // Respawn
-    this.player.setPosition(this.spawnX, this.spawnY);
-    this.player.setVelocity(0, 0);
-
-    // Feedback visuel supplémentaire (optionnel)
-    const respawnText = this.add.text(this.player.x, this.player.y - 40, "Respawn!", {
-        fontSize: "18px",
-        fill: "#ff0000",
-        backgroundColor: "#000000",
-        padding: { x: 5, y: 5 }
+    // petit feedback visuel
+    const msg = this.add.text(this.player.x, this.player.y - 40, "-1 vie, fuyez !", {
+      fontSize: "16px",
+      fill: "#ff0000ff",
+      backgroundColor: "#000000",
+      padding: { x: 5, y: 5 }
     }).setOrigin(0.5);
 
     this.tweens.add({
-        targets: respawnText,
-        alpha: { from: 1, to: 0 },
-        duration: 1500,
-        onComplete: () => respawnText.destroy()
+      targets: msg,
+      alpha: { from: 1, to: 0 },
+      duration: 2000,
+      onComplete: () => msg.destroy()
     });
+    return;
+  }
+
+  // 🔄 Autres niveaux : respawn normal
+  this.playerPotions = 4;
+  this.registry.set("playerPotions", this.playerPotions);
+  if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
+  this.player.setPosition(this.spawnX, this.spawnY);
+  this.player.setVelocity(0, 0);
 }
+
+
+
 
   /**
    * ============================================
@@ -898,7 +937,62 @@ initializeGameState() {
     if (this.onLevelUpdate) {
       this.onLevelUpdate();
     }
+    
   }
+
+  
+
+  /**
+ * ============================================
+ * MORT INSTANTANÉE (piques, lave, vide, etc.)
+ * ============================================
+ */
+instantDeath() {
+  // Retirer une vie
+  this.playerLives -= 1;
+  this.registry.set("playerLives", this.playerLives);
+  if (this.lifeText) this.lifeText.setText("Vies: " + this.playerLives);
+
+  // Joue le son de dégâts
+  this.sound.play("degat", { volume: 1 });
+
+  // Si le joueur n’a plus de vie → Game Over
+  if (this.playerLives <= 0) {
+    this.registry.set("eggsCollected", 0);
+    this.scene.start("gameover");
+    return;
+  }
+
+  // ✅ Cas spécial : Niveau 2 → pas de respawn, juste continuation
+  if (this.scene.key === "niveau2") {
+    this.playerPotions = 4;
+    this.registry.set("playerPotions", this.playerPotions);
+    if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
+
+    const msg = this.add.text(this.player.x, this.player.y - 40, "-1 vie, attention !", {
+      fontSize: "16px",
+      fill: "#ff2600ff",
+      backgroundColor: "#000000",
+      padding: { x: 5, y: 5 }
+    }).setOrigin(0.5);
+
+    this.tweens.add({
+      targets: msg,
+      alpha: { from: 1, to: 0 },
+      duration: 2000,
+      onComplete: () => msg.destroy()
+    });
+    return;
+  }
+
+  // 🔁 Autres niveaux : respawn normal
+  this.playerPotions = 4;
+  this.registry.set("playerPotions", this.playerPotions);
+  if (this.potionText) this.potionText.setText("Potions: " + this.playerPotions);
+  this.player.setPosition(this.spawnX, this.spawnY);
+  this.player.setVelocity(0, 0);
+}
+
 
   /**
    * ============================================
@@ -932,6 +1026,14 @@ initializeGameState() {
       this.attackHitbox.body.enable = false;
     });
   }
+
+ /* 
+============================================
+JOUER LE SON DE SAUT
+============================================*/
+playJumpSound() {
+  this.sound.play('jump', { volume: 0.8 });
+}
 
   /**
    * ============================================
@@ -1004,6 +1106,11 @@ initializeGameState() {
    * ============================================
    */
   handleNormalMovement() {
+    // Saut (uniquement si au sol)
+  if (this.clavier.up.isDown && this.player.body.blocked.down) {
+    this.player.setVelocityY(-480);
+    this.playJumpSound();
+  }
     // Réactiver la gravité
     this.player.body.setAllowGravity(true);
 
@@ -1059,7 +1166,12 @@ initializeGameState() {
     this.dragons.getChildren().forEach(d => {
       fct.updateDragon(d, this.player, this);
     });
-    
+      
+      // Mettre à jour les dragons2
+this.dragons2.getChildren().forEach(d => {
+    fct.updateDragon2(d, this.player, this);
+});
+
     // Mettre à jour les boss dragons
     this.bossDragons.getChildren().forEach(b => {
     fct.updateBossDragon(b, this.player, this);

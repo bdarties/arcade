@@ -9,10 +9,23 @@ export default class gameover extends Phaser.Scene {
 
     // Charger l'image de fond Game Over
     this.load.image("gameover_bg", "assets/game_over.jpg");
+    
+    // Charger la musique de game over
+    this.load.audio("gameover_music", "assets/game-over.mp3");
   }
 
   create() {
     const { width, height } = this.scale;
+
+    // Arrêter toutes les musiques précédentes
+    this.sound.stopAll();
+
+    // Lancer la musique de game over
+    this.gameoverMusic = this.sound.add("gameover_music", { 
+      loop: false, 
+      volume: 0.9 
+    });
+    this.gameoverMusic.play();
 
     // Affiche l'image en fond plein écran
     const bg = this.add.image(width / 2, height / 2, "gameover_bg").setOrigin(0.5);
@@ -81,26 +94,47 @@ export default class gameover extends Phaser.Scene {
   }
 
   restartGame() {
-  // Réinitialiser les stats
-  this.registry.set("playerLives", 3);
-  this.registry.set("playerPotions", 4);
-  this.registry.set("eggsCollected", 0);
-  this.registry.set("potionHelpShown", false);
-  
-  // Arrêter toutes les musiques
-  this.sound.stopAll();
-  
-  // Arrêter cette scène
-  this.scene.stop();
-  
-  // Redémarrer la scène selection
-  const currentLevel = this.registry.get("currentLevel") || "selection"; 
-  this.scene.start(currentLevel);}
-
-  goMenu() {
+    // Réinitialiser les stats
     this.registry.set("playerLives", 3);
     this.registry.set("playerPotions", 4);
     this.registry.set("eggsCollected", 0);
+    this.registry.set("potionHelpShown", false);
+    
+    // Arrêter toutes les musiques (y compris la musique de game over)
+    this.sound.stopAll();
+    
+    // Relancer la musique du menu si elle existe
+    if (this.sys.game.globals && this.sys.game.globals.musiqueMenu) {
+      if (!this.sys.game.globals.musiqueMenu.isPlaying) {
+        this.sys.game.globals.musiqueMenu.play();
+      }
+    }
+    
+    // Arrêter cette scène
+    this.scene.stop();
+    
+    // Redémarrer la scène selection
+    const currentLevel = this.registry.get("currentLevel") || "selection"; 
+    this.scene.start(currentLevel);
+  }
+
+  goMenu() {
+    // Réinitialiser les stats
+    this.registry.set("playerLives", 3);
+    this.registry.set("playerPotions", 4);
+    this.registry.set("eggsCollected", 0);
+    
+    // Arrêter la musique de game over
+    this.sound.stopAll();
+    
+    // Relancer la musique du menu si elle existe
+    if (this.sys.game.globals && this.sys.game.globals.musiqueMenu) {
+      if (!this.sys.game.globals.musiqueMenu.isPlaying) {
+        this.sys.game.globals.musiqueMenu.play();
+      }
+    }
+    
+    // Retourner au menu
     this.scene.start("menu");
   }
 }

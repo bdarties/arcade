@@ -1,3 +1,5 @@
+import * as fct from "./fonctions.js";
+
 export default class intro extends Phaser.Scene {
   constructor() {
     super({ key: "intro" });
@@ -51,6 +53,27 @@ export default class intro extends Phaser.Scene {
   update() {
     // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+      // Réinitialiser toutes les stats du registry avant de commencer
+      this.registry.set('playerHealth', 5);
+      this.registry.set('playerMaxHealth', 5);
+      this.registry.set('playerLevel', 1);
+      this.registry.set('playerXP', 0);
+      this.registry.set('enemiesKilled', 0);
+      
+      // Réinitialiser les skills
+      this.registry.set('skillPointsAvailable', 0);
+      this.registry.set('skillForce', 0);
+      this.registry.set('skillVitesse', 0);
+      this.registry.set('skillVie', 0);
+      
+      // Réinitialiser les potions
+      fct.resetNbPotions();
+      
+      // S'assurer que le HUD est actif
+      if (!this.scene.isActive('hud')) {
+        this.scene.launch('hud');
+      }
+      
       this.actions[this.selectedIndex]();
     }
   }

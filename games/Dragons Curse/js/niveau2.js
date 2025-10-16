@@ -293,6 +293,20 @@ export default class niveau2 extends Phaser.Scene {
     }
     
         this.physics.add.collider(this.groupeEnnemis, this.calque_mur);
+        // Assurer que les ennemis collident aussi avec le sol et les objets (coffres/poteaux)
+        if (this.calque_sol) {
+          this.physics.add.collider(this.groupeEnnemis, this.calque_sol);
+        }
+        if (this.calques_objets) {
+          // certains calques d'objets peuvent contenir des tiles solides
+          try {
+            this.calques_objets.setCollisionByProperty({ estSolide: true });
+          } catch (e) {}
+          this.physics.add.collider(this.groupeEnnemis, this.calques_objets);
+        }
+        if (this.calque_mur_haut) {
+          this.physics.add.collider(this.groupeEnnemis, this.calque_mur_haut);
+        }
         this.physics.add.overlap(
           this.groupeBullets,
           this.groupeEnnemis,

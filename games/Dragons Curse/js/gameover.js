@@ -51,6 +51,11 @@ export default class gameover extends Phaser.Scene {
   update() {
     // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+      // Stopper le HUD avant de retourner au menu
+      if (this.scene.isActive('hud')) {
+        this.scene.stop('hud');
+      }
+      
       this.actions[this.selectedIndex]();
     }
   }

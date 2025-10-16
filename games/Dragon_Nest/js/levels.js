@@ -1,4 +1,4 @@
-import BaseLevel from "./baselevel.js";
+import BaseLevel from "./baseLevel.js";
 import * as fct from "./fonctions.js";
 
 /**
@@ -327,9 +327,9 @@ export class Niveau2 extends BaseLevel {
    */
   onLevelCreate() {
     // Le portail est créé automatiquement depuis Tiled
-    // On lui assigne juste la scène de destination
+    // On lui assigne la scène lettre au lieu de niveau3
     if (this.portal) {
-      this.portal.nextScene = "niveau3";
+      this.portal.nextScene = "lettre";  // ✅ Changé de "niveau3" à "lettre"
       
       // L'ajouter au tableau des portails pour la détection
       if (!this.portalsArray) {
@@ -338,7 +338,7 @@ export class Niveau2 extends BaseLevel {
       this.portalsArray.push(this.portal);
     }
   }
-}
+  }
 
 /**
  * ============================================
@@ -347,6 +347,7 @@ export class Niveau2 extends BaseLevel {
  * Troisième niveau, dans une forêt sombre.
  * Utilise un tileset différent (forêt).
  * Niveau le plus difficile avec de nombreux ennemis.
+ * ✅ La victoire est obtenue en tuant le dragon2 (pas de portail)
  */
 export class Niveau3 extends BaseLevel {
   constructor() {
@@ -359,54 +360,91 @@ export class Niveau3 extends BaseLevel {
       spawnX: 100,
       spawnY: 1700,
       hasEggs: false,
-      portals: []  // Le portail sera créé depuis Tiled
+      portals: []  // ✅ Plus de portail !
     });
   }
 
-  /**
-   * PRÉCHARGEMENT SPÉCIFIQUE
-   */
   preload() {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
-    // Tous les assets sont déjà chargés dans Selection
   }
 
-  /**
-   * LOGIQUE SPÉCIFIQUE APRÈS LA CRÉATION
-   */
-  onLevelCreate() {
-    // Le portail est créé automatiquement depuis Tiled
-    // On lui assigne la scène suivante (crédits ou autre)
-    if (this.portal) {
-      this.portal.nextScene = "credits"; // ou "selection" pour boucler
-      
-      // L'ajouter au tableau des portails pour la détection
-      if (!this.portalsArray) {
-        this.portalsArray = [];
-      }
-      this.portalsArray.push(this.portal);
-    }
-  }
 
-  /**
-   * UPDATE SPÉCIFIQUE AU NIVEAU 3
-   */
-  onLevelUpdate() {
-    // Exemple : Logique spéciale pour ce niveau
-    // Par exemple, faire apparaître un boss si tous les ennemis sont morts
+  hitEnemy(enemy) {
+    if (!enemy.active) return;
+
+    enemy.health -= 1;
     
-    /*
-    if (this.enemies.getChildren().length === 0 && !this.bossSpawned) {
-      this.bossSpawned = true;
-      const boss = fct.createBossDragon(this, 800, 600);
-      this.enemies.add(boss);
-      this.bossDragons.add(boss);
+    enemy.setTintFill(0xff0000);
+    this.time.delayedCall(200, () => enemy.clearTint());
+
+    const knockback = (enemy.x < this.player.x) ? -200 : 200;
+    enemy.setVelocityX(knockback);
+
+    if (enemy.health <= 0) {
+      const isDragon2 = this.dragons2.contains(enemy);
+      
+      enemy.destroy();
+
+      if (isDragon2 && !this.dragon2Defeated) {
+        this.triggerVictory();
+      }
     }
-    */
+  }
+
+  triggerVictory() {
+    this.dragon2Defeated = true;
+
+    this.player.setVelocity(0, 0);
+    this.player.body.setEnable(false);
+
+    if (this.objectiveText) {
+      this.objectiveText.setVisible(false);
+    }
+
+    const victoryText = this.add.text(
+      this.player.x,
+      this.player.y - 100,
+      "Dragon Vaincu !\nVictoire !",
+      {
+        fontSize: "32px",
+        fill: "#0bba6eff",
+        backgroundColor: "#000000",
+        padding: { x: 15, y: 10 },
+        align: "center"
+      }
+    );
+    victoryText.setOrigin(0.5);
+
+    this.tweens.add({
+      targets: victoryText,
+      scaleX: { from: 0.5, to: 1.2 },
+      scaleY: { from: 0.5, to: 1.2 },
+      duration: 500,
+      yoyo: true,
+      repeat: 2
+    });
+
+    if (this.sound.get('victory')) {
+      this.sound.play('victory', { volume: 0.8 });
+    }
+
+    this.time.delayedCall(3000, () => {
+      this.scene.start("win");
+    });
+  }
+
+  onLevelUpdate() {
+    if (!this.dragon2Defeated && this.dragons2.getChildren().length > 0) {
+      const dragon = this.dragons2.getChildren()[0];
+      if (dragon && dragon.active && this.objectiveText) {
+        this.objectiveText.setText(
+          `Objectif : Vaincre le Dragon Noir ! (PV: ${dragon.health})`
+        );
+      }
+    }
   }
 }
-
 /**
  * ============================================
  * EXPORT PAR DÉFAUT

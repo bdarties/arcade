@@ -71,6 +71,11 @@ export function getNbPotions() {
   return nbPotions;
 }
 
+export function resetNbPotions() {
+  nbPotions = 0;
+  console.log("Potions réinitialisées à 0");
+}
+
 //==========================
 // Gestion des coffres
 //==========================
@@ -999,6 +1004,7 @@ export class LevelManager {
     this.scene = scene;
     this.enemiesPerLevel = options.enemiesPerLevel || 3; // Nombre d'ennemis à tuer pour level up
     this.skillManager = new SkillManager(scene);
+    this.isLevelingUp = false; // Flag pour empêcher les level ups multiples
     
     if (!this.scene.registry.has('playerLevel')) {
       this.scene.registry.set('playerLevel', 1);
@@ -1048,6 +1054,14 @@ export class LevelManager {
   }
 
   levelUp() {
+    // Empêcher les level ups multiples en vérifiant si on est déjà en train de level up
+    if (this.isLevelingUp) {
+      console.log('Level up déjà en cours, ignoré');
+      return;
+    }
+    
+    this.isLevelingUp = true;
+    
     const currentLevel = this.getLevel();
     const newLevel = currentLevel + 1;
     const currentXP = this.getXP();
@@ -1059,8 +1073,6 @@ export class LevelManager {
     this.scene.registry.set('playerLevel', newLevel);
     this.scene.registry.set('playerXP', remainingXP);
     
-    console.log(`🎉 LEVEL UP! Niveau ${newLevel}`);
-    
     // Ajouter un skill point
     this.skillManager.addSkillPoint();
     
@@ -1070,6 +1082,8 @@ export class LevelManager {
     // Afficher le sélecteur de skill après l'animation
     this.scene.time.delayedCall(1000, () => {
       this.skillManager.showSkillSelector();
+      // Réinitialiser le flag après l'affichage du sélecteur
+      this.isLevelingUp = false;
     });
   }
 

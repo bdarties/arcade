@@ -155,20 +155,23 @@ export function updateGoblin(goblin, player, scene) {
     if (!goblin || !goblin.body) return;
     let distance = Phaser.Math.Distance.Between(player.x, player.y, goblin.x, goblin.y);
     if (distance < 150) {
+        // Mode poursuite : orientation inversée et vitesse augmentée
         let dx = player.x - goblin.x;
-        goblin.setVelocityX(Math.sign(dx) * goblin.speed * 1.5);
-        goblin.setFlipX(dx > 0);
+        goblin.setVelocityX(Math.sign(dx) * goblin.speed * 2); // 2x plus rapide
+        goblin.setFlipX(dx < 0); // Flip à gauche quand poursuit vers la gauche
     } else {
+        // Mode patrouille : orientation normale (comme avant)
         goblin.setVelocityX(goblin.speed * goblin.goblinDirection);
         if (goblin.body.blocked.left) goblin.goblinDirection = 1;
         if (goblin.body.blocked.right) goblin.goblinDirection = -1;
         if (goblin.x > goblin.goblinStartX + 120) goblin.goblinDirection = -1;
         if (goblin.x < goblin.goblinStartX - 120) goblin.goblinDirection = 1;
-        goblin.setFlipX(goblin.goblinDirection < 0);
+        goblin.setFlipX(goblin.goblinDirection < 0); // Orientation normale en patrouille
     }
     if (!goblin.anims.isPlaying || goblin.anims.currentAnim.key !== "goblin_walk")
         goblin.play("goblin_walk", true);
 }
+
 
 // ------------------ CHAMPIGNON ------------------
 export function preloadChampignon(scene) {
@@ -210,6 +213,7 @@ export function updateChampignon(champi, player, scene) {
 }
 
 // ------------------ BOSS DRAGON (VERSION POURSUITE PERMANENTE) ------------------
+// ------------------ BOSS DRAGON (VERSION POURSUITE PERMANENTE EN HAUTEUR) ------------------
 export function preloadBossDragon(scene) {
     scene.load.spritesheet("boss_dragon", "assets/dragon.png", { 
         frameWidth: 144, 
@@ -232,8 +236,8 @@ export function createBossDragon(scene, x, y) {
     boss.setOrigin(0.5, 0.5);
     boss.setCollideWorldBounds(false); // Pas de collision avec les bords pour voler librement
     boss.body.allowGravity = false; // Pas de gravité pour voler
-    boss.setDisplaySize(300, 300); // Taille d'affichage du sprite (modifiable)
-    boss.body.setSize(90, 40); // Taille de la hitbox pour les collisions (modifiable)
+    boss.setDisplaySize(300, 300); // Taille d'affichage du sprite
+    boss.body.setSize(90, 40); // Taille de la hitbox pour les collisions
     
     // IMPORTANT : Marquer le boss comme "volant" pour éviter les collisions avec les tuiles
     boss.isBoss = true; // Tag pour identifier le boss
@@ -242,9 +246,13 @@ export function createBossDragon(scene, x, y) {
     // Propriétés personnalisées
     boss.startX = x;
     boss.startY = y;
-    boss.chaseSpeed = 200; // Vitesse de poursuite (ajustable)
+    boss.chaseSpeed = 190; // Vitesse de poursuite
     boss.health = 10000000000000000000;
     boss.damage = 4;
+    
+    // ✨ NOUVELLE PROPRIÉTÉ : Hauteur minimale de vol au-dessus du sol
+    boss.minFlyHeight = 150; // Le boss restera au minimum à 150px au-dessus du sol
+    boss.targetFlyHeight = 180; // Hauteur idéale de vol
     
     // IMPORTANT : Lancer l'animation
     boss.play("anim_boss_dragon");
@@ -253,53 +261,324 @@ export function createBossDragon(scene, x, y) {
 }
 
 // Fonction pour mettre à jour le comportement du boss dragon
-// Le boss suit TOUJOURS le joueur, peu importe la distance
+// Le boss poursuit le joueur pour l'attaquer, en évitant les tuiles grâce à son vol
 export function updateBossDragon(boss, player, scene) {
     if (!boss || !boss.body) return;
     
-    // --- MODE POURSUITE PERMANENTE ---
-    // Calculer la direction vers le joueur
+    // --- CALCUL DE LA POSITION ET DISTANCE ---
     const dx = player.x - boss.x;
     const dy = player.y - boss.y;
-    const angle = Math.atan2(dy, dx);
-    
-    // Calculer la distance pour ajuster la vitesse (optionnel)
     const distance = Phaser.Math.Distance.Between(player.x, player.y, boss.x, boss.y);
     
-    // Vitesse adaptative : plus rapide quand le joueur est loin
-    let currentSpeed = boss.chaseSpeed;
-    if (distance > 400) {
-        currentSpeed = boss.chaseSpeed * 1.3; // 30% plus rapide si très loin
-    } else if (distance < 150) {
-        currentSpeed = boss.chaseSpeed * 0.7; // 30% plus lent si très proche
+    // --- DÉTECTION D'OBSTACLES DEVANT LE BOSS ---
+    let hasObstacleAhead = false;
+    if (scene.layers.platform_layer) {
+        // Vérifier plusieurs points devant le boss pour détecter les tuiles
+        const checkDistance = 60; // Distance de détection
+        const direction = dx > 0 ? 1 : -1;
+        
+        for (let i = 1; i <= 3; i++) {
+            const checkX = boss.x + (direction * checkDistance * i / 3);
+            const checkY = boss.y;
+            const tile = scene.layers.platform_layer.getTileAtWorldXY(checkX, checkY, true);
+            
+            if (tile && tile.index !== -1) {
+                hasObstacleAhead = true;
+                break;
+            }
+        }
     }
     
-    // Mouvement avec composante horizontale et verticale
+    // --- CALCUL DE LA HAUTEUR CIBLE ---
+    let targetY;
+    
+    if (hasObstacleAhead) {
+        // 🚀 OBSTACLE DÉTECTÉ : Voler haut pour le contourner
+        targetY = player.y - boss.targetFlyHeight - 50; // Monte encore plus haut
+    } else if (distance < 100) {
+        // 🔥 TRÈS PROCHE : Descendre pour attaquer directement
+        targetY = player.y - 30; // Descend presque au niveau du joueur
+    } else if (distance < 250) {
+        // ⚔️ PORTÉE D'ATTAQUE : Descendre progressivement
+        targetY = player.y - 80; // Hauteur d'attaque
+    } else {
+        // 👁️ POURSUITE : Hauteur de vol normale
+        targetY = player.y - boss.targetFlyHeight;
+    }
+    
+    // Vérifier qu'on ne descend pas trop bas (sol)
+    const groundLevel = scene.physics.world.bounds.height - 100;
+    if (targetY > groundLevel - boss.minFlyHeight) {
+        targetY = groundLevel - boss.minFlyHeight;
+    }
+    
+    // --- VITESSE ADAPTATIVE ---
+    let currentSpeed = boss.chaseSpeed;
+    
+    if (hasObstacleAhead) {
+        // Ralentir légèrement pour monter
+        currentSpeed = boss.chaseSpeed * 0.8;
+    } else if (distance > 400) {
+        // Très loin : accélérer
+        currentSpeed = boss.chaseSpeed * 1.3;
+    } else if (distance < 100) {
+        // Très proche : attaque rapide
+        currentSpeed = boss.chaseSpeed * 0.9;
+    } else {
+        // Distance normale : vitesse standard
+        currentSpeed = boss.chaseSpeed;
+    }
+    
+    // --- CALCUL DE L'ANGLE ET DU MOUVEMENT ---
+    const adjustedDy = targetY - boss.y;
+    const angle = Math.atan2(adjustedDy, dx);
+    
+    // Mouvement horizontal vers le joueur
     boss.setVelocityX(Math.cos(angle) * currentSpeed);
-    boss.setVelocityY(Math.sin(angle) * currentSpeed * 0.8); // Ratio vertical
     
-    // Ajouter un léger effet de vol ondulé pour plus de naturel
-    const wavyOffset = Math.sin(scene.time.now / 400) * 8;
-    boss.setVelocityY(boss.body.velocity.y + wavyOffset);
+    // Mouvement vertical pour atteindre la hauteur cible
+    let verticalSpeed = Math.sin(angle) * currentSpeed;
     
-    // Orientation automatique selon la direction
+    // Priorité à la montée si obstacle détecté
+    if (hasObstacleAhead && boss.y > targetY) {
+        verticalSpeed = -currentSpeed * 0.7; // Force à monter
+    }
+    
+    // Limiter la vitesse verticale
+    verticalSpeed = Phaser.Math.Clamp(verticalSpeed, -currentSpeed * 0.7, currentSpeed * 0.7);
+    
+    boss.setVelocityY(verticalSpeed);
+    
+    // --- EFFET DE VOL LÉGER ---
+    if (!hasObstacleAhead && distance > 100) {
+        const wavyOffset = Math.sin(scene.time.now / 500) * 3;
+        boss.setVelocityY(boss.body.velocity.y + wavyOffset);
+    }
+    
+    // --- ORIENTATION AUTOMATIQUE ---
     if (boss.body.velocity.x > 5) {
         boss.setFlipX(true);
     } else if (boss.body.velocity.x < -5) {
         boss.setFlipX(false);
     }
     
-    // S'assurer que l'animation joue toujours
+    // --- ANIMATION ---
     if (!boss.anims.isPlaying || boss.anims.currentAnim.key !== "anim_boss_dragon") {
         boss.play("anim_boss_dragon", true);
     }
 }
-// ------------------ POTION ------------------
-export function createPotion(scene, x, y) {
-    let potion = scene.physics.add.sprite(x, y, "potion");
-    potion.setOrigin(0.5, 1);
-    potion.body.setAllowGravity(false);
-    return potion;
+
+// ------------------ DRAGON2 (Boss Final - utilise le même sprite que boss_dragon) ------------------
+
+export function createDragon2(scene, x, y) {
+    // Créer l'animation si elle n'existe pas
+    if (!scene.anims.exists("anim_dragon2")) {
+        scene.anims.create({
+            key: "anim_dragon2",
+            frames: scene.anims.generateFrameNumbers("boss_dragon", { start: 0, end: 5 }),
+            frameRate: 8,
+            repeat: -1
+        });
+    }
+
+    let dragon = scene.physics.add.sprite(x, y, "boss_dragon");
+    dragon.setOrigin(0.5, 0.5);
+    dragon.setCollideWorldBounds(false);
+    dragon.body.allowGravity = false;
+    dragon.setDisplaySize(300, 300);
+    dragon.body.setSize(90, 40);
+    
+    dragon.isDragon2 = true;
+    dragon.setDepth(100);
+    
+    // === PROPRIÉTÉS DU BOSS FINAL ===
+    dragon.startX = x;
+    dragon.startY = y;
+    
+    // Statistiques de combat
+    dragon.health = 50; // 🔥 50 PV pour un long combat
+    dragon.damage = 3;  // 🔥 Inflige 3 potions de dégâts
+    
+    // Vitesses
+    dragon.patrolSpeed = 100;  // Vitesse de patrouille
+    dragon.chaseSpeed = 180;   // Vitesse de poursuite
+    
+    // Comportement de patrouille
+    dragon.patrolRange = 400;      // 🔄 Distance de patrouille (aller-retour de 400px)
+    dragon.patrolDirection = 1;    // 1 = droite, -1 = gauche
+    
+    // Champ de vision
+    dragon.visionRange = 500;      // 👁️ Détecte le joueur à 500px maximum
+    dragon.stopChaseDistance = 700; // Arrête la poursuite si le joueur s'éloigne trop
+    
+    // État du dragon
+    dragon.isChasing = false;      // Est-il en train de poursuivre ?
+    
+    // Propriétés de vol
+    dragon.minFlyHeight = 150;
+    dragon.targetFlyHeight = 180;
+    dragon.patrolFlyHeight = 200;  // Hauteur de vol en patrouille
+    
+    dragon.play("anim_dragon2");
+    
+    return dragon;
+}
+
+export function updateDragon2(dragon, player, scene) {
+    if (!dragon || !dragon.body) return;
+    
+    // --- CALCUL DE LA DISTANCE AVEC LE JOUEUR ---
+    const distance = Phaser.Math.Distance.Between(player.x, player.y, dragon.x, dragon.y);
+    const dx = player.x - dragon.x;
+    const dy = player.y - dragon.y;
+    
+    // --- DÉTERMINER LE MODE (PATROUILLE ou POURSUITE) ---
+    
+    // 🎯 Activer la poursuite si le joueur entre dans le champ de vision
+    if (distance < dragon.visionRange && !dragon.isChasing) {
+        dragon.isChasing = true;
+    }
+    
+    // 🚶 Retourner en patrouille si le joueur s'éloigne trop
+    if (distance > dragon.stopChaseDistance && dragon.isChasing) {
+        dragon.isChasing = false;
+    }
+    
+    // --- DÉTECTION D'OBSTACLES ---
+    let hasObstacleAhead = false;
+    if (scene.layers.platform_layer) {
+        const checkDistance = 60;
+        const direction = dragon.isChasing ? (dx > 0 ? 1 : -1) : dragon.patrolDirection;
+        
+        for (let i = 1; i <= 3; i++) {
+            const checkX = dragon.x + (direction * checkDistance * i / 3);
+            const checkY = dragon.y;
+            const tile = scene.layers.platform_layer.getTileAtWorldXY(checkX, checkY, true);
+            
+            if (tile && tile.index !== -1) {
+                hasObstacleAhead = true;
+                break;
+            }
+        }
+    }
+    
+    // ============================================
+    // MODE POURSUITE 🔥
+    // ============================================
+    if (dragon.isChasing) {
+        // --- CALCUL DE LA HAUTEUR CIBLE ---
+        let targetY;
+        
+        if (hasObstacleAhead) {
+            targetY = player.y - dragon.targetFlyHeight - 50;
+        } else if (distance < 100) {
+            targetY = player.y - 30; // Descend pour attaquer
+        } else if (distance < 250) {
+            targetY = player.y - 80;
+        } else {
+            targetY = player.y - dragon.targetFlyHeight;
+        }
+        
+        // Vérifier qu'on ne descend pas trop bas
+        const groundLevel = scene.physics.world.bounds.height - 100;
+        if (targetY > groundLevel - dragon.minFlyHeight) {
+            targetY = groundLevel - dragon.minFlyHeight;
+        }
+        
+        // --- VITESSE ADAPTATIVE ---
+        let currentSpeed = dragon.chaseSpeed;
+        
+        if (hasObstacleAhead) {
+            currentSpeed = dragon.chaseSpeed * 0.8;
+        } else if (distance > 400) {
+            currentSpeed = dragon.chaseSpeed * 1.2;
+        } else if (distance < 100) {
+            currentSpeed = dragon.chaseSpeed * 0.9;
+        }
+        
+        // --- MOUVEMENT VERS LE JOUEUR ---
+        const adjustedDy = targetY - dragon.y;
+        const angle = Math.atan2(adjustedDy, dx);
+        
+        dragon.setVelocityX(Math.cos(angle) * currentSpeed);
+        
+        let verticalSpeed = Math.sin(angle) * currentSpeed;
+        
+        if (hasObstacleAhead && dragon.y > targetY) {
+            verticalSpeed = -currentSpeed * 0.7;
+        }
+        
+        verticalSpeed = Phaser.Math.Clamp(verticalSpeed, -currentSpeed * 0.7, currentSpeed * 0.7);
+        dragon.setVelocityY(verticalSpeed);
+        
+        // Effet de vol léger
+        if (!hasObstacleAhead && distance > 100) {
+            const wavyOffset = Math.sin(scene.time.now / 500) * 3;
+            dragon.setVelocityY(dragon.body.velocity.y + wavyOffset);
+        }
+        
+        // Orientation
+        if (dragon.body.velocity.x > 5) {
+            dragon.setFlipX(true);
+        } else if (dragon.body.velocity.x < -5) {
+            dragon.setFlipX(false);
+        }
+    } 
+    // ============================================
+    // MODE PATROUILLE 🚶
+    // ============================================
+    else {
+        // --- MOUVEMENT HORIZONTAL (aller-retour) ---
+        dragon.setVelocityX(dragon.patrolSpeed * dragon.patrolDirection);
+        
+        // Changer de direction aux extrémités de la patrouille
+        if (dragon.x > dragon.startX + dragon.patrolRange) {
+            dragon.patrolDirection = -1;
+            dragon.setFlipX(false);
+        } else if (dragon.x < dragon.startX - dragon.patrolRange) {
+            dragon.patrolDirection = 1;
+            dragon.setFlipX(true);
+        }
+        
+        // Changer de direction si obstacle devant
+        if (hasObstacleAhead) {
+            dragon.patrolDirection *= -1;
+        }
+        
+        // --- MOUVEMENT VERTICAL (maintenir hauteur de patrouille) ---
+        const targetPatrolY = dragon.startY - dragon.patrolFlyHeight;
+        const distanceToTargetY = targetPatrolY - dragon.y;
+        
+        // Monter ou descendre doucement pour atteindre la hauteur cible
+        if (Math.abs(distanceToTargetY) > 10) {
+            const verticalSpeed = Phaser.Math.Clamp(distanceToTargetY * 2, -60, 60);
+            dragon.setVelocityY(verticalSpeed);
+        } else {
+            // Effet de vol ondulé quand à la bonne hauteur
+            const wavyOffset = Math.sin(scene.time.now / 600) * 20;
+            dragon.setVelocityY(wavyOffset);
+        }
+        
+        // Orientation automatique en patrouille
+        if (dragon.patrolDirection > 0) {
+            dragon.setFlipX(true);
+        } else {
+            dragon.setFlipX(false);
+        }
+    }
+    
+    // --- ANIMATION ---
+    if (!dragon.anims.isPlaying || dragon.anims.currentAnim.key !== "anim_dragon2") {
+        dragon.play("anim_dragon2", true);
+    }
+}
+
+    // ------------------ POTION ------------------
+    export function createPotion(scene, x, y) {
+        let potion = scene.physics.add.sprite(x, y, "potion");
+        potion.setOrigin(0.5, 1);
+        potion.body.setAllowGravity(false);
+        return potion;
 }
 
 // ------------------ PORTAIL ------------------

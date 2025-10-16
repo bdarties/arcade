@@ -210,7 +210,7 @@
  "nextobjectid":1,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.11.2",
+ "tiledversion":"1.11.0",
  "tileheight":32,
  "tilesets":[
         {
@@ -1400,7 +1400,7 @@
                         {
                          "name":"estSolide",
                          "type":"bool",
-                         "value":true
+                         "value":false
                         }]
                 }, 
                 {
