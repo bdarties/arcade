@@ -1,6 +1,6 @@
 {
-	"title": "Dragon's Ashes",
-	"description": "Vivez l'aventure ultime. Incarnez un jeune dragon en quête de vengeance et allez terrasser ces ennemis qui vous ont tout pris !",
-	"genre" : "platformer, aventure, action",
-	"authors": ["Noé Balmoussière", "Bleuenn Bergeault", "Simon Briez"]
+  "title": "Dragon Nest",
+  "description": "Partez à l'aventure dans des terres oubliées pour retrouver dix oeufs de dragon légendaires. Monstres affamés, pièges mortels et une mère dragon redoutable vous guettent... saurez-vous survivre et repartir avec le trésor ?",
+  "genre": "action / aventure",
+  "authors": ["Joan Colomb, Gianni Oliver, Marthe Carion"]
 }
