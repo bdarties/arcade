@@ -21,8 +21,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.detectionRadius = 200; // rayon fixe pour tous les ennemis
     this.isChasing = false;
 
+        // --- Barre de vie ---
+    this.maxHealth = health;
+    this.healthBar = scene.add.graphics();
+    this.updateHealthBar();
+
+
     // collisions projectiles ↔ plateformes
-    scene.physics.add.collider(this.projectiles, scene.groupe_plateformes, proj => proj.destroy());
+    scene.physics.add.collider(this.projectiles, scene.platformLayer, proj => proj.destroy());
 
     // collisions projectiles ↔ joueur
     if (this.target) {
@@ -96,6 +102,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
       const dist = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
       this.isChasing = dist <= this.detectionRadius;
     }
+    this.updateHealthBar();
   }
 
   destroy(fromScene) {
@@ -108,9 +115,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   // --- Gestion des dégâts et récompenses ---
   takeDamage(amount = 1, killer = null) {
-    if (this.scene.invulnerable) return;
+  // On ne bloque plus les dégâts si le joueur est invulnérable
     
     this.health -= amount;
+    this.updateHealthBar();
 
     // texte "-amount"
     const dmgText = this.scene.add.text(this.x, this.y - 20, `-${amount}`, {
@@ -162,6 +170,10 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     // --- Drop gold ---
     this.dropGold();  // TOUJOURS
+    if (this.healthBar) {
+    this.healthBar.destroy();
+    this.healthBar = null;
+  }
 
     // Détruire l'ennemi
     this.destroy();
@@ -190,6 +202,25 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 }
 
 
+  updateHealthBar() {
+    if (!this.healthBar) return;
+    this.healthBar.clear();
+
+    // position au-dessus de l'ennemi
+    const barWidth = 40;
+    const barHeight = 5;
+    const x = this.x - barWidth / 2;
+    const y = this.y - this.height * 0.6;
+
+    // contour noir
+    this.healthBar.fillStyle(0x000000);
+    this.healthBar.fillRect(x - 1, y - 1, barWidth + 2, barHeight + 2);
+
+    // remplissage rouge selon la vie restante
+    const healthPercent = Phaser.Math.Clamp(this.health / this.maxHealth, 0, 1);
+    this.healthBar.fillStyle(0xff0000);
+    this.healthBar.fillRect(x, y, barWidth * healthPercent, barHeight);
+  }
 
 
 
@@ -198,3 +229,4 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     // À compléter selon type d'ennemi
   }
 }
+

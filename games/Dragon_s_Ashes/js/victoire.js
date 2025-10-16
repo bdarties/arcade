@@ -14,7 +14,7 @@ export default class commandes extends Phaser.Scene {
   create() {
 
 this.sound.stopAll(); // <-- essentiel
-this.musiqueVictoire = this.sound.add("musique_victoire", { volume: 0.3 });
+this.musiqueVictoire = this.sound.add("musique_victoire", { volume: 0.2 });
 this.musiqueVictoire.play();
     
     this.cameras.main.fadeIn(1000, 0, 0, 0);

@@ -27,7 +27,12 @@ export default class selection extends Phaser.Scene {
    */
   preload() {
     const baseURL = this.sys.game.config.baseURL;
-    
+    this.load.scenePlugin(
+        'AnimatedTilesPlugin', // nom interne
+        './plugins/AnimatedTiles.js', // chemin vers ton fichier
+        'animatedTiles', // clé d’accès
+        'animatedTiles'  // propriété dans ta scène
+    );
     this.load.setBaseURL(baseURL);
 
     this.load.audio("musique_jeu", "./assets/musique_jeu.ogg");
@@ -42,6 +47,7 @@ export default class selection extends Phaser.Scene {
     this.load.audio("son_tir_ennemi", "./assets/tir_ennemi.ogg");
     this.load.audio("son_vie", "./assets/vie.ogg");
     this.load.audio("son_attaque_boss", "./assets/attaque_boss.ogg");
+    this.load.audio("musique_boss", "./assets/musique_boss.ogg");
     
     // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
     this.load.spritesheet("img_perso", "./assets/dragon_deplacement.png", {
@@ -118,12 +124,12 @@ export default class selection extends Phaser.Scene {
       frameHeight: 30
     });
     this.load.spritesheet("img_boss", "./assets/boss_deplacement.png", {
-      frameWidth: 100,
-      frameHeight: 86
+      frameWidth: 150,
+      frameHeight: 129
     });
     this.load.spritesheet("attaque_boss", "./assets/boss_attaque.png", {
-      frameWidth: 108,
-      frameHeight: 86
+      frameWidth: 158,
+      frameHeight: 126
     });
 
     this.load.spritesheet("boss_attaque", "./assets/attaque_boss.png", {
@@ -139,6 +145,10 @@ export default class selection extends Phaser.Scene {
     this.load.image("img_coeurvide", "./assets/coeurvide.png");
     this.load.image("img_viecomplete", "./assets/viecomplete.png");
     this.load.image("img_vievide", "./assets/vievide.png");
+    this.load.image("img_zone_boss", "./assets/zone_boss.png");
+    this.load.image("img_panneau", "./assets/panneau_coffre.png");
+    this.load.image("img_pause", "./assets/bouton_pause.png");
+    this.load.image("img_commandePause", "./assets/commande_pause.png");
 
     // chargement tuiles de jeu
     this.load.image("background01", "./assets/background1.jpg");
@@ -149,6 +159,9 @@ export default class selection extends Phaser.Scene {
     this.load.image("Tuiles_Decors01", "./assets/TilsetdecorV1.png");
     this.load.image("Tuiles_Decors02", "./assets/tilsetdecorv2.png");
     this.load.image("Tuiles_Decors03", "./assets/tilsetdecorv3.png");
+    this.load.image("anim_pique", "./assets/pique.png");
+    this.load.image("anim_lave", "./assets/animLave.png");
+    this.load.image("anim_eau", "./assets/animEau2.png");
 
 // chargement de la carte
 this.load.tilemapTiledJSON("carte", "./assets/map.json");  
@@ -181,10 +194,12 @@ const tilesetBackground02 = carteDuNiveau.addTilesetImage("background2", "backgr
 const tilesetBackground03 = carteDuNiveau.addTilesetImage("background3", "background03");
 const tilesetBackground04 = carteDuNiveau.addTilesetImage("background4", "background04");
 const tilesetBackground05 = carteDuNiveau.addTilesetImage("background5", "background05");
+const anim_lave    = carteDuNiveau.addTilesetImage("animLave", "anim_lave");
+const anim_eau   = carteDuNiveau.addTilesetImage("animEau2", "anim_eau");
 const tilesetDecors      = carteDuNiveau.addTilesetImage("Tuiles_Decors01", "Tuiles_Decors01");
 const tilesetdecorsv2      = carteDuNiveau.addTilesetImage("Tuiles_Decors02", "Tuiles_Decors02");
 const tilesetdecorsv3      = carteDuNiveau.addTilesetImage("Tuiles_Decors03", "Tuiles_Decors03");
-
+const anim_pique     = carteDuNiveau.addTilesetImage("anim_pique", "anim_pique");
 const calque_background01 = carteDuNiveau.createLayer(
   "calque_background01", 
   [tilesetBackground01, tilesetBackground02, tilesetBackground03, tilesetBackground04, tilesetBackground05], 
@@ -192,12 +207,12 @@ const calque_background01 = carteDuNiveau.createLayer(
   0  // y
 );
 const calque_background02 = carteDuNiveau.createLayer("calque_background02", tilesetdecorsv2);
-const calque_decors      = carteDuNiveau.createLayer("calque_decors", [tilesetDecors, tilesetdecorsv2, tilesetdecorsv3 ],0,0);
-const calque_decorations      = carteDuNiveau.createLayer("calque_decorations", [tilesetdecorsv2, tilesetDecors, tilesetdecorsv3 ],0,0);
-    // définition des tuiles de plateformes qui sont solides
-    // utilisation de la propriété estSolide
-        calque_decors.setCollisionByProperty({ estSolide: true });
-        calque_decorations.setCollisionByProperty({ estSolide: true });
+const calque_decors      = carteDuNiveau.createLayer("calque_decors", [tilesetDecors, tilesetdecorsv2, tilesetdecorsv3, anim_pique, anim_lave, anim_eau ],0,0);
+const calque_decorations      = carteDuNiveau.createLayer("calque_decorations", [tilesetdecorsv2, tilesetDecors, tilesetdecorsv3, anim_pique, anim_lave, anim_eau ],0,0);
+
+
+
+
 
 // Groupe unique pour tous les ennemis
 this.groupeEnnemis = this.physics.add.group();
@@ -235,6 +250,7 @@ if (layerEnnemi) {
 
 this.groupeBallesEnnemis = this.physics.add.group();
 
+
 // --- Musique de fond ---
 this.sound.stopAll(); // <-- essentiel
 
@@ -242,7 +258,7 @@ this.musiqueJeu = this.sound.add("musique_jeu", { loop: true, volume: 0.1 });
 this.musiqueJeu.play();
 
     this.sonCourse = this.sound.add("son_course", { loop: true, volume: 0.3 });
-    this.sonVol = this.sound.add("son_vol", { loop: true, volume: 0.9 });
+    this.sonVol = this.sound.add("son_vol", { loop: true, volume: 0.5 });
     this.sonAttaque = this.sound.add("son_attaque", { volume: 0.4 });
     this.sonTir = this.sound.add("son_tir", { volume: 0.3 });
     this.sonCoffre = this.sound.add("son_coffre", { volume: 0.3 });
@@ -252,6 +268,25 @@ this.musiqueJeu.play();
     this.sonTirEnnemi = this.sound.add("son_tir_ennemi", { volume: 0.2 });
     this.sonVie = this.sound.add("son_vie", { volume: 0.3 });
     this.sonAttaqueBoss = this.sound.add("son_attaque_boss", { volume: 0.3 });
+    this.sonMusiqueBoss = this.sound.add("musique_boss", { loop: true, volume: 0.1 });
+
+    // Sauvegarde des volumes initiaux
+this.volumesInitiaux = {
+    musiqueJeu: this.musiqueJeu.volume,
+    sonCourse: this.sonCourse.volume,
+    sonVol: this.sonVol.volume,
+    sonAttaque: this.sonAttaque.volume,
+    sonTir: this.sonTir.volume,
+    sonCoffre: this.sonCoffre.volume,
+    sonHit1: this.sonHit1.volume,
+    sonHit2: this.sonHit2.volume,
+    sonHit3: this.sonHit3.volume,
+    sonTirEnnemi: this.sonTirEnnemi.volume,
+    sonVie: this.sonVie.volume,
+    sonAttaqueBoss: this.sonAttaqueBoss.volume,
+    sonMusiqueBoss: this.sonMusiqueBoss.volume
+};
+
     
 
 
@@ -259,10 +294,11 @@ this.musiqueJeu.play();
      *  CREATION DU PERSONNAGE  *
      ****************************/
     // On créée un nouveeau personnage : player
-  player = this.physics.add.sprite(150, 6840, "img_perso");
+  player = this.physics.add.sprite(150, 8120, "img_perso");
   this.player = player;
   player.setBounce(0.1);
   player.setCollideWorldBounds(true);
+  player.setDepth(1); 
   player.direction = 'right';
   player.sonCourse = this.sonCourse;
   player.sonVol = this.sonVol;
@@ -277,22 +313,34 @@ this.musiqueJeu.play();
   // PV (points de vie)
 this.groupPV = this.add.group();
 for (let i = 0; i < 3; i++) {
-    const coeur = this.add.image(25 + i * 45, 60, "img_coeurplein").setScrollFactor(0).setOrigin(0, 0);
+    const coeur = this.add.image(25 + i * 70, 100, "img_coeurplein").setScrollFactor(0).setOrigin(0, 0);
     this.groupPV.add(coeur);
 }
 
 // Vies
 this.groupVies = this.add.group();
 for (let i = 0; i < 3; i++) {
-    const vie = this.add.image(25 + i * 45, 16, "img_viecomplete").setScrollFactor(0).setOrigin(0, 0);
+    const vie = this.add.image(25 + i * 70, 16, "img_viecomplete").setScrollFactor(0).setOrigin(0, 0);
     this.groupVies.add(vie);
 }
 
 this.peutTirer = false; // le joueur ne peut pas tirer au début
 
-
+this.add.image(1200, 16, "img_pause").setScrollFactor(0).setOrigin(0, 0);
 
 this.groupe_plateformes = calque_decors;
+
+
+// Zone de déclenchement du boss
+this.zoneBoss = this.add.zone(2900, 1600, 300, 300); // x, y, largeur, hauteur
+this.physics.add.existing(this.zoneBoss);
+this.zoneBoss.body.setAllowGravity(false);
+this.zoneBoss.body.setImmovable(true);
+
+// Détection du joueur
+this.physics.add.overlap(this.player, this.zoneBoss, () => {
+    fct.activerZoneBoss(this);
+});
 
 
     groupeBullets = this.physics.add.group();
@@ -335,9 +383,9 @@ this.popupFond = this.add.rectangle(
 this.popupTexte = this.add.text(
     largeur / 2, 
     hauteur / 2, 
-    "Vous avez trouvé un écrit de vos ancêtres !\n\n\nVous pouvez maintenant cracher du feu avec O. \n\n\n\n\n\nAppuyez sur D pour fermer le coffre.\n", 
+    "Vous avez trouvé un écrit de vos ancêtres !\n\n\nVous pouvez maintenant cracher du feu avec B. \n\n\n\n\n\nAppuyez sur D pour fermer le coffre.\n", 
     {
-        fontFamily: "Daydream",
+        fontFamily: "Typewriter",
         fontSize: "20px",
         fill: "#ffffff",
         align: "center",
@@ -354,7 +402,7 @@ this.popupFond.setDepth(1000);
 this.popupTexte.setDepth(1001); // texte au-dessus du fond
 
 // Bonus de saut infini
-this.objetSaut = this.physics.add.staticSprite(500, 6840, "img_jumpBonus");
+this.objetSaut = this.physics.add.staticSprite(2800, 3000, "img_jumpBonus");
 this.sautsInfinis = false;
 // --- Barre d'endurance pour le vol ---
 this.enduranceMax = 100;
@@ -362,9 +410,9 @@ this.endurance = this.enduranceMax;
 this.nbSautsVol = 0;
 this.peutVoler = true;
 
-// Création graphique (barre au-dessus du joueur)
-this.barreFond = this.add.rectangle(0, 0, 40, 6, 0x555555).setOrigin(0.5).setVisible(false);
-this.barreEndurance = this.add.rectangle(0, 0, 38, 4, 0x00ff00).setOrigin(0.5).setVisible(false);
+// Création graphique
+this.barreFond = this.add.rectangle(0, 0, 150, 15, 0x555555).setOrigin(0.5).setVisible(false);
+this.barreEndurance = this.add.rectangle(0, 0, 148, 13, 0x00ff00).setOrigin(0.5).setVisible(false);
 this.barreFond.setScrollFactor(0);
 this.barreEndurance.setScrollFactor(0);
 this.barreFond.setDepth(100);
@@ -386,9 +434,9 @@ this.popupFondSaut = this.add.rectangle(
 this.popupTexteSaut = this.add.text(
     this.cameras.main.width / 2,
     this.cameras.main.height / 2,
-    "Vos aventures vous ont endurcis, vous êtes maintenant prêt pour votre vengeance !\n\n\nVous pouvez maintenant voler en appuyant plusieurs fois sur C, mais gare à votre endurance. \n\n\n\n\n\nAppuyez sur D pour fermer la fenêtre.\n",
+    "Vos aventures vous ont endurcis, vous êtes maintenant prêt pour votre vengeance !\n\n\nVous pouvez maintenant voler en appuyant plusieurs fois sur C, mais gare à votre endurance. \n\n\n\n\n\nAppuyez sur D pour fermer la fenetre.\n",
     {
-        fontFamily: "Daydream",
+        fontFamily: "Typewriter",
         fontSize: "20px",
         fill: "#ffffff",
         align: "center",
@@ -414,8 +462,41 @@ this.physics.add.overlap(this.player, this.objetSaut, () => {
 
 this.groupeObjets = this.physics.add.group();
 
+this.imgPanneau = this.add.image(2205, 7017, "img_panneau");
+
+// --- Création d'une zone autour du panneau ---
+this.zonePanneau = this.add.zone(2205, 7017, 150, 100); // position et taille
+this.physics.add.existing(this.zonePanneau);
+this.zonePanneau.body.setAllowGravity(false);
+this.zonePanneau.body.setImmovable(true);
+
+// --- Création du texte ---
+this.textePanneau = this.add.text(
+    2205, 6940, // position du texte au-dessus du panneau
+    "Appuyez sur K pour interagir", 
+    {
+        fontFamily: "Typewriter",
+        fontSize: "20px",
+        color: "#ffffff",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        padding: { x: 10, y: 5 }
+    }
+).setOrigin(0.5).setDepth(0.5).setVisible(false);
+
+// --- Détection entrée/sortie du joueur ---
+this.playerDansZonePanneau = false;
+
+this.physics.add.overlap(this.player, this.zonePanneau, () => {
+    if (!this.playerDansZonePanneau) {
+        this.playerDansZonePanneau = true;
+        this.textePanneau.setVisible(true);
+    }
+});
+
+
 // Création de l’objet interactif
-this.objetInteractif = this.physics.add.staticSprite(1835, 5833, "img_chest1");
+this.objetInteractif = this.physics.add.staticSprite(2275, 7018, "img_chest1");
+this.objetInteractif.setDepth(0.5);
 this.objetEtat = 1; // état courant (1 = image1, 2 = image2)
 
 // Créer une zone de détection autour de l’objet
@@ -445,6 +526,15 @@ this.physics.add.overlap(player, this.groupeObjets, (playerObj, objet) => {
     bullet.destroy();
     ennemi.hit();
   });
+
+  // Collision balles ↔ calque_decors : les balles disparaissent au contact du décor
+this.physics.add.collider(groupeBullets, calque_decors, (bullet, tile) => {
+    bullet.destroy();
+});
+
+this.physics.add.collider(this.groupeBallesEnnemis, calque_decors, (bullet, tile) => {
+    bullet.destroy();
+});
 
   // Collision joueur <-> ennemis
 this.physics.add.collider(player, this.groupeEnnemis, (playerObj, ennemi) => {
@@ -545,6 +635,51 @@ this.physics.add.overlap(this.groupeAttaques, this.groupeEnnemis, (hitbox, ennem
     // Détruire la hitbox de l’attaque
     hitbox.destroy();
 });
+
+// Pause
+this.menuPauseActif = false;
+this.touchePause = this.input.keyboard.addKey('M');
+
+// Fond sombre pour le menu pause
+this.fondPause = this.add.rectangle(
+    this.cameras.main.width / 2,
+    this.cameras.main.height / 2,
+    this.cameras.main.width * 1,
+    this.cameras.main.height * 1,
+    0x000000,
+    0.9
+)
+.setScrollFactor(0)
+.setDepth(1000)
+.setVisible(false);
+
+// Texte menu pause
+this.textePause = this.add.text(
+    this.cameras.main.width / 2,
+    this.cameras.main.height / 3,
+    "PAUSE\n\nAppuyez sur F pour reprendre",
+    {
+        fontFamily: "Typewriter",
+        fontSize: "32px",
+        color: "#ffffff",
+        align: "center"
+    }
+)
+.setOrigin(0.5)
+.setScrollFactor(0)
+.setDepth(1001)
+.setVisible(false);
+
+// Image commandes pause
+this.imgCommandePause = this.add.image(
+    this.cameras.main.width / 2,   // centre horizontal
+    this.cameras.main.height / 2 + 100, // un peu en dessous du texte
+    "img_commandePause"
+)
+.setOrigin(0.5)
+.setScrollFactor(0)
+.setDepth(1001)
+.setVisible(false); // masquée au départ
 
 
     /***************************
@@ -765,8 +900,10 @@ this.anims.create({
     });
 
  
-      
-calque_decors.setCollisionByProperty({ estSolide: true });
+     // définition des tuiles de plateformes qui sont solides
+    // utilisation de la propriété estSolide
+        calque_decors.setCollisionByProperty({ estSolide: true });
+        calque_decorations.setCollisionByProperty({ estSolide: true });
 
 calque_decors.forEachTile(tile => {
     if (tile && tile.properties && tile.properties.mortel === true) {
@@ -788,7 +925,7 @@ this.physics.add.collider(player, calque_decors, (playerObj, tile) => {
             playerObj.setTint(0xff0000);
 
             // Knockback vers le haut
-            playerObj.setVelocityY(-220);
+            playerObj.setVelocityY(-250);
 
             this.time.delayedCall(1000, () => {
                 playerObj.clearTint();
@@ -818,6 +955,55 @@ this.physics.add.collider(player, calque_decors, (playerObj, tile) => {
     }
 }, null, this);
 
+calque_decorations.forEachTile(tile => {
+    if (tile && tile.properties && tile.properties.mortel === true) {
+        tile.setCollision(true);
+    }
+});
+
+// 3. UN SEUL COLLIDER pour calque_decors avec callback
+this.physics.add.collider(player, calque_decorations, (playerObj, tile) => {
+    // Vérifier si c'est une tuile mortelle
+    if (tile.properties && tile.properties.mortel === true) {
+      
+        if (!playerObj.invincible) {
+            this.sonHit2.play();
+            
+            // Perte d'un PV
+            playerObj.hp--;
+            playerObj.invincible = true;
+            playerObj.setTint(0xff0000);
+
+            // Knockback vers le haut
+            playerObj.setVelocityY(-250);
+
+            this.time.delayedCall(1000, () => {
+                playerObj.clearTint();
+                playerObj.invincible = false;
+            });
+
+            // Mise à jour affichage
+            fct.updatePV.call(this);
+
+            // Vérification si PV épuisés
+            if (playerObj.hp <= 0) {
+                playerObj.vies--;
+                fct.updateVies.call(this);
+
+                if (playerObj.vies > 0) {
+                    playerObj.hp = 3;
+                    fct.updatePV.call(this);
+                } else {
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once("camerafadeoutcomplete", () => {
+                        this.musiqueJeu.stop();
+                        this.scene.start("defaite");
+                    });
+                }
+            }
+        }
+    }
+}, null, this);
 
     /***********************
      *  CREATION DU CLAVIER *
@@ -832,12 +1018,22 @@ this.physics.add.collider(player, calque_decors, (playerObj, tile) => {
 
     //  Collide the player and the groupe_etoiles with the groupe_plateformes
     this.physics.add.collider(player, calque_decors); 
-    this.physics.world.setBounds(0, 0, 3200, 7040);
+    this.physics.world.setBounds(0, 0, 3200, 8320);
     //  ajout du champs de la caméra de taille identique à celle du monde
-    this.cameras.main.setBounds(0, 0, 3200, 7040);
+    this.cameras.main.setBounds(0, 0, 3200, 8320);
     // ancrage de la caméra sur le joueur
     this.cameras.main.startFollow(player); 
-  }
+
+  
+
+    if (this.animatedTiles) {
+        this.animatedTiles.init(carteDuNiveau);
+        console.log("✅ Plugin AnimatedTiles initialisé !");
+    } else {
+        console.error("❌ Plugin AnimatedTiles non disponible !");
+        console.log("Plugins disponibles:", this.plugins);
+    }
+}
 
   /***********************************************************************/
   /** FONCTION UPDATE 
@@ -956,7 +1152,7 @@ if (this.sautsInfinis) {
     // --- Mise à jour visuelle et affichage conditionnel de la barre ---
 // --- Mise à jour visuelle et affichage conditionnel avec fondu ---
 const ratio = this.endurance / this.enduranceMax;
-this.barreEndurance.width = 38 * ratio;
+this.barreEndurance.width = 145 * ratio;
 
 // Couleur selon niveau d'endurance
 if (ratio > 0.5) {
@@ -968,8 +1164,8 @@ if (ratio > 0.5) {
 }
 
 // Position au-dessus du joueur
-this.barreFond.setPosition(85, 110);
-this.barreEndurance.setPosition(85, 110);
+this.barreFond.setPosition(125, 190);
+this.barreEndurance.setPosition(125, 190);
 
 // --- Gestion de l'affichage fluide ---
 if (this.endurance < this.enduranceMax) {
@@ -1088,6 +1284,81 @@ if (
     this.groupeAttaques.children.iterate(hitbox => {
         if (hitbox.update) hitbox.update();
     });
+
+    // --- Vérifie si le joueur quitte la zone du panneau ---
+if (this.playerDansZonePanneau) {
+    const dist = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y,
+        this.zonePanneau.x, this.zonePanneau.y
+    );
+
+    if (dist > 100) { // si le joueur s'éloigne trop
+        this.playerDansZonePanneau = false;
+        this.textePanneau.setVisible(false);
+    }
+}
+// --- Gestion du menu pause ---
+if (Phaser.Input.Keyboard.JustDown(this.touchePause)) {
+    this.menuPauseActif = !this.menuPauseActif;
+
+    // --- 🆕 Sauvegarde des volumes initiaux au premier déclenchement ---
+    if (!(this.volumesInitiaux instanceof Map)) {
+        this.volumesInitiaux = new Map();
+        this.sound.sounds.forEach(s => this.volumesInitiaux.set(s, s.volume));
+
+        // Sons spécifiques du joueur
+        if (player.sonCourse) this.volumesInitiaux.set(player.sonCourse, player.sonCourse.volume);
+        if (player.sonVol) this.volumesInitiaux.set(player.sonVol, player.sonVol.volume);
+        if (player.sonAttaque) this.volumesInitiaux.set(player.sonAttaque, player.sonAttaque.volume);
+        if (player.sonTir) this.volumesInitiaux.set(player.sonTir, player.sonTir.volume);
+    }
+
+    // Affichage du menu
+    this.fondPause.setVisible(this.menuPauseActif);
+    this.textePause.setVisible(this.menuPauseActif);
+    this.imgCommandePause.setVisible(this.menuPauseActif);
+
+    if (this.menuPauseActif) {
+        // ❌ Pause du monde et de tous les objets physiques
+        this.physics.world.pause();
+
+        // ❌ Mettre le volume des sons à 0
+        this.sound.sounds.forEach(s => s.setVolume(0));
+
+        // ❌ Sons spécifiques du joueur
+        if (player.sonCourse) player.sonCourse.setVolume(0);
+        if (player.sonVol) player.sonVol.setVolume(0);
+        if (player.sonAttaque) player.sonAttaque.setVolume(0);
+        if (player.sonTir) player.sonTir.setVolume(0);
+
+    } else {
+        // ▶ Reprise du monde
+        this.physics.world.resume();
+
+        // ▶ Restaurer le volume des sons d’après les valeurs sauvegardées
+        if (this.volumesInitiaux instanceof Map) {
+            this.sound.sounds.forEach(s => {
+                const vol = this.volumesInitiaux.get(s);
+                if (vol !== undefined) s.setVolume(vol);
+            });
+
+            // ▶ Sons spécifiques du joueur
+            [player.sonCourse, player.sonVol, player.sonAttaque, player.sonTir].forEach(son => {
+                if (son && this.volumesInitiaux.has(son)) {
+                    son.setVolume(this.volumesInitiaux.get(son));
+                }
+            });
+        }
+    }
+}
+
+// --- Bloquer le joueur si pause active ---
+if (this.menuPauseActif) {
+    player.setVelocity(0, 0);  // Empêche le mouvement
+    return;
+}
+
+
 }
 }
 /***********************************************************************/

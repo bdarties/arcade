@@ -2,7 +2,7 @@ import Enemy from "./Enemy.js";
 
 export default class EnemySpider extends Enemy {
   constructor(scene, x, y, target) {
-    super(scene, x, y, "img_enemy3", 1, target, 5, 5, 5);
+    super(scene, x, y, "img_enemy3", 1, target, 5, 3, 5);
 
     this.jumpDelay = 4000; // délai entre chaque saut (ms)
     this.maxJumpHeight = 120; // hauteur maximale du saut

@@ -1,14 +1,4 @@
-export function doNothing() {
-    // cette fonction ne fait rien.
-    // c'est juste un exemple pour voir comment mettre une fonction
-    // dans un fichier et l'utiliser dans les autres
-}
-
-
-export function doAlsoNothing() {
-    // cette fonction ne fait rien non plus.
- }
-
+import { Boss } from "../js/ennemi.js";
 //fonction tirer( ), prenant comme paramètre l'auteur du tir
 
 export function tirer(player, groupeBullets) {
@@ -163,4 +153,39 @@ export function updateVies() {
         }
     });
 }
+
+export function activerZoneBoss(scene) {
+    // Éviter de répéter plusieurs fois
+    if (scene.zoneBossActive) return;
+    scene.zoneBossActive = true;
+
+    console.log("🔥 Entrée dans la zone du boss !");
+
+    // --- 1. Désactiver tous les ennemis sauf le boss ---
+    scene.groupeEnnemis.children.iterate((ennemi) => {
+        if (!(ennemi instanceof Boss)) {
+            ennemi.setActive(false).setVisible(false);
+            ennemi.body.enable = false;
+            if (ennemi.timer) ennemi.timer.paused = true;
+        }
+    });
+
+    // --- 2. Faire un fondu sur la musique ---
+    if (scene.musiqueJeu && scene.musiqueJeu.isPlaying) {
+        scene.tweens.add({
+            targets: scene.musiqueJeu,
+            volume: 0,
+            duration: 2000,
+            onComplete: () => {
+                scene.musiqueJeu.stop();
+            }
+        });
+    }
+
+    // --- 3. Lancer la musique du boss ---
+    if (scene.sonMusiqueBoss && !scene.sonMusiqueBoss.isPlaying) {
+        scene.sonMusiqueBoss.play();
+    }
+}
+
 

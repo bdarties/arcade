@@ -2,6 +2,7 @@
 import selection from "./js/selection.js";
 import debut from "./js/debut.js";
 import tutoriel from "./js/tutoriel.js";
+import boss from "./js/boss.js";
 
 // configuration générale du jeu
 var config = {
@@ -25,7 +26,7 @@ var config = {
       debug: false // afficher les hitbox et vecteurs
     }
   },
-  scene: [debut, tutoriel, selection],
+  scene: [debut, tutoriel, selection, boss],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

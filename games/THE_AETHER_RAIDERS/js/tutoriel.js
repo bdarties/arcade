@@ -18,7 +18,7 @@ export default class tutoriel extends Phaser.Scene {
 
   create() {
 this.music = this.sound.get('music');
-this.click = this.sound.add('click', { volume: 0.5, loop: false });
+this.click = this.sound.add('click', { volume: 0.3, loop: false });
     const centerX = this.cameras.main.width / 2;
     const centerY = this.cameras.main.height / 2;
 

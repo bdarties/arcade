@@ -5,6 +5,7 @@ import selection from "./js/selection.js";
 import defaite from "./js/defaite.js";
 import victoire from "./js/victoire.js";
 import histoire from "./js/histoire.js";
+import credits from "./js/credits.js";
 
 // configuration générale du jeu
 var config = {
@@ -45,10 +46,22 @@ var config = {
       gravity: {
         y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
       },
-      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [menu, commandes, histoire, selection, defaite, victoire],
+
+   // ✅ Ici on déclare le plugin AnimatedTiles
+  plugins: {
+    scene: [
+      {
+        key: "AnimatedTilesPlugin",
+        plugin: window.AnimatedTiles, // fourni globalement par ton <script> dans index.html
+        mapping: "animatedTiles", // tu y accèdes dans tes scènes avec this.animatedTiles
+      },
+    ],
+  },
+
+  scene: [menu, commandes, credits, histoire, selection, defaite, victoire],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

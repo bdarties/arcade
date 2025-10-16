@@ -1,3 +1,5 @@
+import * as fct from "./fonctions.js";
+
 export default class Ennemi extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, texture) {
         super(scene, x, y, texture);
@@ -149,8 +151,8 @@ export class Boss extends Ennemi {
         this.cibleDetectee = false;
         this.phase = 1; // 🔥 Phase actuelle
 
-        this.body.setSize(70, 80);
-        this.body.setOffset(10, 10);
+        this.body.setSize(100, 120);  // largeur +5, hauteur +12 (couvre mieux le bas du sprite)
+        this.body.setOffset(30, 10);  // décale légèrement vers le haut
 
         this.nomBoss = this.scene.add.text(this.x, this.y - 60, "Empereur Jaed", {
             fontSize: "20px",
@@ -184,7 +186,7 @@ export class Boss extends Ennemi {
     } else if (this.hp > 8) {
         this.phase = 2; // Tireur + rapide
         if (!this.invincible) this.clearTint();
-        this.speed = 120; // +20%
+        this.speed = 110; // +20%
     } else {
         this.phase = 3; // Rage lente
         if (!this.invincible) this.clearTint(); // ❌ plus de teinte rouge permanente
@@ -274,13 +276,13 @@ export class Boss extends Ennemi {
                     playerObj.invincible = false;
                 });
 
-                this.scene.txtPV.setText(`PV : ${playerObj.hp}`);
+                fct.updatePV.call(this.scene);
                 if (playerObj.hp <= 0) {
                     playerObj.vies--;
-                    this.scene.txtVies.setText(`Vies : ${playerObj.vies}`);
+                    fct.updateVies.call(this.scene);
                     if (playerObj.vies > 0) {
                         playerObj.hp = 3;
-                        this.scene.txtPV.setText(`PV : ${playerObj.hp}`);
+                        fct.updatePV.call(this.scene);
                     } else {
                         this.scene.scene.restart();
                     }
@@ -367,7 +369,7 @@ export class Boss extends Ennemi {
             this.setVisible(false);
             this.scene.cameras.main.fadeOut(1500, 0, 0, 0);
 
-            let musique = this.scene.sound.get("musique_jeu");
+            let musique = this.scene.sound.get("musique_boss");
             if (musique && musique.isPlaying) musique.stop();
 
             this.scene.time.delayedCall(1500, () => {

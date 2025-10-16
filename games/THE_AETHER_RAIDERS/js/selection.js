@@ -13,8 +13,8 @@ export default class selection extends Phaser.Scene {
 
     this.degatPlayerCorpsAcorps = 2;
 
-    this.baseXP = 10;
-    this.growth = 1.2;
+    this.baseXP = 5;
+    this.growth = 1.1;
     this.playerLevel = 0;
     this.playerXP = 0;
 
@@ -38,7 +38,7 @@ this.playerSpeed = 120;         // vitesse horizontale de base
     this.weaponModes = ['melee'];
     if (this.skills.Armes >= 1) this.weaponModes.push('gun');
     // Pour une troisième arme plus tard :
-    // if (this.skills.Mobilité >= 4) this.weaponModes.push('jetpack');
+     if (this.skills.Mobilité >= 4) this.weaponModes.push('jetpack');
     this.selectedWeaponIndex = 0;
 
 
@@ -52,7 +52,7 @@ this.playerSpeed = 120;         // vitesse horizontale de base
   
 
   preload() {
-    const baseURL = this.sys.game.config.baseURL;
+  const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
 
     this.load.script('webfont', 'https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js');
@@ -66,13 +66,27 @@ this.playerSpeed = 120;         // vitesse horizontale de base
       frameWidth: 32,
       frameHeight: 70
     });
+    this.load.spritesheet("perso_jetpack", "./assets/perso_jetpack.png", {
+  frameWidth: 32,
+  frameHeight: 65
+});
 
-    this.load.image("img_enemy", "./assets/enemy.png");
-    this.load.image("img_enemy1", "./assets/enemy1.png");
-    this.load.image("img_enemy2", "./assets/enemy2.png");
+    this.load.image("trade", "./assets/trade.png");
+    this.load.spritesheet("img_enemy1", "./assets/enemy1.png", {
+      frameWidth: 128,
+      frameHeight: 220
+    });
+    this.load.spritesheet("img_enemy2", "./assets/enemy2.png", {
+      frameWidth: 96,
+      frameHeight: 96
+    });
     this.load.spritesheet("img_enemy3", "./assets/enemy3.png", {
       frameWidth: 32,
       frameHeight: 32
+    });
+    this.load.spritesheet("img_enemy4", "./assets/enemy4.png", {
+      frameWidth: 135,
+      frameHeight: 204
     });
 
     this.load.spritesheet("tesla", "./assets/tesla.png", {
@@ -84,12 +98,18 @@ this.playerSpeed = 120;         // vitesse horizontale de base
     this.load.image("bullet_tesla", "./assets/bullet_tesla.png");
     this.load.image("tir_enemy", "./assets/tirenemy.png");
     this.load.image("tir_perso", "./assets/bullet_perso.png");
-
+    this.load.image("baballe", "./assets/baballe.png");
+     this.load.spritesheet('levier', './assets/levier.png', { frameWidth: 64, frameHeight: 64 });
+  this.load.image('warning', './assets/warning.png');
+  this.load.image('ascenseur', './assets/ascenseur.png');
+  this.load.image('descente', './assets/descente.jpg');
+ 
 
     this.load.image("img_potion", "./assets/fiole.png");
     this.load.image("img_gold", "./assets/engrenage.png");
     this.load.image("fleche", "./assets/fleche.png");
     this.load.image("title", "./assets/title.png");
+    this.load.image("ecran_mort", "./assets/gameover.jpg");
 
 
     this.load.image("cadre_mana", "./assets/barre_mana.png");
@@ -109,12 +129,19 @@ this.playerSpeed = 120;         // vitesse horizontale de base
   this.load.image("tiles9", "./src/map/background_2.png");
   this.load.image("tiles10", "./src/map/sol_meca.png");
   this.load.image("tiles11", "./src/map/sol_mine.png");
+  this.load.image("tiles12", "./src/map/tileset_meca.png");
+  this.load.image("tiles13", "./src/map/tileset_mine.png");
+
+
 
 
 
 this.load.image("boutonControles", "./assets/boutoncontroles.png");
     this.load.image("boutonJouer", "./assets/boutonjouer.png");
     this.load.image("boutonSkills", "./assets/skills.png");
+    this.load.image("boutonmenu", "./assets/boutonmenu.png");
+    this.load.image("boutonrejouer", "./assets/boutonrejouer.png");
+    this.load.image("boutonRetour", "./assets/boutonretour.png");
 
 
   // icônes
@@ -138,10 +165,10 @@ this.load.image("boutonControles", "./assets/boutoncontroles.png");
       frameHeight: 60
     });
 
-
-
-
-
+this.load.spritesheet("pnj", "./assets/pnj.png", {
+      frameWidth: 64,
+      frameHeight: 96
+    });
 
     //SONS
     this.load.audio("musiqueMap1", "./assets/musique_sfx/musiquemap1.mp3");
@@ -158,9 +185,11 @@ this.load.image("boutonControles", "./assets/boutoncontroles.png");
     this.load.audio("sfxOwl", "./assets/musique_sfx/owl.mp3");
     this.load.audio("ouch", "./assets/musique_sfx/ouch.mp3");
     this.load.audio("mdr", "./assets/musique_sfx/mdr.mp3");
+    this.load.audio("jetpack", "./assets/musique_sfx/jetpack.mp3");
 
     this.load.audio("select", "./assets/musique_sfx/select.mp3");
     this.load.audio("click", "./assets/musique_sfx/click.mp3");
+  this.load.audio('chaine', './assets/musique_sfx/chaine.mp3');
     
   }
 
@@ -172,21 +201,23 @@ WebFont.load({
         },
     });
 
+
     const centerX = this.cameras.main.width / 2;
   const centerY = this.cameras.main.height / 2;
 
   //SONS
-  this.sfxGrass = this.sound.add("grass", { volume: 0.5, loop: true });
-this.sfxWalk = this.sound.add("walk", { volume: 0.5, loop: true });
-this.whoosh = this.sound.add('whoosh', { volume: 0.5, loop: false });
-this.pickup = this.sound.add('pickup', { volume: 0.5, loop: false });
-this.shot = this.sound.add('shot', { volume: 0.5, loop: false });
-this.hit = this.sound.add('hit', { volume: 0.5, loop: false });
-this.click = this.sound.add('click', { volume: 0.5, loop: false });
-this.select = this.sound.add('select', { volume: 0.5, loop: false });
+  this.sfxGrass = this.sound.add("grass", { volume: 0.3, loop: true });
+this.sfxWalk = this.sound.add("walk", { volume: 0.3, loop: true });
+this.whoosh = this.sound.add('whoosh', { volume: 0.4, loop: false });
+this.pickup = this.sound.add('pickup', { volume: 0.2, loop: false });
+this.shot = this.sound.add('shot', { volume: 0.3, loop: false });
+this.hit = this.sound.add('hit', { volume: 0.2, loop: false });
+this.click = this.sound.add('click', { volume: 0.4, loop: false });
+this.select = this.sound.add('select', { volume: 0.3, loop: false });
 this.skill = this.sound.add('skill', { volume: 0.5, loop: false });
 this.sfxOwl = this.sound.add("sfxOwl", { volume: 0.8, loop: false });
-this.mdr = this.sound.add("mdr", { volume: 5, loop: false });
+this.jetpack = this.sound.add("jetpack", { volume: 0.2, loop: false });
+this.mdr = this.sound.add("mdr", { volume: 0.1, loop: false });
 
     
     // ÉTAT DE SCÈNE
@@ -209,32 +240,35 @@ this.mdr = this.sound.add("mdr", { volume: 5, loop: false });
   const tileset9 = map.addTilesetImage("Background map 2 extend", "tiles9");
   const tileset10 = map.addTilesetImage("sol_meca", "tiles10");
   const tileset11 = map.addTilesetImage("82c71d7a-b3ba-4494-b2d4-4e3449d95bdd", "tiles11");
+  const tileset12 = map.addTilesetImage("tileset_meca", "tiles12");
+  const tileset13 = map.addTilesetImage("tileset_mine", "tiles13");
+  
     
     // Créer les calques
-    map.createLayer("background_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11], 0, 0);
-    map.createLayer("background_2_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11], 0, 0);
+    map.createLayer("background_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13], 0, 0);
+    map.createLayer("background_2_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13], 0, 0);
     this.platformLayer = map.createLayer(
   "platform_layer",
-  [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11],
+  [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13],
   0,
   0
 );
 this.platformLayer.setCollisionByProperty({ dur: true });
-map.createLayer("ladder_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11], 0, 0);
-    map.createLayer("decoration_back_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11], 0, 0);
-    
+map.createLayer("ladder_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13], 0, 0);
+    map.createLayer("decoration_back_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13], 0, 0);
+
     // Activer collisions sur tuiles ayant la propriété { dur: true }
     this.platformLayer.setCollisionByProperty({ dur: true });
 
 
     // PLAYER
-this.player = this.physics.add.sprite(100, 700, "img_perso");
+this.player = this.physics.add.sprite(400, 700, "img_perso");
 this.player.setBounce(0.2);
 this.player.setCollideWorldBounds(false);
 this.player.hasWeapon = false;
 
 // Créer un mur invisible à gauche et droite
-const leftWall = this.add.rectangle(0, map.heightInPixels / 2, -2, map.heightInPixels);
+const leftWall = this.add.rectangle(0, map.heightInPixels / 2, -2, 8000);
 this.physics.add.existing(leftWall, true); // true = statique
 this.physics.add.collider(this.player, leftWall);
 
@@ -661,6 +695,19 @@ this.player.setData('invulnerable', false);
         frameRate: 10
       });
 
+      this.anims.create({
+  key: "jetpack_right",
+  frames: [{ key: "perso_jetpack", frame: 0 }],
+  frameRate: 1,
+  repeat: -1
+});
+this.anims.create({
+  key: "jetpack_left",
+  frames: [{ key: "perso_jetpack", frame: 1 }],
+  frameRate: 1,
+  repeat: -1
+});
+
 
 
       this.anims.create({
@@ -723,6 +770,77 @@ this.anims.create({
   repeat: -1
 });
 
+this.anims.create({
+  key: "enemy2_right",
+  frames: this.anims.generateFrameNumbers("img_enemy2", { start: 0, end: 2 }),
+  frameRate: 8,
+  repeat: -1
+});
+this.anims.create({
+  key: "enemy2_left",
+  frames: this.anims.generateFrameNumbers("img_enemy2", { start: 3, end: 5 }),
+  frameRate: 8,
+  repeat: -1
+});
+
+// Marche droite
+this.anims.create({
+  key: "enemy1_walk_right",
+  frames: this.anims.generateFrameNumbers("img_enemy1", { start: 0, end: 3 }),
+  frameRate: 8,
+  repeat: -1
+});
+// Tir droite
+this.anims.create({
+  key: "enemy1_shoot_right",
+  frames: this.anims.generateFrameNumbers("img_enemy1", { start: 4, end: 6 }),
+  frameRate: 3,
+  repeat: 0
+});
+// Tir gauche
+this.anims.create({
+  key: "enemy1_shoot_left",
+  frames: this.anims.generateFrameNumbers("img_enemy1", { start: 7, end: 9 }),
+  frameRate: 3,
+  repeat: 0 
+});
+// Marche gauche
+this.anims.create({
+  key: "enemy1_walk_left",
+  frames: this.anims.generateFrameNumbers("img_enemy1", { start: 10, end: 13 }),
+  frameRate: 8,
+  repeat: -1
+});
+
+
+  this.anims.create({
+    key: "enemy4_charge_droite",
+    frames: this.anims.generateFrameNumbers("img_enemy4", { start: 4, end: 6 }),
+    frameRate: 3,
+    repeat: 0
+  });
+
+  this.anims.create({
+    key: "enemy4_walk_droite",
+    frames: this.anims.generateFrameNumbers("img_enemy4", { start: 0, end: 3 }),
+    frameRate: 6,
+    repeat: -1
+  });
+
+  this.anims.create({
+    key: "enemy4_walk_gauche",
+    frames: this.anims.generateFrameNumbers("img_enemy4", { start: 10, end: 13 }),
+    frameRate: 3,
+    repeat: 0
+  });
+
+  this.anims.create({
+    key: "enemy4_charge_gauche",
+    frames: this.anims.generateFrameNumbers("img_enemy4", { start: 9, end: 7 }),
+    frameRate: 6,
+    repeat: -1
+  });
+
 
 
     // CLAVIER
@@ -755,7 +873,37 @@ this.input.keyboard.on('keydown-O', () => {
 
 
 
+  // --- LEVIER 2 ---
+    this.lever2Activated = false;
+    this.lever2Step = 0;
+    this.lever2 = this.add.sprite(900, 3920, 'levier', 0).setOrigin(0.5, 1);
+  this.physics.add.existing(this.lever2, true);
+  // Place warningUI image above lever2
+  this.warningUI = this.add.image(this.lever2.x, this.lever2.y - 80, 'warning').setOrigin(0.5, 1).setVisible(false).setDepth(100);
+    this.isNearLever2 = false;
+    this.physics.add.overlap(this.player, this.lever2, () => {
+      this.isNearLever2 = true;
+    }, null, this);
 
+    // --- Ascenseur plein écran (affiché après TP du 2e levier) ---
+    this.ascenseurImage = this.add.image(this.cameras.main.width/2, this.cameras.main.height/2, 'ascenseur')
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setVisible(false)
+      .setDepth(100000);
+
+    // --- Ascenseur fond (descente) ---
+    const imgHeight = 2880;
+    const screenHeight = 720;
+    this.ascenseurFond = this.add.image(this.cameras.main.width/2, imgHeight/2, 'descente')
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDisplaySize(1280, imgHeight)
+      .setVisible(false)
+      .setDepth(99999);
+
+    // --- Timer pour lancer la scène boss après 15s de montée ---
+    this.bossSceneTimerStarted = false;
 
 
 
@@ -826,29 +974,40 @@ while (this.playerXP >= this.xpForNextLevel(this.playerLevel)) {
     this.invulnerable = false;
 
     // ENNEMIS
-    this.enemy0 = new EnemyParabolic(this, 1500, 500, this.player, 2, 1, 1, 200);
-    this.enemy1 = new EnemyParabolic(this, 1700, 500, this.player, 2, 1, 1, 200);
-    this.enemy2 = new EnemyParabolic(this, 1900, 500, this.player, 2, 1, 1, 200);
-    this.enemy3 = new EnemySpider(this, 3050, 400, this.player, 10, 5, 5, 200);
-    this.enemy4 = new EnemyParabolic(this, 2800, 500, this.player, 2, 1, 1, 200);
+    this.enemy0 = new EnemyParabolic(this, 1500, 500, this.player, 3, 1, 1, 200);
+    this.enemy1 = new EnemyParabolic(this, 1700, 500, this.player, 3, 1, 1, 200);
+    this.enemy2 = new EnemyParabolic(this, 1900, 500, this.player, 3, 1, 1, 200);
+    this.enemy3 = new EnemySpider(this, 3030, 400, this.player, 10, 5, 5, 200);
+    this.enemy4 = new EnemyParabolic(this, 2800, 500, this.player, 3, 1, 1, 200);
     this.enemy5 = new EnemySpider(this, 1800, 400, this.player, 10, 5, 5, 200);
     this.enemy6 = new EnemyParabolic(this, 2500, 400, this.player, 10, 5, 5, 200);
-    this.enemy7 = new EnemyParabolic(this, 2200, 500, this.player, 2, 1, 1, 200);
-    this.enemy8 = new EnemyParabolic(this, 3050, 400, this.player, 10, 5, 5, 200);
-    this.enemy9 = new EnemyParabolic(this, 2700, 400, this.player, 10, 5, 5, 200);
+    this.enemy7 = new EnemyParabolic(this, 2200, 500, this.player, 3, 1, 1, 200);
+    this.enemy8 = new EnemyParabolic(this, 3050, 400, this.player, 3, 1, 1, 200);
+    this.enemy9 = new EnemyParabolic(this, 2700, 400, this.player, 3, 1, 1, 200);
 
-    this.enemy10 = new EnemyCone(this, 1000, 1900, this.player, 50, 5, 10, 200);
-    this.enemy11 = new EnemyCone(this, 2000, 1900, this.player, 50, 5, 10, 200);
-    this.enemy12 = new EnemyBowling(this, 500, 1900, this.player, 20, 1000, 1000, 1200);
+    this.enemy10 = new EnemyCone(this, 600, 1500, this.player, 50, 500, 30, 200);
+    this.enemy11 = new EnemyCone(this, 200, 2400, this.player, 50, 500, 30, 200);
+    this.enemy12 = new EnemyBowling(this, 500, 2520, this.player, 20, 100, 30, 200);
+    
+    this.enemy13 = new EnemyBowling(this, 2600, 1500, this.player, 20, 100, 30, 200);
+    this.enemy14 = new EnemyBowling(this, 600, 1500, this.player, 20, 100, 30, 200);
+
+this.enemy15 = new EnemySpider(this, 70, 2520, this.player, 10, 5, 5, 200);
+this.enemy16 = new EnemySpider(this, 100, 1600, this.player, 10, 5, 5, 200);
+this.enemy17 = new EnemySpider(this, 600, 2520, this.player, 10, 5, 5, 200);
+this.enemy18 = new EnemySpider(this, 1200, 1600, this.player, 10, 5, 5, 200);
+this.enemy19 = new EnemySpider(this, 1000, 2520, this.player, 10, 5, 5, 200);
+this.enemy20 = new EnemySpider(this, 2100, 1600, this.player, 10, 5, 5, 200);
+this.enemy21 = new EnemySpider(this, 1700, 1600, this.player, 10, 5, 5, 200);
+this.enemy22 = new EnemySpider(this, 2600, 1600, this.player, 10, 5, 5, 200);
 
 
 
-    this.tesla1 = new Tesla(this, 600, 1200, this.player);
+
+    this.tesla1 = new Tesla(this, 2000, 1200, this.player);
     this.add.existing(this.tesla1);
-
-    // Ajouter collision entre le joueur et la Tesla (facultatif si tu veux bloquer le joueur)
-    this.physics.add.collider(this.player, this.tesla1);
-    //this.physics.add.collider(this.tesla1, this.platformLayer);
+    this.physics.add.collider(this.tesla1, this.platformLayer);
+    this.teslaPlayerCollider = this.physics.add.collider(this.tesla1, this.player);
 
 this.physics.add.collider(this.enemy0, this.platformLayer);
 this.physics.add.collider(this.enemy1, this.platformLayer);
@@ -864,6 +1023,17 @@ this.physics.add.collider(this.enemy10, this.platformLayer);
 this.physics.add.collider(this.enemy11, this.platformLayer);
 this.physics.add.collider(this.enemy12, this.platformLayer);
 
+this.physics.add.collider(this.enemy13, this.platformLayer);
+this.physics.add.collider(this.enemy14, this.platformLayer);
+
+this.physics.add.collider(this.enemy15, this.platformLayer);
+this.physics.add.collider(this.enemy16, this.platformLayer);
+this.physics.add.collider(this.enemy17, this.platformLayer);
+this.physics.add.collider(this.enemy18, this.platformLayer);
+this.physics.add.collider(this.enemy19, this.platformLayer);
+this.physics.add.collider(this.enemy20, this.platformLayer);
+this.physics.add.collider(this.enemy21, this.platformLayer);
+this.physics.add.collider(this.enemy22, this.platformLayer);
 
 
     // Déplacements aléatoires entre deux bornes X
@@ -877,16 +1047,20 @@ this.physics.add.collider(this.enemy12, this.platformLayer);
     if (this.enemy8.startPatrol) this.enemy8.startPatrol(2750, 3300, 70);
     if (this.enemy9.startPatrol) this.enemy9.startPatrol(2500, 2900, 70);
 
-    if (this.enemy10.startPatrol) this.enemy10.startPatrol(800, 1200, 70);
-    if (this.enemy11.startPatrol) this.enemy11.startPatrol(1600, 2500, 70);
+    if (this.enemy10.startPatrolDiagonal) this.enemy10.startPatrolDiagonal(500, 1200, 40, 1900, 2200, 20);
+    if (this.enemy11.startPatrolDiagonal) this.enemy11.startPatrolDiagonal(200, 700, 60, 1900, 2400, 40);
     if (this.enemy12.startPatrol) this.enemy12.startPatrol(200, 1000, 70);
+
+    if (this.enemy13.startPatrol) this.enemy13.startPatrol(900, 2400, 70);
+    if (this.enemy14.startPatrol) this.enemy14.startPatrol(200, 1000, 70);
+
 
 
   
   
     // Créer un groupe avec les ennemis existants
 this.enemies = this.physics.add.group();
-[this.enemy0, this.enemy1, this.enemy2, this.enemy3, this.enemy4, this.enemy5, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12].forEach(e => {
+[this.enemy0, this.enemy1, this.enemy2, this.enemy3, this.enemy4, this.enemy5, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12, this.enemy13, this.enemy14, this.enemy15, this.enemy16, this.enemy17, this.enemy18, this.enemy19, this.enemy20, this.enemy21, this.enemy22].forEach(e => {
   if (e) this.enemies.add(e);
 });
 
@@ -968,15 +1142,35 @@ this.teleportA = this.add.rectangle(3440, 700, 50, 100);
 this.physics.add.existing(this.teleportA, true);
 
 // Téléporteur B
-this.teleportB = this.add.rectangle(150, 1920, 100, 100);
+this.teleportB = this.add.rectangle(192, 1600, 100, 100);
 this.physics.add.existing(this.teleportB, true);
 
-// Pour debug → affiche en rouge (tu peux commenter après)
-this.teleportA.setFillStyle?.(0xff0000, 0.3);
-this.teleportB.setFillStyle?.(0x0000ff, 0.3);
+// --- Nouveau téléporteur ---
+this.teleportC = this.add.rectangle(2630, 1600, 100, 50);
+this.physics.add.existing(this.teleportC, true);
+this.teleportD = this.add.rectangle(30, 2330, 50, 50);
+this.physics.add.existing(this.teleportD, true); 
+
+// --- Téléporteur supplémentaire ---
+this.teleportE = this.add.rectangle(1000, 1600, 50, 80);
+this.physics.add.existing(this.teleportE, true);
+this.teleportF = this.add.rectangle(1370, 2560, 50, 50);
+this.physics.add.existing(this.teleportF, true);
+
+this.teleportG = this.add.rectangle(3008, 1536, 50, 100);
+this.physics.add.existing(this.teleportG, true);
+this.teleportH = this.add.rectangle(192, 3808, 50, 100);
+this.physics.add.existing(this.teleportH, true);
+
 
 // Flag pour savoir si le joueur est dedans
 this.currentTeleportZone = null;
+
+this.currentTeleportZoneCD = null;
+
+this.currentTeleportZoneEF = null;
+
+this.currentTeleportZoneGH = null;
 
 // Overlap avec A
 this.physics.add.overlap(this.player, this.teleportA, () => {
@@ -988,6 +1182,71 @@ this.physics.add.overlap(this.player, this.teleportB, () => {
     this.currentTeleportZone = "B";
 }, null, this);
 
+// Overlap avec C
+this.physics.add.overlap(this.player, this.teleportC, () => {
+  this.currentTeleportZoneCD = "C";
+}, null, this);
+// Overlap avec D
+this.physics.add.overlap(this.player, this.teleportD, () => {
+  this.currentTeleportZoneCD = "D";
+  // Descente de la caméra quand le joueur entre dans la zone de teleportD
+  if (!this._cameraLowered) {
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(this.player.x, 2450, 800, 'Sine.easeInOut');
+    this._cameraLowered = true;
+  }
+}, null, this);
+
+// Zone de trigger étendue autour de teleportD pour reset caméra
+
+if (!this.cameraResetZoneD) {
+  // Crée une zone plus grande autour de teleportD (par exemple 300x120)
+  this.cameraResetZoneD = this.add.rectangle(this.teleportD.x, this.teleportD.y, 500, 300);
+  this.physics.add.existing(this.cameraResetZoneD, true);
+}
+
+// Pan caméra quand le joueur entre dans cameraResetZoneD
+this.physics.add.overlap(this.player, this.cameraResetZoneD, () => {
+  if (!this._cameraLowered) {
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(this.player.x, 2450, 800, 'Sine.easeInOut');
+    this._cameraLowered = true;
+  }
+}, null, this);
+
+this.events.on("update", () => {
+  // Si le joueur n'est plus dans la zone de trigger, on remet la caméra à la normale
+    // Correction: vérifier que SEUL le joueur est pris en compte, pas le pet
+    if (this._cameraLowered && !this.physics.world.overlap(this.player, this.cameraResetZoneD)) {
+      // Pan caméra vers la position normale avec ease-in
+      this.cameras.main.pan(this.player.x, this.player.y, 800, 'Sine.easeIn');
+      this.time.delayedCall(800, () => {
+        this.cameras.main.startFollow(this.player);
+        this.cameras.main.setFollowOffset(0, 210);
+        this.cameras.main.setBounds(0, 0, this.make.tilemap({ key: "map1" }).widthInPixels, this.make.tilemap({ key: "map1" }).heightInPixels);
+        this._cameraLowered = false;
+      });
+    }
+});
+
+
+
+// Overlap avec E
+this.physics.add.overlap(this.player, this.teleportE, () => {
+  this.currentTeleportZoneEF = "E";
+}, null, this);
+// Overlap avec F
+this.physics.add.overlap(this.player, this.teleportF, () => {
+  this.currentTeleportZoneEF = "F";
+}, null, this);
+
+this.physics.add.overlap(this.player, this.teleportG, () => {
+  this.currentTeleportZoneGH = "G";
+}, null, this);
+this.physics.add.overlap(this.player, this.teleportH, () => {
+  this.currentTeleportZoneGH = "H";
+}, null, this);
+
 // Vérif sortie : si plus de contact, reset
 this.events.on("update", () => {
     if (
@@ -996,11 +1255,56 @@ this.events.on("update", () => {
     ) {
         this.currentTeleportZone = null;
     }
+
+  if (
+    !this.physics.overlap(this.player, this.teleportC) &&
+    !this.physics.overlap(this.player, this.teleportD)
+  ) {
+    this.currentTeleportZoneCD = null;
+      // Si le joueur sort de cameraResetZoneD, remettre la caméra au normal
+      if (this._cameraLowered && !this.physics.overlap(this.player, this.cameraResetZoneD)) {
+        this.cameras.main.startFollow(this.player);
+        this.cameras.main.setFollowOffset(0, 210);
+        this.cameras.main.setBounds(0, 0, this.make.tilemap({ key: "map1" }).widthInPixels, this.make.tilemap({ key: "map1" }).heightInPixels);
+        this._cameraLowered = false;
+      }
+  }
+
+  if (
+    !this.physics.overlap(this.player, this.teleportE) &&
+    !this.physics.overlap(this.player, this.teleportF)
+  ) {
+    this.currentTeleportZoneEF = null;
+  }
+
+    if (
+    !this.physics.overlap(this.player, this.teleportG) &&
+    !this.physics.overlap(this.player, this.teleportH)
+  ) {
+    this.currentTeleportZoneGH = null;
+  }
+
 });
 
+
+this.physics.add.overlap(this.player, this.bossTrigger, () => {
+  if (!this._bossStarted) {
+    this._bossStarted = true;
+    let hud = document.getElementById("hud-level");
+    if (hud) hud.style.display = "none";
+    let hud1 = document.getElementById("hud-points");
+    if (hud1) hud1.style.display = "none";
+    let hud2 = document.getElementById("hud-gold");
+    if (hud2) hud2.style.display = "none";
+    this.scene.start('boss');
+    
+  }
+}, null, this);
+
+
 // MUSIQUE : préparation des musiques
-this.musiqueMap1 = this.sound.add('musiqueMap1', { volume: 0.6, loop: true });
-this.musiqueMap2 = this.sound.add('musiqueMap2', { volume: 0.7, loop: true });
+this.musiqueMap1 = this.sound.add('musiqueMap1', { volume: 0.5, loop: true });
+this.musiqueMap2 = this.sound.add('musiqueMap2', { volume: 0.2, loop: true });
 this.zoneActuelle = "A";
 this.musiqueMap1.play(); // joue la musique Map1 au lancement
 
@@ -1024,6 +1328,26 @@ this.keyI.on('down', () => {
     this.musiqueMap1.play();
     this.zoneActuelle = "A";
   }
+
+  // Nouveau téléporteur C <-> D
+  if (this.currentTeleportZoneCD === "C") {
+    this.fadeOutAndTeleport(500, this.teleportD.x, this.teleportD.y);
+  } else if (this.currentTeleportZoneCD === "D") {
+    this.fadeOutAndTeleport(500, this.teleportC.x, this.teleportC.y);
+  }
+
+    // Téléporteur E <-> F
+    if (this.currentTeleportZoneEF === "E") {
+      this.fadeOutAndTeleport(500, this.teleportF.x, this.teleportF.y);
+    } else if (this.currentTeleportZoneEF === "F") {
+      this.fadeOutAndTeleport(500, this.teleportE.x, this.teleportE.y);
+    }
+
+    if (this.currentTeleportZoneGH === "G") {
+      this.fadeOutAndTeleport(500, this.teleportH.x, this.teleportH.y);
+    } else if (this.currentTeleportZoneGH === "H") {
+      this.fadeOutAndTeleport(500, this.teleportG.x, this.teleportG.y);
+    }
 });
 
 let degat_gun = 1;
@@ -1051,63 +1375,139 @@ this.physics.add.overlap(this.projectiles, this.enemies, (projectile, enemy) => 
 
 
 // modes d'attaque
-    this.weaponModes = ["melee", "gun", "jetpack"];
-    this.selectedWeaponIndex = 0;
-    this.attackMode = this.weaponModes[this.selectedWeaponIndex];
+this.weaponModes = ['melee'];
+if (this.skills.Armes >= 1) this.weaponModes.push('gun');
+if (this.skills.Mobilité >= 4) this.weaponModes.push('jetpack');
+this.selectedWeaponIndex = 0;
+this.attackMode = this.weaponModes[this.selectedWeaponIndex];
 
-    // groupe UI des armes
-    this.weaponUI = [];
+// Groupe UI des armes
+this.weaponUI = [];
+const startX = 1045;
+const startY = 665;
+const spacing = 90;
+for (let i = 0; i < 3; i++) {
+  let iconKey = "vide";
+  if (i === 0) iconKey = "poing";
+  else if (i === 1 && this.skills.Armes >= 1) iconKey = "gun";
+  else if (i === 2 && this.skills.Mobilité >= 4) iconKey = "jetpack";
+  const icon = this.add.image(startX + i * spacing, startY, iconKey)
+    .setScrollFactor(0)
+    .setDepth(20)
+    .setScale(0.30);
+  const frame = this.add.image(startX + i * spacing, startY, "cadre")
+    .setScrollFactor(0)
+    .setDepth(21)
+    .setScale(0.35);
+  this.weaponUI.push({ icon, frame });
+}
 
-    const startX = 1045; // position X du premier slot
-    const startY = 665;  // position Y
-    const spacing = 90; // espacement horizontal entre icônes=
 
-    for (let i = 0; i < this.weaponModes.length; i++) {
-        let iconKey = "vide"; // par défaut
 
-        if (i === 0) iconKey = "poing"; // poing toujours dispo
-        else if (i === 1 && this.skills.Armes >= 1) iconKey = "gun";
-        else if (i === 2 && this.skills.Mobilité >= 4) iconKey = "jetpack";
+    // 🔁 Changement d'arme avec P
+this.input.keyboard.on("keydown-P", () => {
+  let tries = 0;
+  do {
+    this.selectedWeaponIndex = (this.selectedWeaponIndex + 1) % 3;
+    tries++;
+  } while (!this.isWeaponUnlocked(this.selectedWeaponIndex) && tries < 3);
 
-        // icône
-        const icon = this.add.image(startX + i * spacing, startY, iconKey)
-            .setScrollFactor(0)
-            .setDepth(20)
-            .setScale(0.30);
-
-        // cadre
-        const frame = this.add.image(startX + i * spacing, startY, "cadre")
-            .setScrollFactor(0)
-            .setDepth(21)
-            .setScale(0.35);
-
-        this.weaponUI.push({ icon, frame });
-    }
-
-    // touche P pour changer de mode
-    this.input.keyboard.on("keydown-P", () => {
-    let nextIndex = this.selectedWeaponIndex;
-
-    do {
-        nextIndex = (nextIndex + 1) % this.weaponModes.length;
-    } while (!this.isWeaponUnlocked(nextIndex) && nextIndex !== this.selectedWeaponIndex);
-
-    // si au moins un mode est dispo
-    if (this.isWeaponUnlocked(nextIndex)) {
-        this.selectedWeaponIndex = nextIndex;
-        this.attackMode = this.weaponModes[this.selectedWeaponIndex];
-        this.refreshWeaponUI();
-        console.log("Mode :", this.attackMode);
-    }
+  this.attackMode = ["melee", "gun", "jetpack"][this.selectedWeaponIndex];
+  this.refreshWeaponUI();
 });
 
 
+// --- LEVIER ---
+    this.leverActivated = false;
+    this.lever = this.add.sprite(1120, 2605, 'levier', 0).setOrigin(0.5, 1);
+    this.physics.add.existing(this.lever, true); // statique
+
+    // Collider pour interaction
+    this.physics.add.overlap(this.player, this.lever, () => {
+      if (!this.leverActivated && this.input.keyboard.checkDown(this.keyI, 250)) {
+        this.leverActivated = true;
+        this.lever.setFrame(1); // allumé
+        this.click.play();
+        // Désactive la Tesla et sa hitbox
+        if (this.tesla1) {
+          this.tesla1.turnOff();
+          // Supprime l'overlap Tesla/joueur
+          if (this.teslaPlayerCollider) {
+            this.teslaPlayerCollider.destroy();
+            this.teslaPlayerCollider = null;
+          }
+        }
+      }
+    }, null, this);
+
+
     this.refreshWeaponUI();
+    this.updateWeaponModes();
 
 
+    // === Ajout du PNJ Trade ===
+    this.npcTrade = this.physics.add.sprite(110, 2310, "pnj");
+    this.npcTrade.setImmovable(true);
+    this.npcTrade.setDepth(10);
+    this.npcTrade.setScale(0.7);
+    this.physics.add.collider(this.npcTrade, this.platformLayer);
+
+    // UI trade cachée par défaut
+    this.tradeUI = this.add.image(this.npcTrade.x + 100, this.npcTrade.y - 2, "trade")
+      .setOrigin(0.5, 1)
+      .setVisible(false)
+      .setDepth(100);
+
+    this.isNearTradeNPC = false;
+    this.isTradeUIVisible = false;
+    this.tradeStep = 0;
+
+    // Détection de proximité avec le PNJ
+    this.physics.add.overlap(this.player, this.npcTrade, () => {
+      this.isNearTradeNPC = true;
+      if (!this.isTradeUIVisible) {
+        this.tradeUI.setVisible(true);
+        this.isTradeUIVisible = true;
+        this.tradeStep = 1;
+      }
+    }, null, this);
+
+    // Si le joueur s'éloigne, cacher l'UI
+    this.events.on('update', () => {
+      if (this.isNearTradeNPC && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.npcTrade.x, this.npcTrade.y) > 60) {
+        this.isNearTradeNPC = false;
+        this.tradeUI.setVisible(false);
+        this.isTradeUIVisible = false;
+        this.tradeStep = 0;
+      }
+    });
+
+    // Gestion de la touche 'i' pour le trade
+    this.input.keyboard.on('keydown-I', () => {
+      if (this.isNearTradeNPC) {
+        if (this.tradeStep === 1) {
+          // Première pression : affiche trade.png
+          this.tradeUI.setVisible(true);
+          this.isTradeUIVisible = true;
+          this.tradeStep = 2;
+        } else if (this.tradeStep === 2) {
+          // Deuxième pression : effectue le trade
+          if (this.playerGold >= 5) {
+            this.playerGold -= 5;
+            this.updateGoldHUD(this.playerGold);
+            this.gainXP(2);
+            this.skill.play();
+            // Feedback visuel ou sonore possible ici
+          } else {
+            // Optionnel: feedback si pas assez d'or
+          }
+          this.tradeStep = 1;
+        }
+      }
+    });
 
 
-map.createLayer("decoration_front_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11], 0, 0);
+map.createLayer("decoration_front_layer", [tileset1, tileset2, tileset3, tileset4, tileset5, tileset6, tileset7, tileset8, tileset9, tileset10, tileset11, tileset12, tileset13], 0, 0);
 
     this.activeButtons = this.menuButtons || [];
 
@@ -1116,6 +1516,7 @@ map.createLayer("decoration_front_layer", [tileset1, tileset2, tileset3, tileset
   }
 
   update() {
+    
     // --- Gestion de la touche L (Pause / Reprise) ---
     if (Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
         // Bloque L si une page interne est ouverte (Contrôles ou Skills)
@@ -1164,7 +1565,8 @@ map.createLayer("decoration_front_layer", [tileset1, tileset2, tileset3, tileset
         this.updateSkillsHUD(this.skillPoints);
         this.skill.play();
                     
-                    this.refreshWeaponUI();
+                    this.updateWeaponModes();
+
                 }
 
                 if (skill === "Armes") {
@@ -1253,6 +1655,10 @@ this.select.play();
   this.player.setVelocityX(0);
 }
 
+if (this.player.body.blocked.down) {
+    this.jetpackUsed = false;
+}
+
 if (!this.player.body.blocked.down) {
   if (this.right) {
     if (this.player.hasWeapon) {
@@ -1269,21 +1675,66 @@ if (!this.player.body.blocked.down) {
   }
 }
 if (this.clavier.up.isDown && this.player.body.blocked.down) {
-  this.player.setVelocityY(-this.playerSpeed);
-  if (this.right) {
-    if (this.player.hasWeapon) {
-      this.player.anims.play("anim_saut_droite_arme", true);
-    } else {
-      this.player.anims.play("anim_saut_droite", true);
+    // Normal ground jump
+    this.player.setVelocityY(-this.playerJump);
+
+    if (this.right) {
+        this.player.anims.play(this.player.hasWeapon ? "anim_saut_droite_arme" : "anim_saut_droite", true);
+    } else if (this.left) {
+        this.player.anims.play(this.player.hasWeapon ? "anim_saut_gauche_arme" : "anim_saut_gauche", true);
     }
-  } else if (this.left) {
-    if (this.player.hasWeapon) {
-      this.player.anims.play("anim_saut_gauche_arme", true);
+}
+else if (
+    Phaser.Input.Keyboard.JustDown(this.clavier.up) &&   // only once per press
+    !this.player.body.blocked.down &&                   // only in air
+    this.attackMode === "jetpack" &&                    // only if jetpack mode
+    this.playerMana >= this.jetpackManaCost             // enough mana
+) {
+    // Jetpack jump
+    this.player.setVelocityY(-this.playerJump * 0.9);
+
+    this.playerMana -= this.jetpackManaCost;
+    this.updatePlayerManaBar();
+
+    if (this.right) {
+        this.player.anims.play(this.player.hasWeapon ? "anim_saut_droite_arme" : "anim_saut_droite", true);
+    } else if (this.left) {
+        this.player.anims.play(this.player.hasWeapon ? "anim_saut_gauche_arme" : "anim_saut_gauche", true);
     }
-    else {
-      this.player.anims.play("anim_saut_gauche", true);
-    }
+
+    // Sound + particles
+    this.sound.play("jetpack");
+}
+
+// --- Jetpack visuel ---
+if (!this.jetpackGroundFrames) this.jetpackGroundFrames = 0;
+if (this.attackMode === "jetpack" && this.hasJetpack && !this.player.body.blocked.down) {
+  this.jetpackGroundFrames = 0;
+  if (this.player.texture.key !== "perso_jetpack") {
+    this.player.setTexture("perso_jetpack");
+    this.player.setDisplaySize(32, 70);
   }
+  // Correction direction : utilise la dernière direction connue
+  if (this.left) {
+    this.player.anims.play("jetpack_left", true);
+  } else {
+    this.player.anims.play("jetpack_right", true);
+  }
+} else if (this.player.body.blocked.down) {
+  this.jetpackGroundFrames++;
+  // Quand on touche le sol avec le jetpack, repasse en mode poing
+  if (this.attackMode === "jetpack" && this.jetpackGroundFrames === 1) {
+    this.selectedWeaponIndex = 0;
+    this.attackMode = "melee";
+    if (this.refreshWeaponUI) this.refreshWeaponUI();
+    if (this.updateWeaponModes) this.updateWeaponModes();
+  }
+  if (this.player.texture.key === "perso_jetpack" && this.jetpackGroundFrames > 5) {
+    this.player.setTexture("img_perso");
+    this.player.setDisplaySize(32, 70);
+  }
+} else {
+  this.jetpackGroundFrames = 0;
 }
 
 const isMoving = (this.clavier.left.isDown || this.clavier.right.isDown);
@@ -1335,11 +1786,12 @@ this.player.hasWeapon = false;
 
   // --- PET ---
 
-  if (this.skills["Survie"] >= 1 && !this.pet) {
+  if (this.skills["Survie"] >= 3 && !this.pet) {
   this.spawnPet();
+  this.hasPet = true;
 }
 
-  if (this.skills["Survie"] >= 1 && this.pet) {
+  if (this.skills["Survie"] >= 3 && this.pet) {
   const speed = 120;
   const detectionRadius = this.detectionRadius;
 
@@ -1429,9 +1881,111 @@ this.projectiles.children.each((proj) => {
 
 
 
+if (!this.isWeaponUnlocked(this.selectedWeaponIndex)) {
+    this.selectedWeaponIndex = 0;
+    this.attackMode = this.weaponModes[0];
+    this.refreshWeaponUI();
+}
 
 
 
+    // --- Gestion du levier 2 ---
+    if (this.isNearLever2 && !this.lever2Activated) {
+      if (this.input.keyboard.checkDown(this.keyI, 250)) {
+        if (this.lever2Step === 0) {
+          this.warningUI.setVisible(true);
+          this.lever2Step = 1;
+        } else if (this.lever2Step === 1) {
+          this.warningUI.setVisible(false);
+          this.lever2Activated = true;
+          this.lever2.setFrame(1);
+          this.click.play();
+          // Fade + TP sur plateforme
+          this.fadeOutAndTeleport(500, 2690, 4210);
+          // Cache le HUD stats, level et or
+          const hud = document.getElementById('hud-level');
+          if (hud) hud.style.display = 'none';
+          const hudPoints = document.getElementById('hud-points');
+          if (hudPoints) hudPoints.style.display = 'none';
+          const hudGold = document.getElementById('hud-gold');
+          if (hudGold) hudGold.style.display = 'none';
+          // Affiche les images ascenseur APRÈS le fade/TP
+          this.time.delayedCall(600, () => {
+            // Forcibly set position and visibility regardless of camera state
+            const imgHeight = 2880;
+            const screenHeight = 720;
+            this.ascenseurFond.setPosition(this.cameras.main.centerX, imgHeight / 2);
+            this.ascenseurFond.setVisible(true);
+            this.ascenseurImage.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
+            this.ascenseurImage.setVisible(true);
+            this.tweens.add({
+              targets: this.ascenseurFond,
+              y: screenHeight - imgHeight / 2,
+              duration: 14000,
+              ease: "Linear",
+              onComplete: () => {
+                if (this.ascenseurFond) this.ascenseurFond.setVisible(false);
+              }
+            });
+          });
+            // Son de chaîne
+            this.chaineSound = this.sound.add("chaine", { loop: true, volume: 0.6 });
+            this.chaineSound.play();
+            this.time.delayedCall(14000, () => {
+              if (this.chaineSound) this.chaineSound.stop();
+            });
+          // Timer boss direct
+          if (!this.bossSceneTimerStarted) {
+            this.bossSceneTimerStarted = true;
+            this.time.delayedCall(13200, () => {
+              this.cameras.main.fadeOut(500, 0, 0, 0);
+              this.cameras.main.once("camerafadeoutcomplete", () => {
+                this.scene.start("boss");
+              });
+            });
+          }
+        }
+      }
+    } else {
+      this.warningUI.setVisible(false);
+      this.lever2Step = 0;
+    }
+
+    // --- Gestion du levier sur la plateforme ---
+    if (this.isNearLeverOnPlatform && !this.leverOnPlatformActivated) {
+      if (this.input.keyboard.checkDown(this.keyI, 250)) {
+        this.leverOnPlatformActivated = true;
+        this.leverOnPlatform.setFrame(1);
+        this.click.play();
+        // Optionnel : feedback visuel ou effet
+      }
+    }
+
+    // --- Reset de proximité ---
+    if (this.isNearLever2 && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.lever2.x, this.lever2.y) > 60) {
+      this.isNearLever2 = false;
+      this.warningUI.setVisible(false);
+      this.lever2Step = 0;
+    }
+    if (this.isNearLeverOnPlatform && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.leverOnPlatform.x, this.leverOnPlatform.y) > 60) {
+      this.isNearLeverOnPlatform = false;
+    }
+
+
+
+    // --- Timer boss après plateforme ---
+    if (this.platformTweenStarted && !this.bossSceneTimerStarted) {
+      this.bossSceneTimerStarted = true;
+      this.time.delayedCall(14000, () => {
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+          this.scene.start("boss");
+        });
+      });
+    }
+
+
+    
 
 
   }
@@ -1491,7 +2045,7 @@ updatePlayerXPBar() {
     
     // Redémarrer la scène après 3 secondes
     this.time.delayedCall(3000, () => {
-        this.scene.restart();
+        this.scene.start("selection");
     });
     
     
@@ -1563,46 +2117,104 @@ perdreVie(damage = 1) {
         
         
     } else {
-        // Game over (une seule fois)
-        if (this.gameOver) return;
-        this.playerDeath();
-        // Stopper toute action de jeu
-        if (this.petShootEvent) this.petShootEvent.remove(false);
-        this.physics.pause();
-        // Désactiver entités et nettoyer projectiles
-        if (this.enemy0) this.enemy0.setActive(false).setVisible(false);
-        if (this.enemy1) this.enemy1.setActive(false).setVisible(false);
-        if (this.enemy2) this.enemy2.setActive(false).setVisible(false);
-        if (this.enemy4) this.enemy4.setActive(false).setVisible(false);
-        if (this.enemy6) this.enemy6.setActive(false).setVisible(false);
-        if (this.enemy7) this.enemy7.setActive(false).setVisible(false);
-        if (this.enemy8) this.enemy8.setActive(false).setVisible(false);
-        if (this.enemy9) this.enemy9.setActive(false).setVisible(false);
-        if (this.enemy10) this.enemy10.setActive(false).setVisible(false);
-        if (this.enemy11) this.enemy11.setActive(false).setVisible(false);
-        if (this.enemy12) this.enemy12.setActive(false).setVisible(false);
-        if (this.projectiles) this.projectiles.clear(true, true);
-        if (this.enemy0?.projectiles) this.enemy0.projectiles.clear(true, true);
-        if (this.enemy1?.projectiles) this.enemy1.projectiles.clear(true, true);
-        if (this.enemy2?.projectiles) this.enemy2.projectiles.clear(true, true);
-        if (this.enemy4?.projectiles) this.enemy4.projectiles.clear(true, true);
-        if (this.enemy6?.projectiles) this.enemy6.projectiles.clear(true, true);
-        if (this.enemy7?.projectiles) this.enemy7.projectiles.clear(true, true);
-        if (this.enemy8?.projectiles) this.enemy8.projectiles.clear(true, true);
-        if (this.enemy9?.projectiles) this.enemy9.projectiles.clear(true, true);
-        if (this.enemy10?.projectiles) this.enemy10.projectiles.clear(true, true);
-        if (this.enemy11?.projectiles) this.enemy11.projectiles.clear(true, true);
-        if (this.enemy12?.projectiles) this.enemy12.projectiles.clear(true, true);
-        if (this.player) this.player.setTint(0xff0000);
-        this.add.text(400, 300, 'GAME OVER', { 
-            fontSize: '32px', 
-            fill: '#ffffff',
-            fontFamily: 'Arial'
-        }).setOrigin(0.5);
-        // Redémarrer après 1.5s
-        this.time.delayedCall(1500, () => {
-            this.scene.restart();
-        });
+    // Game over (une seule fois)
+    if (this.gameOver) return;
+    this.gameOver = true;
+    if (this.petShootEvent) this.petShootEvent.remove(false);
+    this.physics.pause();
+    // Désactiver entités et nettoyer projectiles
+    [this.enemy0, this.enemy1, this.enemy2, this.enemy4, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12, this.enemy13, this.enemy14, this.enemy15, this.enemy16, this.enemy17, this.enemy18, this.enemy19, this.enemy20, this.enemy21, this.enemy22].forEach(e => { if (e) e.setActive(false).setVisible(false); });
+    if (this.projectiles) this.projectiles.clear(true, true);
+    [this.enemy0, this.enemy1, this.enemy2, this.enemy4, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12, this.enemy13, this.enemy14, this.enemy15, this.enemy16, this.enemy17, this.enemy18, this.enemy19, this.enemy20, this.enemy21, this.enemy22].forEach(e => { if (e?.projectiles) e.projectiles.clear(true, true); });
+    if (this.player) this.player.setTint(0xff0000);
+
+    // Création de l'écran de mort personnalisé
+  // Cacher le HUD des points dès l'affichage du screen de mort
+    this.hidePauseMenu();
+    const hudPoints = document.getElementById('hud-points');
+      if (hudPoints) hudPoints.style.display = 'none';
+    
+  const cam = this.cameras.main;
+  const deathScreenX = cam.scrollX + cam.width / 2;
+  const deathScreenY = cam.scrollY + cam.height / 2;
+  this.deathScreen = this.add.container(deathScreenX, deathScreenY).setDepth(999999).setVisible(true);
+  const bg = this.add.image(0, 0, "ecran_mort").setOrigin(0.5).setScale(1).setDepth(1);
+  this.deathScreen.add(bg);
+  // Position horizontale en bas
+  const btnY = 250; // position verticale (ajuste selon le fond)
+  const btnSpacing = 220; // espace horizontal entre les boutons
+  const btnRejouer = this.add.image(-btnSpacing, btnY, "boutonrejouer").setOrigin(0.5).setScale(0.3).setDepth(2);
+  const btnMenu = this.add.image(btnSpacing, btnY, "boutonmenu").setOrigin(0.5).setScale(0.3).setDepth(2);
+  this.deathScreen.add([btnRejouer, btnMenu]);
+  this.deathScreen.setVisible(true);
+    let selectedIndex = 0;
+    const buttons = [btnRejouer, btnMenu];
+    const updateSelection = () => {
+      buttons.forEach((btn, i) => {
+        btn.setScale(i === selectedIndex ? 0.7 : 0.5);
+      });
+    };
+    updateSelection();
+    this.deathScreenKeyLeft = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+    this.deathScreenKeyRight = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+    this.deathScreenKeyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+    this.deathScreenKeyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    this.deathScreenKeyI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    const onKeyDown = (event) => {
+      if (event.code === "ArrowLeft" || event.code === "ArrowUp") {
+        selectedIndex = (selectedIndex - 1 + buttons.length) % buttons.length;
+        updateSelection();
+      } else if (event.code === "ArrowRight" || event.code === "ArrowDown") {
+        selectedIndex = (selectedIndex + 1) % buttons.length;
+        updateSelection();
+      } else if (event.code === "KeyI") {
+        cleanupListeners();
+        this.deathScreen.destroy();
+        this.sound.stopAll(); // Stop tous les sons
+        if (selectedIndex === 0) {
+          this.resetGlobalStats() 
+          this.scene.restart();
+        } else {
+          this.resetGlobalStats() 
+          // Menu : aller à la scène 'debut'
+          // Cacher le HUD des points
+          const hudPoints = document.getElementById('hud-points');
+          if (hudPoints) hudPoints.style.display = 'none';
+          // Lancer la musique du menu principal
+          if (this.sound.get('musiquemap1')) this.sound.get('musiquemap1').stop();
+          if (this.sound.get('musique_1')) this.sound.get('musique_1').play({ loop: true });
+          this.scene.start("debut");
+        }
+      }
+    };
+    this.input.keyboard.on("keydown", onKeyDown);
+    const cleanupListeners = () => {
+      this.input.keyboard.removeListener("keydown", onKeyDown);
+      this.deathScreenKeyLeft.destroy();
+      this.deathScreenKeyRight.destroy();
+      this.deathScreenKeyUp.destroy();
+      this.deathScreenKeyDown.destroy();
+      this.deathScreenKeyI.destroy();
+    };
+    if (this.player) {
+      this.player.setVelocity(0);
+      this.player.setActive(false);
+    }
+    this.input.keyboard.enabled = true;
+    // Cacher tous les éléments HUD Phaser
+    if (this.skillUI_HUD) this.skillUI_HUD.setVisible(false);
+    if (this.cadreVie) this.cadreVie.setVisible(false);
+    if (this.cadreMana) this.cadreMana.setVisible(false);
+    if (this.cadreXP) this.cadreXP.setVisible(false);
+    if (this.goldIcon) this.goldIcon.setVisible(false);
+    if (this.skillUI_Menu) this.skillUI_Menu.setVisible(false);
+    if (this.weaponUIContainer) this.weaponUIContainer.setVisible(false);
+    // Cacher le HUD HTML (or, level, etc.)
+    const hudGold = document.getElementById('hud-gold');
+    if (hudGold) hudGold.style.display = 'none';
+    const hudLevel = document.getElementById('hud-level');
+    if (hudLevel) hudLevel.style.display = 'none';
+    // Ajoute d'autres éléments HTML à cacher si besoin
         
         
     }
@@ -1613,7 +2225,7 @@ perdreVie(damage = 1) {
 
 spawnPet() {
   // PET
-    this.pet = this.physics.add.sprite(this.player.x + 50, this.player.y, "img_perso");
+    this.pet = this.physics.add.sprite(this.player.x + 50, this.player.y, "img_pet");
     this.pet.body.allowGravity = false;
     this.petMode = "follow"; // "follow" = oscillation autour du joueur, "attack" = attaque ennemi
     this.petDamage = 1;      // damage per hit
@@ -1643,7 +2255,7 @@ this.petShootEvent = this.time.addEvent({
     // Chercher le plus proche ennemi actif
     let target = null;
     let minDist = 1000;
-    [this.enemy0, this.enemy1, this.enemy2, this.enemy3, this.enemy4, this.enemy5, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12].forEach(enemy => {
+    [this.enemy0, this.enemy1, this.enemy2, this.enemy3, this.enemy4, this.enemy5, this.enemy6, this.enemy7, this.enemy8, this.enemy9, this.enemy10, this.enemy11, this.enemy12, this.enemy13, this.enemy14, this.enemy15, this.enemy16, this.enemy17, this.enemy18, this.enemy19, this.enemy20, this.enemy21, this.enemy22 ].forEach(enemy => {
       if (enemy && enemy.active) {
         const dx = enemy.x - this.pet.x;
         const dy = enemy.y - this.pet.y;
@@ -1674,6 +2286,7 @@ this.petShootEvent = this.time.addEvent({
       this.physics.moveTo(bullet, target.x, target.y, 200);
 
       // Reprendre le mouvement du pet après 0.15s
+
       this.time.delayedCall(150, () => {
         this.pet.body.setVelocity(originalVelocityX, originalVelocityY);
       });
@@ -1689,6 +2302,8 @@ this.enemies.getChildren().forEach(enemy => {
   enemy.isPetOverlapping = false;
   enemy.petDamageEvent = null;
 });
+
+
 
 // When the pet first overlaps an enemy, start a repeating damage event (if none yet)
 this.physics.add.overlap(this.pet, this.enemies, (pet, enemy) => {
@@ -1917,7 +2532,8 @@ attackGun() {
 
 
 refreshWeaponUI() {
-    for (let i = 0; i < this.weaponModes.length; i++) {
+    for (let i = 0; i < this.weaponUI.length; i++) {
+
         let iconKey = "vide";
 
         if (i === 0) iconKey = "poing"; // poing toujours dispo
@@ -1926,14 +2542,14 @@ refreshWeaponUI() {
 
         this.weaponUI[i].icon.setTexture(iconKey);
 
-        // cadre normal ou sélectionné
-        if (i === this.selectedWeaponIndex) {
-            this.weaponUI[i].frame.setTexture("cadreselect");
-        } else {
-            this.weaponUI[i].frame.setTexture("cadre");
-        }
+    const isSelected = i === this.selectedWeaponIndex;
+    this.weaponUI[i].frame.setTexture(isSelected ? "cadreselect" : "cadre");
     }
 }
+
+
+
+
 
 isWeaponUnlocked(index) {
     if (index === 0) return true; // poing toujours dispo
@@ -1941,7 +2557,6 @@ isWeaponUnlocked(index) {
     if (index === 2) return this.skills.Mobilité >= 4;
     return false;
 }
-
 
 // --- CREATION DU MENU PAUSE ---
 showPauseMenu() {
@@ -2276,9 +2891,59 @@ scheduleOwlSound() {
 
 
 
+updateWeaponModes() {
+    this.weaponModes = ["melee"];
 
+    if (this.skills.Armes >= 1) this.weaponModes.push("gun");
+    if (this.skills.Mobilité >= 4) this.weaponModes.push("jetpack");
 
+    if (this.selectedWeaponIndex >= this.weaponModes.length) {
+        this.selectedWeaponIndex = 0;
+        this.attackMode = this.weaponModes[0];
+    }
 
+    this.refreshWeaponUI();
+}
+
+// Nouvelle méthode pour reset toutes les stats du joueur
+  resetGlobalStats() {
+  this.playerHealth = 50;
+  this.playerMaxHealth = 50;
+  this.degatPlayerCorpsAcorps = 2;
+  this.baseXP = 5;
+  this.growth = 1.1;
+  this.playerLevel = 0;
+  this.playerXP = 0;
+  this.gunFireRate = 500;
+  this.gunRange = 370;
+  this.lastShotTime = 0;
+  this.playerSpeed = 120;
+  this.playerJump = 160;
+  this.hasDash = false;
+  this.hasJetpack = false;
+  this.dashManaCost = 5;
+  this.jetpackManaCost = 5;
+  this.skills = { Armes: 0, Survie: 0, Mobilité: 0 };
+  this.weaponModes = ['melee'];
+  this.selectedWeaponIndex = 0;
+  this.maxSkillLevel = 5;
+  this.skillPoints = 0;
+  this.selectedSkillIndex = 0;
+  this.skillKeys = ["Armes", "Survie", "Mobilité"];
+  this.playerGold = 0;
+  this.playerMana = 0;
+  this.attackMode = 'melee';
+  // --- Correction crash pet ---
+  if (this.pet) {
+    this.pet.destroy();
+    this.pet = undefined;
+  }
+  // Met à jour le HUD après reset
+  if (this.updateHUD) this.updateHUD(this.playerLevel);
+  if (this.updateGoldHUD) this.updateGoldHUD(this.playerGold);
+  if (this.updatePointsHUD) this.updatePointsHUD(this.skillPoints);
+  if (this.updateSkillsHUD) this.updateSkillsHUD(this.skillPoints);
+  }
 
 
 
@@ -2300,13 +2965,13 @@ scheduleOwlSound() {
 
 
 playOuch() {
-    const sfx = this.sound.add("ouch", { volume: 0.5 });
+    const sfx = this.sound.add("ouch", { volume: 0.4 });
 
     // Pick a random rate (speed/pitch). 1 is normal, >1 faster/higher pitch, <1 slower/lower pitch
     const randomPitch = Phaser.Math.FloatBetween(0.85, 1.15);
 
     // Pick a random volume too if you want variation
-    const randomVolume = Phaser.Math.FloatBetween(0.2, 0.8);
+    const randomVolume = Phaser.Math.FloatBetween(0.2, 0.6);
 
     sfx.setRate(randomPitch);
     sfx.setVolume(randomVolume);
@@ -2351,7 +3016,9 @@ applyArmesStats() {
     if (lvl >= 4) this.gunRange = 600;                    // lvl 4
     if (lvl >= 5) this.gunFireRate = 200;                 // lvl 5
 
-    this.refreshWeaponUI();
+    this.updateWeaponModes();
+
+
 }
 
 
@@ -2368,28 +3035,31 @@ applySurvieStats() {
 
     // --- NIVEAUX ---
     if (lvl >= 1 && !this.pet) {
-        this.spawnPet(); // lvl 1 → spawn pet
-        this.scheduleOwlSound();
+      
+        this.playerMaxHealth = 100; 
+        this.playerHealth = this.playerMaxHealth;
+        this.updatePlayerHealthBar();
+        
     }
 
     if (lvl >= 2) {
-        this.playerMaxHealth = 100; // lvl 2 → +HP
-        this.playerHealth = this.playerMaxHealth;
-        this.updatePlayerHealthBar();
+      this.detectionRadius = 400;
+        
     }
 
-    if (lvl >= 3) {
-        this.detectionRadius = 400; // lvl 3 → plus de range pour le pet
+    if (lvl >= 3 && !this.pet) {
+        this.spawnPet(); 
+        this.scheduleOwlSound();
     }
 
     if (lvl >= 4) {
-        this.playerMaxHealth = 200; // lvl 4 → HP max plus haut
+        this.playerMaxHealth = 200;
         this.playerHealth = this.playerMaxHealth;
         this.updatePlayerHealthBar();
     }
 
     if (lvl >= 5) {
-        this.petDamage = 5; // lvl 5 → dégâts du pet
+        this.petDamage = 5; 
     }
 
 }
@@ -2408,25 +3078,26 @@ applyMobiliteStats() {
 
     // --- NIVEAUX ---
     if (lvl >= 1) {
-        this.hasDash = true;       // lvl 1 → débloque le dash
+        this.hasDash = true; 
     }
 
     if (lvl >= 2) {
-        this.playerSpeed = 180;    // lvl 2 → + vitesse
+        this.playerSpeed = 180;
     }
 
     if (lvl >= 3) {
-        this.playerJump = 220;     // lvl 3 → + saut
+        this.playerJump = 220; 
     }
 
     if (lvl >= 4) {
-        this.hasJetpack = true;    // lvl 4 → débloque le jetpack
+        this.hasJetpack = true; 
     }
 
     if (lvl >= 5) {
-        this.dashManaCost = 1;     // lvl 5 → dash & jetpack coûtent moins
-        this.jetpackManaCost = 3;
+        this.dashManaCost = 1;
+        this.jetpackManaCost = 2;
     }
-}
+    this.updateWeaponModes();
 
-}
+
+}}
