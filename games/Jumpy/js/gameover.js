@@ -1,4 +1,4 @@
-import { get_tab_score, ajoute_score } from "/app/static/js/score.js";
+import { get_tab_score, ajoute_score } from "/static/js/score.js";
 
 export default class GameOver extends Phaser.Scene {
   constructor() {
