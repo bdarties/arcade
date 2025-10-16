@@ -17,6 +17,7 @@ export default class selection extends Phaser.Scene {
     this.load.image("animations", "./assets/maps/tiles/animations.png");
     this.load.image("tileset1", "./assets/maps/tiles/tileset1.png");
     this.load.image("tileset2", "./assets/maps/tiles/tileset2.png");
+    this.load.image("filtre", "./assets/black.png");
     this.load.tilemapTiledJSON("salle_cles", "./assets/maps/salle_cles.json");
     this.load.spritesheet("pics", "./assets/maps/tiles/pics.png", {
       frameWidth: 32,
@@ -139,27 +140,24 @@ export default class selection extends Phaser.Scene {
     this.pvManager = new fct.PvManager(this);
 
     // ==========================
-    // Configuration de la lumière
+    // Configuration de la lumière et du filtre
     // ==========================
     
-    // Activer le système de lumières
-    this.lights.enable();
-    this.lights.setAmbientColor(0x404040);
+    // Activer le système de lumières avec glow
+    this.lights.enable().setAmbientColor(0x555555);
     
-    // Appliquer Light2D au joueur
+    // Créer une lumière qui suit le joueur avec effet glow (réduit)
+    this.playerLight = this.lights.addLight(0, 0, 180).setColor(0xffffff).setIntensity(1);
+    
+    // Appliquer Light2D au joueur pour l'effet de glow
     this.player.setPipeline('Light2D');
     
-    // Créer une lumière qui suit le joueur
-    this.playerLight = this.lights.addLight(this.player.x, this.player.y, 200, 0xffffff, 1);
-    
-    // Appliquer Light2D aux calques de la map
-    if (this.calque_sol) this.calque_sol.setPipeline('Light2D');
-    if (this.calque_mur) this.calque_mur.setPipeline('Light2D');
-    if (this.calque_fenetres) this.calque_fenetres.setPipeline('Light2D');
-    if (this.calques_objets) this.calques_objets.setPipeline('Light2D');
-    if (this.calques_cles) this.calques_cles.setPipeline('Light2D');
-    if (this.calque_trap) this.calque_trap.setPipeline('Light2D');
-    if (this.calque_mur_haut) this.calque_mur_haut.setPipeline('Light2D');
+    // Créer le filtre noir avec opacité réduite qui suit le joueur
+    this.filtrenoir = this.add
+      .image(this.player.x, this.player.y, "filtre")
+      .setScale(4)
+      .setAlpha(0.85)
+      .setDepth(100);
 
     // Jouer l'animation des piques
     this.groupePiques.getChildren().forEach(pique => {
@@ -548,6 +546,12 @@ export default class selection extends Phaser.Scene {
     if (this.playerLight) {
       this.playerLight.x = this.player.x;
       this.playerLight.y = this.player.y;
+    }
+    
+    // Mettre à jour la position du filtre noir
+    if (this.filtrenoir) {
+      this.filtrenoir.x = this.player.x;
+      this.filtrenoir.y = this.player.y;
     }
   }
 

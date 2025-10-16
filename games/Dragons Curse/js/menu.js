@@ -19,9 +19,9 @@ class menu extends Phaser.Scene {
 
     // Boutons
     this.boutons = [
-      this.add.image(300, 425, "imageBoutonPlay").setDepth(1),
-      this.add.image(300, 525, "imageBoutonCredits").setDepth(1),
-      this.add.image(300, 625, "imageBoutonControls").setDepth(1)
+      this.add.image(870, 305, "imageBoutonPlay").setDepth(1),
+      this.add.image(870, 405, "imageBoutonCredits").setDepth(1),
+      this.add.image(870, 505, "imageBoutonControls").setDepth(1)
     ];
 
     this.boutons.forEach(b => b.setInteractive());
