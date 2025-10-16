@@ -91,7 +91,6 @@ export default class selection extends Phaser.Scene {
     const positionsPiques = [
       { x: 500, y: 400 },
       { x: 500, y: 370 },
-      { x: 700, y: 450 },
       { x: 700, y: 420 },
       { x: 400, y: 500 },
       { x: 400, y: 550 },
@@ -245,6 +244,7 @@ export default class selection extends Phaser.Scene {
     this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.clavier.M = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
     // ===========================
     //
     // Création des ennemis
@@ -333,6 +333,9 @@ export default class selection extends Phaser.Scene {
       this.physics.add.overlap(this.player, this.calques_cles);
     }
 
+    // Afficher le message d'instruction au début du niveau
+    this.afficherMessageInstruction();
+
     this.animatePics();
   }
 
@@ -342,6 +345,36 @@ export default class selection extends Phaser.Scene {
   // Fonctions de gestion des clés et de la porte
   //
   // ===========================
+  afficherMessageInstruction() {
+    const messageInstruction = this.add.text(
+      this.cameras.main.centerX,
+      100,
+      "Récupérez toutes les clés pour passer au niveau suivant",
+      {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+    
+    messageInstruction.setScrollFactor(0);
+    messageInstruction.setDepth(1000);
+    
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: messageInstruction,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          messageInstruction.destroy();
+        }
+      });
+    });
+  }
+
   collecterCle(sprite, tile) {
     this.nombreClesRecuperees++;
     
@@ -373,9 +406,7 @@ export default class selection extends Phaser.Scene {
           // Afficher un message d'indication
           if (!this.messageCooldown || this.time.now > this.messageCooldown) {
             if (this.porteDeverrouillee) {
-              console.log("🚪 Porte déverrouillée ! Appuyez sur I pour passer au niveau suivant.");
             } else {
-              console.log(`🔒 Porte verrouillée ! Il vous manque ${this.nombreClesTotales - this.nombreClesRecuperees} clé(s).`);
             }
             this.messageCooldown = this.time.now + 2000;
           }
@@ -386,10 +417,73 @@ export default class selection extends Phaser.Scene {
   }
 
   utiliserPorte() {
-    if (this.surPorte && this.porteDeverrouillee) {
-      this.scene.start("niveau4");
-    } else if (this.surPorte && !this.porteDeverrouillee) {
+    if (this.surPorte) {
+      if (this.porteDeverrouillee) {
+        console.log("🚪 Passage au niveau suivant...");
+        this.scene.start("niveau1");
+      } else {
+        console.log("🔒 La porte est verrouillée ! Récupérez toutes les clés.");
+        this.afficherMessagePorteVerrouillee();
+      }
     }
+  }
+
+  afficherMessagePorteVerrouillee() {
+    if (this.messagePorteActive) {
+      return;
+    }
+    
+    this.messagePorteActive = true;
+    
+    const messagePorte = this.add.text(
+      this.player.x,
+      this.player.y - 60,
+      "Porte verrouillée !",
+      {
+        fontSize: '20px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        padding: { x: 15, y: 8 },
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+    
+    // Définir la profondeur pour qu'il soit visible au-dessus de tout
+    messagePorte.setDepth(1000);
+    
+    // Effet d'apparition : scale + bounce
+    messagePorte.setScale(0);
+    this.tweens.add({
+      targets: messagePorte,
+      scale: 1,
+      duration: 300,
+      ease: 'Back.easeOut'
+    });
+    
+    // Légère animation de flottement
+    this.tweens.add({
+      targets: messagePorte,
+      y: messagePorte.y - 10,
+      duration: 800,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    // Faire disparaître le message après 2 secondes avec fondu
+    this.time.delayedCall(2000, () => {
+      this.tweens.add({
+        targets: messagePorte,
+        alpha: 0,
+        y: messagePorte.y - 20,
+        duration: 500,
+        ease: 'Power2.easeIn',
+        onComplete: () => {
+          messagePorte.destroy();
+          this.messagePorteActive = false;
+        }
+      });
+    });
   }
 
   verifierPorte(sprite, tile) {
@@ -506,9 +600,9 @@ export default class selection extends Phaser.Scene {
     }
 
     // ===========================
-    // Gestion du menu pause (touche F)
+    // Gestion du menu pause (touche F ou M)
     // ===========================
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.F)) {
+    if (Phaser.Input.Keyboard.JustDown(this.clavier.F) || Phaser.Input.Keyboard.JustDown(this.clavier.M)) {
       this.scene.launch("PauseScene", { from: this.scene.key });
       this.scene.pause();
     }

@@ -14,6 +14,7 @@ export default class niveau2 extends Phaser.Scene {
     this.load.image("tileset1", "./assets/maps/tiles/tileset1.png");
     this.load.image("tileset2", "./assets/maps/tiles/tileset2.png");
     this.load.tilemapTiledJSON("salle_leviers", "./assets/maps/salle_leviers.json");
+    this.load.image("filtre", "./assets/black.png");
     this.load.spritesheet("mage1", "./assets/mage1.png", {
       frameWidth: 64,
       frameHeight: 64
@@ -142,42 +143,25 @@ export default class niveau2 extends Phaser.Scene {
 
     // ==========================
     //
-    // Configuration de la lumière
+    // Configuration de la lumière et du filtre
     //
     // ==========================
-    // Configurer la lumière autour du joueur
-    this.playerLight = fct.setupPlayerLight(this, this.player, {
-      radius: 160,
-      color: 0xf1faff,
-      intensity: 0.9,
-      ambientColor: 0x404040,
-      tileLayers: [
-        this.calque_sol,
-        this.calque_mur,
-        this.calque_fenetres,
-        this.calques_objets,
-        this.calques_cles,
-        this.calque_trap,
-        this.calque_mur_haut,
-      ],
-      groups: ["groupeEnnemis", "groupeBullets", "groupeFlechesEnnemis"],
-      offsetY: -6,
-    });
-
-    // Créer un sprite de glow qui suit le joueur
-    this.playerGlow = this.add.sprite(
-      this.player.x,
-      this.player.y,
-      this.player.texture.key
-    );
-    this.playerGlow.setScale(this.player.scaleX, this.player.scaleY);
-    this.playerGlow.setAlpha(0.6);
     
-    if (this.playerGlow.setPipeline) {
-      this.playerGlow.setPipeline("Light2D");
-    }
+    // Activer le système de lumières
+    this.lights.enable().setAmbientColor(0x555555);
     
-    this.playerGlow.setDepth(this.player.depth - 1);
+    // Créer une lumière qui suit le joueur
+    this.playerLight = this.lights.addLight(0, 0, 180).setColor(0xffffff).setIntensity(1);
+    
+    // Appliquer Light2D au joueur
+    this.player.setPipeline('Light2D');
+    
+    // Créer le filtre noir avec opacité réduite qui suit le joueur
+    this.filtrenoir = this.add
+      .image(this.player.x, this.player.y, "filtre")
+      .setScale(4)
+      .setAlpha(0.85)
+      .setDepth(100);
 
     // ==========================
     //
@@ -274,6 +258,7 @@ export default class niveau2 extends Phaser.Scene {
     this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.clavier.M = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
 
       // ===========================
         //
@@ -407,6 +392,41 @@ export default class niveau2 extends Phaser.Scene {
 
     // Enregistrer cette scène comme la scène de jeu active
     this.registry.set('currentGameScene', this.scene.key);
+
+    // Afficher le message d'instruction au début du niveau
+    this.afficherMessageInstruction();
+  }
+
+  afficherMessageInstruction() {
+    const messageInstruction = this.add.text(
+      this.cameras.main.centerX,
+      100,
+      "Trouvez le bon ordre des leviers",
+      {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+    
+    // Fixer le texte à la caméra pour qu'il reste visible
+    messageInstruction.setScrollFactor(0);
+    messageInstruction.setDepth(1000);
+    
+    // Faire disparaître le message après 4 secondes
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: messageInstruction,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          messageInstruction.destroy();
+        }
+      });
+    });
   }
 
   animatePics() {
@@ -690,9 +710,9 @@ export default class niveau2 extends Phaser.Scene {
     }
 
     // ===========================
-    // Gestion du menu pause (touche F)
+    // Gestion du menu pause (touche F ou M)
     // ===========================
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.F)) {
+    if (Phaser.Input.Keyboard.JustDown(this.clavier.F) || Phaser.Input.Keyboard.JustDown(this.clavier.M)) {
       this.scene.launch("PauseScene", { from: this.scene.key });
       this.scene.pause();
     }
@@ -737,33 +757,17 @@ export default class niveau2 extends Phaser.Scene {
     }
 
     // ===========================
-    // Synchroniser le glow avec le joueur
+    // Mettre à jour la position de la lumière et du filtre noir
     // ===========================
-    if (this.playerGlow) {
-      this.playerGlow.x = this.player.x;
-      this.playerGlow.y = this.player.y;
-      this.playerGlow.flipX = this.player.flipX;
-      if (this.player.anims && this.player.anims.currentAnim) {
-        const key = this.player.anims.currentAnim.key;
-        if (
-          !this.playerGlow.anims.currentAnim ||
-          this.playerGlow.anims.currentAnim.key !== key
-        ) {
-          this.playerGlow.anims.play(key, true);
-        }
-      } else {
-        // si pas d'anim, forcer le frame courant
-        if (this.player.frame)
-          this.playerGlow.setFrame(
-            this.player.frame.name || this.player.frame.index
-          );
-      }
-    }
-
-    // Mettre à jour la position de la lumière
     if (this.playerLight) {
       this.playerLight.x = this.player.x;
-      this.playerLight.y = this.player.y - 6; // Offset Y
+      this.playerLight.y = this.player.y;
+    }
+    
+    // Mettre à jour la position du filtre noir
+    if (this.filtrenoir) {
+      this.filtrenoir.x = this.player.x;
+      this.filtrenoir.y = this.player.y;
     }
 
     // Appliquer Light2D sur les bullets (existantes et futures)

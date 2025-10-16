@@ -32,19 +32,19 @@ export default class PauseManager extends Phaser.Scene {
     });
 
     // Créer les touches R et Q pour pouvoir les vérifier dans update()
-    this.keyR = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-    this.keyQ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    this.keyI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    this.keyM = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
   }
 
   update() {
-    // Touche R → Reprendre le jeu
-    if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
+    // Touche I → Reprendre le jeu
+    if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
       this.scene.stop(); // ferme la scène Pause
       this.scene.resume(this.currentLevel); // reprend le niveau courant
     }
 
-    // Touche Q → Quitter vers menu principal
-    if (Phaser.Input.Keyboard.JustDown(this.keyQ)) {
+    // Touche A → Quitter vers menu principal
+    if (Phaser.Input.Keyboard.JustDown(this.keyA)) {
       this.scene.stop();
       this.scene.stop(this.currentLevel); // stoppe aussi le niveau en pause
       this.scene.start("menu"); // ou "selection" si c'est ton hub

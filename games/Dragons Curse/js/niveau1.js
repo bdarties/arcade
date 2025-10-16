@@ -9,6 +9,7 @@ export default class niveau1 extends Phaser.Scene {
 
   preload() {
     this.load.tilemapTiledJSON("arena1", "./assets/maps/arene1.json");
+    this.load.image("filtre", "./assets/black.png");
   }
 
   create() {
@@ -89,41 +90,25 @@ export default class niveau1 extends Phaser.Scene {
 
     // ==========================
     //
-    // Configuration de la lumière
+    // Configuration de la lumière et du filtre
     //
     // ==========================
-    // Configurer la lumière autour du joueur
-    this.playerLight = fct.setupPlayerLight(this, this.player, {
-      radius: 160,
-      color: 0xf1faff,
-      intensity: 0.9,
-      ambientColor: 0x404040,
-      tileLayers: [
-        this.calque_sol,
-        this.calque_mur,
-        this.calque_fenetres,
-        this.calques_objets,
-        this.calque_trap,
-        this.calque_mur_haut,
-      ],
-      groups: ["groupeBullets"],
-      offsetY: -6,
-    });
-
-    // Créer un sprite de glow qui suit le joueur
-    this.playerGlow = this.add.sprite(
-      this.player.x,
-      this.player.y,
-      this.player.texture.key
-    );
-    this.playerGlow.setScale(this.player.scaleX, this.player.scaleY);
-    this.playerGlow.setAlpha(0.6);
     
-    if (this.playerGlow.setPipeline) {
-      this.playerGlow.setPipeline("Light2D");
-    }
+    // Activer le système de lumières
+    this.lights.enable().setAmbientColor(0x555555);
     
-    this.playerGlow.setDepth(this.player.depth - 1);
+    // Créer une lumière qui suit le joueur
+    this.playerLight = this.lights.addLight(0, 0, 180).setColor(0xffffff).setIntensity(1);
+    
+    // Appliquer Light2D au joueur
+    this.player.setPipeline('Light2D');
+    
+    // Créer le filtre noir avec opacité réduite qui suit le joueur
+    this.filtrenoir = this.add
+      .image(this.player.x, this.player.y, "filtre")
+      .setScale(4)
+      .setAlpha(0.85)
+      .setDepth(100);
 
     // --- Collision bullets avec les murs
     this.physics.add.collider(this.groupeBullets, this.calque_mur, (bullet) => {
@@ -193,6 +178,27 @@ export default class niveau1 extends Phaser.Scene {
         });
       }
     }
+
+    // Appliquer Light2D aux flèches ennemies
+    this.groupeFlechesEnnemis.on('add', (group, child) => {
+      if (child && child.setPipeline) {
+        child.setPipeline('Light2D');
+      }
+    });
+
+    // Appliquer Light2D aux bullets du joueur
+    this.groupeBullets.on('add', (group, child) => {
+      if (child && child.setPipeline) {
+        child.setPipeline('Light2D');
+      }
+    });
+
+    // Appliquer Light2D aux potions
+    this.groupePotions.on('add', (group, child) => {
+      if (child && child.setPipeline) {
+        child.setPipeline('Light2D');
+      }
+    });
 
     this.damageSound = this.sound.add("damageSound");
     this.damageSound.setVolume(0.5);
@@ -273,6 +279,7 @@ export default class niveau1 extends Phaser.Scene {
     this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.clavier.M = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
 
     // --- Animations du joueur (seulement si elles n'existent pas)
     if (!this.anims.exists("mage_idle")) {
@@ -310,56 +317,82 @@ export default class niveau1 extends Phaser.Scene {
 
     // Enregistrer cette scène comme la scène de jeu active
     this.registry.set('currentGameScene', this.scene.key);
+
+    // Afficher le message d'instruction au début du niveau
+    this.afficherMessageInstruction();
+  }
+
+  afficherMessageInstruction() {
+    const messageInstruction = this.add.text(
+      this.cameras.main.centerX,
+      100,
+      "Tuez tous les ennemis !",
+      {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+
+    messageInstruction.setScrollFactor(0);
+    messageInstruction.setDepth(1000);
+    
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: messageInstruction,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          messageInstruction.destroy();
+        }
+      });
+    });
   }
 
   animatePics() {
-    // Les animations des pièges sont déjà définies dans Tiled et gérées automatiquement par Phaser
-    // Cette fonction pourrait être utilisée pour des animations personnalisées si nécessaire
+    // Vérifier que le calque existe
+    if (!this.calque_trap) {
+      console.warn("calque_trap non trouvé, animation des pièges ignorée");
+      return;
+    }
     
-    // Pour activer l'animation automatique des tiles, Phaser le fait par défaut
-    // Si besoin d'animation manuelle, décommenter le code ci-dessous :
-    
-    /*
     const frameCount = 14;
     const frameDuration = 100;
-    const firstGid = 1; // Premier GID du tileset piege
+    const firstGid = 1;
     
     let currentFrame = 0;
     this.picsToAnimate = [];
     
-    if (this.pics) {
-      this.pics.forEachTile(tile => {
-        if (tile && tile.properties.estPiege) {
-          this.picsToAnimate.push({ x: tile.x, y: tile.y });
-        }
-      });
+    this.calque_trap.forEachTile(tile => {
+      if (tile.index >= firstGid && tile.index < firstGid + frameCount) {
+        this.picsToAnimate.push({ x: tile.x, y: tile.y });
+      }
+    });
 
-      this.time.addEvent({
-        delay: frameDuration,
-        callback: () => {
-          currentFrame = (currentFrame + 1) % frameCount;
-          this.picsToAnimate.forEach(pos => {
-            const tile = this.pics.getTileAt(pos.x, pos.y);
-            if (tile) {
-              tile.index = firstGid + currentFrame;
-            }
-          });
-        },
-        loop: true
-      });
-    }
-    */
+    this.time.addEvent({
+      delay: frameDuration,
+      callback: () => {
+        currentFrame = (currentFrame + 1) % frameCount;
+        this.picsToAnimate.forEach(pos => {
+          const tile = this.calque_trap.getTileAt(pos.x, pos.y);
+          if (tile) {
+            tile.index = firstGid + currentFrame;
+          }
+        });
+      },
+      loop: true
+    });
   }
 
   verifierContactPorte() {
-    // Calculer la position du joueur en tuiles
     const tileX = this.calque_mur.worldToTileX(this.player.x);
     const tileY = this.calque_mur.worldToTileY(this.player.y);
     
-    // Réinitialiser l'état du contact avec la porte
     this.surPorte = false;
     
-    // Vérifier les tuiles autour du joueur (car le joueur peut chevaucher plusieurs tuiles)
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         const tile = this.calque_mur.getTileAt(tileX + dx, tileY + dy);
@@ -367,10 +400,8 @@ export default class niveau1 extends Phaser.Scene {
         if (tile && tile.properties && tile.properties.estPorte === true) {
           this.surPorte = true;
           
-          // Vérifier si tous les ennemis sont éliminés
           const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;
           
-          // Afficher un message d'indication
           if (!this.messageCooldown || this.time.now > this.messageCooldown) {
             if (ennemisRestants === 0) {
               this.porteDeverrouillee = true;
@@ -387,12 +418,74 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   utiliserPorte() {
-    // Vérifier si le joueur est sur une porte et si elle est déverrouillée
-    if (this.surPorte && this.porteDeverrouillee) {
-      this.scene.start("niveau2");
-    } else if (this.surPorte && !this.porteDeverrouillee) {
-      const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;
+    if (this.surPorte) {
+      if (this.porteDeverrouillee) {
+        console.log("🚪 Passage au niveau suivant...");
+        this.scene.start("niveau2");
+      } else {
+        const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;
+        console.log(`🔒 La porte est verrouillée ! Éliminez tous les ennemis. (${ennemisRestants} restant(s))`);
+        this.afficherMessagePorteVerrouillee();
+      }
     }
+  }
+
+  afficherMessagePorteVerrouillee() {
+    if (this.messagePorteActive) {
+      return;
+    }
+    
+    this.messagePorteActive = true;
+    
+    const messagePorte = this.add.text(
+      this.player.x,
+      this.player.y - 60,
+      "🔒 Porte verrouillée !",
+      {
+        fontSize: '20px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        padding: { x: 15, y: 8 },
+        align: 'center'
+      }
+    ).setOrigin(0.5);
+    
+    // Définir la profondeur pour qu'il soit visible au-dessus de tout
+    messagePorte.setDepth(1000);
+    
+    // Effet d'apparition : scale + bounce
+    messagePorte.setScale(0);
+    this.tweens.add({
+      targets: messagePorte,
+      scale: 1,
+      duration: 300,
+      ease: 'Back.easeOut'
+    });
+    
+    // Légère animation de flottement
+    this.tweens.add({
+      targets: messagePorte,
+      y: messagePorte.y - 10,
+      duration: 800,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    // Faire disparaître le message après 2 secondes avec fondu
+    this.time.delayedCall(2000, () => {
+      this.tweens.add({
+        targets: messagePorte,
+        alpha: 0,
+        y: messagePorte.y - 20,
+        duration: 500,
+        ease: 'Power2.easeIn',
+        onComplete: () => {
+          messagePorte.destroy();
+          this.messagePorteActive = false;
+        }
+      });
+    });
   }
 
   update() {
@@ -445,9 +538,9 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     // ===========================
-    // Gestion du menu pause (touche F)
+    // Gestion du menu pause (touche F ou M)
     // ===========================
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.F)) {
+    if (Phaser.Input.Keyboard.JustDown(this.clavier.F) || Phaser.Input.Keyboard.JustDown(this.clavier.M)) {
       this.scene.launch("PauseScene", { from: this.scene.key });
       this.scene.pause();
     }
@@ -485,33 +578,17 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     // ===========================
-    // Synchroniser le glow avec le joueur
+    // Mettre à jour la position de la lumière et du filtre noir
     // ===========================
-    if (this.playerGlow) {
-      this.playerGlow.x = this.player.x;
-      this.playerGlow.y = this.player.y;
-      this.playerGlow.flipX = this.player.flipX;
-      if (this.player.anims && this.player.anims.currentAnim) {
-        const key = this.player.anims.currentAnim.key;
-        if (
-          !this.playerGlow.anims.currentAnim ||
-          this.playerGlow.anims.currentAnim.key !== key
-        ) {
-          this.playerGlow.anims.play(key, true);
-        }
-      } else {
-        // si pas d'anim, forcer le frame courant
-        if (this.player.frame)
-          this.playerGlow.setFrame(
-            this.player.frame.name || this.player.frame.index
-          );
-      }
-    }
-
-    // Mettre à jour la position de la lumière
     if (this.playerLight) {
       this.playerLight.x = this.player.x;
-      this.playerLight.y = this.player.y - 6; // Offset Y
+      this.playerLight.y = this.player.y;
+    }
+    
+    // Mettre à jour la position du filtre noir
+    if (this.filtrenoir) {
+      this.filtrenoir.x = this.player.x;
+      this.filtrenoir.y = this.player.y;
     }
 
     // Appliquer Light2D sur les flèches ennemies (existantes et futures)
