@@ -54,7 +54,9 @@ preload() {
     this.load.spritesheet("ennemi10_walk", "./assets/niveau3/ennemi_10_walk.png", { frameWidth: 228, frameHeight: 84 });
     this.load.spritesheet("ennemi10_attack", "./assets/niveau3/ennemi_10_attack.png", { frameWidth: 256, frameHeight: 89 });
     this.load.spritesheet("ennemi10_dead", "./assets/niveau3/ennemi_10_dead.png", { frameWidth: 216, frameHeight: 80 });
-    this.load.spritesheet("ennemi10_stand", "./assets/niveau3/ennemi_10_stand.png", { frameWidth: 256, frameHeight: 89 });
+    
+    // CORRECTION : Utilisation des bonnes dimensions pour le spritesheet.
+    this.load.spritesheet("ennemi10_stand", "./assets/niveau3/ennemi_10_stand.png", { frameWidth: 212, frameHeight: 89 });
 
     // Flèche
     this.load.image("fireball", "./assets/niveau3/fireball.png");
@@ -106,7 +108,7 @@ create() {
     this.backgroundSky = this.add.image(0, 0, "sky_2")
         .setOrigin(0, 0)
         .setScrollFactor(0)
-        .setDisplaySize(this.scale.width, this.scale.height) // <-- adapte à la taille de l'écran
+        .setDisplaySize(this.scale.width, this.scale.height)
         .setDepth(-3);
 
     const map = this.make.tilemap({ key: "map_dungeon" });
@@ -245,6 +247,7 @@ create() {
                 enemy.setScale(1.8);
                 enemy.maxHealth = 15;
                 enemy.health = 15;
+                enemy.canAttack = true; // Ajout de la variable pour le cooldown
 
                 const barBg = this.add.rectangle(enemy.x, enemy.y - enemy.height * enemy.scaleY, 100, 12, 0x222222).setDepth(10);
                 const barFg = this.add.rectangle(enemy.x, enemy.y - enemy.height * enemy.scaleY, 96, 8, 0xff0000).setDepth(11);
@@ -259,6 +262,10 @@ create() {
                 enemy.lastDir = -1;
                 enemy.anims.play(`ennemi${enemy.type}_walk`, true);
                 this.physics.add.collider(enemy, platformLayer);
+                
+                if (enemy.type === 10) {
+                    enemy.on('animationcomplete', this.bossAnimationComplete, this);
+                }
 
                 if (enemy.type === 9) {
                     this.time.addEvent({
@@ -310,7 +317,8 @@ create() {
     this.anims.create({ key: "ennemi10_walk", frames: this.anims.generateFrameNumbers("ennemi10_walk", { start: 12, end: 23 }), frameRate: 8, repeat: -1 });
     this.anims.create({ key: "ennemi10_attack", frames: this.anims.generateFrameNumbers("ennemi10_attack", { start: 10, end: 19 }), frameRate: 10, repeat: 0 });
     this.anims.create({ key: "ennemi10_dead", frames: this.anims.generateFrameNumbers("ennemi10_dead", { start: 3, end: 5 }), frameRate: 8, repeat: 0 });
-    this.anims.create({ key: "ennemi10_stand", frames: this.anims.generateFrameNumbers("ennemi10_stand", { start: 7, end: 13 }), frameRate: 8, repeat: 0 });
+    
+    this.anims.create({ key: "ennemi10_stand", frames: this.anims.generateFrameNumbers("ennemi10_stand", { start: 0, end: 6 }), frameRate: 8, repeat: -1 });
 
     clavier = this.input.keyboard.createCursorKeys();
     this.keyAttack = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
@@ -321,6 +329,35 @@ create() {
     this.lifeBarGroup = this.add.group();
     this.updateHeartsDisplay();
 }
+
+
+bossAnimationComplete(animation, frame, boss) {
+    if (!boss.isAlive || !boss.active) {
+        return;
+    }
+
+    if (animation.key === 'ennemi10_attack') {
+        boss.isAttacking = false;
+
+        // Vérification plus robuste pour voir si l'animation 'stand' est valide
+        const standAnim = this.anims.get('ennemi10_stand');
+        if (standAnim && standAnim.frames.length > 0) {
+            boss.anims.play('ennemi10_stand', true);
+        } else {
+            console.warn('Animation "ennemi10_stand" non trouvée ou invalide. Remplacement par "ennemi10_walk".');
+            boss.anims.play('ennemi10_walk', true);
+            boss.setVelocityX(boss.flipX ? 50 : -50);
+        }
+
+        // Ajout d'un temps de recharge avant la prochaine attaque
+        this.time.delayedCall(1500, () => {
+            if (boss.active) {
+                boss.canAttack = true;
+            }
+        });
+    }
+}
+
 
 updateHeartsDisplay() {
     this.heartsGroup.clear(true, true);
@@ -522,9 +559,7 @@ playerAttackEnemy(enemy) {
                             }
                             this.add.image(camera.centerX, camera.centerY, "bravo").setScrollFactor(0).setDepth(9999).setOrigin(0.5).setDisplaySize(camera.width, camera.height);
                             
-                            // 1. On crée le son et on le stocke
                             this.victoryMusic = this.sound.add("victory", { volume: 0.5 });
-                            // 2. On le joue
                             this.victoryMusic.play();
 
                             camera.fadeIn(1000, 0, 0, 0);
@@ -676,14 +711,20 @@ update() {
     });
 
     this.enemies.children.iterate(e => {
-        if (!e || !e.isAlive || e.isAttacking) return;
+        if (!e || !e.body || !e.isAlive) return;
 
         if (e.type === 10) {
+            if (e.isAttacking) {
+                return; 
+            }
+
             const detectionRangeX = 350;
             const detectionRangeY = 100;
 
-            if (Math.abs(player.x - e.x) < detectionRangeX && Math.abs(player.y - e.y) < detectionRangeY) {
+            // On vérifie si le boss peut attaquer et si le joueur est à portée
+            if (e.canAttack && Math.abs(player.x - e.x) < detectionRangeX && Math.abs(player.y - e.y) < detectionRangeY) {
                 e.isAttacking = true;
+                e.canAttack = false; // Le boss ne peut plus attaquer immédiatement
                 e.setVelocityX(0);
                 e.setFlipX(player.x < e.x);
 
@@ -691,26 +732,17 @@ update() {
                 this.sonBreathing.play();
 
                 this.time.delayedCall(600, () => {
-                    if (!e.isAlive || !e.isAttacking || !player || player.isInvulnerable) return;
+                    if (!e.isAlive || !player || player.isInvulnerable) return;
                     const isPlayerOnLeft = player.x < e.x;
                     if (Math.abs(player.x - e.x) < 200 && isPlayerOnLeft === e.flipX) {
                         this.hitPlayer();
                     }
                 });
-
-                e.once('animationcomplete', () => {
-                    if (e.isAlive) {
-                        e.anims.play('ennemi10_stand', true).once('animationcomplete', () => {
-                            if (e.isAlive) {
-                                e.setVelocityX(e.lastDir * 50);
-                                e.isAttacking = false;
-                            }
-                        });
-                    }
-                });
                 return;
             }
         }
+        
+        if (e.isAttacking) return;
 
         if (e.body.blocked.left) {
             e.setVelocityX(50);
@@ -729,8 +761,8 @@ update() {
 
         e.setFlipX(e.body.velocity.x < 0);
         const walkAnimKey = `ennemi${e.type}_walk`;
-        if (!e.anims.isPlaying || e.anims.currentAnim.key !== walkAnimKey) {
-            e.anims.play(walkAnimKey, true);
+        if (e.anims.currentAnim?.key !== walkAnimKey) {
+             e.anims.play(walkAnimKey, true);
         }
     });
 }

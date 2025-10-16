@@ -19,7 +19,7 @@ export default class niveau2 extends Phaser.Scene {
   this.load.audio('jump', './assets/jump.mp3');
   this.load.audio('epee', './assets/sword.mp3');
    this.load.audio("loose_song", "./assets/loose_song.mp3");
-   this.load.audio("win_song", "./assets/win_song.mp3")
+   this.load.audio("vic_song", "./assets/win_song.mp3")
   this.load.spritesheet("player", "./assets/niveau2/chevalier.png", {
     frameWidth: 43,
     frameHeight: 53
@@ -150,7 +150,7 @@ if (objLayer && objLayer.objects && objLayer.objects.length) {
                     enemy.speed = 100;
                     enemy.direction = 1;
                     enemy.isAlive = true;
-                    enemy.health = 2;
+                    enemy.health = 3;
                     enemy.setVelocityX(enemy.speed);
                 } else if (obj.name === "enemy_5") {
                     enemy = this.enemies.create(obj.x, obj.y, "enemy_5");
@@ -355,6 +355,14 @@ this.son_epee= this.sound.add('epee');
 //Compteur vie 
         this.livesIcons = this.add.group();
         this.updateLivesDisplay();
+
+
+timeLeft = 180;
+// Timer en haut au centre
+        this.timeText = this.add.text(screenCenterX, 20, `Temps: ${timeLeft}s`, textStyle)
+            .setScrollFactor(0).setDepth(100).setOrigin(0.5, 0); // setOrigin(0.5, 0) pour centrer horizontalement
+            
+        this.time.addEvent({ delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true });
 }
 
 
@@ -478,7 +486,7 @@ if (!tileBelowLeft) {
   // COMPORTEMENT SPÉCIFIQUE ENEMY_5 : Attaque quand le joueur s'approche
   if (e.type === 5) {
     const distanceToPlayer = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
-    
+
     if (distanceToPlayer < e.detectionRange && !e.isAttacking) {
       // Lance l'attaque
       e.isAttacking = true;
@@ -555,6 +563,19 @@ updateLivesDisplay(livesIcons, playerLives) {
       this.livesIcons.add(heart); // Ajoute l'image au groupe
     }
   }
+
+
+updateTimer() {
+    if (this.timeLeft > 0) {
+        this.timeLeft--;
+        this.timeText.setText(`Temps: ${this.timeLeft}s`);
+        
+        if (this.timeLeft === 0) {
+            this.physics.pause();
+            gameOver.call(this);
+        }
+    }
+}
 }
 
 
@@ -590,23 +611,29 @@ if (!potion) return;
         } 
 }
 
-function hitPlayer(scene){
-  if (!this.player.isInvulnerable || !this.player.hasProtection){
-        this.playerLives--;
-        this.updateLivesDisplay();
+function hitPlayer(player, enemy){
+  // Vérifie que l'ennemi est vivant
+  if (!enemy || !enemy.isAlive) return;
+  
+  // Vérifie que l'ennemi n'a pas été récemment attaqué
+  if (enemy.justHit) return;
+  if (this.player.hasProtection || this.player.isInvulnerable) return;
 
-        this.player.isInvulnerable = true;
-        this.player.setTint(0xff0000);// Teinte rouge
+  // Réduit les vies du joueur
+  this.playerLives--;
+  this.updateLivesDisplay();
 
-        this.time.delayedCall(1000, () => {
-            this.player.isInvulnerable = false;
-            this.player.clearTint();
-        });
-  } else {
-    return;
-  }
+  // Active l'invulnérabilité temporaire du joueur
+  this.player.isInvulnerable = true;
+  this.player.setTint(0xff0000); // Teinte rouge
 
+  // Désactive l'invulnérabilité après 1 seconde
+  this.time.delayedCall(1000, () => {
+    this.player.isInvulnerable = false;
+    this.player.clearTint();
+  });
 
+  // Vérifie si le joueur a perdu toutes ses vies
   if (this.playerLives <= 0) {
     this.playerLives = 0;
     this.updateLivesDisplay();
@@ -636,7 +663,7 @@ function killPlayer(player, kill){
 function attackEnemy(hitbox, enemy) {
   /// Vérifie si le joueur est en train d'attaquer
   if (!this.attacking || !this.playerAttackHitbox.active) return;
-  // Vérifie si l'ennemi est vivant et n'a pas déjà été touché pendant cette attaque
+  // Vérifie si l'ennemi est vivant ou déjà été touché 
   if (!enemy.isAlive || enemy.justHit) return;
 
   // Marque l'ennemi comme touché pendant cette attaque
@@ -648,9 +675,12 @@ function attackEnemy(hitbox, enemy) {
   // Effet visuel : teinte rouge
   enemy.setTint(0xff0000);
   this.time.delayedCall(100, () => {
-    if (enemy.active) enemy.clearTint();
+     if (enemy && enemy.active){
+      enemy.clearTint();
+      enemy.justHit = false;
+     } 
   });
-  
+    
   // Si l'ennemi n'a plus de vie
   if (enemy.health <= 0) {
     enemy.isAlive = false;
@@ -674,10 +704,6 @@ function attackEnemy(hitbox, enemy) {
     });
   }
   
-  // Réinitialise le marqueur après un court délai
-  this.time.delayedCall(100, () => {
-    if (enemy && enemy.active) enemy.justHit = false;
-  });
 }
 
 function checkEnemies() {
@@ -710,7 +736,7 @@ function gameOver() {
 
 function Victory () {
       this.music.stop();
-      this.sound.play("win_song", { volume: 0.5 });
+      this.sound.play("vic_song", { volume: 0.5 });
     this.player.setVelocityX(0);
     const imageVictoire = this.add.image(this.cameras.main.width/2, this.cameras.main.height/2,"victory");
     imageVictoire.setScrollFactor(0);
