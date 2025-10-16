@@ -12,6 +12,7 @@ import salleporte from "./js/salleporte.js";
 import gameover from "./js/gameover.js";
 import credits from "./js/credits.js";
 import controls from "./js/controls.js";
+import victory from "./js/victory.js";
 
 // configuration générale du jeu
 const config = {
@@ -39,7 +40,7 @@ const config = {
     }
   },
 
-  scene: [hud, menu, credits, controls, intro, gameover, selection, salleporte, niveau1, niveau2, niveau3, niveau4, PauseManager],
+  scene: [hud, menu, credits, controls, intro, gameover, selection, salleporte, niveau1, niveau2, niveau3, niveau4, PauseManager, victory],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, ''),
 
   pixelArt: true,

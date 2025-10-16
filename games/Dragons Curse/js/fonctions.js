@@ -283,76 +283,6 @@ export function estPorte(scene, joueur, calquePorte) {
 }
 
 //==========================
-// Système de lumière pour le joueur
-//==========================
-
-export function setupPlayerLight(scene, player, options = {}) {
-  // Activer le système de lumières
-  if (scene.lights && scene.lights.enable) {
-    scene.lights.enable();
-    
-    // Couleur ambiante (éclairage de base de toute la scène)
-    const ambientColor = options.ambientColor || 0x404040;
-    scene.lights.setAmbientColor(ambientColor);
-  }
-
-  // Appliquer le pipeline Light2D au joueur
-  if (player.setPipeline) {
-    player.setPipeline('Light2D');
-  }
-
-  // Créer une lumière qui suit le joueur
-  let playerLight = null;
-  if (scene.lights && scene.lights.addLight) {
-    const radius = options.radius || 160;
-    const color = options.color || 0xffffff;
-    const intensity = options.intensity || 1;
-    const offsetY = options.offsetY || 0;
-    
-    playerLight = scene.lights.addLight(
-      player.x, 
-      player.y + offsetY, 
-      radius, 
-      color, 
-      intensity
-    );
-    
-    // Mettre à jour la position de la lumière dans le update
-    scene.events.on('update', () => {
-      if (playerLight && player) {
-        playerLight.x = player.x;
-        playerLight.y = player.y + offsetY;
-      }
-    });
-  }
-
-  // Appliquer Light2D aux calques de la map si spécifiés
-  if (options.tileLayers) {
-    options.tileLayers.forEach(layer => {
-      if (layer && layer.setPipeline) {
-        layer.setPipeline('Light2D');
-      }
-    });
-  }
-
-  // Appliquer Light2D aux groupes d'objets si spécifiés
-  if (options.groups) {
-    options.groups.forEach(groupName => {
-      const group = scene[groupName];
-      if (group && group.getChildren) {
-        group.getChildren().forEach(child => {
-          if (child && child.setPipeline) {
-            child.setPipeline('Light2D');
-          }
-        });
-      }
-    });
-  }
-
-  return playerLight;
-}
-
-//==========================
 // Système de tir
 //==========================
 
@@ -547,6 +477,12 @@ export function tirer(scene, joueur, direction) {
 }
 
 export function lancerAttaque(scene) {
+  // Vérifier si le tir est bloqué par une attaque de dragon
+  if (scene.canShoot === false) {
+    console.log("❌ Impossible de tirer ! (Bloqué par le dragon)");
+    return;
+  }
+  
   // Vérifier si déjà en train d'attaquer
   if (scene.isAttacking) {
     return;

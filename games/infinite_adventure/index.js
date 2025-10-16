@@ -1,5 +1,5 @@
 import { PreloadScene, GameScene, UIScene, GameOverScene } from './js/scenes.js';
-import { MenuScene } from './js/menuscene.js';
+import { MenuScene, StoryScene } from './js/menuscene.js';
 
 class BootScene extends Phaser.Scene {
   constructor() {
@@ -89,13 +89,13 @@ const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 0 },
-      debug: true, 
+      debug: false, 
       fps: 60,
       overlapBias: 4
     }
   },
   
-  scene: [BootScene, MenuScene, PreloadScene, GameScene, UIScene, GameOverScene],
+  scene: [BootScene, StoryScene, MenuScene, PreloadScene, GameScene, UIScene, GameOverScene],
   pixelArt: true,
   
   fps: {
