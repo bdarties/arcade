@@ -18,10 +18,6 @@ export default class selection extends Phaser.Scene {
     this.load.image("tileset1", "./assets/maps/tiles/tileset1.png");
     this.load.image("tileset2", "./assets/maps/tiles/tileset2.png");
     this.load.tilemapTiledJSON("salle_cles", "./assets/maps/salle_cles.json");
-    this.load.spritesheet("pics", "./assets/maps/tiles/pics.png", {
-      frameWidth: 32,
-      frameHeight: 32,
-    });
     this.load.spritesheet("mage1", "./assets/mage1.png", {
       frameWidth: 64,
       frameHeight: 64,
@@ -48,7 +44,7 @@ export default class selection extends Phaser.Scene {
     });
     this.load.audio("damageSound", "./assets/sounds/givedamage.mp3");
 
-    this.load.image("potion", "./assets/items/potion.png");
+    this.load.image("potion", "./assets/hud/items/potion.png");
   }
 
   create() {
@@ -81,39 +77,7 @@ export default class selection extends Phaser.Scene {
     // Groupe pour les potions au sol
     this.groupePotions = this.physics.add.group();
 
-    // ===========================
-    // Création du groupe de piques
-    // ===========================
-    this.groupePiques = this.physics.add.staticGroup();
-    
-    // Ajouter des piques à des positions personnalisées
-    const positionsPiques = [
-      { x: 500, y: 400 },
-      { x: 500, y: 370 },
-      { x: 700, y: 450 },
-      { x: 700, y: 420 },
-      { x: 400, y: 500 },
-      { x: 400, y: 550 },
-      { x: 600, y: 250 },
-      { x: 800, y: 270 },
-      { x: 800, y: 300 },
-    ];
-    
-    positionsPiques.forEach(pos => {
-      const pique = this.groupePiques.create(pos.x, pos.y, 'pics', 0);
-      pique.setScale(1); 
-      pique.refreshBody();
-    });
-
     // Créer les animations seulement si elles n'existent pas
-    if (!this.anims.exists("pics_anim")) {
-      this.anims.create({
-        key: "pics_anim",
-        frames: this.anims.generateFrameNumbers("pics", { start: 0, end: 13 }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
     if (!this.anims.exists("fireball_anim")) {
       this.anims.create({
         key: "fireball_anim",
@@ -138,40 +102,45 @@ export default class selection extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.pvManager = new fct.PvManager(this);
 
-    // ==========================
-    // Configuration de la lumière
-    // ==========================
-    
-    // Activer le système de lumières
-    this.lights.enable();
-    this.lights.setAmbientColor(0x404040);
-    
-    // Appliquer Light2D au joueur
-    this.player.setPipeline('Light2D');
-    
-    // Créer une lumière qui suit le joueur
-    this.playerLight = this.lights.addLight(this.player.x, this.player.y, 200, 0xffffff, 1);
-    
-    // Appliquer Light2D aux calques de la map
-    if (this.calque_sol) this.calque_sol.setPipeline('Light2D');
-    if (this.calque_mur) this.calque_mur.setPipeline('Light2D');
-    if (this.calque_fenetres) this.calque_fenetres.setPipeline('Light2D');
-    if (this.calques_objets) this.calques_objets.setPipeline('Light2D');
-    if (this.calques_cles) this.calques_cles.setPipeline('Light2D');
-    if (this.calque_trap) this.calque_trap.setPipeline('Light2D');
-    if (this.calque_mur_haut) this.calque_mur_haut.setPipeline('Light2D');
 
-    // Jouer l'animation des piques
-    this.groupePiques.getChildren().forEach(pique => {
-      pique.anims.play("pics_anim", true);
-      // Appliquer Light2D aux piques
-      if (pique.setPipeline) {
-        pique.setPipeline('Light2D');
-      }
+    // ==========================
+    //
+    // Configuration de la lumière
+    //
+    // ==========================
+    // Configurer la lumière autour du joueur
+    this.playerLight = fct.setupPlayerLight(this, this.player, {
+      radius: 160,
+      color: 0xf1faff,
+      intensity: 0.9,
+      ambientColor: 0x404040,
+      tileLayers: [
+        this.calque_sol,
+        this.calque_mur,
+        this.calque_fenetres,
+        this.calques_objets,
+        this.calques_cles,
+        this.calque_trap,
+        this.calque_mur_haut,
+      ],
+      groups: ["groupeEnnemis", "groupeBullets", "groupeFlechesEnnemis"],
+      offsetY: -6,
     });
 
-    // Ajouter collision avec les piques
-    this.physics.add.overlap(this.player, this.groupePiques, this.toucherPiqueSprite, null, this);
+    // Créer un sprite de glow qui suit le joueur
+    this.playerGlow = this.add.sprite(
+      this.player.x,
+      this.player.y,
+      this.player.texture.key
+    );
+    this.playerGlow.setScale(this.player.scaleX, this.player.scaleY);
+    this.playerGlow.setAlpha(0.6);
+    
+    if (this.playerGlow.setPipeline) {
+      this.playerGlow.setPipeline("Light2D");
+    }
+    
+    this.playerGlow.setDepth(this.player.depth - 1);
 
     // ==========================
     //
@@ -290,13 +259,6 @@ export default class selection extends Phaser.Scene {
       this
     );
 
-    // Appliquer Light2D aux ennemis
-    this.groupeEnnemis.getChildren().forEach((ennemi) => {
-      if (ennemi.setPipeline) {
-        ennemi.setPipeline('Light2D');
-      }
-    });
-
     this.groupeFlechesEnnemis = this.physics.add.group();
     this.physics.add.collider(
       this.groupeFlechesEnnemis,
@@ -313,19 +275,21 @@ export default class selection extends Phaser.Scene {
       this
     );
 
-    // Appliquer Light2D aux flèches ennemies
-    this.groupeFlechesEnnemis.on('add', (group, child) => {
-      if (child.setPipeline) {
-        child.setPipeline('Light2D');
+    if (this.groupeEnnemis && this.groupeEnnemis.getChildren) {
+      this.groupeEnnemis.getChildren().forEach((child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      
+      if (this.groupeEnnemis.on) {
+        this.groupeEnnemis.on("add", (group, child) => {
+          if (child && child.setPipeline) {
+            child.setPipeline("Light2D");
+          }
+        });
       }
-    });
-
-    // Appliquer Light2D aux bullets du joueur
-    this.groupeBullets.on('add', (group, child) => {
-      if (child.setPipeline) {
-        child.setPipeline('Light2D');
-      }
-    });
+    }
 
     this.damageSound = this.sound.add("damageSound");
     this.damageSound.setVolume(0.5);
@@ -336,6 +300,32 @@ export default class selection extends Phaser.Scene {
     }
 
     this.animatePics();
+
+    // ==========================
+    // OPTIMISATION: Configurer les listeners Light2D une seule fois
+    // ==========================
+    this.setupLight2DListeners();
+  }
+
+  setupLight2DListeners() {
+    // Configurer les listeners pour appliquer Light2D aux nouveaux objets
+    if (this.groupeFlechesEnnemis && this.groupeFlechesEnnemis.on && !this.flechesListenerSet) {
+      this.groupeFlechesEnnemis.on("add", (group, child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      this.flechesListenerSet = true;
+    }
+
+    if (this.groupeBullets && this.groupeBullets.on && !this.bulletsListenerSet) {
+      this.groupeBullets.on("add", (group, child) => {
+        if (child && child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+      this.bulletsListenerSet = true;
+    }
   }
 
 
@@ -389,7 +379,7 @@ export default class selection extends Phaser.Scene {
 
   utiliserPorte() {
     if (this.surPorte && this.porteDeverrouillee) {
-      this.scene.start("niveau4");
+      this.scene.start("niveau3");
     } else if (this.surPorte && !this.porteDeverrouillee) {
     }
   }
@@ -407,12 +397,6 @@ export default class selection extends Phaser.Scene {
   }
 
   animatePics() {
-    // Vérifier que le calque existe
-    if (!this.calque_trap) {
-      console.warn("calque_trap non trouvé, animation des pièges ignorée");
-      return;
-    }
-    
     const frameCount = 14;
     const frameDuration = 100;
     const firstGid = 1;
@@ -544,6 +528,32 @@ export default class selection extends Phaser.Scene {
         ennemi.update();
       });
     }
+    //============================
+    //
+    // Mise à jour du glow et de la lumière du joueur (OPTIMISÉ)
+    //
+    //==========================
+
+    if (this.playerGlow) {
+      this.playerGlow.x = this.player.x;
+      this.playerGlow.y = this.player.y;
+      this.playerGlow.flipX = this.player.flipX;
+      
+      // Optimisation: Ne changer l'animation que si elle a changé
+      if (this.player.anims && this.player.anims.currentAnim) {
+        const key = this.player.anims.currentAnim.key;
+        if (!this.playerGlow.anims.currentAnim || this.playerGlow.anims.currentAnim.key !== key) {
+          this.playerGlow.anims.play(key, true);
+        }
+      } else if (this.player.frame) {
+        // Cache le dernier frame pour éviter les setFrame inutiles
+        const frameName = this.player.frame.name || this.player.frame.index;
+        if (this._lastGlowFrame !== frameName) {
+          this.playerGlow.setFrame(frameName);
+          this._lastGlowFrame = frameName;
+        }
+      }
+    }
 
     if (this.playerLight) {
       this.playerLight.x = this.player.x;
@@ -564,26 +574,6 @@ export default class selection extends Phaser.Scene {
     ennemi.prendreDegats(degatsTotal);
     bullet.destroy();
     this.damageSound.play();
-  }
-
-  toucherPiqueSprite(player, pique) {
-    // Vérifier si on peut infliger des dégâts (cooldown)
-    if (!this.isDamagedBySpike || this.time.now > this.spikeDamageCooldown) {
-      this.isDamagedBySpike = true;
-      this.spikeDamageCooldown = this.time.now + 1000; // 1 seconde de cooldown
-      
-      // Infliger des dégâts
-      this.pvManager.damage(1);
-      
-      // Effet visuel
-      this.cameras.main.shake(100, 0.005);
-      player.setTint(0xff0000);
-      this.time.delayedCall(200, () => {
-        player.clearTint();
-      });
-      
-      console.log("Aïe ! Touché par un pique !");
-    }
   }
 
   flecheToucheJoueur(player, fleche) {

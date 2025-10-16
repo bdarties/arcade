@@ -1,5 +1,6 @@
 import PauseManager from "./pause.js";
 import * as fct from "./fonctions.js";
+import Dragon from "./dragon.js";
 
 export default class niveau4 extends Phaser.Scene {
   constructor() {
@@ -9,6 +10,12 @@ export default class niveau4 extends Phaser.Scene {
   preload() {
     // Charger uniquement la map spécifique à ce niveau
     this.load.tilemapTiledJSON("arena4", "./assets/maps/arene4.json");
+    
+    // Charger le spritesheet du dragon
+    this.load.spritesheet("dragon", "./assets/dragon.png", {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
   }
 
   create() {
@@ -61,6 +68,16 @@ export default class niveau4 extends Phaser.Scene {
       repeat: -1
     });
 
+    // Animation du dragon
+    if (!this.anims.exists("dragon_idle")) {
+      this.anims.create({
+        key: "dragon_idle",
+        frames: this.anims.generateFrameNumbers("dragon", { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
+
     // --- Joueur
     this.player = this.physics.add.sprite(220, 250, "mage1");
     this.player.body.setSize(36, 48);
@@ -88,7 +105,7 @@ export default class niveau4 extends Phaser.Scene {
         this.calque_trap,
         this.calque_mur_haut,
       ],
-      groups: ["groupeBullets"],
+      groups: ["groupeBullets", "groupeEnnemis", "groupeFlechesEnnemis"],
       offsetY: -6,
     });
 
@@ -188,6 +205,76 @@ export default class niveau4 extends Phaser.Scene {
     this.clavier.I = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
     this.clavier.F = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.clavier.P = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+
+    // ===========================
+    //
+    // Création des ennemis (Dragons)
+    //
+    // ===========================
+    
+    // Initialiser le flag pour autoriser le tir
+    this.canShoot = true;
+    
+    // Groupe d'ennemis
+    this.groupeEnnemis = this.physics.add.group();
+    
+    // Créer 1 seul dragon au centre de la map
+    const dragon1 = new Dragon(this, 640, 400);
+    
+    this.groupeEnnemis.add(dragon1);
+    
+    // Appliquer Light2D aux dragons
+    this.groupeEnnemis.getChildren().forEach((dragon) => {
+      if (dragon.setPipeline) {
+        dragon.setPipeline('Light2D');
+      }
+    });
+    
+    // Collisions avec les murs
+    this.physics.add.collider(this.groupeEnnemis, this.calque_mur);
+    
+    // Collisions bullets joueur avec dragons
+    this.physics.add.overlap(
+      this.groupeBullets,
+      this.groupeEnnemis,
+      this.balleToucheEnnemi,
+      null,
+      this
+    );
+    
+    // Groupe de projectiles ennemis (flèches/boules de feu)
+    this.groupeFlechesEnnemis = this.physics.add.group();
+    
+    // Collisions projectiles ennemis avec murs
+    this.physics.add.collider(
+      this.groupeFlechesEnnemis,
+      this.calque_mur,
+      (projectile) => {
+        projectile.destroy();
+      }
+    );
+    
+    // Collisions projectiles ennemis avec joueur
+    this.physics.add.overlap(
+      this.groupeFlechesEnnemis,
+      this.player,
+      this.projectileEnnemiToucheJoueur,
+      null,
+      this
+    );
+    
+    // Appliquer Light2D aux projectiles ennemis
+    if (this.groupeFlechesEnnemis.on) {
+      this.groupeFlechesEnnemis.on("add", (group, child) => {
+        if (child.setPipeline) {
+          child.setPipeline("Light2D");
+        }
+      });
+    }
+    
+    // Son de dégâts
+    this.damageSound = this.sound.add("damageSound");
+    this.damageSound.setVolume(0.5);
 
     // --- Animations du joueur
     this.anims.create({
@@ -333,6 +420,17 @@ export default class niveau4 extends Phaser.Scene {
     }
 
     // ===========================
+    // Mise à jour des dragons
+    // ===========================
+    if (this.groupeEnnemis) {
+      this.groupeEnnemis.getChildren().forEach((dragon) => {
+        if (dragon.update) {
+          dragon.update();
+        }
+      });
+    }
+
+    // ===========================
     // Synchroniser le glow avec le joueur
     // ===========================
     if (this.playerGlow) {
@@ -379,6 +477,37 @@ export default class niveau4 extends Phaser.Scene {
           }
         });
       }
+    }
+  }
+
+  balleToucheEnnemi(bullet, dragon) {
+    const degatsBase = 1;
+    
+    let bonusDegats = 0;
+    if (this.skillManager) {
+      bonusDegats = this.skillManager.getDamageBonus();
+    }
+    
+    const degatsTotal = degatsBase + bonusDegats;
+
+    dragon.prendreDegats(degatsTotal);
+    bullet.destroy();
+    this.damageSound.play();
+  }
+
+  projectileEnnemiToucheJoueur(player, projectile) {
+    if (projectile.origine === "ennemi") {
+      console.log("Joueur touché par un projectile de dragon !");
+      
+      const degats = projectile.degats || 1;
+      this.pvManager.damage(degats);
+
+      player.setTint(0xff0000);
+      this.time.delayedCall(200, () => {
+        player.clearTint();
+      });
+
+      projectile.destroy();
     }
   }
 
