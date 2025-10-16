@@ -26,6 +26,7 @@ export class PreloadScene extends Phaser.Scene {
     { type: 'spritesheet', key: 'barre', path: 'assets/barre.png', config: { frameWidth: 64, frameHeight: 16 } },
     { type: 'spritesheet', key: 'levelup', path: 'assets/levelup.png', config: { frameWidth: 48, frameHeight: 64 } },
     { type: 'spritesheet', key: 'icons_8x8', path: 'assets/icons_8x8.png', config: { frameWidth: 8, frameHeight: 8 } },
+    { type: 'spritesheet', key: 'lever', path: 'assets/lever.png', config: { frameWidth: 16, frameHeight: 16 } },
     { type: 'image', key: 'grounds', path: 'assets/grounds.png' },
     { type: 'image', key: 'props', path: 'assets/props.png' },
     { type: 'image', key: 'surground', path: 'assets/surground.png' },
@@ -44,15 +45,33 @@ export class PreloadScene extends Phaser.Scene {
   MINIBOSS_MAP.forEach(mapName => {
     this.load.tilemapTiledJSON(mapName, `assets/map/${mapName}.json`);
   });
+
+  this.load.audio('dungeon_2', 'assets/sound/dungeon_2.mp3');
+  this.load.audio('gameover_sound', 'assets/sound/gameover.mp3');
+  this.load.audio('hurt', 'assets/sound/hurt.mp3');
+  this.load.audio('impact', 'assets/sound/impact.mp3');
+  this.load.audio('sfx_1', 'assets/sound/sfx_1.mp3');
+  this.load.audio('fall', 'assets/sound/fall.mp3');
 }
 
   create() {
-    if (!this.scene.get('LevelUpScene')) {
-      this.scene.add('LevelUpScene', LevelUpScene, false);
-    }
-    this.scene.start('GameScene');
-    this.scene.launch('UIScene');
+  if (!this.scene.get('LevelUpScene')) {
+    this.scene.add('LevelUpScene', LevelUpScene, false);
   }
+  
+  // Démarrer la musique du jeu
+  const gameMusic = this.sound.add('dungeon_2', { 
+    loop: true, 
+    volume: 0.4 
+  });
+  
+  // Stocker la musique dans le registry pour y accéder depuis d'autres scènes
+  this.registry.set('gameMusic', gameMusic);
+  gameMusic.play();
+  
+  this.scene.start('GameScene');
+  this.scene.launch('UIScene');
+}
 }
 
 export class GameOverScene extends Phaser.Scene {
@@ -61,53 +80,59 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = this.cameras.main;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  const { width, height } = this.cameras.main;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-    this.cameras.main.setBackgroundColor('#000000');
+  this.cameras.main.setBackgroundColor('#000000');
 
-    this.add.text(centerX, centerY - 80, 'GAME OVER', {
-      fontSize: '72px',
-      fill: '#ff0000',
+  this.add.text(centerX, centerY - 80, 'GAME OVER', {
+    fontSize: '72px',
+    fill: '#ff0000',
+    fontFamily: 'Arial',
+    fontStyle: 'bold',
+    stroke: '#4a0000',
+    strokeThickness: 8
+  }).setOrigin(0.5);
+
+  const gameScene = this.scene.get('GameScene');
+  if (gameScene?.playerLevel) {
+    this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
+      fontSize: '22px',
+      fill: '#d4d29b',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      stroke: '#4a0000',
-      strokeThickness: 8
-    }).setOrigin(0.5);
-
-    const gameScene = this.scene.get('GameScene');
-    if (gameScene?.playerLevel) {
-      this.add.text(centerX, centerY + 10, `Niveau atteint: ${gameScene.playerLevel}`, {
-        fontSize: '22px',
-        fill: '#d4d29b',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 3
-      }).setOrigin(0.5);
-    }
-
-    this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
-      fontSize: '18px',
-      fill: '#ffffff',
-      fontFamily: 'Arial',
-      stroke: '#8b0000',
+      stroke: '#000000',
       strokeThickness: 3
     }).setOrigin(0.5);
-
-    this.input.keyboard.once('keydown-K', () => {
-      if (gameScene) {
-        gameScene.physics.resume();
-        gameScene.anims.resumeAll();
-      }
-      
-      this.scene.stop('GameOverScene');
-      this.scene.stop('GameScene');
-      this.scene.stop('UIScene');
-      this.scene.start('MenuScene');
-    });
   }
+
+  this.add.text(centerX, centerY + 70, 'Appuyez sur K pour recommencer', {
+    fontSize: '18px',
+    fill: '#ffffff',
+    fontFamily: 'Arial',
+    stroke: '#8b0000',
+    strokeThickness: 3
+  }).setOrigin(0.5);
+
+  this.input.keyboard.once('keydown-K', () => {
+    if (gameScene) {
+      gameScene.physics.resume();
+      gameScene.anims.resumeAll();
+    }
+    
+    // Arrêter la musique du jeu si elle joue encore
+    const gameMusic = this.registry.get('gameMusic');
+    if (gameMusic) {
+      gameMusic.stop();
+    }
+    
+    this.scene.stop('GameOverScene');
+    this.scene.stop('GameScene');
+    this.scene.stop('UIScene');
+    this.scene.start('MenuScene');
+  });
+}
 
   shutdown() {
     this.input.keyboard.removeAllListeners();
@@ -133,12 +158,6 @@ export class UIScene extends Phaser.Scene {
       this.createHealthBar(rightX, 10, 1, true);
       this.createXPBar(rightX, 45, 2, true);
     }
-    
-    this.fpsText = this.add.text(10, 80, 'FPS: 60', {
-      fontSize: '12px',
-      fill: '#ffffff',
-      fontFamily: 'Arial'
-    }).setScrollFactor(0).setDepth(1001);
     
     this.lastHealthPercent = -1;
     this.lastXPPercent = -1;
@@ -227,11 +246,6 @@ export class UIScene extends Phaser.Scene {
         this.player2HUD.forEach(obj => obj.setVisible(false));
       }
     }
-    
-    if (++this.frameCounter >= 60) {
-      this.fpsText.setText(`FPS: ${Math.floor(this.game.loop.actualFps)}`);
-      this.frameCounter = 0;
-    }
   }
 }
 
@@ -297,6 +311,8 @@ export class GameScene extends Phaser.Scene {
       teleportCooldown: 0,
       teleport2Cooldown: 0,
       lastDamageTime: 0,
+      levers: [],
+      leversActivated: false,
       lastPlayer2DamageTime: 0
     });
   }
@@ -392,6 +408,8 @@ export class GameScene extends Phaser.Scene {
     this.lastDamageTime = now;
     this.playerHealth = Math.max(0, this.playerHealth - amount);
     
+    this.sound.play('hurt', { volume: 0.3 });
+
     this.player.setTint(0xff0000);
     this.time.delayedCall(100, () => {
       if (this.player?.active) {
@@ -450,6 +468,16 @@ export class GameScene extends Phaser.Scene {
     if (p1Dead && p2Dead) {
       this.time.delayedCall(1000, () => {
         this.isGameOver = true;
+        
+        // Arrêter la musique du jeu
+        const gameMusic = this.registry.get('gameMusic');
+        if (gameMusic) {
+          gameMusic.stop();
+        }
+        
+        // Jouer le son de game over
+        this.sound.play('gameover_sound', { volume: 0.5 });
+        
         this.tweens.killAll();
         this.physics.pause();
         this.anims.pauseAll();
@@ -494,6 +522,8 @@ export class GameScene extends Phaser.Scene {
     } else {
       if (this.isFalling || this.isDying) return;
       this.isFalling = true;
+
+      this.sound.play('fall', { volume: 0.4 });
       
       this.playerBody?.setVelocity(0, 0).setAcceleration(0, 0);
       this.swordSprite?.setVisible(false);
@@ -549,54 +579,56 @@ export class GameScene extends Phaser.Scene {
   }
 
   levelUp(isPlayer2 = false) {
-    if (isPlayer2) {
-      this.player2Level++;
-    } else {
-      this.playerLevel++;
-    }
-    
-    this.tweens.killAll();
-    this.physics.pause();
-
-    this.player?.anims?.pause();
-    this.player2?.anims?.pause();
-    this.enemies.forEach(e => e.sprite?.anims?.pause());
-
-    const overlay = this.add.rectangle(
-      this.cameras.main.scrollX + this.cameras.main.width / 2,
-      this.cameras.main.scrollY + this.cameras.main.height / 2,
-      this.cameras.main.width,
-      this.cameras.main.height,
-      0x000000,
-      0
-    ).setScrollFactor(0).setDepth(200);
-    
-    this.tweens.add({
-      targets: overlay,
-      alpha: 1,
-      duration: 300,
-      ease: 'Power2',
-      onComplete: () => {
-        this.scene.pause('GameScene');
-        
-        if (!this.scene.get('LevelUpScene')) {
-          this.scene.add('LevelUpScene', LevelUpScene, true);
-        } else {
-          this.scene.launch('LevelUpScene');
-        }
-        
-        this.time.delayedCall(100, () => {
-          this.tweens.add({
-            targets: overlay,
-            alpha: 0,
-            duration: 300,
-            ease: 'Power2',
-            onComplete: () => overlay.destroy()
-          });
-        });
-      }
-    });
+  if (isPlayer2) {
+    this.player2Level++;
+  } else {
+    this.playerLevel++;
   }
+  
+  this.tweens.killAll();
+  this.physics.pause();
+
+  this.player?.anims?.pause();
+  this.player2?.anims?.pause();
+  this.enemies.forEach(e => e.sprite?.anims?.pause());
+
+  const overlay = this.add.rectangle(
+    this.cameras.main.scrollX + this.cameras.main.width / 2,
+    this.cameras.main.scrollY + this.cameras.main.height / 2,
+    this.cameras.main.width,
+    this.cameras.main.height,
+    0x000000,
+    0
+  ).setScrollFactor(0).setDepth(200);
+  
+  this.tweens.add({
+    targets: overlay,
+    alpha: 1,
+    duration: 300,
+    ease: 'Power2',
+    onComplete: () => {
+      this.scene.pause('GameScene');
+      
+      if (!this.scene.get('LevelUpScene')) {
+        // Passer l'info sur quel joueur a level up
+        this.scene.add('LevelUpScene', LevelUpScene, true, { isPlayer2: isPlayer2 });
+      } else {
+        // Passer l'info via launch
+        this.scene.launch('LevelUpScene', { isPlayer2: isPlayer2 });
+      }
+      
+      this.time.delayedCall(100, () => {
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: 300,
+          ease: 'Power2',
+          onComplete: () => overlay.destroy()
+        });
+      });
+    }
+  });
+}
 
   cleanupRoom() {
     this.tweens.killAll();
@@ -644,6 +676,15 @@ export class GameScene extends Phaser.Scene {
       this.projectilePool.clear();
       this.projectilePool = null;
     }
+
+    for (let i = 0; i < this.levers.length; i++) {
+      const lever = this.levers[i];
+      if (lever && lever.destroy) {
+        lever.destroy();
+      }
+    }
+    this.levers = [];
+    this.leversActivated = false;
   }
 
   loadRoom(mapName) {
@@ -712,6 +753,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
 
     this.setupTeleporters();
+    this.setupLevers();
     
     if (this.isFirstSpawn) {
       this.isFirstSpawn = false;
@@ -817,13 +859,13 @@ export class GameScene extends Phaser.Scene {
         this.enemyGroup,
         (player, enemySprite) => {
           if (enemySprite.enemyRef && player === this.player2) {
-            this.damagePlayer(5, true);
+            this.damagePlayer(5, 2); // CHANGÉ : 2 au lieu de true
           }
         }
       );
       this.colliders.push(enemyPlayer2Collider);
     }
-  }
+      }
 
   update(time) {
     if (this.isGameOver) return;
@@ -925,7 +967,8 @@ export class GameScene extends Phaser.Scene {
     const hasAliveEnemies = this.enemies.some(e => e.isAlive());
 
     if (this.doorOutLayer) {
-      this.doorOutLayer.setVisible(hasAliveEnemies);
+      const shouldShowDoor = hasAliveEnemies || !this.leversActivated;
+      this.doorOutLayer.setVisible(shouldShowDoor);
     }
 
     this.updateTpOutCollisions();
@@ -1024,7 +1067,7 @@ export class GameScene extends Phaser.Scene {
     
     const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.player2.x, this.player2.y);
     const baseZoom = 3;
-    const minZoom = 1.5;
+    const minZoom = 1.05;
     const maxDistance = 400;
     
     const targetZoom = Math.max(minZoom, baseZoom - (distance / maxDistance) * (baseZoom - minZoom));
@@ -1145,12 +1188,13 @@ export class GameScene extends Phaser.Scene {
     .setFlipY(Math.abs(angle) <= Math.PI / 2)
     .play('sword_slash');
 
-  // MODIFICATION : Infliger les dégâts immédiatement
   const px = this.player.x;
   const py = this.player.y;
   const attackAngle = angle;
-  const coneAngle = Math.PI / 1.5; // Angle plus large
+  const coneAngle = Math.PI / 1.5;
   const attackRangeSq = this.attackRangeSq;
+
+  let hitEnemy = false;
 
   for (let i = 0; i < this.enemies.length; i++) {
     const e = this.enemies[i];
@@ -1172,7 +1216,13 @@ export class GameScene extends Phaser.Scene {
 
     if (angleDiff <= coneAngle / 2) {
       e.takeDamage(this.attackDamage, px, py, false);
+      hitEnemy = true;
     }
+  }
+
+  // Jouer le son d'impact si au moins un ennemi est touché
+  if (hitEnemy) {
+    this.sound.play('impact', { volume: 0.25 });
   }
 
   this.swordSprite.once('animationcomplete', () => {
@@ -1182,63 +1232,70 @@ export class GameScene extends Phaser.Scene {
 }
 
   updatePlayer2AutoAttack() {
-    if (!this.isCoopMode || !this.player2 || this.isPlayer2Dying || this.isPlayer2Falling) return;
+  if (!this.isCoopMode || !this.player2 || this.isPlayer2Dying || this.isPlayer2Falling) return;
+  
+  const now = this.time.now;
+  if (this.isPlayer2Attacking || now < this.attackCooldown2) return;
+
+  const target = this.findClosestEnemy(true);
+  if (!target) return;
+
+  this.isPlayer2Attacking = true;
+  this.attackCooldown2 = now + this.attackDelay;
+
+  const angle = Phaser.Math.Angle.Between(
+    this.player2.x, this.player2.y,
+    target.sprite.x, target.sprite.y
+  );
+
+  this.sword2Sprite.setPosition(this.player2.x, this.player2.y)
+    .setVisible(true)
+    .setRotation(angle + Math.PI)
+    .setFlipY(Math.abs(angle) <= Math.PI / 2)
+    .play('sword_slash');
+
+  const px = this.player2.x;
+  const py = this.player2.y;
+  const attackAngle = angle;
+  const coneAngle = Math.PI / 1.5;
+  const attackRangeSq = this.attackRangeSq;
+
+  let hitEnemy = false;
+
+  for (let i = 0; i < this.enemies.length; i++) {
+    const e = this.enemies[i];
     
-    const now = this.time.now;
-    if (this.isPlayer2Attacking || now < this.attackCooldown2) return;
+    if (!e.isAlive()) continue;
+    
+    const dx = e.sprite.x - px;
+    const dy = e.sprite.y - py;
+    const distSq = dx * dx + dy * dy;
 
-    const target = this.findClosestEnemy(true);
-    if (!target) return;
+    if (distSq > attackRangeSq) continue;
 
-    this.isPlayer2Attacking = true;
-    this.attackCooldown2 = now + this.attackDelay;
-
-    const angle = Phaser.Math.Angle.Between(
-      this.player2.x, this.player2.y,
-      target.sprite.x, target.sprite.y
-    );
-
-    this.sword2Sprite.setPosition(this.player2.x, this.player2.y)
-      .setVisible(true)
-      .setRotation(angle + Math.PI)
-      .setFlipY(Math.abs(angle) <= Math.PI / 2)
-      .play('sword_slash');
-
-    // MODIFICATION : Infliger les dégâts immédiatement
-    const px = this.player2.x;
-    const py = this.player2.y;
-    const attackAngle = angle;
-    const coneAngle = Math.PI / 1.5; // Angle plus large
-    const attackRangeSq = this.attackRangeSq;
-
-    for (let i = 0; i < this.enemies.length; i++) {
-      const e = this.enemies[i];
-      
-      if (!e.isAlive()) continue;
-      
-      const dx = e.sprite.x - px;
-      const dy = e.sprite.y - py;
-      const distSq = dx * dx + dy * dy;
-
-      if (distSq > attackRangeSq) continue;
-
-      const enemyAngle = Math.atan2(dy, dx);
-      let angleDiff = Math.abs(enemyAngle - attackAngle);
-      
-      if (angleDiff > Math.PI) {
-        angleDiff = 2 * Math.PI - angleDiff;
-      }
-
-      if (angleDiff <= coneAngle / 2) {
-        e.takeDamage(this.attackDamage, px, py, true);
-      }
+    const enemyAngle = Math.atan2(dy, dx);
+    let angleDiff = Math.abs(enemyAngle - attackAngle);
+    
+    if (angleDiff > Math.PI) {
+      angleDiff = 2 * Math.PI - angleDiff;
     }
 
-    this.sword2Sprite.once('animationcomplete', () => {
-      this.sword2Sprite.setVisible(false);
-      this.isPlayer2Attacking = false;
-    });
+    if (angleDiff <= coneAngle / 2) {
+      e.takeDamage(this.attackDamage, px, py, true);
+      hitEnemy = true;
+    }
   }
+
+  // Jouer le son d'impact si au moins un ennemi est touché
+  if (hitEnemy) {
+    this.sound.play('impact', { volume: 0.25 });
+  }
+
+  this.sword2Sprite.once('animationcomplete', () => {
+    this.sword2Sprite.setVisible(false);
+    this.isPlayer2Attacking = false;
+  });
+}
 
   setupTeleporters() {
     const allObjects = this.map.getObjectLayer('calque_joueur')?.objects || [];
@@ -1282,6 +1339,75 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  setupLevers() {
+  const allObjects = this.map.getObjectLayer('calque_joueur')?.objects || [];
+  const leverObjects = allObjects.filter(obj => obj.name === 'point_lever');
+  
+  if (leverObjects.length === 0) {
+    this.leversActivated = true;
+    return;
+  }
+  
+  this.leversActivated = false;
+  
+  leverObjects.forEach(leverObj => {
+    const lever = this.add.sprite(leverObj.x, leverObj.y, 'lever', 0)
+      .setOrigin(0, 0)
+      .setDepth(4);
+    
+    lever.activated = false;
+    lever.canActivate = true;
+    
+    const zone = this.add.zone(leverObj.x, leverObj.y, leverObj.width || 16, leverObj.height || 16)
+      .setOrigin(0, 0);
+    this.physics.world.enable(zone);
+    
+    const activateLever = (player, isPlayer2) => {
+      if (lever.activated || !lever.canActivate) return;
+      
+      const key = isPlayer2 ? 'F' : 'K';
+      const keyObj = this.input.keyboard.addKey(key);
+      
+      if (Phaser.Input.Keyboard.JustDown(keyObj)) {
+        lever.activated = true;
+        lever.canActivate = false;
+        lever.setFrame(1);
+        
+        // Jouer le son du levier
+        this.sound.play('sfx_1', { volume: 0.4 });
+        
+        this.time.delayedCall(200, () => {
+          lever.setFrame(2);
+          this.checkAllLeversActivated();
+        });
+      }
+    };
+    
+    const collider1 = this.physics.add.overlap(this.player, zone, () => {
+      activateLever(this.player, false);
+    });
+    this.colliders.push(collider1);
+    
+    if (this.isCoopMode && this.player2) {
+      const collider2 = this.physics.add.overlap(this.player2, zone, () => {
+        activateLever(this.player2, true);
+      });
+      this.colliders.push(collider2);
+    }
+    
+    this.levers.push(lever);
+  });
+}
+
+  checkAllLeversActivated() {
+    const allActivated = this.levers.every(lever => lever.activated);
+    
+    if (allActivated) {
+      this.leversActivated = true;
+      this.updateTpOutCollisions();
+    }
+  }
+
   handleTeleport(tp, allObjects, isPlayer2) {
     const now = this.time.now;
     const cooldownKey = isPlayer2 ? 'teleport2Cooldown' : 'teleportCooldown';
@@ -1301,13 +1427,13 @@ export class GameScene extends Phaser.Scene {
       const targetTp = allObjects.find(obj => obj.name === targetTpName);
       
       if (targetTp) {
-        this[cooldownKey] = now + 500;
+        this[cooldownKey] = now + 2000;
         player.setPosition(targetTp.x + targetTp.width / 2, targetTp.y + targetTp.height / 2);
         player.setAlpha(0.3);
         this.tweens.add({
           targets: player,
           alpha: isPlayer2 ? 1 : 1,
-          duration: 200,
+          duration: 800,
           ease: 'Power2',
           onComplete: () => {
             if (isPlayer2 && player.tintTopLeft === 0x00ff00) {
@@ -1327,7 +1453,7 @@ export class GameScene extends Phaser.Scene {
         this.tweens.add({
           targets: player,
           alpha: 1,
-          duration: 200,
+          duration: 800,
           ease: 'Power2',
           onComplete: () => {
             if (isPlayer2 && player.tintTopLeft === 0x00ff00) {
@@ -1343,38 +1469,45 @@ export class GameScene extends Phaser.Scene {
     if (this.isGameOver) return;
     
     const hasAliveEnemies = this.enemies.some(e => e.isAlive());
-    if (hasAliveEnemies) return;
+    if (hasAliveEnemies || !this.leversActivated) return;
     
     this.loadRandomRoom();
   }
 
   updateTpOutCollisions() {
     const hasAliveEnemies = this.enemies.some(e => e.isAlive());
+    const canExit = !hasAliveEnemies && this.leversActivated;
     
     this.tpOutZones.forEach(zone => {
       if (zone.tpCollider) {
-        zone.tpCollider.active = !hasAliveEnemies;
+        zone.tpCollider.active = canExit;
       }
       if (zone.tp2Collider) {
-        zone.tp2Collider.active = !hasAliveEnemies;
+        zone.tp2Collider.active = canExit;
       }
     });
   }
 
   shutdown() {
-    this.tweens.killAll();
-    this.cleanupRoom();
-    
-    for (let i = 0; i < this.particlePool.length; i++) {
-      const p = this.particlePool[i];
-      this.tweens.killTweensOf(p);
-      p.destroy();
-    }
-    this.particlePool = [];
-    
-    if (this.cameraFollowTarget) {
-      this.cameraFollowTarget.destroy();
-      this.cameraFollowTarget = null;
-    }
+  this.tweens.killAll();
+  this.cleanupRoom();
+  
+  // Arrêter la musique du jeu
+  const gameMusic = this.registry.get('gameMusic');
+  if (gameMusic && gameMusic.isPlaying) {
+    gameMusic.stop();
   }
+  
+  for (let i = 0; i < this.particlePool.length; i++) {
+    const p = this.particlePool[i];
+    this.tweens.killTweensOf(p);
+    p.destroy();
+  }
+  this.particlePool = [];
+  
+  if (this.cameraFollowTarget) {
+    this.cameraFollowTarget.destroy();
+    this.cameraFollowTarget = null;
+  }
+}
 }

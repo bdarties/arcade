@@ -27,10 +27,12 @@ export class LevelUpScene extends Phaser.Scene {
     super({ key: 'LevelUpScene' });
   }
 
-  init() {
+  init(data) {
     this.selectedCardIndex = 1;
     this.cards = [];
     this.elementsUI = [];
+    // Déterminer quel joueur a level up
+    this.isPlayer2LevelUp = data?.isPlayer2 || false;
   }
 
   create() {
@@ -44,15 +46,33 @@ export class LevelUpScene extends Phaser.Scene {
     ).setScrollFactor(0).setDepth(150);
     this.elementsUI.push(overlay);
 
+    // Afficher de quel joueur il s'agit
+    const playerText = this.isPlayer2LevelUp ? 'PLAYER 2' : 'PLAYER 1';
+    const playerColor = this.isPlayer2LevelUp ? '#00ff00' : '#9bbc0f';
+    
+    const playerLabel = this.add.text(
+      gameWidth / 2, 30,
+      playerText,
+      {
+        fontSize: '28px',
+        fill: playerColor,
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(151);
+    this.elementsUI.push(playerLabel);
+
     const titre = this.add.text(
-      gameWidth / 2, 60,
+      gameWidth / 2, 70,
       'LEVEL UP!',
       {
         fontSize: '52px',
-        fill: '#9bbc0f',
+        fill: playerColor,
         fontFamily: 'Arial',
         fontStyle: 'bold',
-        stroke: '#306230',
+        stroke: this.isPlayer2LevelUp ? '#003300' : '#306230',
         strokeThickness: 4
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(151);
@@ -60,18 +80,35 @@ export class LevelUpScene extends Phaser.Scene {
 
     this.generateUpgradeCards();
 
-    this.input.keyboard.on('keydown-LEFT', () => {
-      this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
-      this.updateCardSelection();
-    });
+    // Configurer les contrôles selon le joueur
+    if (this.isPlayer2LevelUp) {
+      // Contrôles Player 2 (Q/D pour naviguer, F pour confirmer)
+      this.input.keyboard.on('keydown-Q', () => {
+        this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
+        this.updateCardSelection();
+      });
 
-    this.input.keyboard.on('keydown-RIGHT', () => {
-      this.selectedCardIndex = Math.min(2, this.selectedCardIndex + 1);
-      this.updateCardSelection();
-    });
+      this.input.keyboard.on('keydown-D', () => {
+        this.selectedCardIndex = Math.min(2, this.selectedCardIndex + 1);
+        this.updateCardSelection();
+      });
 
-    this.input.keyboard.on('keydown-K', () => this.confirmSelection());
-    this.input.keyboard.on('keydown-ENTER', () => this.confirmSelection());
+      this.input.keyboard.on('keydown-F', () => this.confirmSelection());
+    } else {
+      // Contrôles Player 1 (LEFT/RIGHT pour naviguer, K/ENTER pour confirmer)
+      this.input.keyboard.on('keydown-LEFT', () => {
+        this.selectedCardIndex = Math.max(0, this.selectedCardIndex - 1);
+        this.updateCardSelection();
+      });
+
+      this.input.keyboard.on('keydown-RIGHT', () => {
+        this.selectedCardIndex = Math.min(2, this.selectedCardIndex + 1);
+        this.updateCardSelection();
+      });
+
+      this.input.keyboard.on('keydown-K', () => this.confirmSelection());
+      this.input.keyboard.on('keydown-ENTER', () => this.confirmSelection());
+    }
 
     this.updateCardSelection();
   }
@@ -80,7 +117,7 @@ export class LevelUpScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
     const cardSpacing = 260;
     const startX = width / 2 - cardSpacing;
-    const cardY = height / 2;
+    const cardY = height / 2 + 20;
 
     const selectedRarities = Array.from({ length: 3 }, () => {
       const rand = Math.random();
@@ -178,15 +215,10 @@ export class LevelUpScene extends Phaser.Scene {
     const gameScene = this.scene.get('GameScene');
     if (!gameScene) return;
     
-    const isPlayer2 = gameScene.player2Level > gameScene.playerLevel || 
-                      (gameScene.player2Level === gameScene.playerLevel && gameScene.isPlayer2Dying);
-    
-    const playerKey = isPlayer2 ? '2' : '';
-    
     switch(upgrade.type) {
       case 'health':
         gameScene.maxHealth += upgrade.value;
-        if (isPlayer2) {
+        if (this.isPlayer2LevelUp) {
           gameScene.player2Health += upgrade.value;
         } else {
           gameScene.playerHealth += upgrade.value;
@@ -196,7 +228,7 @@ export class LevelUpScene extends Phaser.Scene {
         gameScene.attackDamage += upgrade.value;
         break;
       case 'speed':
-        if (isPlayer2) {
+        if (this.isPlayer2LevelUp) {
           gameScene.player2Speed += upgrade.value;
         } else {
           gameScene.playerSpeed += upgrade.value;

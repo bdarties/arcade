@@ -417,6 +417,18 @@
                  "width":23.8125,
                  "x":331.625,
                  "y":663.8125
+                }, 
+                {
+                 "height":0,
+                 "id":14,
+                 "name":"point_lever",
+                 "point":true,
+                 "rotation":0,
+                 "type":"point_lever",
+                 "visible":true,
+                 "width":0,
+                 "x":288,
+                 "y":592
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -458,7 +470,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":14,
+ "nextobjectid":15,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

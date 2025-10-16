@@ -682,9 +682,53 @@ export class Ghost extends Enemy {
   }
 
   takeDamage(damage, attackerX, attackerY, isPlayer2 = false) {
-    if (!this.isAlive() || this.isInvincible) return;
-    super.takeDamage(damage, attackerX, attackerY, isPlayer2);
+  if (!this.isAlive() || this.isInvincible) return;
+  // Accepter les attaques des deux joueurs
+  this.lastDamageByPlayer2 = isPlayer2;
+  this.health -= damage;
+  this.sprite.setTint(0xff0000);
+
+  if (this.tintTimer) {
+    this.tintTimer.remove();
   }
+  
+  this.tintTimer = this.scene.time.delayedCall(100, () => {
+    if (this.isAlive()) {
+      this.sprite.clearTint();
+    }
+    this.tintTimer = null;
+  });
+
+  if (this.state !== ENEMY_STATE.CHARGING && this.state !== ENEMY_STATE.PREPARE_CHARGE) {
+    const dx = this.sprite.x - attackerX;
+    const dy = this.sprite.y - attackerY;
+    const distSq = dx * dx + dy * dy;
+    const dist = Math.sqrt(distSq);
+    
+    if (dist > 0) {
+      const knockbackForce = 300;
+      this.sprite.body.setVelocity(
+        (dx / dist) * knockbackForce,
+        (dy / dist) * knockbackForce
+      );
+
+      if (this.knockbackTimer) {
+        this.knockbackTimer.remove();
+      }
+      
+      this.knockbackTimer = this.scene.time.delayedCall(150, () => {
+        if (this.isAlive() && this.state !== ENEMY_STATE.CHARGING) {
+          this.sprite.body.setVelocity(0, 0);
+        }
+        this.knockbackTimer = null;
+      });
+    }
+  }
+
+  if (this.health <= 0) {
+    this.die();
+  }
+}
 
   update(player, time) {
     if (!this.isAlive()) {
