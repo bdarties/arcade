@@ -41,10 +41,10 @@
 
 			<script type="module">
 			import {get_tab_score, ajoute_score} from "/static/js/score.js";
-      import { confirmationExit } from "/static/js/confirmationExit.js";
+      import { ConfirmationExit } from "/static/js/confirmationExit.js";
 			import { game } from "{{ entry_js_url }}";
 
-      game.scene.add("confirmationExit", confirmationExit);
+      game.scene.add("confirmationExit",confirmationExit);
 
       // Ajout d'un écouteur global pour la touche W
       window.addEventListener("keydown", (event) => {
