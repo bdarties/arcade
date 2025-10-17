@@ -2,97 +2,76 @@ export default class Dragon extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'dragon');
     
-    // Ajouter à la scène et à la physique
     scene.add.existing(this);
     scene.physics.add.existing(this);
     
-    // Configuration du sprite
     this.setScale(1.5);
     this.body.setSize(48, 48);
     this.body.setOffset(8, 8);
     
-    // Jouer l'animation idle du dragon
     if (this.anims && scene.anims.exists('dragon_idle')) {
       this.anims.play('dragon_idle', true);
     }
     
     // Statistiques du dragon
-    this.pv = 5; // Plus résistant qu'un ennemi normal
+    this.pv = 25;
     this.vitesse = 60;
-    this.detectionRadius = 300; // Distance de détection du joueur
-    this.attackRange = 250; // Portée d'attaque à distance
+    this.detectionRadius = 300; 
+    this.attackRange = 250;
     
-    // Timers pour les attaques
     this.lastShootTime = 0;
-    this.shootCooldown = 2000; // 2 secondes entre chaque tir
+    this.shootCooldown = 2000;
     
-    // État de mouvement aléatoire
     this.randomMoveTimer = 0;
-    this.randomMoveDuration = 2000; // Change de direction toutes les 2 secondes
+    this.randomMoveDuration = 2000;
     this.currentVelocityX = 0;
     this.currentVelocityY = 0;
     
-    // Type d'ennemi
     this.type = 'dragon';
     
-    // Référence à la scène
     this.scene = scene;
   }
 
   prendreDegats(degats) {
     this.pv -= degats;
     
-    // Effet visuel de dégâts
     this.setTint(0xff0000);
     this.scene.time.delayedCall(100, () => {
       this.clearTint();
     });
-    
-    console.log(`Dragon touché ! PV restants: ${this.pv}`);
-    
-    // Vérifier si le dragon est mort
+        
     if (this.pv <= 0) {
       this.mourir();
     }
   }
 
   mourir() {
-    console.log("🐉 Dragon vaincu !");
-    
-    // Sauvegarder la référence à la scène avant de détruire
     const scene = this.scene;
     
-    // Détruire le dragon
     this.destroy();
     
-    // Lancer l'écran de victoire immédiatement
-    console.log("🎉 Victoire ! Lancement de l'écran de victoire...");
     scene.scene.start("victory");
   }
 
   tirerProjectile() {
     const now = this.scene.time.now;
     
-    // Vérifier le cooldown
     if (now - this.lastShootTime < this.shootCooldown) {
       return;
     }
     
     this.lastShootTime = now;
     
-    // Créer le projectile
     const projectile = this.scene.groupeFlechesEnnemis.create(this.x, this.y, 'fireball');
     projectile.setScale(1.2);
     projectile.origine = 'ennemi';
     projectile.ennemiSource = this;
-    projectile.degats = 2; // Inflige 2 PV
+    projectile.degats = 2;
     
-    // Appliquer le pipeline Light2D au projectile
     if (projectile.setPipeline) {
       projectile.setPipeline('Light2D');
     }
 
-    // Créer une lumière qui suit le projectile (effet de glow)
     let projectileLight = null;
     if (this.scene.lights && this.scene.lights.addLight) {
       projectileLight = this.scene.lights.addLight(
@@ -189,7 +168,6 @@ export default class Dragon extends Phaser.Physics.Arcade.Sprite {
       }
     });
     
-    console.log("🔥 Dragon tire une boule de feu !");
   }
 
   mouvementAleatoire() {

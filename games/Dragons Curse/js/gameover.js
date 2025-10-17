@@ -2,34 +2,41 @@ export default class gameover extends Phaser.Scene {
   constructor() {
     super({ key: "gameover" });
   }
-  //on charge les images
   preload() {
     this.load.image("gm_fond", "assets/gameover.jpg");
     this.load.image("imageBoutonBack", "assets/retour.png");
+    this.load.audio("confirmSound", "./assets/sounds/menuconfirm.mp3");
+    this.load.audio("gameOverSound", "./assets/sounds/gameover.mp3");
   }
 
   create() {
-   // on place les éléments de fond
+    const music = this.registry.get('backgroundMusic');
+    if (music) {
+      music.stop();
+      this.registry.set('backgroundMusic', null);
+    }
+    this.sound.play("gameOverSound");
+
+    if (this.scene.isActive('hud')) {
+      this.scene.stop('hud');
+    }
+    
     this.add
       .image(0, 0, "gm_fond")
       .setOrigin(0)
       .setDepth(0);
 
-    // Boutons
     this.boutons = [
       this.add.image(625, 555, "imageBoutonBack").setDepth(1),
     ];
 
     this.boutons.forEach(b => b.setInteractive());
 
-    // Index du bouton sélectionné
     this.selectedIndex = 0;
     this.updateSelection();
 
-    // Clavier
     this.keyI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
-    // Action sur validation
     this.actions = [
       () => this.scene.start("menu"),
     ];
@@ -37,7 +44,6 @@ export default class gameover extends Phaser.Scene {
 
   updateSelection() {
     this.boutons.forEach((b, i) => {
-      // Scale progressif vers 1.1 si sélectionné, sinon vers 1
       const targetScale = i === this.selectedIndex ? 1.1 : 1;
       this.tweens.add({
         targets: b,
@@ -51,7 +57,7 @@ export default class gameover extends Phaser.Scene {
   update() {
     // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
-      // Stopper le HUD avant de retourner au menu
+      this.sound.play("confirmSound");
       if (this.scene.isActive('hud')) {
         this.scene.stop('hud');
       }

@@ -34,7 +34,6 @@ export function ajouterPotion(amount = 1) {
 
 export function utiliserPotion(scene, pvManager) {
   if (nbPotions <= 0) {
-    console.log("Pas de potion disponible!");
     return false;
   }
   
@@ -860,18 +859,6 @@ export class SkillManager {
       skillTexts.push({ skillText, descText, box });
     });
 
-    // Instructions
-    const instructions = this.scene.add.text(
-      this.scene.cameras.main.width / 2,
-      startY + (skills.length * spacing) + 30,
-      'Flèches HAUT/BAS: Sélectionner | ESPACE: Confirmer',
-      {
-        fontSize: '16px',
-        color: '#888888',
-        fontFamily: 'Arial'
-      }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
-
     // Fonction pour mettre à jour la sélection
     const updateSelection = () => {
       skillBoxes.forEach((box, index) => {
@@ -901,7 +888,6 @@ export class SkillManager {
       overlay.destroy();
       title.destroy();
       pointsText.destroy();
-      instructions.destroy();
       skillTexts.forEach(st => {
         st.skillText.destroy();
         st.descText.destroy();

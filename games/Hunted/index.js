@@ -1,5 +1,5 @@
 // chargement des librairies
-import acceuil from "./js/page_accueil.js";
+import accueil from "./js/page_accueil.js";
 import credits from "./js/credits.js";
 import controles from "./js/controles.js";
 import checkpoint1 from "./js/checkpoint1.js";
@@ -32,11 +32,11 @@ var config = {
       gravity: {
         y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
       },
-      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
 
-  scene: [acceuil, controles, credits,checkpoint1,selection, niveau1,checkpoint2, niveau2, niveau3, gameover,win],
+  scene: [ accueil, controles, credits, checkpoint1, selection, niveau1, checkpoint2, niveau2, niveau3, gameover, win],
 
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
@@ -44,4 +44,4 @@ var config = {
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config);
-game.scene.start("page_acceuil");
+game.scene.start("accueil", { config: config });

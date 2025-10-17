@@ -1,4 +1,8 @@
 import * as fct from "./fonctions.js";
+import Item from "./item.js";
+// Ajout des imports pour les ennemis
+import Enemy from "./enemy.js";
+import Enemy2 from "./enemy2.js";
 
 /***********************************************************************/
 /** VARIABLES LOCALES AU NIVEAU
@@ -8,65 +12,17 @@ let shootKey;
 let player2;
 
 /***********************************************************************/
-/** VARIABLES HUD
-/***********************************************************************/
-let coeurs = 5;
-let tempsRestant = 300;
-let objets = 0;
-let vies = 3;
-let texteTemps;
-let texteObjets;
-let texteVies;
-let hudPerso;
-let coeursImages = [];
-
-let gameOverActif = false;
-
-/***********************************************************************/
-/** INITIALISER LE HUD
-/***********************************************************************/
-function initHUD(scene) {
-  coeursImages = [];
-  for (let i = 0; i < coeurs; i++) {
-    let coeur = scene.add.image(16 + i * 40, 16, "coeur")
-      .setOrigin(0, 0)
-      .setScale(0.45)
-      .setScrollFactor(0);
-    coeursImages.push(coeur);
-  }
-
-  texteTemps = scene.add.text(320, 16, "Temps : " + tempsRestant + "s", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-  texteObjets = scene.add.text(640, 16, " Objets : " + objets + "/5", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-  texteVies = scene.add.text(960, 16, " " + vies + "/3", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-
-  hudPerso = scene.add.image(935, 10, "dude_face").setOrigin(0, 0).setScrollFactor(0);
-
-  scene.time.addEvent({
-    delay: 1000,
-    loop: true,
-    callback: () => {
-      if (tempsRestant > 0) {
-        tempsRestant--;
-        texteTemps.setText("Temps : " + tempsRestant + "s");
-      } else if (!gameOverActif) {
-        gameOverActif = true;
-        scene.scene.launch("gameover");
-      }
-    }
-  });
-}
-/***********************************************************************/
 /** FONCTIONS PERSONNAGE LOCALES
 /***********************************************************************/
 function preloadPersonnage(scene, spriteKey = "img_perso", spriteFile = "./assets/dude.png") {
   scene.load.spritesheet(spriteKey, spriteFile, { frameWidth: 32, frameHeight: 40 });
-  scene.load.image("dude_face", "./assets/dude_face.png");
   scene.load.image("dude_face_stop", "./assets/dude_face_stop.png");
 }
 
 function creerplayer2(scene, x, y, spriteKey = "img_perso") {
   scene.player2 = scene.physics.add.sprite(x, y, spriteKey);
   scene.player2.setCollideWorldBounds(true);
+  scene.player2.setDepth(1);
   return scene.player2;
 }
 
@@ -106,7 +62,9 @@ function updateplayer2(scene, background, gameOverActif = false) {
     player2.setTexture("dude_face_stop");
   }
 
-  if (fct.clavier.up.isDown && onGround) player2.setVelocityY(-280);
+  if (scene.toucheI.isDown && onGround) {
+    scene.player2.setVelocityY(-280);
+  }
 }
 
 /***********************************************************************/
@@ -148,13 +106,32 @@ export default class niveau1 extends Phaser.Scene {
     this.load.image("porteOuverte", "./assets/porte_ouverte.png");
     this.load.audio("musique1", "./assets/musique1.mp3");
 
+    // --- ITEMS ---
+    this.load.image("objet5", "./assets/objet5.png");
+    this.load.image("objet6", "./assets/objet6.png");
+    this.load.spritesheet("objet7", "./assets/objet7_animation.png", { frameWidth: 32, frameHeight: 32 });
+
+    // --- RESSOURCES DES ENNEMIS ---
+    this.load.spritesheet('enemy1_run', './assets/enemy1_run.png', { frameWidth: 32, frameHeight: 24 });
+    this.load.spritesheet('enemy2_run', './assets/enemy2_run.png', { frameWidth: 32, frameHeight: 40 });
+    this.load.spritesheet('enemy1_attack', './assets/enemy1_attack.png', { frameWidth: 32, frameHeight: 24 });
+    this.load.spritesheet('enemy2_attack', './assets/enemy2_attack.png', { frameWidth: 32, frameHeight: 40 });
+    this.load.image("bullet2", "./assets/bullet2.png");
+    this.load.image("bullet3", "./assets/bullet3.png");
+
     fct.preloadCommun(this);
     preloadPersonnage(this, "img_perso", "./assets/dude2.png");
   }
 
   create() {
-    this.musique_de_fond = this.sound.add('musique1');
-    this.musique_de_fond.play({ loop: true, volume: 0.5 });
+    // Nettoyer l'ancien HUD avant d'en créer un nouveau
+    fct.cleanupHUD();
+    if (!this.game.musiqueGlobale) {
+      this.game.musiqueGlobale = this.game.sound.add('musique1', { loop: true, volume: 0.5 });
+      this.game.musiqueGlobale.play();
+    } else if (!this.game.musiqueGlobale.isPlaying) {
+      this.game.musiqueGlobale.play();
+    }
 
     const carteDuNiveau = this.add.tilemap("carte_2");
     const tileset = carteDuNiveau.addTilesetImage("tuiles_de_jeu", "Phaser_tuilesdejeu");
@@ -169,26 +146,66 @@ export default class niveau1 extends Phaser.Scene {
 
     const worldWidth = carteDuNiveau.widthInPixels || 1280;
     const worldHeight = carteDuNiveau.heightInPixels || 720;
+    
+    // Ajout de l'animation de l'objet 7
+    this.anims.create({
+      key: "anim_objet7",
+      frames: this.anims.generateFrameNumbers("objet7", { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    // --- ANIMATIONS ENNEMIS ---
+    this.anims.create({
+      key: "anim_enemy1_run",
+      frames: this.anims.generateFrameNumbers("enemy1_run", { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+        // Animation ennemi2
+    this.anims.create({
+      key: "anim_enemy2_run",
+      frames: this.anims.generateFrameNumbers("enemy2_run", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
 
     // --- FOND PARALLAX ---
-    this.fond_arriere = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_arriere").setOrigin(0).setScrollFactor(0).setDepth(-4);
-    this.fond_milieu1 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_milieu1").setOrigin(0).setScrollFactor(0).setDepth(-3);
-    this.fond_milieu2 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_milieu2").setOrigin(0).setScrollFactor(0).setDepth(-2);
-    this.fond_avant = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_avant").setOrigin(0).setScrollFactor(0).setDepth(-1);
+    this.fond_arriere = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_arriere").setOrigin(0).setScrollFactor(0.2).setDepth(-4);
+    this.fond_milieu1 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_milieu1").setOrigin(0).setScrollFactor(0.5).setDepth(-3);
+    this.fond_milieu2 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_milieu2").setOrigin(0).setScrollFactor(1).setDepth(-2);
+    this.fond_avant = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax2_avant").setOrigin(0).setScrollFactor(0.95).setDepth(-1);
 
     // --- player2 ---
     creerplayer2(this, 100, 450);
+    this.player = this.player2;
     this.physics.add.collider(this.player2, calque_plateformes);
     fct.initClavier(this);
     creerAnimations(this);
 
-    initHUD(this);
-
-   
-
-    // --- PORTAILS ---
+    // --- GESTION DES GROUPES ---
+    this.grp_items = this.physics.add.group();
     this.grp_portal = this.physics.add.group();
+    this.grp_ennemis = this.physics.add.group();
+    this.grp_balles_ennemis = this.physics.add.group();
+
+    // --- GESTION DES COLLISIONS ENNEMIS ---
+    this.physics.add.collider(this.grp_ennemis, calque_plateformes);
+    this.physics.add.collider(this.grp_balles_ennemis, calque_plateformes, (balle) => {
+      balle.destroy();
+    });
+    this.physics.add.overlap(this.player2, this.grp_balles_ennemis, (player, balle) => {
+      balle.destroy();
+      fct.perdreCoeur(this);
+    });
+
+    // --- GESTION DES TOUCHES ---
     this.actionKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.toucheI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+
+    // --- LECTURE DE LA CARTE ---
     const tab_objects = carteDuNiveau.getObjectLayer("object_layer")?.objects || [];
     this.spawnPoint = { x: 100, y: 450 };
 
@@ -199,6 +216,41 @@ export default class niveau1 extends Phaser.Scene {
         this.spawnPoint = { x: point.x, y: point.y };
       }
 
+      // --- GESTION DES ITEMS ---
+      if (point.name === "item") {
+        let itemType = "objet1"; // Type par défaut
+        let itemId = null;
+
+        if (point.properties) {
+          point.properties.forEach(property => {
+            if (property.name === "type") itemType = property.value;
+            if (property.name === "id") itemId = property.value;
+          });
+        }
+
+        const item = new Item(this, point.x, point.y, itemType, itemId);
+        this.grp_items.add(item);
+        
+        if (itemType === "objet7") {
+          item.anims.play("anim_objet7", true);
+        }
+      }
+      
+      // --- GESTION DES ENNEMIS ---
+      if (point.name === "enemy_1") {
+        let ennemi = new Enemy(this, point.x, point.y, calque_plateformes);
+        this.grp_ennemis.add(ennemi);
+        ennemi.setCollideWorldBounds(true);
+        ennemi.setDepth(1);
+      }
+
+      if (point.name === "enemy_2") {
+        let ennemi = new Enemy2(this, point.x, point.y, calque_plateformes);
+        this.grp_ennemis.add(ennemi);
+        ennemi.setCollideWorldBounds(true);
+      }
+
+      // --- GESTION DES PORTAILS ---
       if (point.name === "portal") {
         let portal_properties = {};
         point.properties.forEach(property => {
@@ -210,14 +262,44 @@ export default class niveau1 extends Phaser.Scene {
         portal.id = portal_properties.id;
         portal.target = portal_properties.target;
         portal.ouverte = false;
+        portal.setDepth(0);
 
         this.grp_portal.add(portal);
         portal.body.allowGravity = false;
-        portal.setDepth(47);
         this.physics.add.overlap(this.player2, portal, this.portalActivation, null, this);
       }
     });
 
+    // --- COLLISION JOUEUR / ITEMS ---
+    this.physics.add.overlap(this.player2, this.grp_items, (player2, item) => {
+      fct.ramasserItem(this, item);
+    }, null, this);
+
+    // --- COLLISION ENTRE JOUEUR ET HITBOX D'ATTAQUE DES ENNEMIS ---
+    this.time.addEvent({
+      delay: 100,
+      loop: true,
+      callback: () => {
+        this.grp_ennemis.children.iterate(ennemi => {
+          if (ennemi && ennemi.attackHitbox && ennemi.attackHitbox.active) {
+            const distance = Phaser.Math.Distance.Between(
+              this.player2.x, this.player2.y,
+              ennemi.attackHitbox.x, ennemi.attackHitbox.y
+            );
+            
+            if (distance < 30) {
+              fct.perdreCoeur(this);
+              if (ennemi.attackHitbox) {
+                ennemi.attackHitbox.destroy();
+                ennemi.attackHitbox = null;
+              }
+            }
+          }
+        });
+      }
+    });
+
+    // --- CONFIGURATION DE LA SCÈNE ET CAMÉRA ---
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.startFollow(this.player2);
@@ -225,28 +307,42 @@ export default class niveau1 extends Phaser.Scene {
     this.game.config.sceneTarget = "niveau1";
 
     if (this.game.config.portalTarget != null) {
-    this.portalSpawning();
-  }
+      this.portalSpawning();
+    }
+
+    // --- INITIALISER LE HUD ---
+    fct.initHUD_Objets(this);
+
+    // --- GESTION DES ÉVÉNEMENTS DE LA SCÈNE ---
+    this.events.on('shutdown', () => { 
+      if (this.game.musiqueGlobale) {
+        this.game.musiqueGlobale.stop();
+        this.game.musiqueGlobale.destroy();
+        this.game.musiqueGlobale = null;
+      }
+      console.log("shutdown scene");
+      fct.cleanupHUD();
+    });
+    
+    this.events.on('wake', () => {
+      console.log('La scène niveau1 a été réactivée !');
+      fct.cleanupHUD();
+      fct.initHUD_Objets(this);
+
+      if (!this.game.musiqueGlobale.isPlaying) {
+        this.game.musiqueGlobale.resume();
+      }
+    });
   }
 
   update() {
-    // --- PARALLAX ---
-    const speedLeft = fct.clavier.left.isDown;
-    const speedRight = fct.clavier.right.isDown;
-
-    if (speedLeft) {
-      this.fond_arriere.tilePositionX -= 0.2;
-      this.fond_milieu1.tilePositionX -= 0.5;
-      this.fond_milieu2.tilePositionX -= 1;
-      this.fond_avant.tilePositionX -= 1.8;
-    } else if (speedRight) {
-      this.fond_arriere.tilePositionX += 0.2;
-      this.fond_milieu1.tilePositionX += 0.5;
-      this.fond_milieu2.tilePositionX += 1;
-      this.fond_avant.tilePositionX += 1.8;
-    }
-
-
+    // --- MISE À JOUR DES ENNEMIS ---
+    this.grp_ennemis.children.iterate(ennemi => {
+      if (ennemi && ennemi.update) {
+        ennemi.update(this.time.now);
+      }
+    });
+     
     // --- OUVERTURE PORTES ---
     this.grp_portal.children.iterate(portal => {
       let dist = Phaser.Math.Distance.Between(this.player2.x, this.player2.y, portal.x, portal.y);
@@ -258,9 +354,6 @@ export default class niveau1 extends Phaser.Scene {
         portal.ouverte = false;
       }
     });
-
-    // if (this.game.config.sceneTarget !== "niveau1") return;
-    // if (this.game.config.portalTarget != null) this.portalSpawning();
 
     // ECHELLE : si joueur est sur une échelle
     const surEchelle = this.ladder_layer.getTileAtWorldXY(this.player2.x, this.player2.y);
@@ -280,12 +373,21 @@ export default class niveau1 extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.actionKey)) {
       this.game.config.portalTarget = portal.target;
 
+      // Arrêter la musique avant de changer de scène
+      if (this.game.musiqueGlobale && this.game.musiqueGlobale.isPlaying) {
+        this.game.musiqueGlobale.stop();
+      }
+
       if (portal.target == 1) {
         this.game.config.sceneTarget = "selection";
         this.scene.switch("selection");
       } else if (portal.target == 4) {
-        this.game.config.sceneTarget = "checkpoint2";
-        this.scene.start("checkpoint2");
+        if (fct.objets >= 7) {
+          this.game.config.sceneTarget = "checkpoint2";
+          this.scene.switch("checkpoint2");
+        } else {
+          fct.afficherMessage(this, "Vous n'avez pas tous les objets !");
+        }
       }
     }
   }

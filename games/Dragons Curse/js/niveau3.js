@@ -11,6 +11,7 @@ export default class niveau3 extends Phaser.Scene {
     // Charger uniquement la map spécifique à ce niveau
     this.load.tilemapTiledJSON("arena3", "./assets/maps/arene3.json");
     this.load.image("filtre", "./assets/black.png");
+    this.load.audio("porteSound", "./assets/sounds/porte.mp3");
     
     // Charger le spritesheet de l'ennemi
     this.load.spritesheet("ennemi1", "./assets/ennemi1.png", {
@@ -414,6 +415,7 @@ export default class niveau3 extends Phaser.Scene {
     // Vérifier si le joueur est sur une porte et si elle est déverrouillée
     if (this.surPorte && this.porteDeverrouillee) {
       console.log("Passage au niveau suivant !");
+      this.sound.play("porteSound", { volume: 0.7 });
       
       // Téléporter vers la salle de sélection (ou le niveau suivant)
       this.scene.start("salleporte");

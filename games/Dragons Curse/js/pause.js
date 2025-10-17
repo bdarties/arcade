@@ -12,6 +12,12 @@ export default class PauseManager extends Phaser.Scene {
   }
 
   create() {
+    // Mettre en pause la musique de fond
+    const music = this.registry.get('backgroundMusic');
+    if (music && music.isPlaying) {
+      music.pause();
+    }
+    
     // Fond semi-transparent qui recouvre l'écran
     this.add.rectangle(640, 365, 1280, 720, 0x000000, 0.6);
 
@@ -23,12 +29,12 @@ export default class PauseManager extends Phaser.Scene {
     });
 
     // Texte instructions
-    this.add.text(450, 380, "Appuie sur R pour reprendre", {
+    this.add.text(450, 380, "Appuie sur A pour reprendre la partie", {
       fontSize: "28px",
       color: "#ffffff"
     });
 
-    this.add.text(450, 430, "Appuie sur Q pour retourner au menu", {
+    this.add.text(450, 430, "Appuie sur F pour retourner au menu", {
       fontSize: "28px",
       color: "#ffffff"
     });
@@ -41,12 +47,25 @@ export default class PauseManager extends Phaser.Scene {
   update() {
     // Touche I → Reprendre le jeu
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+      // Reprendre la musique de fond
+      const music = this.registry.get('backgroundMusic');
+      if (music && music.isPaused) {
+        music.resume();
+      }
+      
       this.scene.stop(); // ferme la scène Pause
       this.scene.resume(this.currentLevel); // reprend le niveau courant
     }
 
     // Touche Q → Quitter vers menu principal
     if (Phaser.Input.Keyboard.JustDown(this.keyM)) {
+      // Arrêter la musique de fond
+      const music = this.registry.get('backgroundMusic');
+      if (music) {
+        music.stop();
+        this.registry.set('backgroundMusic', null);
+      }
+      
       // Réinitialiser toutes les stats du registry
       this.registry.set('playerHealth', 5);
       this.registry.set('playerMaxHealth', 5);

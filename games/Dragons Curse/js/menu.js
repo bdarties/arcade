@@ -8,9 +8,20 @@ class menu extends Phaser.Scene {
     this.load.image("imageBoutonPlay", "assets/start.png");
     this.load.image("imageBoutonCredits", "assets/credits.png");
     this.load.image("imageBoutonControls", "assets/control.png");
+    this.load.audio("confirmSound", "./assets/sounds/menuconfirm.mp3");
+    this.load.audio("seletionSound", "./assets/sounds/menuselect.mp3");
+    this.load.audio("homemusic", "./assets/sounds/homemusic.mp3");
   }
 
   create() {
+    // Démarrer la musique du menu si elle n'est pas déjà en cours
+    let homeMusic = this.registry.get('homeMusic');
+    if (!homeMusic || !homeMusic.isPlaying) {
+      homeMusic = this.sound.add('homemusic', { loop: true, volume: 0.5 });
+      homeMusic.play();
+      this.registry.set('homeMusic', homeMusic);
+    }
+    
     // S'assurer que le HUD est bien stoppé quand on arrive au menu
     if (this.scene.isActive('hud')) {
       this.scene.stop('hud');
@@ -65,13 +76,16 @@ class menu extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
       this.selectedIndex = (this.selectedIndex + 1) % this.boutons.length;
       this.updateSelection();
+      this.sound.play("seletionSound", { volume: 0.5 });
     }
     if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
       this.selectedIndex = (this.selectedIndex - 1 + this.boutons.length) % this.boutons.length;
       this.updateSelection();
+      this.sound.play("seletionSound", { volume: 0.5 });
     }
     // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+      this.sound.play("confirmSound");
       this.actions[this.selectedIndex]();
     }
   }

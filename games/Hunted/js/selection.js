@@ -1,62 +1,12 @@
-
 import * as fct from "./fonctions.js";
 import Enemy from "./enemy.js";
+import Enemy2 from "./enemy2.js";
+import Item from "./item.js";
 
 /***********************************************************************/
 /** VARIABLES LOCALES AU NIVEAU
 /***********************************************************************/
-let player; // joueur local à ce niveau
-
-
-/***********************************************************************/
-/** VARIABLES HUD
-/***********************************************************************/
-let coeurs = 5;
-let tempsRestant = 300;
-let objets = 0;
-let vies = 3;
-
-let texteTemps;
-let texteObjets;
-let texteVies;
-let hudPerso;
-let coeursImages = [];
-
-let gameOverActif = false;
-
-/***********************************************************************/
-/** INITIALISER LE HUD
-/***********************************************************************/
-function initHUD(scene) {
-  coeursImages = [];
-  for (let i = 0; i < coeurs; i++) {
-    let coeur = scene.add.image(16 + i * 40, 16, "coeur")
-      .setOrigin(0, 0)
-      .setScale(0.45)
-      .setScrollFactor(0);
-    coeursImages.push(coeur);
-  }
-
-  texteTemps = scene.add.text(320, 16, "Temps : " + tempsRestant + "s", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-  texteObjets = scene.add.text(640, 16, " Objets : " + objets + "/5", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-  texteVies = scene.add.text(960, 16, " " + vies + "/3", { fontSize: "22px", fill: "#fff" }).setScrollFactor(0);
-
-  hudPerso = scene.add.image(935, 10, "dude_face").setOrigin(0, 0).setScrollFactor(0);
-
-  scene.time.addEvent({
-    delay: 1000,
-    loop: true,
-    callback: () => {
-      if (tempsRestant > 0) {
-        tempsRestant--;
-        texteTemps.setText("Temps : " + tempsRestant + "s");
-      } else if (!gameOverActif) {
-        gameOverActif = true;
-        scene.scene.launch("gameover");
-      }
-    }
-  });
-}
+let player;
 
 /***********************************************************************/
 /** FONCTIONS PERSONNAGE LOCALES
@@ -70,6 +20,7 @@ function preloadPersonnage(scene, spriteKey = "img_perso", spriteFile = "./asset
 function creerPlayer(scene, x, y, spriteKey = "img_perso") {
   scene.player = scene.physics.add.sprite(x, y, spriteKey);
   scene.player.setCollideWorldBounds(true);
+  scene.player.setDepth(1);
   return scene.player;
 }
 
@@ -85,36 +36,6 @@ function creerAnimations(scene, spriteKey = "img_perso") {
     frames: [{ key: spriteKey, frame: 0 }],
     frameRate: 20
   });
-}
-
-/***********************************************************************/
-/** FONCTION POUR RÉDUIRE LES CŒURS
-/***********************************************************************/
-function perdreCoeur(scene) {
-  if (coeurs > 0) {
-    coeurs--;
-    if (coeursImages[coeurs]) {
-      coeursImages[coeurs].destroy();
-    }
-    
-    if (coeurs <= 0) {
-      // Game Over
-      if (!gameOverActif) {
-        gameOverActif = true;
-        scene.scene.launch("gameover");
-      }
-    }
-  }
-
-  // Effet de clignotement rouge
-scene.player.setTint(0xff0000); // Rouge
-
-// Séquence de clignotements
-scene.time.delayedCall(100, () => scene.player.clearTint());
-scene.time.delayedCall(200, () => scene.player.setTint(0xff0000));
-scene.time.delayedCall(300, () => scene.player.clearTint());
-scene.time.delayedCall(400, () => scene.player.setTint(0xff0000));
-scene.time.delayedCall(500, () => scene.player.clearTint());
 }
 
 /***********************************************************************/
@@ -136,23 +57,43 @@ export default class selection extends Phaser.Scene {
     this.load.image("porteOuverte", "./assets/porte_ouverte.png");
     this.load.audio("musique1", "./assets/musique1.mp3");
 
+    // --- ITEMS ---
+    this.load.image("objet1", "./assets/objet1.png");
+    this.load.image("objet2", "./assets/objet2.png");
+    this.load.image("objet3", "./assets/objet3.png");
+    this.load.image("objet4", "./assets/objet4.png");
+
     fct.preloadCommun(this);
     preloadPersonnage(this);
 
-    this.load.spritesheet('enemy_1_run', './assets/enemy_1_run.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('enemy1_run', './assets/enemy1_run.png', { frameWidth: 32, frameHeight: 24 });
+    this.load.spritesheet('enemy2_run', './assets/enemy2_run.png', { frameWidth: 32, frameHeight: 40 });
+    this.load.spritesheet('enemy1_attack', './assets/enemy1_attack.png', { frameWidth: 32, frameHeight: 24 });
+    this.load.spritesheet('enemy2_attack', './assets/enemy2_attack.png', { frameWidth: 32, frameHeight: 40 });
     this.load.image("bullet2", "./assets/bullet2.png");
+    this.load.image("bullet3", "./assets/bullet3.png");
   }
 
   create() {
-    this.musique_de_fond = this.sound.add('musique1');
-    this.musique_de_fond.play({ loop: true, volume: 0.5 });
+    // Nettoyer l'ancien HUD avant d'en créer un nouveau
+    fct.cleanupHUD();
+    
+ // --- MUSIQUE GLOBALE ---
+if (!this.game.musiqueGlobale) {
+  // Utiliser le sound manager global du jeu
+  this.game.musiqueGlobale = this.game.sound.add('musique1', { loop: true, volume: 0.5 });
+  this.game.musiqueGlobale.play();
+} else if (!this.game.musiqueGlobale.isPlaying) {
+  // Si elle existe mais n'est pas en cours, on la rejoue
+  this.game.musiqueGlobale.play();
+}
+
 
     const carteDuNiveau = this.add.tilemap("carte");
     const tileset = carteDuNiveau.addTilesetImage("tuiles_de_jeu", "Phaser_tuilesdejeu");
     const tileset3 = carteDuNiveau.addTilesetImage("tuiles_de_jeu3", "Phaser_tuilesdejeu3");
 
     carteDuNiveau.createLayer("calque_background", tileset);
-    carteDuNiveau.createLayer("calque_background3", tileset);
     carteDuNiveau.createLayer("calque_background2", [tileset, tileset3]);
     this.ladder_layer = carteDuNiveau.createLayer("ladder_layer", tileset);
     const calque_plateformes = carteDuNiveau.createLayer("calque_plateformes", tileset);
@@ -161,25 +102,27 @@ export default class selection extends Phaser.Scene {
     const worldWidth = carteDuNiveau.widthInPixels || 1280;
     const worldHeight = carteDuNiveau.heightInPixels || 720;
 
-    // DÉFINIR LES BOUNDS DU MONDE EN PREMIER !!!
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
     // --- FOND PARALLAX ---
-    this.fond_arriere = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_arriere").setOrigin(0).setScrollFactor(0).setDepth(-4);
-    this.fond_milieu1 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_milieu1").setOrigin(0).setScrollFactor(0).setDepth(-3);
-    this.fond_milieu2 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_milieu2").setOrigin(0).setScrollFactor(0).setDepth(-2);
-    this.fond_avant = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_avant").setOrigin(0).setScrollFactor(0).setDepth(-1);
+    this.fond_arriere = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_arriere").setOrigin(0).setScrollFactor(0.2).setDepth(-4);
+    this.fond_milieu1 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_milieu1").setOrigin(0).setScrollFactor(0.5).setDepth(-3);
+    this.fond_milieu2 = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_milieu2").setOrigin(0).setScrollFactor(1).setDepth(-2);
+    this.fond_avant = this.add.tileSprite(0, 0, worldWidth, this.sys.game.config.height, "parallax_avant").setOrigin(0).setScrollFactor(1.5).setDepth(-1);
 
     // --- PLAYER ---
     creerPlayer(this, 100, 450);
     this.physics.add.collider(this.player, calque_plateformes);
     this.clavier = this.input.keyboard.createCursorKeys();
+    this.toucheI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    
     creerAnimations(this);
 
-   initHUD(this);
+    // --- GROUPE D'ITEMS ---
+    this.grp_items = this.physics.add.group();
 
-   // --- GROUPE DE BALLES DES ENNEMIS ---
+    // --- GROUPE DE BALLES DES ENNEMIS ---
     this.grp_balles_ennemis = this.physics.add.group();
 
     // --- COLLISION BALLES ENNEMIS AVEC PLATEFORMES ---
@@ -190,37 +133,47 @@ export default class selection extends Phaser.Scene {
     // --- COLLISION BALLES ENNEMIS AVEC JOUEUR ---
     this.physics.add.overlap(this.player, this.grp_balles_ennemis, (player, balle) => {
       balle.destroy();
-      perdreCoeur(this);
+      fct.perdreCoeur(this);
     });
 
     // --- PORTES ---
     this.grp_portal = this.physics.add.group();
     this.actionKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    
+    // Spawn point par défaut (sera mis à jour avec le point "start")
     this.spawnPoint = { x: 100, y: 450 };
 
     // --- ENNEMIS ---
     this.grp_ennemis = this.physics.add.group();
     creerAnimations(this);
+
     // Animation ennemi
     this.anims.create({
-      key: "anim_enemy_1_run",
-      frames: this.anims.generateFrameNumbers("enemy_1_run", { start: 0, end: 5 }),
+      key: "anim_enemy1_run",
+      frames: this.anims.generateFrameNumbers("enemy1_run", { start: 0, end: 5 }),
       frameRate: 10,
       repeat: -1
     });
 
+    // Animation ennemi2
+    this.anims.create({
+      key: "anim_enemy2_run",
+      frames: this.anims.generateFrameNumbers("enemy2_run", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
 
     const tab_objects = carteDuNiveau.getObjectLayer("object_layer")?.objects || [];
 
+    // BOUCLE POUR TROUVER LE START EN PREMIER
+    tab_objects.forEach(point => {
+      if (point.name === "start") {
+        this.spawnPoint = { x: point.x, y: point.y };
+      }
+    });
 
     // BOUCLE POUR LES PORTAILS
     tab_objects.forEach(point => {
-      if (point.name === "start") {
-        this.player.x = point.x;
-        this.player.y = point.y;
-        this.spawnPoint = { x: point.x, y: point.y };
-      }
-
       if (point.name === "portal") {
         let portal_properties = {};
         point.properties.forEach(property => {
@@ -232,55 +185,148 @@ export default class selection extends Phaser.Scene {
         portal.id = portal_properties.id;
         portal.target = portal_properties.target;
         portal.ouverte = false;
+        portal.setDepth(0);
 
         this.grp_portal.add(portal);
         portal.body.allowGravity = false;
-        portal.setDepth(47);
+      }
+
+      // --- GESTION DES ITEMS ---
+      if (point.name === "item") {
+        let itemType = "objet1";
+        let itemId = null;
+
+        if (point.properties) {
+          point.properties.forEach(property => {
+            if (property.name === "type") itemType = property.value;
+            if (property.name === "id") itemId = property.value;
+          });
+        }
+
+        const item = fct.creerItem(this, point.x, point.y, itemType, itemId);
+        this.grp_items.add(item);
       }
     });
 
-    // BOUCLE POUR LES ENNEMIS - REMPLACER CETTE PARTIE
+    // BOUCLE POUR LES ENNEMIS
     tab_objects.forEach(point => {
       if (point.name === "enemy_1") {
-        let ennemi = new Enemy(this, point.x, point.y, calque_plateformes);  // Utiliser la classe Enemy
+        let ennemi = new Enemy(this, point.x, point.y, calque_plateformes);
+        this.grp_ennemis.add(ennemi);
+        ennemi.setCollideWorldBounds(true);
+        ennemi.setDepth(1);
+      }
+
+      if (point.name === "enemy_2") {
+        let ennemi = new Enemy2(this, point.x, point.y, calque_plateformes);
         this.grp_ennemis.add(ennemi);
         ennemi.setCollideWorldBounds(true);
       }
     });
+
+    // --- COLLISION JOUEUR / ITEMS ---
+    this.physics.add.overlap(this.player, this.grp_items, (player, item) => {
+      fct.ramasserItem(this, item);
+    }, null, this);
     
     // COLLISION ENNEMIS AVEC PLATEFORMES
     this.physics.add.collider(this.grp_ennemis, calque_plateformes);
-    this.cameras.main.startFollow(this.player);
+
+    // --- COLLISION ENTRE JOUEUR ET HITBOX D'ATTAQUE DES ENEMY2 ---
+    this.time.addEvent({
+      delay: 100,
+      loop: true,
+      callback: () => {
+        this.grp_ennemis.children.iterate(ennemi => {
+          if (ennemi && ennemi.attackHitbox && ennemi.attackHitbox.active) {
+            const distance = Phaser.Math.Distance.Between(
+              this.player.x, this.player.y,
+              ennemi.attackHitbox.x, ennemi.attackHitbox.y
+            );
+            
+            if (distance < 30) {
+              fct.perdreCoeur(this);
+              if (ennemi.attackHitbox) {
+                ennemi.attackHitbox.destroy();
+                ennemi.attackHitbox = null;
+              }
+            }
+          }
+        });
+      }
+    });
 
     this.game.config.sceneTarget = "selection";
 
+    // Placer le joueur au bon endroit (portal ou spawn)
     if (this.game.config.portalTarget != null) {
-    this.portalSpawning();
-  }
-
-    // --- FLAGS VICTOIRE / GAMEOVER ---
-    this.victoireDejaDeclenchee = false;
-    this.gameOverDejaDeclenche = false;
-
-    // --- ARRÊT MUSIQUE ---
-    this.events.on('shutdown', () => { if(this.musique_de_fond) this.musique_de_fond.stop(); });
-    this.events.on('destroy', () => { if(this.musique_de_fond) this.musique_de_fond.stop(); });
-  }
-
-  update() {
-    // --- PARALLAX ---
-    if (this.clavier.left.isDown) {
-      this.fond_arriere.tilePositionX -= 0.2;
-      this.fond_milieu1.tilePositionX -= 0.5;
-      this.fond_milieu2.tilePositionX -= 1;
-      this.fond_avant.tilePositionX -= 1.8;
-    } else if (this.clavier.right.isDown) {
-      this.fond_arriere.tilePositionX += 0.2;
-      this.fond_milieu1.tilePositionX += 0.5;
-      this.fond_milieu2.tilePositionX += 1;
-      this.fond_avant.tilePositionX += 1.8;
+      this.portalSpawning();
+    } else {
+      // Si pas de portal target, mettre au spawn point
+      this.player.x = this.spawnPoint.x;
+      this.player.y = this.spawnPoint.y;
     }
 
+    // --- INITIALISER LE HUD (APRÈS avoir placé le joueur) ---
+    fct.initHUD_Objets(this);
+
+    this.cameras.main.startFollow(this.player);
+
+
+       this.events.on('wake', () => {
+      // Code à exécuter lorsque la scène est réactivée
+      console.log('La scène selection a été réactivée !');
+      fct.cleanupHUD();
+      fct.initHUD_Objets(this);
+
+      // Rejouer la musique si elle n'est pas déjà en cours
+      if (!this.game.musiqueGlobale.isPlaying) {
+        this.game.musiqueGlobale.resume();
+      }
+    });
+  }
+
+    afficherMessage(message) {
+    // Créer un fond semi-transparent
+    const fond = this.add.rectangle(
+      this.cameras.main.centerX,
+      this.cameras.main.centerY,
+      400,
+      100,
+      0x000000,
+      0.6 // transparence
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
+
+    // Ajouter le texte par-dessus
+    const texte = this.add.text(
+      this.cameras.main.centerX,
+      this.cameras.main.centerY,
+      message,
+      {
+        fontSize: "20px",
+        color: "#ffffff",
+        fontFamily: "Arial",
+        align: "center",
+      }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+
+    // Animation d’apparition et de disparition progressive
+    this.tweens.add({
+      targets: [fond, texte],
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      yoyo: true,
+      hold: 1500, // temps d’affichage
+      onComplete: () => {
+        fond.destroy();
+        texte.destroy();
+      }
+    });
+  }
+
+
+  update() {
+    
     // --- PORTES OUVERTURE / FERMETURE ---
     this.grp_portal.children.iterate(portal => {
       let dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, portal.x, portal.y);
@@ -295,7 +341,7 @@ export default class selection extends Phaser.Scene {
       // TELEPORTATION SI ACTION
       if(dist < 60 && Phaser.Input.Keyboard.JustDown(this.actionKey)){
         this.game.config.portalTarget = portal.target;
-        this.scene.switch("niveau1");
+        this.scene.switch("niveau1");  // start recrée la scène comme niveau2→niveau3
       }
     });
 
@@ -336,8 +382,12 @@ export default class selection extends Phaser.Scene {
       this.player.setTexture("dude_face_stop");
     }
 
-    if (this.clavier.up.isDown && onGround) this.player.setVelocityY(-280);
+    if (this.toucheI.isDown && onGround) {
+      this.player.setVelocityY(-280);
+    }
   }
+
+
 
   portalSpawning() {
     let portalFound = false;
@@ -357,4 +407,3 @@ export default class selection extends Phaser.Scene {
     }
   }
 }
-
