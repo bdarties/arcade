@@ -10,6 +10,7 @@ export default class salleporte extends Phaser.Scene {
     // Charger uniquement la map spécifique à ce niveau
     this.load.tilemapTiledJSON("salleporte", "./assets/maps/salle_portes.json");
     this.load.image("filtre", "./assets/black.png");
+    this.load.audio("porteSound", "./assets/sounds/porte.mp3");
   }
 
   create() {
@@ -241,6 +242,8 @@ export default class salleporte extends Phaser.Scene {
   utiliserPorte() {
     // Vérifier si le joueur est sur une porte
     if (this.surPorte) {
+      // Jouer le son de porte
+      this.sound.play("porteSound", { volume: 0.7 });
       // Téléporter vers le menu (ou la prochaine scène)
       this.scene.start("niveau4");
     }

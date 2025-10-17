@@ -1,24 +1,33 @@
 export default class hud extends Phaser.Scene {
   constructor() {
     super({ key: 'hud', active: true });
+    this.nbPotions = 0; // Cache local pour éviter les imports répétés
   }
 
   preload() {
-    this.load.spritesheet('coeurs', 'assets/hud/healths.png', { frameWidth: 20, frameHeight: 20 });
-    this.load.spritesheet('xp_bar', 'assets/hud/barrexp.png', { frameWidth: 58.89, frameHeight: 13 });
-    this.load.image('potion_icon', 'assets/items/potion.png');
+    this.load.spritesheet('coeurs', './assets/hud/healths.png', { 
+      frameWidth: 20.88, 
+      frameHeight: 20 
+    });
+    this.load.spritesheet('xp_bar', './assets/hud/barrexp.png', { 
+      frameWidth: 58.89, 
+      frameHeight: 13 
+    });
+    this.load.image('potion_icon', './assets/items/potion.png');
   }
 
   create() {
     const { width, height } = this.cameras.main;
 
-    this.heart = this.add.image(width / 2, height - 50, 'coeurs', 0)
+    // Cœur (centré en bas)
+    this.heart = this.add.sprite(width / 2, height - 50, 'coeurs', 0)
       .setScrollFactor(0)
-      .setScale(0.5)
+      .setScale(3) // Plus grand pour mieux voir
       .setDepth(1000);
 
-    this.healthText = this.add.text(width / 2, height - 50, '9', {
-      fontSize: '32px',
+    // Texte de vie centré sur le cœur
+    this.healthText = this.add.text(width / 2, height - 50, '5', {
+      fontSize: '28px',
       color: '#ffffff',
       fontFamily: 'Arial',
       stroke: '#000000',
@@ -27,26 +36,16 @@ export default class hud extends Phaser.Scene {
     })
       .setOrigin(0.5, 0.5)
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1001);
 
-    // Affichage du niveau en haut à gauche
-    this.levelText = this.add.text(16, 16, '', {
-      fontSize: '24px',
-      color: '#ffff00',
-      fontFamily: 'Arial',
-      stroke: '#000000',
-      strokeThickness: 4
-    })
-      .setScrollFactor(0)
-      .setDepth(1000);
-
-    // Barre d'XP en bas à gauche (spritesheet)
-    this.xpBar = this.add.image(100, height - 30, 'xp_bar', 0)
+    // Barre d'XP en bas à gauche
+    this.xpBar = this.add.sprite(100, height - 30, 'xp_bar', 0)
       .setScrollFactor(0)
       .setScale(3)
       .setDepth(1000);
 
-    this.xpText = this.add.text(100, height - 55, '', {
+    // Texte du niveau au-dessus de la barre d'XP
+    this.levelText = this.add.text(100, height - 55, 'Level 1', {
       fontSize: '16px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -75,52 +74,69 @@ export default class hud extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setScrollFactor(0)
       .setDepth(1000);
+
+    // Import initial des potions
+    this.updatePotionCount();
   }
 
   update() {
-    var health = this.registry.get('playerHealth') || 5;
-    var maxHealth = this.registry.get('playerMaxHealth') || 5;
+    const health = this.registry.get('playerHealth') || 5;
+    const maxHealth = this.registry.get('playerMaxHealth') || 5;
 
-    let frame = 8;
-    
-    // Calculer le pourcentage de vie
+    // Calculer la frame du cœur (9 frames : 0=vide, 8=plein)
+    // Le cœur se vide proportionnellement au % de vie
     const healthPercent = health / maxHealth;
-    
-    if (healthPercent >= 0.875) {       // 7.875/9 ou plus = coeur plein
-      frame = 0;
-    } else if (healthPercent >= 0.625) { // 5.625/9 = 3/4
-      frame = 1;
-    } else if (healthPercent >= 0.375) { // 3.375/9 = 1/2
-      frame = 2;
-    } else if (healthPercent >= 0.125) { // 1.125/9 = 1/4
-      frame = 3;
-    } else {                             // Presque vide
-      frame = 4;
+    let frame;
+
+    if (health <= 0) {
+      frame = 0; // Complètement vide
+    } else if (healthPercent > 0.875) {
+      frame = 8; // Presque plein à plein (87.5%-100%)
+    } else if (healthPercent > 0.75) {
+      frame = 7; // 75%-87.5%
+    } else if (healthPercent > 0.625) {
+      frame = 6; // 62.5%-75%
+    } else if (healthPercent > 0.5) {
+      frame = 5; // 50%-62.5%
+    } else if (healthPercent > 0.375) {
+      frame = 4; // 37.5%-50%
+    } else if (healthPercent > 0.25) {
+      frame = 3; // 25%-37.5%
+    } else if (healthPercent > 0.125) {
+      frame = 2; // 12.5%-25%
+    } else {
+      frame = 1; // 0%-12.5% (presque vide)
     }
 
     this.heart.setFrame(frame);
-    this.healthText.setText(health);
+    this.healthText.setText(`${health}`);
 
     // Mise à jour du niveau et de l'XP
     const level = this.registry.get('playerLevel') || 1;
     const xp = this.registry.get('playerXP') || 0;
-    const enemiesKilled = this.registry.get('enemiesKilled') || 0;
     const xpForNext = 3;
-    
-    // Calculer la frame de la barre d'XP (0-9 frames pour 10 états)
-    const xpPercent = xp / xpForNext;
-    let xpFrame = Math.floor(xpPercent * 10); // 0 à 10
-    if (xpFrame > 9) xpFrame = 9; // Limiter à la frame 9 (barre pleine)
-    
-    this.xpBar.setFrame(xpFrame);
-    
-    this.xpText.setText(`Level ${level}`);
 
-    // Mise à jour du nombre de potions
-    // Import dynamique pour accéder à nbPotions
+    // Frame de la barre d'XP (0-9)
+    const xpPercent = xp / xpForNext;
+    let xpFrame = Math.floor(xpPercent * 10);
+    if (xpFrame > 9) xpFrame = 9;
+
+    this.xpBar.setFrame(xpFrame);
+    this.levelText.setText(`Level ${level}`);
+
+    // Mise à jour des potions (moins fréquente)
+    if (this.time.now % 500 < 16) { // Toutes les ~500ms
+      this.updatePotionCount();
+    }
+  }
+
+  updatePotionCount() {
     import('./fonctions.js').then(fct => {
-      const potions = fct.getNbPotions();
-      this.potionText.setText(`${potions}`);
+      this.nbPotions = fct.getNbPotions();
+      this.potionText.setText(`${this.nbPotions}`);
+    }).catch(() => {
+      // Fallback si l'import échoue
+      this.potionText.setText(`${this.nbPotions}`);
     });
   }
 }

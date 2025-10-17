@@ -10,6 +10,7 @@ export default class niveau1 extends Phaser.Scene {
   preload() {
     this.load.tilemapTiledJSON("arena1", "./assets/maps/arene1.json");
     this.load.image("filtre", "./assets/black.png");
+    this.load.audio("porteSound", "./assets/sounds/porte.mp3");
   }
 
   create() {
@@ -421,6 +422,7 @@ export default class niveau1 extends Phaser.Scene {
     if (this.surPorte) {
       if (this.porteDeverrouillee) {
         console.log("🚪 Passage au niveau suivant...");
+        this.sound.play("porteSound", { volume: 0.7 });
         this.scene.start("niveau2");
       } else {
         const ennemisRestants = this.groupeEnnemis ? this.groupeEnnemis.getChildren().length : 0;

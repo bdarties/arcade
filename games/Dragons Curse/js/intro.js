@@ -4,34 +4,39 @@ export default class intro extends Phaser.Scene {
   constructor() {
     super({ key: "intro" });
   }
-  //on charge les images
+  
   preload() {
     this.load.image("intro_fond", "assets/introduction.jpg");
     this.load.image("imageBoutonPlay", "assets/start.png");
+    this.load.audio("confirmSound", "./assets/sounds/menuconfirm.mp3");
+    this.load.audio("homemusic", "./assets/sounds/homemusic.mp3");
   }
 
   create() {
-   // on place les éléments de fond
+    // Continuer la musique du menu si elle existe, sinon la démarrer
+    let homeMusic = this.registry.get('homeMusic');
+    if (!homeMusic || !homeMusic.isPlaying) {
+      homeMusic = this.sound.add('homemusic', { loop: true, volume: 0.5 });
+      homeMusic.play();
+      this.registry.set('homeMusic', homeMusic);
+    }
+    
     this.add
       .image(0, 0, "intro_fond")
       .setOrigin(0)
       .setDepth(0);
 
-    // Boutons
     this.boutons = [
       this.add.image(1000, 555, "imageBoutonPlay").setDepth(1),
     ];
 
     this.boutons.forEach(b => b.setInteractive());
 
-    // Index du bouton sélectionné
     this.selectedIndex = 0;
     this.updateSelection();
 
-    // Clavier
     this.keyI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
-    // Action sur validation
     this.actions = [
       () => this.scene.start("selection"),
     ];
@@ -39,7 +44,6 @@ export default class intro extends Phaser.Scene {
 
   updateSelection() {
     this.boutons.forEach((b, i) => {
-      // Scale progressif vers 1.1 si sélectionné, sinon vers 1
       const targetScale = i === this.selectedIndex ? 1.1 : 1;
       this.tweens.add({
         targets: b,
@@ -51,33 +55,35 @@ export default class intro extends Phaser.Scene {
   }
 
   update() {
-    // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
-      // Réinitialiser toutes les stats du registry avant de commencer
+      this.sound.play("confirmSound");
+      
+      // Arrêter la musique du menu
+      const homeMusic = this.registry.get('homeMusic');
+      if (homeMusic) {
+        homeMusic.stop();
+        this.registry.set('homeMusic', null);
+      }
+
       this.registry.set('playerHealth', 5);
       this.registry.set('playerMaxHealth', 5);
       this.registry.set('playerLevel', 1);
       this.registry.set('playerXP', 0);
       this.registry.set('enemiesKilled', 0);
       
-      // Réinitialiser les skills
       this.registry.set('skillPointsAvailable', 0);
       this.registry.set('skillForce', 0);
       this.registry.set('skillVitesse', 0);
       this.registry.set('skillVie', 0);
       
-      // Réinitialiser les potions
       fct.resetNbPotions();
       
-      // S'assurer que le HUD est actif
       if (!this.scene.isActive('hud')) {
         this.scene.launch('hud');
       }
-      
       this.actions[this.selectedIndex]();
     }
   }
 }
 
-//export default intro;
 

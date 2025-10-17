@@ -15,6 +15,9 @@ export default class niveau2 extends Phaser.Scene {
     this.load.image("tileset2", "./assets/maps/tiles/tileset2.png");
     this.load.tilemapTiledJSON("salle_leviers", "./assets/maps/salle_leviers.json");
     this.load.image("filtre", "./assets/black.png");
+    this.load.audio("porteSound", "./assets/sounds/porte.mp3");
+    this.load.audio("reussitelevier", "./assets/sounds/reussitelevier.mp3");
+    this.load.audio("erreurlevier", "./assets/sounds/erreurlevier.mp3");
     this.load.spritesheet("mage1", "./assets/mage1.png", {
       frameWidth: 64,
       frameHeight: 64
@@ -35,22 +38,17 @@ export default class niveau2 extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
-    // Charger l'image de la potion (on utilise le coeur comme placeholder)
-    this.load.image('potion', './assets/hud/health/heart_3q.png');
-    
-    // NOUVEAU : Charger l'image du levier
+    this.load.image('potion', './assets/hud/items/potion.png');    
     this.load.image("img_levier", "./assets/levier.png");
   }
 
   create() {
-    // --- PvManager
     this.pvManager = new fct.PvManager(this);
     
-    // --- Initialiser le système de skills (accès global)
     this.skillManager = new fct.SkillManager(this);
     
     // ===========================
-    // NOUVEAU Système de leviers
+    //  Système de leviers
     // ===========================
     this.leviers = [];
     this.sequenceCorrecte = Phaser.Utils.Array.Shuffle([0, 1, 2, 3, 4]);
@@ -189,6 +187,11 @@ export default class niveau2 extends Phaser.Scene {
     if (this.calque_sol) {
       this.calque_sol.setCollisionByProperty({ estSolide: true });
       this.physics.add.collider(this.player, this.calque_sol);
+    }
+    
+    if (this.calques_objets) {
+      this.calques_objets.setCollisionByProperty({ estSolide: true });
+      this.physics.add.collider(this.player, this.calques_objets);
     }
 
     // Collision avec les potions
@@ -543,6 +546,9 @@ export default class niveau2 extends Phaser.Scene {
     // Vérifier si c'est le bon levier dans la séquence
     if (indexLevier === this.sequenceCorrecte[this.etapeActuelle]) {
       // BON LEVIER !
+      // Jouer le son de réussite
+      this.sound.play("reussitelevier", { volume: 0.7 });
+      
       // Animation du levier (rotation)
       this.tweens.add({
         targets: levier,
@@ -571,6 +577,9 @@ export default class niveau2 extends Phaser.Scene {
       }
     } else {
       // MAUVAIS LEVIER !
+      // Jouer le son d'erreur
+      this.sound.play("erreurlevier", { volume: 0.7 });
+      
       // Afficher une croix ❌
       this.afficherFeedback("❌", 0xff0000, levier.x, levier.y);
       
@@ -665,6 +674,7 @@ export default class niveau2 extends Phaser.Scene {
     if (this.surPorte) {
       if (this.porteDeverrouillee) {
         console.log("🚪 Passage à la salle suivante...");
+        this.sound.play("porteSound", { volume: 0.7 });
         this.scene.start("niveau3");
       } else {
         console.log("🔒 La porte est verrouillée ! Complétez la séquence de leviers.");

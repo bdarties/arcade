@@ -48,11 +48,22 @@ export default class selection extends Phaser.Scene {
       frameHeight: 16,
     });
     this.load.audio("damageSound", "./assets/sounds/givedamage.mp3");
+    this.load.audio("backgroundmusic", "./assets/sounds/backgroundmusic.mp3");
+    this.load.audio("porteSound", "./assets/sounds/porte.mp3");
 
     this.load.image("potion", "./assets/items/potion.png");
   }
 
   create() {
+    // Démarrer la musique de fond globale
+    // Stocker la musique dans le registry pour y accéder depuis toutes les scènes
+    let music = this.registry.get('backgroundMusic');
+    if (!music || !music.isPlaying) {
+      music = this.sound.add('backgroundmusic', { loop: true, volume: 0.5 });
+      music.play();
+      this.registry.set('backgroundMusic', music);
+    }
+    
     // Initialiser le compteur de clés
     this.nombreClesRecuperees = 0;
     this.nombreClesTotales = 5;
@@ -420,6 +431,7 @@ export default class selection extends Phaser.Scene {
     if (this.surPorte) {
       if (this.porteDeverrouillee) {
         console.log("🚪 Passage au niveau suivant...");
+        this.sound.play("porteSound", { volume: 0.7 });
         this.scene.start("niveau1");
       } else {
         console.log("🔒 La porte est verrouillée ! Récupérez toutes les clés.");

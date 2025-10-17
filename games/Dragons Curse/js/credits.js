@@ -6,9 +6,20 @@ export default class credits extends Phaser.Scene {
   preload() {
     this.load.image("credit_fond", "assets/credit_background.jpg");
     this.load.image("imageBoutonBack", "assets/retour.png");
+    this.load.audio("homemusic", "./assets/sounds/homemusic.mp3");
+    this.load.audio("confirmSound", "./assets/sounds/menuconfirm.mp3");
+
   }
 
   create() {
+    // Continuer la musique du menu si elle existe, sinon la démarrer
+    let homeMusic = this.registry.get('homeMusic');
+    if (!homeMusic || !homeMusic.isPlaying) {
+      homeMusic = this.sound.add('homemusic', { loop: true, volume: 0.5 });
+      homeMusic.play();
+      this.registry.set('homeMusic', homeMusic);
+    }
+    
    // on place les éléments de fond
     this.add
       .image(0, 0, "credit_fond")
@@ -51,6 +62,7 @@ export default class credits extends Phaser.Scene {
   update() {
     // Validation
     if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+      this.sound.play("confirmSound");
       this.actions[this.selectedIndex]();
     }
   }
