@@ -7,17 +7,26 @@ export default class gameover extends Phaser.Scene {
 
   preload() {
     // Image de fond Game Over
-    this.load.image("fondGameOver", "assets/page_gameover.png");
+    this.load.image("fondGameOver", "assets/page_gameover.jpg");
 
     // Boutons
-    this.load.image("btn_rejouer", "assets/btn_rejouer.png");
-    this.load.image("btn_menu", "assets/btn_menu.png");
+    this.load.image("btn_rejouer", "./assets/btn_rejouer.png");
+    this.load.image("btn_menu", "./assets/btn_menu.png");
 
-    // Son bouton (optionnel, tu peux enlever si pas utile)
-    this.load.audio("boutonClick", "assets/boutonclick.mp3");
+    // Son bouton
+    this.load.audio("boutonClick", "./assets/boutonclick.mp3");
+    this.load.audio('gameOverMusic', './assets/game-over.mp3');
   }
 
   create() {
+    // --- STOP TOUTES LES MUSIQUES ---
+    this.sound.stopAll();
+
+    // --- LANCER LA MUSIQUE GAME OVER ---
+    this.gameOverMusic = this.sound.add("gameOverMusic", { loop: false });
+    this.gameOverMusic.setVolume(0.5);
+    this.gameOverMusic.play();
+
     const centerX = this.cameras.main.width / 2;
     const centerY = this.cameras.main.height / 2;
 
@@ -33,7 +42,7 @@ export default class gameover extends Phaser.Scene {
     /**********************/
     this.boutons = [];
 
-    // Position en bas de l’écran
+    // Position en bas de l'écran
     const bottomY = this.cameras.main.height - 150;
 
     // Bouton Rejouer
@@ -76,7 +85,6 @@ export default class gameover extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
       this.sonBouton.play();
-      // 🚀 On attend un petit délai avant de changer de scène
       this.time.delayedCall(50, () => {
         this.executeAction(this.selectedIndex);
       });
@@ -92,7 +100,15 @@ export default class gameover extends Phaser.Scene {
   }
 
   executeAction(index) {
+    // --- ARRÊTER LA MUSIQUE GAME OVER ---
+    if (this.gameOverMusic && this.gameOverMusic.isPlaying) {
+      this.gameOverMusic.stop();
+    }
+
     resetGame();
+    
+    // Réinitialiser le portalTarget pour respawn au start
+    this.game.config.portalTarget = null;
 
     if (index === 0) {
       // Rejouer
@@ -106,6 +122,8 @@ export default class gameover extends Phaser.Scene {
       this.scene.stop("niveau2");
       this.scene.stop("niveau3");
       this.scene.stop("selection");
+      this.scene.stop("checkpoint1");
+      this.scene.stop("checkpoint2");
       this.scene.start("accueil");
     }
   }

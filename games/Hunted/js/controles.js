@@ -5,11 +5,11 @@ export default class controles extends Phaser.Scene {
 
   preload() {
     // charger l'image du fond et du bouton retour
-    this.load.image("fondControles", "assets/page_acceuil.jpg");
-    this.load.image("btn_retour", "assets/btn_retour.png");
+    this.load.image("fondControles", "./assets/page_controle.jpg");
+    this.load.image("btn_retour", "./assets/btn_retour.png");
 
     // son de clic
-    this.load.audio("btnClick", "assets/boutonclick.mp3"); // remplace par un vrai fichier audio
+    this.load.audio("btnClick", "./assets/boutonclick.mp3"); // remplace par un vrai fichier audio
   }
 
   create() {
@@ -23,33 +23,6 @@ export default class controles extends Phaser.Scene {
     let scaleY = this.cameras.main.height / bg.height;
     let scale = Math.max(scaleX, scaleY);
     bg.setScale(scale).setScrollFactor(0);
-
-    // --- FILTRE NOIR (60% opacity) ---
-    const filtreNoir = this.add.rectangle(
-      this.cameras.main.width / 2,
-      this.cameras.main.height / 2,
-      this.cameras.main.width,
-      this.cameras.main.height,
-      0x000000,
-      0.6
-    );
-    filtreNoir.setScrollFactor(0);
-
-    // --- TITRE ---
-    this.add.text(
-      this.cameras.main.width / 2,
-      100,
-      "Contrôles du jeu",
-      { font: "48px Courier", fill: "#fff" }
-    ).setOrigin(0.5);
-
-    // --- EXPLICATIONS TOUCHES ---
-    this.add.text(
-      this.cameras.main.width / 2,
-      250,
-      "Valider: K \n Sauter: I \n Intéragir: P \n Attaquer: O",
-      { font: "32px Courier", fill: "#fff", align: "center" }
-    ).setOrigin(0.5);
 
     // --- BOUTON RETOUR ---
     this.boutonRetour = this.add.image(

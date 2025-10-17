@@ -5,11 +5,11 @@ export default class credits extends Phaser.Scene {
 
   preload() {
     // charger l'image du fond et du bouton retour
-    this.load.image("fondControles", "assets/page_acceuil.jpg");
-    this.load.image("btn_retour", "assets/btn_retour.png");
+    this.load.image("page_acceuil", "./assets/page_acceuil.jpg");
+    this.load.image("btn_retour", "./assets/btn_retour.png");
 
     // son de clic
-    this.load.audio("btnClick", "assets/boutonclick.mp3"); // remplace par un vrai fichier audio
+    this.load.audio("btnClick", "./assets/boutonclick.mp3"); // remplace par un vrai fichier audio
   }
 
   create() {
@@ -17,7 +17,7 @@ export default class credits extends Phaser.Scene {
     const bg = this.add.image(
       this.cameras.main.width / 2,
       this.cameras.main.height / 2,
-      "fondControles"
+      "page_acceuil"
     );
     let scaleX = this.cameras.main.width / bg.width;
     let scaleY = this.cameras.main.height / bg.height;

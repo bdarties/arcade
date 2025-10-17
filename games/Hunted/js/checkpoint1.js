@@ -6,15 +6,18 @@ export default class checkpoint1 extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("fond_noir", "./assets/fond_noir1.png");
+    this.load.image("fond_noir", "./assets/fond_noir1.jpg");
     this.load.image("btn_continue", "./assets/btn_continuer.png");
 
     this.load.audio("typing", "./assets/typing.mp3");
+    this.load.audio("boutonClick", "./assets/boutonclick.mp3");
   }
 
   create() {
     this.son_typing = this.sound.add('typing', { loop: true });
     console.log("[checkpoint1] Scene create OK");
+
+    this.sonBouton = this.sound.add("boutonClick");
 
     // Fond noir
     this.add.image(0, 0, "fond_noir").setOrigin(0, 0).setDepth(-1);
@@ -80,13 +83,19 @@ export default class checkpoint1 extends Phaser.Scene {
   update() {
     // Vérifie si K est pressé
     if (Phaser.Input.Keyboard.JustDown(this.keyK)) {
-      console.log("[checkpoint1] Retour vers selection via touche K...");
-      // Arrêter le son si encore en cours
-      if (this.son_typing.isPlaying) {
-        this.son_typing.stop();
-      }
-      this.scene.start("selection");
-    }
+  this.sonBouton.play(); // 🔊 Joue le son du clic
+  console.log("[checkpoint1] Retour vers selection via touche K...");
+
+  // Arrêter le son si encore en cours
+  if (this.son_typing.isPlaying) {
+    this.son_typing.stop();
+  }
+
+  // Laisser le son se jouer un petit instant avant de changer de scène
+  this.time.delayedCall(100, () => {
+    this.scene.start("selection");
+  });
+}
   }
 
   addLetter() {
