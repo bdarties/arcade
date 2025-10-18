@@ -44,4 +44,4 @@ var config = {
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config);
-game.scene.start("accueil", { config: config });
+game.scene.start("accuei", { config: config });
