@@ -142,8 +142,8 @@ class GamesGridNavigation {
 		this.gameDesc.textContent = description;
 		this.gameAuthors.textContent = authors ? `Auteurs: ${authors}` : '';
 		
-		// this.videoPath = videoPath;
-		/*
+		 this.videoPath = videoPath;
+		
 		const videoContainer = document.getElementById('game-demo-video');
             const videoSource = document.getElementById('video-source');
             if (videoContainer && videoSource) {
@@ -151,7 +151,7 @@ class GamesGridNavigation {
                 videoSource.parentElement.load();
                 videoContainer.style.display = 'block';
             }
-			*/
+			
 
 
 	}
