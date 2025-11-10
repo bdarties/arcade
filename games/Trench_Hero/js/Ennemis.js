@@ -48,7 +48,7 @@ export class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
 
   creerDropItem() {
     // 30% de chance de dropper un item
-    if (Math.random() > 0.15) return;
+    if (Math.random() > 0.20) return;
 
     let itemType;
     const rand = Math.random() * 100;
@@ -147,7 +147,7 @@ export class Ennemi1 extends Phaser.Physics.Arcade.Sprite {
     if (this.estMort) return;
     // Jouer le son du tir de l'ennemi (volume plus bas que le joueur)
     if (this.scene && this.scene.sound && this.scene.sound.play) {
-      this.scene.sound.play('gunshot', { volume: 0.05, loop: false });
+      this.scene.sound.play('gunshot', { volume: 0.55, loop: false }); //volume pc 0.05
     }
     try {
       this.anims.play("ennemi_shoot", true);
@@ -415,14 +415,14 @@ export class Ennemi2 extends Phaser.Physics.Arcade.Sprite {
     const zoneRouge = scene.add.graphics();
     zoneRouge.setDepth(3);
     zoneRouge.fillStyle(0xff0000, 0.2);
-    zoneRouge.fillEllipse(0, 0, 5, 3); // Petite ellipse initiale
+    zoneRouge.fillEllipse(0, 0, 4, 2); // Petite ellipse initiale
     zoneRouge.setPosition(x, y);
 
     // Animer l'avertissement (agrandissement progressif)
     scene.tweens.add({
       targets: zoneRouge,
-      scaleX: 24, // 120/5 = 24
-      scaleY: 26.67, // 80/3 ≈ 26.67
+      scaleX: 20, 
+      scaleY: 22,
       alpha: { from: 0.2, to: 1 },
       duration: 1000,
       ease: "Cubic.Out",
@@ -438,15 +438,15 @@ export class Ennemi2 extends Phaser.Physics.Arcade.Sprite {
         if (!scene.anims.exists("explosion_anim")) {
           scene.anims.create({
             key: "explosion_anim",
-            frames: scene.anims.generateFrameNumbers("explosion", { start: 0, end: 10 }),
-            frameRate: 11,
+            frames: scene.anims.generateFrameNumbers("explosion", { start: 0, end: 8 }),
+            frameRate: 9,
             repeat: 0,
           });
         }
 
         // Jouer le son d'explosion (une seule fois)
         if (scene.sound && scene.sound.play) {
-          scene.sound.play('grenade', { volume: 0.3, loop: false });
+          scene.sound.play('grenade', { volume: 0.8, loop: false });//volume pc 0.3
         }
 
         // Jouer l'animation
@@ -457,7 +457,7 @@ export class Ennemi2 extends Phaser.Physics.Arcade.Sprite {
           const player = scene?.player;
           if (player && player.active && !player.estMort) {
             const distance = Phaser.Math.Distance.Between(x, y, player.x, player.y);
-            if (distance <= 60) {
+            if (distance <= 50) {
               if (typeof player.prendreDegats === "function") {
                 player.prendreDegats(20);
               }
@@ -681,7 +681,7 @@ export class Ennemi3 extends Phaser.Physics.Arcade.Sprite {
 
     // jouer le son du couteau une seule fois pour cette attaque
     if (this.scene && this.scene.sound && this.scene.sound.play) {
-      this.scene.sound.play('couteau', { volume: 0.2, loop: false });
+      this.scene.sound.play('couteau', { volume: 0.7, loop: false }); //volume pc 0.2
     }
 
     this.once("animationcomplete", () => {
@@ -734,8 +734,8 @@ export class Ennemi4 extends Phaser.GameObjects.Container {
     this.endY = Math.max(50, Math.min(hauteurMap - 50, playerY + offsetEndY));
 
     // Paramètres ajustables
-    this.distanceEntreZones = 30;
-    this.interval = 200;
+    this.distanceEntreZones = 60;
+    this.interval = 300;
     this.tailleInitiale = 2;
     this.tailleMax = 30;
     this.dureeAgrandissement = 1000;
@@ -852,14 +852,14 @@ export class Ennemi4 extends Phaser.GameObjects.Container {
     // Créer l'animation "explosion" si elle n'existe pas
 
     this.scene.anims.create({
-      key: "explosion_anim",
-      frames: this.scene.anims.generateFrameNumbers("explosion", { start: 0, end: 10, }),
-      frameRate: 11,
+      key: "explosion2_anim",
+      frames: this.scene.anims.generateFrameNumbers("explosion2", { start: 0, end: 8, }),
+      frameRate: 9,
       repeat: 0,
     });
 
     // Jouer l'animation
-    explosion.anims.play("explosion_anim", true);
+    explosion.anims.play("explosion2_anim", true);
 
     //DÉGÂTS : Vérifier si le joueur est dans la zone
     this.infligerDegats(x, y);
@@ -954,6 +954,15 @@ export class Ennemi5 extends Phaser.Physics.Arcade.Sprite {
 
     // Création des animations
     this.anims.create({
+      key: "ennemi5_idle",
+      frames: this.anims.generateFrameNumbers("ennemi5_idle", {
+        start: 0,
+        end: 1
+      }),
+      frameRate: 7,
+      repeat: -1
+    });
+    this.anims.create({
       key: "ennemi5_move",
       frames: this.anims.generateFrameNumbers("ennemi5_move", {
         start: 0,
@@ -994,7 +1003,7 @@ export class Ennemi5 extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(0, 0);
 
     // Animation idle
-    this.anims.play("ennemi5_move", true);
+    this.anims.play("ennemi5_idle", true);
 
     // Orienter vers le joueur
     this.setFlipX(player.x < this.x);
@@ -1022,7 +1031,7 @@ export class Ennemi5 extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Générer 8-12 zones aléatoires sur toute la map
-    const nbZones = Phaser.Math.Between(8, 12);
+    const nbZones = Phaser.Math.Between(12, 16);
     const largeurMap = this.scene.largeurCarte || 1600;
     const hauteurMap = this.scene.hauteurCarte || 1200;
 
@@ -1042,6 +1051,8 @@ export class Ennemi5 extends Phaser.Physics.Arcade.Sprite {
   }
 
   creerZoneExplosion(x, y) {
+    if (!this.scene || !this.scene.add) return;
+    if (this.estMort) return;
     // Créer d'abord le cercle rouge d'avertissement (même style que l'avion)
     const zoneRouge = this.scene.add.graphics();
     zoneRouge.setDepth(3);
@@ -1066,17 +1077,17 @@ export class Ennemi5 extends Phaser.Physics.Arcade.Sprite {
         explosion.setDepth(6); // Au-dessus de tout
 
         // Créer l'animation "explosion" si elle n'existe pas
-        if (!this.scene.anims.exists("explosion_anim")) {
+        if (!this.scene.anims.exists("explosion2_anim")) {
           this.scene.anims.create({
-            key: "explosion_anim",
-            frames: this.scene.anims.generateFrameNumbers("explosion", { start: 0, end: 10 }),
-            frameRate: 11,
+            key: "explosion2_anim",
+            frames: this.scene.anims.generateFrameNumbers("explosion2", { start: 0, end: 8 }),
+            frameRate: 9,
             repeat: 0,
           });
         }
 
         // Jouer l'animation
-        explosion.anims.play("explosion_anim", true);
+        explosion.anims.play("explosion2_anim", true);
 
         // DÉGÂTS : Vérifier si le joueur est dans la zone
         const player = this.scene.player;

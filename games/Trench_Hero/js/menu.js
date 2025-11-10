@@ -14,8 +14,6 @@ export default class menu extends Phaser.Scene {
     this.load.image("bouton_quitter", "./assets/menu/bouton_quitter.png");
     this.load.image("bouton_rejouer", "./assets/menu/bouton_rejouer.png");
 
-
-
     //musiques et sons
 
     //ambiances 
@@ -45,19 +43,16 @@ export default class menu extends Phaser.Scene {
 
     //victoire
     this.load.audio("victoire", "./assets/sons/victoire/victoire.mp3"); //ok
-
-
   }
 
   create() {
     this.afficherMenu3();
 
-  if (!this.sound.get('musique_menu')) {
-    this.musiqueMenu = this.sound.add('musique_menu', { loop: true, volume: 0.5 });
-    this.musiqueMenu.play();
+    if (!this.sound.get('musique_menu')) {
+      this.musiqueMenu = this.sound.add('musique_menu', { loop: true, volume: 1 }); //volume pc 0.5
+      this.musiqueMenu.play();
+    }
   }
-
-}
 
   afficherMenu3() {
     // Nettoyer la scène
@@ -271,20 +266,64 @@ export default class menu extends Phaser.Scene {
     const centerX = this.cameras.main.centerX;
     const centerY = this.cameras.main.centerY;
 
-    // Fond noir
-    this.add.rectangle(0, 0, 800, 600, 0x000000).setOrigin(0);
+    // Fond menu3
+    this.add.image(0, 0, "menu1").setOrigin(0);
 
-    // Texte "En travaux"
-    this.add.text(centerX, centerY - 50, "En travaux", {
+    // Titre CREDITS
+    this.add.text(centerX, centerY - 300, "CREDITS", {
       fontSize: "48px",
-      color: "#ffffff",
+      color: "#f7e5b3",
       fontStyle: "bold"
     }).setOrigin(0.5);
+
+    const creditsText = `Créateurs : Maël Thing Leoh, Pierre Frenzel, Maxens Sevilla
+
+Spritesheet du joueur principal : Elthen
+
+Armes et éléments de décor : Kikcinaa
+
+Musique : Evanto, Pixabay
+
+Objets :
+• Pansement et bandage : Mattzy_Games
+• Trousse médicale : HappyPiggy
+
+Véhicules :
+• Avions : Freepik
+• Tank (boss) : Batuhan
+
+Effets visuels :
+• Explosions : ChatGPT
+
+Ennemis : Inspirés du personnage principal créé par Elthen`;
+
+    const textObj = this.add.text(centerX, centerY, creditsText, {
+      fontSize: "20px",
+      fontStyle: "bold",
+      color: "#ffffff",
+      align: "center",
+      fixedWidth: 550,
+      fixedHeight: 450,
+      wordWrap: { width: 450 }
+    }).setOrigin(0.5);
+
+    // Boîte semi-transparente pour le texte des crédits (même dimensions que le texte)
+    const creditsBox = this.add.rectangle(
+      centerX, 
+      centerY, 
+      550, 
+      500, 
+      0x000000, 
+      0.6
+    ).setOrigin(0.5);
+
+    // Mettre la boîte sous le texte
+    this.children.bringToTop(textObj);
 
     let indexSelection = 0;
 
     // Bouton Quitter
-    var bouton_quitter = this.add.image(centerX, centerY + 100, "bouton_quitter").setOrigin(0.5);
+    var bouton_quitter = this.add.image(centerX + 450, centerY + 300, "bouton_quitter").setOrigin(0.5);
     bouton_quitter.setScale(1.5);
     bouton_quitter.setInteractive();
 

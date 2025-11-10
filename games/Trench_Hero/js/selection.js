@@ -18,15 +18,16 @@ export default class selection extends Phaser.Scene {
     this.enMenuPause = false;
     this.groupe_items = null;
 
+    // Configuration des vagues ennemies
     this.configVagues = [
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 0 }
+      { totalEnnemis: 2, pauseApres: 5 }, //2 3 5 5 7
+      { totalEnnemis: 3, pauseApres: 5 },
+      { totalEnnemis: 5, pauseApres: 5 },
+      { totalEnnemis: 5, pauseApres: 5 },
+      { totalEnnemis: 7, pauseApres: 0 }
     ];
-
-    this.configEnnemi4ParVague = [15, 10, , 7, 4];
+    // Config avions (ennemi4)
+    this.configEnnemi4ParVague = [5, 5, 7, 5, 5];
 
     this.vagueActuelle = 0;
     this.maxVagues = this.configVagues.length;
@@ -44,6 +45,7 @@ export default class selection extends Phaser.Scene {
     this.largeurCarte = 0;
     this.hauteurCarte = 0;
 
+    // Objet catalogue
     this.catalogueBonus = {
       portee: {
         nom: "Distance de tir",
@@ -301,11 +303,13 @@ export default class selection extends Phaser.Scene {
     this.load.spritesheet("ennemi3_is_dead", "./assets/ennemi3/ennemi3_is_dead.png", { frameWidth: 64, frameHeight: 64 });
 
     this.load.image("ennemi4", "./assets/ennemi4/ennemi4.png");
-    this.load.spritesheet("explosion", "./assets/ennemi4/explosion.png", { frameWidth: 62, frameHeight: 64 });
-    
-    this.load.spritesheet("ennemi5_move", "./assets/ennemi5/ennemi5_move.png", {frameWidth: 128, frameHeight: 96});
-    this.load.spritesheet("ennemi5_shoot", "./assets/ennemi5/ennemi5_shoot.png", {frameWidth: 128, frameHeight: 96});
-    this.load.spritesheet("ennemi5_death", "./assets/ennemi5/ennemi5_death.png", {frameWidth: 160, frameHeight: 128});
+    this.load.spritesheet("explosion", "./assets/ennemi4/explosion.png", { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet("explosion2", "./assets/ennemi4/explosion2.png", { frameWidth: 128, frameHeight: 96 });
+
+    this.load.spritesheet("ennemi5_move", "./assets/ennemi5/ennemi5_move.png", { frameWidth: 128, frameHeight: 96 });
+    this.load.spritesheet("ennemi5_shoot", "./assets/ennemi5/ennemi5_shoot.png", { frameWidth: 128, frameHeight: 96 });
+    this.load.spritesheet("ennemi5_death", "./assets/ennemi5/ennemi5_death.png", { frameWidth: 160, frameHeight: 128 });
+    this.load.spritesheet("ennemi5_idle", "./assets/ennemi5/ennemi5_idle.png", { frameWidth: 128, frameHeight: 96 });
 
     // BONUS
     this.load.image("Distance_tir_B", "./assets/bonus/Distance_tir_B.png");
@@ -335,7 +339,7 @@ export default class selection extends Phaser.Scene {
     this.load.image("bandage", "./assets/items/bandage.png");
     this.load.image("trousse", "./assets/items/trousse.png");
 
-      // tiled
+    // tiled
     this.load.image("Phaser_tuilesdejeu", "./assets/tileset_city.png");
     this.load.image("Phaser_tuilesdejeu2", "./assets/tileset_war.png");
     this.load.tilemapTiledJSON("carte", "./assets/carte.tmj");
@@ -367,14 +371,12 @@ export default class selection extends Phaser.Scene {
 
     this.physics.world.gravity.y = 0;
 
-    // Ambiance : jouer 'ambiance_guerre' en boucle doucement tant que l'on est sur la scène de sélection
+    // Musique d'ambiance
     if (this.cache.audio && this.cache.audio.exists && this.cache.audio.exists('ambiance_guerre')) {
-      // éviter de recréer si déjà présent
       if (!this.sound.get('ambiance_guerre')) {
-        this._ambianceGuerre = this.sound.add('ambiance_guerre', { loop: true, volume: 0.25 });
+        this._ambianceGuerre = this.sound.add('ambiance_guerre', { loop: true, volume: 0.75 }); //volume pc 0.25
         this._ambianceGuerre.play();
       } else {
-        // si existe mais pas jouée, récupérer et jouer
         const s = this.sound.get('ambiance_guerre');
         if (s && !s.isPlaying) s.play();
       }
@@ -391,6 +393,7 @@ export default class selection extends Phaser.Scene {
       });
     }
 
+    // Création de la carte
     const carteDuNiveau = this.make.tilemap({ key: "carte" });
     const tileset = carteDuNiveau.addTilesetImage("tileset_city", "Phaser_tuilesdejeu");
     const tileset2 = carteDuNiveau.addTilesetImage("tileset_war", "Phaser_tuilesdejeu2");
@@ -419,6 +422,7 @@ export default class selection extends Phaser.Scene {
       this.player.reinitialiserStats();
     }
 
+    // Zone invisible pour le changement de niveau
     const triggerLayer = carteDuNiveau.getObjectLayer("calque_trigger");
     if (triggerLayer && triggerLayer.objects.length > 0) {
       triggerLayer.objects.forEach(obj => {
@@ -432,6 +436,7 @@ export default class selection extends Phaser.Scene {
       });
     }
 
+    // Collisions
     this.physics.world.setBounds(0, 0, this.largeurCarte, this.hauteurCarte);
     this.cameras.main.setBounds(0, 0, this.largeurCarte, this.hauteurCarte);
     this.cameras.main.setZoom(2);
@@ -445,17 +450,17 @@ export default class selection extends Phaser.Scene {
     this.physics.add.collider(this.player, this.calque_barriere);
     this.physics.add.collider(this.groupe_soldats, this.calque_barriere);
     this.physics.add.collider(this.groupe_soldats, this.groupe_soldats);
-    
+
     this.physics.add.overlap(this.player, this.groupe_soldats, this.collisionJoueurEnnemi, null, this);
     this.physics.add.overlap(this.groupe_balles, this.groupe_soldats, this.chocAvecBalles, null, this);
     this.physics.add.overlap(this.player, this.groupe_balles_ennemi, this.chocAvecBalleEnnemi, null, this);
-    
-    // COLLISION ITEMS
+
     this.physics.add.overlap(this.player, this.groupe_items, this.joueurPrenItem, null, this);
 
     this.clavier = this.input.keyboard.createCursorKeys();
     this.toucheI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
+    // Barre de vie
     const largeurBarre = 180;
     const hauteurBarre = 24;
     const barreVieX = 330;
@@ -482,6 +487,7 @@ export default class selection extends Phaser.Scene {
     const gameWidth = this.scale.width;
     const gameHeight = this.scale.height;
 
+    // Texte des vagues
     this.texteVague = this.add.text(
       gameWidth / 2, 180,
       "VAGUE 1/5",
@@ -541,6 +547,7 @@ export default class selection extends Phaser.Scene {
     });
   }
 
+  // Le joueur ramasse un item de soins
   joueurPrenItem(joueur, item) {
     if (!item || !item.active) return;
 
@@ -558,7 +565,7 @@ export default class selection extends Phaser.Scene {
     if (soins > 0) {
       joueur.vie += soins;
       if (joueur.vie > joueur.vieMax) joueur.vie = joueur.vieMax;
-      
+
       if (this.updateBarreVie) {
         this.updateBarreVie();
       }
@@ -572,6 +579,7 @@ export default class selection extends Phaser.Scene {
     item.destroy();
   }
 
+  // Changement de niveau avec transition
   changerNiveau() {
     const statsJoueur = {
       vie: this.player.vie,
@@ -586,6 +594,7 @@ export default class selection extends Phaser.Scene {
     this.scene.start('transition2', { statsJoueur });
   }
 
+    // Tirage aléatoire d'une rareté en fonction des poids
   tirerRarete(categorieBonus) {
     const raretes = categorieBonus.rarete;
     const tableauRaretes = Object.keys(raretes);
@@ -603,6 +612,7 @@ export default class selection extends Phaser.Scene {
     return tableauRaretes[0];
   }
 
+    // Génère 3 bonus différents (type + rareté) à proposer au joueur 
   generer3BonusDifferents() {
     const typesBonus = Object.keys(this.catalogueBonus);
     const bonusChoisis = [];
@@ -629,6 +639,7 @@ export default class selection extends Phaser.Scene {
     return bonusChoisis;
   }
 
+  // Propose 3 bonus au joueur et applique le choix fait
   proposerBonus(callback) {
     this.physics.pause();
     this.player.invincible = true; // AJOUT : Rendre invincible pendant le choix
@@ -659,6 +670,8 @@ export default class selection extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(151);
 
+
+      // Générer les 3 bonus à proposer au joueur 
     const bonusChoisis = this.generer3BonusDifferents();
     const elementsUI = [overlay, titre];
     const imagesBonus = [];
@@ -678,7 +691,8 @@ export default class selection extends Phaser.Scene {
         'portee': 'Distance_tir'
       };
 
-      const nomImage = `${nomsImages[bonus.type]}_${suffixeRarete}`;
+      // Construire le nom de l'image à afficher
+      const nomImage = `${nomsImages[bonus.type]}_${suffixeRarete}`; // Ex: "Vie_en_plus_B"
       const espacement = 130;
       const xPos = gameWidth / 2 - espacement + index * espacement;
       const yPos = gameHeight / 2;
@@ -732,6 +746,7 @@ export default class selection extends Phaser.Scene {
       });
     };
 
+    // Appliquer le bonus sélectionné et nettoyer l'UI
     const appliquerBonus = () => {
       const bonusSelectionne = imagesBonus[indexSelection].bonus;
       bonusSelectionne.effet(this.player);
@@ -806,10 +821,14 @@ export default class selection extends Phaser.Scene {
   // AJOUT : Nouvelle méthode pour le menu pause
   afficherMenuPause() {
     if (this.gameOver || this.enMenuPause) return;
-    
+
     this.enMenuPause = true;
     this.physics.pause();
-    
+
+    // Rendre le joueur invincible
+    const joueurInvincible = this.player.invincible;
+    this.player.invincible = true;
+
     const gameWidth = this.scale.width;
     const gameHeight = this.scale.height;
 
@@ -883,14 +902,16 @@ export default class selection extends Phaser.Scene {
       });
     };
 
+    // Fermer le menu pause et reprendre le jeu
     const fermerMenuPause = () => {
       toucheHaut.off('down');
       toucheBas.off('down');
       toucheK.off('down');
       toucheI.off('down');
-      
+
       elementsUI.forEach(el => el.destroy());
       this.enMenuPause = false;
+      this.player.invincible = joueurInvincible; // Restaurer l'état d'invincibilité
       this.physics.resume();
     };
 
@@ -943,7 +964,7 @@ export default class selection extends Phaser.Scene {
   }
 
   spawnVague(config) {
-    const typesEnnemis = [ Ennemi1, Ennemi2, Ennemi3 ];
+    const typesEnnemis = [Ennemi1, Ennemi2, Ennemi3];
     this.tousEnnemisSpawnes = false;
 
     for (let i = 0; i < config.totalEnnemis; i++) {
@@ -1081,7 +1102,7 @@ export default class selection extends Phaser.Scene {
       'NIVEAU 1 TERMINÉ',
       {
         fontSize: '48px',
-        fill: '#ffdd00',
+        fill: '#ff4444',
         stroke: '#000',
         strokeThickness: 6,
         fontStyle: 'bold',
@@ -1091,6 +1112,27 @@ export default class selection extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(200);
+
+    const messageGuide = this.add.text(
+      gameWidth / 2, gameHeight / 2 + 64,
+      "Dirigez-vous vers la prochaine \n zone à contrôler à l'est",
+      {
+        fontSize: '20px',
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        fontStyle: 'bold',
+        shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 4, fill: true }
+      }
+    )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(200);
+
+    this.time.delayedCall(3000, () => {
+      messageVictoire.destroy();
+      messageGuide.destroy();
+    });
 
     this.time.delayedCall(3000, () => {
       messageVictoire.destroy();
@@ -1181,6 +1223,7 @@ export default class selection extends Phaser.Scene {
     }
   }
 
+    // Collision entre le joueur et un ennemi
   collisionJoueurEnnemi(joueur, ennemi) {
     if (ennemi.estMort || ennemi instanceof Ennemi3) return;
     if (joueur.invincible) return; // AJOUT : Vérifier invincibilité
@@ -1198,6 +1241,7 @@ export default class selection extends Phaser.Scene {
     }
   }
 
+  // Une balle touche un soldat
   chocAvecBalles(balle, soldat) {
     balle.destroy();
     if (typeof soldat.prendreDegats === 'function') {
@@ -1207,16 +1251,18 @@ export default class selection extends Phaser.Scene {
     }
   }
 
+  // Le joueur est touché par une balle ennemie
   chocAvecBalleEnnemi(joueur, balle) {
     if (!balle || !balle.active) return;
     if (joueur.invincible) return; // AJOUT : Vérifier invincibilité
-    
+
     balle.destroy();
     if (typeof joueur.prendreDegats === 'function') {
       joueur.prendreDegats(10);
     }
   }
 
+    // Met à jour la barre de vie du joueur
   updateBarreVie() {
     if (!this.player || !this.spriteBarreVieRemplie) return;
 
@@ -1235,6 +1281,15 @@ export default class selection extends Phaser.Scene {
   gererGameOver() {
     if (this.gameOver) return;
 
+    // Arrêter et détruire tous les sons AVANT de faire quoi que ce soit
+    this.sound.stopAll();
+
+    if (this._ambianceGuerre) {
+      if (this._ambianceGuerre.isPlaying) this._ambianceGuerre.stop();
+      this._ambianceGuerre.destroy();
+      this._ambianceGuerre = null;
+    }
+
     // Jouer le son de défaite (one-shot)
     if (this.sound && this.sound.play) {
       this.sound.play('defaite', { volume: 1.0 });
@@ -1248,6 +1303,7 @@ export default class selection extends Phaser.Scene {
       this.timerEnnemi4 = null;
     }
 
+      // Désactiver les contrôles du joueur 
     const gameWidth = this.scale.width;
     const gameHeight = this.scale.height;
 
@@ -1311,6 +1367,7 @@ export default class selection extends Phaser.Scene {
     });
 
     boutonRejouer.on('pointerdown', () => {
+      this.sound.stopAll();
       this.scene.restart();
     });
 
@@ -1320,6 +1377,7 @@ export default class selection extends Phaser.Scene {
     });
 
     boutonMenu.on('pointerdown', () => {
+      this.sound.stopAll();
       this.gameOver = false;
       this.scene.start('menu');
     });
@@ -1340,8 +1398,10 @@ export default class selection extends Phaser.Scene {
 
     this.toucheK.on('down', () => {
       if (indexSelection === 0) {
+        this.sound.stopAll();
         this.scene.restart();
       } else {
+        this.sound.stopAll();
         this.scene.start('menu');
       }
     });

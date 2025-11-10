@@ -86,9 +86,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   move(clavier) {
-    
+
+    if (this.estMort) return false;
+
     let enMouvement = false;
-    
+
 
     // Déplacements avec la vitesse modifiable par bonus
     if (clavier.right.isDown) {
@@ -125,6 +127,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   updateArme(ennemiCible = null) {
+
+    if (this.estMort) return;
     // Positionner l'arme un peu en dessous du centre du joueur
     this.arme.x = this.body.center.x - 5;
     this.arme.y = this.body.center.y + 5;
@@ -167,6 +171,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   updateHitbox() {
+
+    if (this.estMort) return;
     // Dessiner la hitbox comme un cercle graphique (désactivé par défaut)
     this.hitbox.clear();
     // Décommenter pour visualiser la hitbox :
@@ -175,7 +181,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   tirer(ennemi) {
-    if (!ennemi || !ennemi.body) return;
+    if (!ennemi || !ennemi.body || this.estMort) return;
 
     const maintenant = this.scene.time.now;
     if (maintenant - this.dernierTir < this.cooldownTir) return;
@@ -220,7 +226,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Vérifier si un ennemi est dans la hitbox
   ennemiDansHitbox(ennemis) {
-    if (!ennemis || ennemis.length === 0) return null;
+    if (!ennemis || ennemis.length === 0 || this.estMort) return null;
 
     for (let ennemi of ennemis) {
       if (!ennemi || !ennemi.active || !ennemi.body) continue;
@@ -244,6 +250,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.estMort = true;
 
     this.setVelocity(0, 0);
+
+    // IMPORTANT : Arrêter toutes les animations en cours et supprimer tous les listeners
+    this.anims.stop();
+    this.removeAllListeners('animationcomplete');
+
     this.arme.setVisible(false);
     this.hitbox.clear();
 
@@ -267,7 +278,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Vérifier d'abord si l'armure peut absorber le coup
     if (this.hitsAbsorbes && this.hitsAbsorbes > 0) {
       this.hitsAbsorbes -= 1;
-      
+
       // Effet visuel différent pour un coup absorbé (flash bleu/blanc)
       this.setTint(0x00ffff);
       this.scene.time.delayedCall(200, () => {

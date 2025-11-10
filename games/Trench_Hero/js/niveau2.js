@@ -15,16 +15,17 @@ export default class niveau2 extends Phaser.Scene {
     this.spriteBarreVieFond = null;
     this.spriteBarreVieRemplie = null;
     this.groupe_items = null;
+    
 
     this.configVagues = [
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 5 },
-      { totalEnnemis: 1, pauseApres: 0 }
+      { totalEnnemis: 5, pauseApres: 5 }, // 5 5 7 9 10
+      { totalEnnemis: 5, pauseApres: 5 },
+      { totalEnnemis: 7, pauseApres: 5 },
+      { totalEnnemis: 9, pauseApres: 5 },
+      { totalEnnemis: 10, pauseApres: 0 }
     ];
 
-    this.configEnnemi4ParVague = [3, 6, 10, 12, 15];
+    this.configEnnemi4ParVague = [10, 8, 8, 7, 6];
 
     this.vagueActuelle = 0;
     this.maxVagues = this.configVagues.length;
@@ -281,12 +282,12 @@ export default class niveau2 extends Phaser.Scene {
     if (this.cache.audio && this.cache.audio.exists) {
       // jouer 'ambiance_guerre' (volume modéré)
       if (this.cache.audio.exists('ambiance_guerre')) {
-        this._ambianceGuerre = this.sound.add('ambiance_guerre', { loop: true, volume: 0.20 });
+        this._ambianceGuerre = this.sound.add('ambiance_guerre', { loop: true, volume: 0.75 }); //volume pc 0.25
         this._ambianceGuerre.play();
       }
       // jouer 'ambiance_foret' (plus discret)
       if (this.cache.audio.exists('ambiance_foret')) {
-        this._ambianceForet = this.sound.add('ambiance_foret', { loop: true, volume: 0.35 });
+        this._ambianceForet = this.sound.add('ambiance_foret', { loop: true, volume: 0.85 }); //volume pc 0.35
         this._ambianceForet.play();
       }
 
@@ -366,7 +367,7 @@ export default class niveau2 extends Phaser.Scene {
     this.physics.add.collider(this.player, this.calque_barriere);
     this.physics.add.collider(this.groupe_soldats, this.calque_barriere);
     this.physics.add.collider(this.groupe_soldats, this.groupe_soldats);
-    
+
     this.physics.add.overlap(this.player, this.groupe_soldats, this.collisionJoueurEnnemi, null, this);
     this.physics.add.overlap(this.groupe_balles, this.groupe_soldats, this.chocAvecBalles, null, this);
     this.physics.add.overlap(this.groupe_balles_ennemi, this.player, this.chocAvecBalleEnnemi, null, this);
@@ -454,7 +455,7 @@ export default class niveau2 extends Phaser.Scene {
     if (soins > 0) {
       joueur.vie += soins;
       if (joueur.vie > joueur.vieMax) joueur.vie = joueur.vieMax;
-      
+
       if (this.updateBarreVie) {
         this.updateBarreVie();
       }
@@ -505,7 +506,7 @@ export default class niveau2 extends Phaser.Scene {
   }
 
   spawnVague(config) {
-    const typesEnnemis = [ Ennemi1, Ennemi2, Ennemi3];
+    const typesEnnemis = [Ennemi1, Ennemi2, Ennemi3];
     this.tousEnnemisSpawnes = false;
 
     for (let i = 0; i < config.totalEnnemis; i++) {
@@ -652,7 +653,7 @@ export default class niveau2 extends Phaser.Scene {
       'NIVEAU 2 TERMINÉ !',
       {
         fontSize: '48px',
-        fill: '#ffdd00',
+        fill: '#ff4444',
         stroke: '#000',
         strokeThickness: 6,
         fontStyle: 'bold',
@@ -662,6 +663,27 @@ export default class niveau2 extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(200);
+
+    const messageGuide = this.add.text(
+      gameWidth / 2, gameHeight / 2 + 64,
+      "Dirigez-vous vers la prochaine \n zone à contrôler au nord",
+      {
+        fontSize: '20px',
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        fontStyle: 'bold',
+        shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 4, fill: true }
+      }
+    )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(200);
+
+    this.time.delayedCall(3000, () => {
+      messageVictoire.destroy();
+      messageGuide.destroy();
+    });
 
     this.time.delayedCall(3000, () => {
       messageVictoire.destroy();
@@ -725,7 +747,7 @@ export default class niveau2 extends Phaser.Scene {
   proposerBonus(callback) {
     this.physics.pause();
 
-      this.player.invincible = true; // AJOUT : Retirer l'invincibilité
+    this.player.invincible = true; // AJOUT : Retirer l'invincibilité
 
     const gameWidth = this.scale.width;
     const gameHeight = this.scale.height;
@@ -833,7 +855,7 @@ export default class niveau2 extends Phaser.Scene {
         this.updateBarreVie();
       }
 
-        this.player.invincible = false; // AJOUT : Retirer l'invincibilité
+      this.player.invincible = false; // AJOUT : Retirer l'invincibilité
 
       // Détruire tous les ennemis du groupe
       this.groupe_soldats.getChildren().forEach(ennemi => {
@@ -896,11 +918,147 @@ export default class niveau2 extends Phaser.Scene {
     });
   }
 
+  afficherMenuPause() {
+    if (this.gameOver || this.enMenuPause) return;
+
+    this.enMenuPause = true;
+    this.physics.pause();
+
+    // Rendre le joueur invincible
+    const joueurInvincible = this.player.invincible;
+    this.player.invincible = true;
+
+    const gameWidth = this.scale.width;
+    const gameHeight = this.scale.height;
+
+    // Overlay sombre
+    const overlay = this.add.rectangle(
+      gameWidth / 2, gameHeight / 2,
+      gameWidth, gameHeight,
+      0x000000, 0.7
+    )
+      .setScrollFactor(0)
+      .setDepth(150);
+
+    const titre = this.add.text(
+      gameWidth / 2, gameHeight / 2 - 80,
+      'PAUSE',
+      {
+        fontSize: '32px',
+        fill: '#ffffff',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 6
+      }
+    )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(151);
+
+    const boutonReprendre = this.add.text(
+      gameWidth / 2, gameHeight / 2,
+      'REPRENDRE',
+      {
+        fontSize: '24px',
+        fill: '#ffffff',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }
+    )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(151);
+
+    const boutonQuitter = this.add.text(
+      gameWidth / 2, gameHeight / 2 + 60,
+      'QUITTER',
+      {
+        fontSize: '24px',
+        fill: '#ffffff',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }
+    )
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(151);
+
+    const elementsUI = [overlay, titre, boutonReprendre, boutonQuitter];
+    const boutons = [boutonReprendre, boutonQuitter];
+    let indexSelection = 0;
+
+    const mettreAJourSelection = () => {
+      boutons.forEach((bouton, index) => {
+        if (index === indexSelection) {
+          bouton.setTint(0xffffb9);
+          bouton.setScale(1.1);
+        } else {
+          bouton.clearTint();
+          bouton.setScale(1);
+        }
+      });
+    };
+
+    // Fermer le menu pause et reprendre le jeu
+    const fermerMenuPause = () => {
+      toucheHaut.off('down');
+      toucheBas.off('down');
+      toucheK.off('down');
+      toucheI.off('down');
+
+      elementsUI.forEach(el => el.destroy());
+      this.enMenuPause = false;
+      this.player.invincible = joueurInvincible; // Restaurer l'état d'invincibilité
+      this.physics.resume();
+    };
+
+    mettreAJourSelection();
+
+    // Gestion clavier uniquement
+    const toucheHaut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+    const toucheBas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    const toucheK = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K);
+    const toucheI = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+
+    toucheHaut.on('down', () => {
+      indexSelection = (indexSelection - 1 + boutons.length) % boutons.length;
+      mettreAJourSelection();
+    });
+
+    toucheBas.on('down', () => {
+      indexSelection = (indexSelection + 1) % boutons.length;
+      mettreAJourSelection();
+    });
+
+    toucheK.on('down', () => {
+      if (indexSelection === 0) {
+        fermerMenuPause();
+      } else {
+        this.enMenuPause = false;
+        this.scene.start('menu');
+      }
+    });
+
+    toucheI.on('down', () => {
+      fermerMenuPause();
+    });
+  }
+
+  
   // UPDATE ET COLLISIONS
 
   update(time, delta) {
-    if (this.gameOver || !this.player || this.player.estMort) return;
+    if (this.gameOver) return;
 
+    // Vérifier si le joueur est mort et déclencher le Game Over
+    if (this.player && this.player.estMort) {
+      this.gererGameOver();
+      return;
+    }
+
+    if (!this.player) return;
     this.groupe_soldats.getChildren().forEach(ennemi => {
       if (ennemi && ennemi.update && !ennemi.estMort) {
         ennemi.update();
@@ -957,9 +1115,18 @@ export default class niveau2 extends Phaser.Scene {
 
   collisionJoueurEnnemi(joueur, ennemi) {
     if (ennemi.estMort || ennemi instanceof Ennemi3) return;
+    if (joueur.invincible) return;
 
-    if (typeof joueur.prendreDegats === 'function') {
-      joueur.prendreDegats(5);
+    // Vérifier si assez de temps s'est écoulé depuis le dernier dégât de collision
+    const maintenant = this.time.now;
+    if (!this.dernierDegatsCollision) this.dernierDegatsCollision = 0;
+
+    // Cooldown de 1000ms entre chaque dégât de collision
+    if (maintenant - this.dernierDegatsCollision > 1000) {
+      if (typeof joueur.prendreDegats === 'function') {
+        joueur.prendreDegats(5);
+        this.dernierDegatsCollision = maintenant;
+      }
     }
   }
 
@@ -1002,7 +1169,16 @@ export default class niveau2 extends Phaser.Scene {
   gererGameOver() {
     if (this.gameOver) return;
 
-    // Jouer son défaite
+    // Arrêter et détruire tous les sons AVANT de faire quoi que ce soit
+    this.sound.stopAll();
+
+    if (this._ambianceGuerre) {
+      if (this._ambianceGuerre.isPlaying) this._ambianceGuerre.stop();
+      this._ambianceGuerre.destroy();
+      this._ambianceGuerre = null;
+    }
+
+    // Jouer le son de défaite (one-shot)
     if (this.sound && this.sound.play) {
       this.sound.play('defaite', { volume: 1.0 });
     }
@@ -1078,9 +1254,8 @@ export default class niveau2 extends Phaser.Scene {
     });
 
     boutonRejouer.on('pointerdown', () => {
-      // Arrêter niveau2 et redémarrer selection depuis zéro
-      this.scene.stop('niveau2');
-      this.scene.start('selection', { restart: true });
+      this.sound.stopAll();
+      this.scene.start('selection');
     });
 
     boutonMenu.on('pointerover', () => {
@@ -1089,6 +1264,7 @@ export default class niveau2 extends Phaser.Scene {
     });
 
     boutonMenu.on('pointerdown', () => {
+      this.sound.stopAll();
       this.gameOver = false;
       this.scene.start('menu');
     });
@@ -1109,10 +1285,10 @@ export default class niveau2 extends Phaser.Scene {
 
     this.toucheK.on('down', () => {
       if (indexSelection === 0) {
-        // Arrêter niveau2 et redémarrer selection depuis zéro
-        this.scene.stop('niveau2');
-        this.scene.start('selection', { restart: true });
+        this.sound.stopAll();
+        this.scene.start('selection');
       } else {
+        this.sound.stopAll();
         this.scene.start('menu');
       }
     });

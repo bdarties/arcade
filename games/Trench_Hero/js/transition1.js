@@ -8,7 +8,7 @@ export default class transition1 extends Phaser.Scene {
         this.load.image('fondTransition1', './assets/menu/fondtransition1.jpg');
         this.load.image('fondTransition2', './assets/menu/fondtransition2.jpg');
         this.load.image('fondTransition3', './assets/menu/fondtransition3.jpg');
-        this.load.image('fondVictoire', ' ./assets/menu/victoire.png');
+        this.load.image('fondVictoire', ' ./assets/menu/victoire.jpg');
         
         
         // Charger le son de machine à écrire

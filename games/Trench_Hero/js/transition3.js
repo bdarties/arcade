@@ -17,7 +17,7 @@ export default class transition3 extends Phaser.Scene {
         bg.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
         // Le texte complet à afficher
-        const messageComplet = "Après la forêt, j’atteins les ruines d’un village Châtel-Chéhéry.\n\nIl ne reste plus grand monde autour de moi.\n\nLes Allemands se cachent dans les maisons détruites. \n\nJe respire un grand coup.\n\nUne dernière bataille… et peut-être la fin.";
+        const messageComplet = "Après la forêt, j'atteins les ruines d'un village Châtel-Chéhéry.\n\nIl ne reste plus grand monde autour de moi.\n\nLes Allemands se cachent dans les maisons détruites. \n\nJe respire un grand coup.\n\nUne dernière bataille… et peut-être la fin.";
         
          // Créer le fond noir 
         

@@ -122,7 +122,7 @@ class Joueur1vs1 extends Phaser.Physics.Arcade.Sprite {
   prendreDegats(qte, barreVie) {
     if (this.invincible || this.estMort) return;
 
-    this.vie -= qte;
+    this.vie -= qte; // on enlève les dégâts
     if (this.vie < 0) this.vie = 0;
 
     // Mise à jour de la barre de vie
@@ -155,7 +155,7 @@ class Joueur1vs1 extends Phaser.Physics.Arcade.Sprite {
 
     this.setVelocity(0, 0);
     if (this.arme) this.arme.setVisible(false);
-    
+
     this.anims.play("anim_player_dead");
   }
 }
@@ -167,8 +167,8 @@ export default class mode1vs1 extends Phaser.Scene {
   constructor() {
     super({ key: "mode1vs1" });
 
-    this.joueur1 = null;
-    this.joueur2 = null;
+    this.joueur1 = null; // Joueur 1
+    this.joueur2 = null; // Joueur 2
     this.clavier1 = null;
     this.clavier2 = null;
 
@@ -223,9 +223,11 @@ export default class mode1vs1 extends Phaser.Scene {
     carte.createLayer("calque_background", [tileset, tileset2]);
     this.calque_plateformes = carte.createLayer("calque_plateformes", [tileset, tileset2]);
     this.calque_background2 = carte.createLayer("calque_background2", [tileset, tileset2]);
+    this.calque_barriere = carte.createLayer("calque_barriere", [tileset, tileset2]);
 
     this.calque_plateformes.setCollisionByProperty({ estSolide: true });
     this.calque_background2.setCollisionByProperty({ estSolide: true });
+    this.calque_barriere.setCollisionByProperty({ estSolide: true });
 
     const largeurCarte = carte.widthInPixels;
     const hauteurCarte = carte.heightInPixels;
@@ -258,36 +260,43 @@ export default class mode1vs1 extends Phaser.Scene {
     this.physics.add.collider(this.joueur2, this.calque_plateformes);
     this.physics.add.collider(this.joueur1, this.calque_background2);
     this.physics.add.collider(this.joueur2, this.calque_background2);
+    this.physics.add.collider(this.joueur1, this.calque_barriere);
+    this.physics.add.collider(this.joueur2, this.calque_barriere);
 
     this.physics.add.collider(this.groupe_balles_j1, this.calque_plateformes, (b) => b.destroy());
     this.physics.add.collider(this.groupe_balles_j2, this.calque_plateformes, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j1, this.calque_background2, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j2, this.calque_background2, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j1, this.calque_barriere, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j2, this.calque_barriere, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j1, this.calque_background2, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j2, this.calque_background2, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j1, this.calque_barriere, (b) => b.destroy());
+    this.physics.add.collider(this.groupe_balles_j2, this.calque_barriere, (b) => b.destroy());
 
     this.physics.add.overlap(this.groupe_balles_j1, this.joueur2, this.balleJ1ToucheJ2, null, this);
     this.physics.add.overlap(this.groupe_balles_j2, this.joueur1, this.balleJ2ToucheJ1, null, this);
 
     // --- Caméras split-screen ---
-const width = this.cameras.main.width;    // Déclarer UNE SEULE FOIS
-const height = this.cameras.main.height;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const espaceEntreCamera = 5;
+    const largeurCamera = (width - espaceEntreCamera) / 2;
 
-// Créer le séparateur (maintenant width et height existent)
-const separator = this.add.rectangle(width / 2, height / 2, 2, height, 0xffffff);
-separator.setScrollFactor(0);
-separator.setDepth(9999);
+    this.cameras.main.setViewport(0, 0, largeurCamera, height);
+    this.cameras.main.startFollow(this.joueur1);
+    this.cameras.main.setBounds(0, 0, largeurCarte, hauteurCarte);
+    this.cameras.main.setZoom(1);
 
-console.log("Séparateur créé :", separator);
+    const camera2 = this.cameras.add(largeurCamera + espaceEntreCamera, 0, largeurCamera, height);
+    camera2.startFollow(this.joueur2);
+    camera2.setBounds(0, 0, largeurCarte, hauteurCarte);
+    camera2.setZoom(1);
 
-// Ensuite configurer les caméras
-this.cameras.main.setViewport(0, 0, width / 2, height);
-this.cameras.main.startFollow(this.joueur1);
-this.cameras.main.setBounds(0, 0, largeurCarte, hauteurCarte);
-this.cameras.main.setZoom(2);
-
-const camera2 = this.cameras.add(width / 2, 0, width / 2, height);
-camera2.startFollow(this.joueur2);
-camera2.setBounds(0, 0, largeurCarte, hauteurCarte);
-camera2.setZoom(2);
-
-   
+    this.add.rectangle(largeurCamera, 0, espaceEntreCamera, height, 0xffffff)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(10000);
 
     // --- Barres de vie ---
     this.creerBarresDeVie();
@@ -317,6 +326,7 @@ camera2.setZoom(2);
     // --- Animations ---
     this.creerAnimations();
   }
+
 
   creerAnimations() {
     if (!this.anims.exists("anim_idle")) {
@@ -374,7 +384,7 @@ camera2.setZoom(2);
   balleJ1ToucheJ2(obj1, obj2) {
     // Identifier qui est la balle et qui est le joueur
     let balle, joueur;
-    
+
     if (obj1.texture && obj1.texture.key === 'img_balle') {
       balle = obj1;
       joueur = obj2;
@@ -382,15 +392,15 @@ camera2.setZoom(2);
       balle = obj2;
       joueur = obj1;
     }
-    
+
     if (!balle || !balle.active) return;
     if (!joueur || joueur.estMort) return;
-    
+
     balle.destroy();
-    
+
     if (typeof joueur.prendreDegats === 'function') {
       joueur.prendreDegats(this.joueur1.degatsParBalle, this.barreVieJ2);
-      
+
       if (joueur.estMort && !this.gameOver) {
         this.finirCombat("JOUEUR 1");
       }
@@ -400,7 +410,7 @@ camera2.setZoom(2);
   balleJ2ToucheJ1(obj1, obj2) {
     // Identifier qui est la balle et qui est le joueur
     let balle, joueur;
-    
+
     if (obj1.texture && obj1.texture.key === 'img_balle') {
       balle = obj1;
       joueur = obj2;
@@ -408,15 +418,15 @@ camera2.setZoom(2);
       balle = obj2;
       joueur = obj1;
     }
-    
+
     if (!balle || !balle.active) return;
     if (!joueur || joueur.estMort) return;
-    
+
     balle.destroy();
-    
+
     if (typeof joueur.prendreDegats === 'function') {
       joueur.prendreDegats(this.joueur2.degatsParBalle, this.barreVieJ1);
-      
+
       if (joueur.estMort && !this.gameOver) {
         this.finirCombat("JOUEUR 2");
       }
@@ -491,14 +501,14 @@ camera2.setZoom(2);
 
     // Nettoyer balles hors écran
     this.groupe_balles_j1.getChildren().forEach(b => {
-      if (b && b.active && (b.x < 0 || b.x > this.physics.world.bounds.width || 
-          b.y < 0 || b.y > this.physics.world.bounds.height)) {
+      if (b && b.active && (b.x < 0 || b.x > this.physics.world.bounds.width ||
+        b.y < 0 || b.y > this.physics.world.bounds.height)) {
         b.destroy();
       }
     });
     this.groupe_balles_j2.getChildren().forEach(b => {
-      if (b && b.active && (b.x < 0 || b.x > this.physics.world.bounds.width || 
-          b.y < 0 || b.y > this.physics.world.bounds.height)) {
+      if (b && b.active && (b.x < 0 || b.x > this.physics.world.bounds.width ||
+        b.y < 0 || b.y > this.physics.world.bounds.height)) {
         b.destroy();
       }
     });
@@ -506,7 +516,7 @@ camera2.setZoom(2);
 
   finirCombat(gagnant) {
     if (this.gameOver) return;
-    
+
     this.gameOver = true;
     this.gagnant = gagnant;
     this.physics.pause();
