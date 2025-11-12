@@ -3,43 +3,7 @@ export default class niveau3 extends Phaser.Scene {
     super({ key: "niveau3" });
   }
 
-  joueurMort() {
-    this.gameOverActive = true;
-    this.physics.pause();
 
-    // Création de deux textes Game Over, un pour chaque caméra
-    // Texte pour la caméra gauche
-    const gameOverText1 = this.add.text(320, 360, 
-      "GAME OVER\nAppuyez sur B pour recommencer", {
-        fontSize: "32px",
-        fill: "#ff0000",
-        fontFamily: "Arial",
-        stroke: "#000000",
-        strokeThickness: 4,
-        align: "center"
-      }).setOrigin(0.5);
-    gameOverText1.setScrollFactor(0);
-    this.camera2.ignore(gameOverText1); // Caméra droite ignore ce texte
-
-    // Texte pour la caméra droite
-    const gameOverText2 = this.add.text(320, 360, 
-      "GAME OVER\nAppuyez sur B pour recommencer", {
-        fontSize: "32px",
-        fill: "#ff0000",
-        fontFamily: "Arial",
-        stroke: "#000000",
-        strokeThickness: 4,
-        align: "center"
-      }).setOrigin(0.5);
-    gameOverText2.setScrollFactor(0);
-    this.camera1.ignore(gameOverText2); // Caméra gauche ignore ce texte
-
-    // Nettoyage des anciens listeners et ajout du nouveau
-    this.input.keyboard.off("keydown-O");
-    this.input.keyboard.on("keydown-O", () => {
-      this.scene.restart();
-    });
-  }
 
   preload() {
     this.load.image("fond_gauche", "./assets/grotte2.jpg");
@@ -49,7 +13,8 @@ export default class niveau3 extends Phaser.Scene {
     this.load.image("plateform3", "./assets/chainegrotte.png");
     this.load.image("plateformea", "./assets/champi.png");
     this.load.image("gaz", "./assets/gaz.png");
-
+    this.load.audio("sautgrotte", "./assets/saut_grotte.wav");
+    this.load.audio("champisongrotte", "./assets/champisongrotte.mp3");
     // Ajout des plateformes cassantes
     this.load.image("plateform4", "./assets/platformp.png");
 
@@ -278,6 +243,11 @@ this.anims.create({
     this.physics.add.existing(this.eau, true);
     this.eauActive = false;
     this.startTime = this.time.now;
+    
+    this.aSaute = false;           // le joueur a-t-il sauté une fois ?
+this.tempsPremierSaut = null;  // moment du premier saut
+
+
 
     this.physics.add.collider(this.player1, this.eau, () => {
       if (this.eauActive) this.gameOver(this.player1);
@@ -491,10 +461,16 @@ genererProcedural(joueur) {
     // Saut amélioré pour joueur 1
     if (
       Phaser.Input.Keyboard.JustDown(this.clavier1.jump) ||
-      (this.clavier1.space && Phaser.Input.Keyboard.JustDown(this.clavier1.space))
+      (this.clavier1.space && Phaser.Input.Keyboard.JustDown(this.clavier1.space))//
     ) {
       if (this.player1.body.touching.down) {
-        this.player1.setVelocityY(-1100); // ajuste ici la puissance du saut
+        this.player1.setVelocityY(-1100);
+        this.sound.play("sautgrotte"); // ajuste ici la puissance du saut
+
+        if (!this.aSaute) {
+        this.aSaute = true;
+        this.tempsPremierSaut = this.time.now;
+      }
       }
     }
 
@@ -532,7 +508,8 @@ genererProcedural(joueur) {
     if (Phaser.Input.Keyboard.JustDown(this.clavier2.jump)) {
       if (this.player2.body.touching.down) {
         // saut unique
-        this.player2.setVelocityY(-1100); // ajuste ici la puissance du saut
+        this.player2.setVelocityY(-1100);
+        this.sound.play("sautgrotte"); // ajuste ici la puissance du saut
       }
     }
 
@@ -548,11 +525,14 @@ genererProcedural(joueur) {
     this.nettoyerPlateformes();
 
     // Activation de l'eau montante après 10 secondes
-    if (!this.eauActive && this.time.now - this.startTime > 10000) {
-      this.eauActive = true;
-    }
+    if (this.aSaute && !this.eauActive) {
+  // Si le joueur a sauté une fois, on attend 10 secondes
+  if (this.time.now - this.tempsPremierSaut > 10000) {
+    this.eauActive = true;
+  }
+}
     if (this.eauActive) {
-      this.eau.y -= 0.05 * delta;
+      this.eau.y -= 0.15 * delta;
       if (this.eau.body) this.eau.body.updateFromGameObject();
     }
     if (this.player1.y < this.hauteurMaxJ1) this.hauteurMaxJ1 = this.player1.y;
@@ -570,6 +550,7 @@ genererProcedural(joueur) {
     this.physics.world.overlap(player, this.groupe_plateformes_rebond, (player, plat) => {
       if (player.body.velocity.y > 0) {
         player.setVelocityY(-1850);
+        this.sound.play("champisongrotte");
         this.tweens.add({
           targets: plat,
           scaleX: plat.scaleX * 1.3,
@@ -586,18 +567,31 @@ genererProcedural(joueur) {
 
   }
 
-  gameOver(player) {
-    if (this.gameOverActive) return;
-    this.joueurMort();
-    player.setTint(0xff0000);
-    // Utiliser l'animation appropriée selon le joueur
-    if (player === this.player1) {
-      player.anims.play("anim_face_J1");
-    } else {
-      player.anims.play("anim_face_J2");
-    }
-    console.log("💀 GAME OVER : noyé !");
+gameOver(player) {
+  if (this.gameOverActive) return;
+  this.gameOverActive = true;
+
+  // On met la scène actuelle en pause
+  this.physics.pause();
+
+  // Petit effet visuel sur le joueur mort
+  player.setTint(0xff0000);
+  if (player === this.player1) {
+    player.anims.play("anim_face_J1");
+  } else {
+    player.anims.play("anim_face_J2");
   }
+
+  console.log("💀 GAME OVER - un joueur est mort !");
+  
+  // On passe les scores à la scène GameOver2
+  this.scene.stop("niveau3");
+  this.scene.start("gameover2", {
+    scoreJ1: this.scoreJ1,
+    scoreJ2: this.scoreJ2
+  });
+}
+
 
 
 

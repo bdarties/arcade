@@ -16,7 +16,7 @@ export default class scenario2 extends Phaser.Scene {
    * On y trouve surtout le chargement des assets (images, son ..)
    */
   preload() {
-this.load.image("credits_fond", "./assets/fond_credit.jpg");
+this.load.image("scenario2", "./assets/scenario2.jpg");
     this.load.image("imageBoutonJouer2j", "./assets/button_play1.png");
 
   }
@@ -33,7 +33,7 @@ this.load.image("credits_fond", "./assets/fond_credit.jpg");
    */
   create() {
     // on place les éléments de fond
-    this.add.image(640, 360, "credits_fond");
+    this.add.image(640, 360, "scenario2");
     // création du bouton retour
     var bouton_retour = this.add.image(640, 650, "imageBoutonJouer2j").setDepth(1);
     

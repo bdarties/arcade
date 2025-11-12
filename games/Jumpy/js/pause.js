@@ -12,22 +12,24 @@ init(data) {
     // 🟩 image de fond (mets ton image dans ./assets/)
     this.load.image("fond_pause", "./assets/pause.png");
     // 🟩 image du bouton
-    this.load.image("bouton_reprendre", "./assets/button_retour2.png");
-    this.load.image("imageMenu", "./assets/button_play1.png");
+    this.load.image("bouton_reprendre", "./assets/button_reprendre1.png");
+    this.load.image("imageMenu", "./assets/button_quitter1.png");
     
   }
 
   create() {
     // 🟩 fond
     let fond = this.add.image(640, 360, "fond_pause").setScrollFactor(0);
-    fond.setAlpha(0.7); // définit la transparence (0 = transparent, 1 = opaque)
+    fond.setAlpha(0.4); // définit la transparence (0 = transparent, 1 = opaque)
+    
+    
 
-    // 🟩 titre du menu
-    this.add.text(640, 180, "MENU PAUSE", {
-      font: "64px Arial",
-      fill: "#ffffff",
-      fontStyle: "bold"
-    }).setOrigin(0.5);
+  
+ this.add.text(640, 180, "MENU PAUSE", {
+   font: "64px Arial",
+  fill: "#ffffff",
+  fontStyle: "bold"
+ }).setOrigin(0.5);
 
     /*// 🟩 bouton visuel
     this.boutonReprendre = this.add.image(640, 400, "bouton_reprendre")

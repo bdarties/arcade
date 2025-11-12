@@ -18,6 +18,8 @@ export default class niveau1 extends Phaser.Scene {
     this.load.image("plateformb", "./assets/rouegrotte.png");
     this.load.image("plateformea", "./assets/champi.png");
     this.load.image("gaz", "./assets/gaz.png");
+    this.load.audio("sautgrotte", "./assets/saut_grotte.wav");
+    this.load.audio("champisongrotte", "./assets/champisongrotte.mp3");
     /*this.load.image("img_porte2", "./assets/door2.png");*/
 
     // Joueur
@@ -346,7 +348,8 @@ this.scene.pause(); // met en pause la scène courante
   // Saut (impulsion uniquement quand touche le sol)
   if (Phaser.Input.Keyboard.JustDown(this.clavier.jump)) {
     if (this.player.body.touching.down) {
-        this.player.setVelocityY(-660); // ajuster la vitesse de saut si 
+        this.player.setVelocityY(-660);
+        this.sound.play("sautgrotte"); // ajuster la vitesse de saut si 
         
           // 🔹 Enregistre le premier saut
       if (!this.aSaute) {
@@ -372,7 +375,7 @@ this.scene.pause(); // met en pause la scène courante
 this.physics.world.overlap(this.player, this.groupe_plateformes_rebond, (player, plat) => {
     if (player.body.velocity.y > 0) { // uniquement quand le joueur descend
         player.setVelocityY(-1150); // rebond
-
+        this.sound.play("champisongrotte");
         // On gonfle juste le plat, il reviendra à sa taille normale automatiquement
         this.tweens.add({
             targets: plat,

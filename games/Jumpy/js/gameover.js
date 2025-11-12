@@ -1,4 +1,4 @@
-import { get_tab_score, ajoute_score } from "/static/js/score.js";
+import { get_tab_score, ajoute_score } from '/static/js/score.js';
 
 export default class GameOver extends Phaser.Scene {
   constructor() {
@@ -11,7 +11,7 @@ export default class GameOver extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("fond_gameover", "./assets/fond_grotte_1.jpg");
+    this.load.image("fond_gameover", "./assets/fond_gameover1.jpg");
   }
 
   async create() {
@@ -19,56 +19,32 @@ export default class GameOver extends Phaser.Scene {
     this.add.image(640, 360, "fond_gameover");
 
     // --- Titres ---
-    this.add
-      .text(640, 50, "GAME OVER", { font: "64px Arial", fill: "#ff0000" })
-      .setOrigin(0.5);
-    this.scoreText = this.add
-      .text(250, 150, `SCORE: ${this.score}`, {
-        font: "36px Arial",
-        fill: "#ffff00",
-      })
-      .setOrigin(0.5);
+    this.add.text(440, 150, "GAME OVER", { font: "64px Arial", fill: "#3f1b09" }).setOrigin(0.5);
+    this.scoreText = this.add.text(450, 250, `SCORE : ${this.score}`, { font: "36px Arial", fill: "#ffff00" }).setOrigin(0.5);
 
     // --- Instructions / messages ---
-    this.instructionText = this.add
-      .text(250, 220, "", {
-        font: "24px Arial",
-        fill: "#fff",
-        wordWrap: { width: 400 },
-      })
-      .setOrigin(0.5);
+    this.instructionText = this.add.text(450, 320, "", { font: "24px Arial",align: "center", fill: "#fff", wordWrap: { width: 400 } }).setOrigin(0.5);
 
     // --- Lettres à saisir ---
     this.name = ["A", "A", "A"];
     this.currentLetter = 0;
     this.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     this.letterTexts = [];
-    const startX = 80;
+    const startX = 400;
     for (let i = 0; i < 3; i++) {
-      const t = this.add
-        .text(startX + i * 50, 280, this.name[i], {
-          font: "48px Arial",
-          fill: "#fff",
-        })
-        .setOrigin(0.5);
+      const t = this.add.text(startX + i * 50, 460, this.name[i], { font: "48px Arial", fill: "#fff" }).setOrigin(0.5);// Le premier en rouge
       t.setVisible(false);
       this.letterTexts.push(t);
     }
 
     // --- Clavier ---
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.keyValidation = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.I
-    );
-    this.keyContinue = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.L
-    );
+    this.keyValidation = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+    this.keyContinue = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L);
 
     // --- Groupe tableau scores ---
     this.scoreListGroup = this.add.group();
-    this.tableBackground = this.add
-      .rectangle(960, 360, 350, 500, 0x000000, 0.5)
-      .setOrigin(0.5);
+    this.tableBackground = this.add.rectangle(960, 360, 350, 500, 0x000000, 0.5).setOrigin(0.5);// Fond semi-transparent
 
     // --- Flags ---
     this.isNewHighScore = false;
@@ -92,23 +68,14 @@ export default class GameOver extends Phaser.Scene {
       }
 
       if (this.isNewHighScore) {
-        this.instructionText.setText(
-          "Nouveau score ! Entre ton nom (3 lettres). Valide avec I."
-        );
+        this.instructionText.setText("Nouveau score ! \nEntre ton pseudo à l'aide du joystick. \nUne fois choisi, Valide avec I.");
         this.showNameInput(true);
       } else {
-        this.instructionText.setText(
-          "Pas de nouveau record. Voici le tableau des scores :"
-        );
+        this.instructionText.setText("Pas de nouveau record. \nVoici le tableau des scores :");
         this.showNameInput(false);
         this.displayHighScores();
         this.canExit = true;
-        this.add
-          .text(960, 650, "Appuie sur E pour continuer", {
-            font: "20px Arial",
-            fill: "#fff",
-          })
-          .setOrigin(0.5);
+        this.add.text(640, 650, "Appuie sur E pour continuer", { font: "20px Arial", fill: "#fff" }).setOrigin(0.5);
       }
     } catch (err) {
       console.error("Erreur récupération scores :", err);
@@ -121,9 +88,7 @@ export default class GameOver extends Phaser.Scene {
     for (let i = 0; i < this.letterTexts.length; i++) {
       const t = this.letterTexts[i];
       t.setVisible(show);
-      t.setColor(
-        show ? (i === this.currentLetter ? "#ff0000" : "#ffffff") : "#666666"
-      );
+      t.setColor(show ? (i === this.currentLetter ? "#3f1b09" : "#ffffff") : "#666666");
     }
   }
 
@@ -131,13 +96,9 @@ export default class GameOver extends Phaser.Scene {
     // --- Navigation lettres si nouveau score ---
     if (this.isNewHighScore && !this.saved) {
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.changeLetter(1);
-      if (Phaser.Input.Keyboard.JustDown(this.cursors.down))
-        this.changeLetter(-1);
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) this.changeLetter(-1);
       if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
-        this.currentLetter = Math.min(
-          this.currentLetter + 1,
-          this.name.length - 1
-        );
+        this.currentLetter = Math.min(this.currentLetter + 1, this.name.length - 1);
         this.updateLettersDisplay();
       }
       if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
@@ -164,7 +125,7 @@ export default class GameOver extends Phaser.Scene {
     for (let i = 0; i < this.name.length; i++) {
       const t = this.letterTexts[i];
       t.setText(this.name[i]);
-      if (i === this.currentLetter) t.setColor("#ff0000").setFontStyle("bold");
+      if (i === this.currentLetter) t.setColor("#3f1b09").setFontStyle("bold");
       else t.setColor("#ffffff").setFontStyle("normal");
     }
   }
@@ -178,9 +139,7 @@ export default class GameOver extends Phaser.Scene {
       this.saved = true;
       this.highscores = await get_tab_score(this.game.config.idGame);
       this.displayHighScores();
-      this.instructionText.setText(
-        "Score enregistré ! Appuie sur E pour continuer."
-      );
+      this.instructionText.setText("Score enregistré ! \nAppuie sur E pour continuer.");
       this.canExit = true;
       this.showNameInput(false);
     } catch (err) {
@@ -195,22 +154,10 @@ export default class GameOver extends Phaser.Scene {
 
     const startY = 200;
     const startX = 960;
-    this.add
-      .text(startX, startY - 40, "🏆 High Scores 🏆", {
-        font: "32px Arial",
-        fill: "#ffff00",
-      })
-      .setOrigin(0.5);
+    this.add.text(startX, startY - 40, "Meilleurs Jumps", { font: "32px Arial", fill: "#ffff00" }).setOrigin(0.5);
 
     this.highscores.forEach((entry, index) => {
-      const txt = this.add
-        .text(
-          startX,
-          startY + index * 40,
-          `${index + 1}. ${entry.player} — ${entry.score}`,
-          { font: "22px Arial", fill: "#fff" }
-        )
-        .setOrigin(0.5);
+      const txt = this.add.text(startX, startY + index * 40, `${index + 1}. ${entry.player} — ${entry.score}`, { font: "22px Arial", fill: "#fff" }).setOrigin(0.5);
       this.scoreListGroup.add(txt);
     });
   }

@@ -18,6 +18,8 @@ preload() {
     this.load.image("plateformbc", "./assets/roueciel.png");
     this.load.image("plateformeac", "./assets/champiciel.png");
     this.load.image("gaz", "./assets/gaz.png");
+    this.load.audio("saut", "./assets/saut.wav");
+    this.load.audio("champison", "./assets/champison.mp3");
     //this.load.image("img_porte2", "./assets/door2.png");
 
     // Joueur
@@ -346,7 +348,8 @@ this.scene.pause(); // met en pause la scène courante
   // Saut (impulsion uniquement quand touche le sol)
   if (Phaser.Input.Keyboard.JustDown(this.clavier.jump)) {
     if (this.player.body.touching.down) {
-        this.player.setVelocityY(-660); // ajuster la vitesse de saut si 
+        this.player.setVelocityY(-660);
+        this.sound.play("saut"); // ajuster la vitesse de saut si 
         
           // 🔹 Enregistre le premier saut
       if (!this.aSaute) {
@@ -371,7 +374,8 @@ this.scene.pause(); // met en pause la scène courante
   // Rebonds plateformes rebondissantes
 this.physics.world.overlap(this.player, this.groupe_plateformes_rebond, (player, plat) => {
     if (player.body.velocity.y > 0) { // uniquement quand le joueur descend
-        player.setVelocityY(-1150); // rebond
+        player.setVelocityY(-1150);
+        this.sound.play("champison"); // rebond
 
         // On gonfle juste le plat, il reviendra à sa taille normale automatiquement
         this.tweens.add({

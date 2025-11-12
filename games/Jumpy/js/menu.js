@@ -10,9 +10,20 @@ export default class menu extends Phaser.Scene {
     this.load.image("imageBouton2Joueurs", "./assets/button_2joueur1.png");
     this.load.image("imageBoutonCommandes", "./assets/button_commandes1.png");
     this.load.image("imageBoutonCredits", "./assets/button_credit1.png");
+    this.load.audio("musiqueFond", "./assets/musiquefond.mp3");
   }
 
   create() {
+
+    if (!this.sound.get("musiqueFond")) {
+      const musique = this.sound.add("musiqueFond", {
+        volume: 0.1,  // ajuste le volume
+        loop: true
+      });
+      musique.play();
+    }
+
+
     // On place l'image de fond
     this.add.image(640, 360, "menu_fond");
 
