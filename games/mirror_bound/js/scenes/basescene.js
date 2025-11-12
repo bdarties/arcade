@@ -24,22 +24,85 @@ export default class Basescene extends Phaser.Scene {
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
+    this.load.spritesheet("img_porte4", "./assets/finaldoor.png", { frameWidth: 85, frameHeight: 76 });
+    this.load.image("plateforme_mobile1", "./assets/plateforme_mobile1.png");
 
+    this.load.audio('son_fragments', './assets/sfx/fragment.mp3');
     this.load.spritesheet('miroir_fragments', './assets/miroir_fragments.png', { frameWidth: 32, frameHeight: 32 });
 
     this.load.audio('son_attaque', './assets/sfx/hit.mp3');
     this.load.audio('son_cristal', './assets/sfx/crystal_collected.mp3');
+    this.load.audio('son_heal', './assets/sfx/heal.mp3');
 
     this.load.image("cristal_vert", "./assets/cristaux/cristal_vert.png");
     this.load.image("cristal_bleu", "./assets/cristaux/cristal_bleu.png");
     this.load.image("cristal_violet", "./assets/cristaux/cristal_violet.png");
+
+    // Parchemins interactifs
+    this.load.audio('son_parchemin', './assets/sfx/parchemin.mp3');
+    this.load.image("parchemin", "./assets/parchemin.png"); // parchemin plié
+    this.load.image("parchemin0", "./assets/parchemin0.png"); // contenu lore Selection
+    this.load.image("parchemin1", "./assets/parchemin1.png"); // contenu lore Niveau1
+    this.load.image("parchemin2", "./assets/parchemin2.png"); // contenu lore Niveau2
+    this.load.image("parchemin3", "./assets/parchemin3.png"); // contenu lore Niveau3
+
   }
 
   create() {
     // autres créations
-    this.sonCristal = this.sound.add('son_cristal'); // défini ici pour toutes les scènes
+    this.sonCristal = this.sound.add('son_cristal'); // définis ici pour toutes les scènes
+    this.sonHeal = this.sound.add('son_heal');
+    this.bossNameShown = false;
+    this.parchemins = [];
+
+        // Réinitialiser la touche M
+        this.keyM = this.input.keyboard.addKey('M');
+        this.isPaused = false;
+
+        // Utiliser un événement unique pour M
+        this.input.keyboard.on('keydown-M', () => {
+            if (!this.isPaused) {
+                this.isPaused = true;
+                this.scene.pause();
+                this.scene.launch('pause', { previous: this.scene.key });
+            }
+        });
+
+
+
   }
-  
+
+  handlePause() {
+    if (!this.isPaused) {
+        this.isPaused = true;
+        
+        // Mettre en pause tous les sprites et animations
+        this.physics.pause();
+        
+        // Arrêter les animations des ennemis
+        this.children.list.forEach((gameObject) => {
+            if (gameObject.anims) {
+                gameObject.anims.pause();
+            }
+        });
+
+        // Lancer le menu pause
+        this.scene.launch('pause', { previous: this.scene.key });
+        this.scene.pause();
+    }
+}
+
+resumeFromPause() {
+        this.isPaused = false;
+        this.physics.resume();
+        
+        // Reprendre les animations
+        this.children.list.forEach((gameObject) => {
+            if (gameObject.anims) {
+                gameObject.anims.resume();
+            }
+        });
+    }
   // --- Crée le joueur et initialise ses propriétés ---
   createPlayer(x, y) {
     // Sprite
@@ -76,16 +139,23 @@ export default class Basescene extends Phaser.Scene {
       // Attaques
       this.anims.create({
         key: "attack_gauche",
-        frames: this.anims.generateFrameNumbers("img_perso_attack", { start: 2, end: 0 }), // 4 → 1
-        frameRate: 25,
+        frames: this.anims.generateFrameNumbers("img_perso_attack", { start: 2, end: 0 }), 
+        frameRate: 30,
         repeat: 0
       });
       this.anims.create({
         key: "attack_droite",
-        frames: this.anims.generateFrameNumbers("img_perso_attack", { start: 5, end: 7 }), // 5 → 8
-        frameRate: 40,
+        frames: this.anims.generateFrameNumbers("img_perso_attack", { start: 5, end: 7 }), 
+        frameRate: 30,
         repeat: 0
       });
+      this.anims.create({
+        key: "open_door",
+        frames: this.anims.generateFrameNumbers("img_porte4", { start: 0, end: 4 }),
+        frameRate: 8,
+        repeat: 0
+      });
+
     }
 
     this.sonAttaque = this.sound.add('son_attaque');
@@ -119,7 +189,7 @@ export default class Basescene extends Phaser.Scene {
   updatePlayerMovement() {
     const player = this.player;
     const clavier = this.clavier;
-
+    if (player.isReadingParchemin) return; //  si verrouillé
     // Horizontal
     if (clavier.left.isDown) {
       player.setVelocityX(-160);
@@ -140,22 +210,25 @@ export default class Basescene extends Phaser.Scene {
     }
 
     // Échelles
-    const tile = this.calque_echelles?.getTileAtWorldXY(player.x, player.y, true);
-    if (tile && tile.properties.estEchelle) {
-      player.setGravityY(0);
-      if (clavier.up.isDown) player.setVelocityY(-160);
-      else if (clavier.down.isDown) player.setVelocityY(160);
-      else player.setVelocityY(0);
+    if (this.echellesActives === undefined || this.echellesActives) {
+      const tile = this.calque_echelles?.getTileAtWorldXY(player.x, player.y, true);
+      if (tile && tile.properties.estEchelle) {
+        player.setGravityY(0);
+        if (clavier.up.isDown) player.setVelocityY(-160);
+        else if (clavier.down.isDown) player.setVelocityY(160);
+        else player.setVelocityY(0);
+      }
     }
   }
 
   // --- Attaque ---
-  handleAttack(targets = null) {
+  handleAttack(targets = null, levers = null) {
     if (Phaser.Input.Keyboard.JustDown(this.clavier.attaque) && this.player.canAttack) {
-      fct.attack(this.player, this, targets);
+      fct.attack(this.player, this, targets, levers);
       this.sonAttaque.play();
     }
   }
+
 
   // --- Fragments collectés ---
   createFragmentsText(initialCollected = 0, initialTotal = 9) {

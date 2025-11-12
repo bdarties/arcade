@@ -20,6 +20,7 @@ export default class Collectible extends Phaser.Physics.Arcade.Sprite {
             if (typeof this.scene.game.config.collectedFragments !== "number") {
                 this.scene.game.config.collectedFragments = 0;
             }
+            this.scene.sound.play('son_fragments', { volume: 0.5 }); // ✅ joue le son
             this.scene.game.config.collectedFragments++;
             this.scene.updateFragmentsText(this.scene.game.config.collectedFragments, 9);
         }
@@ -29,13 +30,7 @@ export default class Collectible extends Phaser.Physics.Arcade.Sprite {
             if (!this.scene.game.config.crystals) {
                 this.scene.game.config.crystals = {};
             }
-
             this.scene.game.config.crystals[this.crystalColor] = true;
-
-            if (this.type === "cristal") {
-            this.scene.game.config.crystals[this.crystalColor] = true;
-            
-            }
         }
     }
 

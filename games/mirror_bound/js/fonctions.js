@@ -1,7 +1,7 @@
 // fonctions.js
 
 // --- Fonction d'attaque du joueur ---
-export function attack(player, scene, targets = null) {
+export function attack(player, scene, targets = null, levers = null) {
   if (!player.canAttack) return; // sécurité anti spam
 
   player.canAttack = false;
@@ -12,10 +12,10 @@ export function attack(player, scene, targets = null) {
   else player.anims.play("attack_droite");
 
   // Hitbox devant le joueur
-  const width = 32;
+  const width = 70;  // largeur réduite si immobile
   const height = player.height;
   const dir = player.direction === "gauche" ? -1 : 1;
-  let x = player.x + dir * (player.width / 2 + width / 2);
+  let x = player.x + dir * (player.width / 2);
   const y = player.y;
 
   const hitbox = scene.add.rectangle(x, y, width, height);
@@ -23,8 +23,8 @@ export function attack(player, scene, targets = null) {
   hitbox.body.setAllowGravity(false);
   hitbox.body.setImmovable(true);
 
-  if (dir === -1) hitbox.x -= width / 2;
-  else hitbox.x += width / 2;
+  if (dir === -1) hitbox.x -= width / 4;
+  else hitbox.x += width / 16;
 
   // Collision avec les cibles
   if (targets) {
@@ -33,23 +33,55 @@ export function attack(player, scene, targets = null) {
         if (typeof t.vie === "undefined") t.vie = 3; 
         t.vie -= 1;
         t.setTint(0xff0000);
-        scene.time.delayedCall(500, () => t.setTint(0xffffff));
+        scene.time.delayedCall(300, () => t.setTint(0xffffff));
         t.justHit = scene.time.now;
-        if (t.vie <= 0) t.destroy();
+        if (t.vie <= 0) {
+          t.dropHeart();
+          t.destroy();
+        }
       }
     });
   }
 
+  
+  // Collision avec les leviers
+  if (levers) {
+    scene.physics.add.overlap(hitbox, levers, (h, lever) => {
+      if (!lever.activated) {
+        lever.activated = true;
+        lever.flipX = true;
+        // Gestion spécifique selon la propriété actionType
+        switch (lever.number) {
+          case 1: // levier 1
+            scene.tween_mouvement.play();
+            scene.pont_levis1.setVisible(true);
+            break;
+          /*
+          // Si je veux faire d'autres leviers
+          case 2: // levier 2
+            scene.tween_mouvement2.play();
+            break;
+          */
+        }
+      }
+    });
+  }
+  
+
   // Durée de l'attaque
-  const attackDuration = 300; // ms
+  const attackDuration = 150; // ms
   scene.time.delayedCall(attackDuration, () => {
     hitbox.destroy();
-    player.canAttack = true;
     player.isAttacking = false;
   });
+  // Temps avant prochaine attaque
+  const attackCooldown = 400; // ms
+  scene.time.delayedCall(attackCooldown, () => {
+    if (!player) return; // sécurité si le joueur a été détruit
+    player.canAttack = true;
+  });
+  
 }
-
-// ...existing code...
 
 function updateHearts(scene) {
   for (let i = 0; i < scene.coeurs.length; i++) {
@@ -66,7 +98,6 @@ export let lifeManager = {
     scene.game.config.pointsDeVie = maxVies;
   }
   updateHearts(scene);
-  console.log("Nombre de vies :", scene.game.config.pointsDeVie);
 },
 
   retirerPV(scene, amount = 1) {
@@ -98,3 +129,10 @@ export let lifeManager = {
 
   updateHearts // Permet d'appeler fct.lifeManager.updateHearts(scene) si besoin
 };
+
+export function resetGameData(game) {
+    game.config.pointsDeVie = 5; // ou this.maxVies, selon ton système
+    game.config.collectedFragments = 0;
+    game.config.collectedCristals = 0;
+    game.config.crystals = { green: false, blue: false, violet: false };
+}

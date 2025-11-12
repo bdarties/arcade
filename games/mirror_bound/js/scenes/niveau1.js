@@ -6,6 +6,7 @@ import Loup from "../entities/loup.js";
 import Bandit from "../entities/bandit.js";
 import Boss1 from "../entities/boss1.js";
 import Collectible from '../entities/collectible.js';
+import Parchemin from "../entities/parchemin.js";
 
 export default class Niveau1 extends Basescene {
   constructor() {
@@ -13,25 +14,43 @@ export default class Niveau1 extends Basescene {
   }
 
   preload() {
+    super.preload();
     this.load.image("Phaser_tuilesdejeu", "./assets/tuilesJeu.png");
     this.load.tilemapTiledJSON("carte", "./assets/map.json");
     this.load.spritesheet("img_bandit", "./assets/bandit.png", { frameWidth: 40, frameHeight: 57 });
     this.load.image("img_porte_retour", "./assets/door1.png");
     this.load.image("couteau", "./assets/couteau.png");
     this.load.spritesheet("img_loup", "./assets/loup.png", { frameWidth: 96, frameHeight: 57 });
-
     this.load.spritesheet("img_boss1", "./assets/boss1.png", { frameWidth: 70, frameHeight: 94 });
-
     this.load.image("background_fixe", "./assets/fond_map_1.png");
-    this.load.audio("boss1music", "./assets/sfx/boss1fight.mp3");
-    this.load.audio("son_cristal", "./assets/sfx/son_cristal.mp3");
 
+    this.load.audio("boss1music", "./assets/sfx/boss1fight.mp3");
+    this.load.audio("map1_fond", "./assets/sfx/map1_fond.mp3");
+    this.load.image("parchemin1", "assets/parchemin1.png");
 
   }
 
   create() {
     super.create();
-    //backgroung map
+
+    // --- Musique de fond ---
+    if (!this.sound.get('map1_fond')) {  // Vérifie si la musique existe déjà
+        this.mapMusic = this.sound.add('map1_fond', {
+            loop: true,
+            volume: 0.3
+        });
+    } else {
+        this.mapMusic = this.sound.get('map1_fond');
+    }
+    
+    // Démarrer la musique si elle n'est pas déjà en cours
+    if (!this.mapMusic.isPlaying) {
+        this.mapMusic.play();
+    }
+
+    // Retirer les événements wake/sleep qui ne sont plus nécessaires
+    
+    // backgroung map
     const bg = this.add.image(0, 0, "background_fixe")
         .setOrigin(0, 0)
         .setScrollFactor(0);
@@ -90,9 +109,10 @@ export default class Niveau1 extends Basescene {
     }
 
     this.createFragmentsText(this.game.config.collectedFragments, 9);
-    this.events.on('wake', () => { // 1 appel au lancement de scène
+    
+    this.events.on('wake', () => {
       this.updateFragmentsText(this.game.config.collectedFragments, 9);
-      this.player.setPosition(100, 600);
+      this.player.setPosition(100, 600); // placé en (100, 600) / (3000,150) position de boss
       // Si tu veux remettre la caméra sur le joueur
       this.cameras.main.startFollow(this.player);
     });
@@ -102,6 +122,22 @@ export default class Niveau1 extends Basescene {
       collectible.collect();
       this.updateFragmentsText(this.game.config.collectedFragments, 9);
     }, null, this);
+    
+    // --- PACHEMIN ---
+    this.p1 = new Parchemin(this, 1585, 1020, "parchemin1");
+    this.parchemins.push(this.p1);
+    this.parcheminHelpText = this.add.text(
+      this.p1.x, this.p1.y - 30, "A", // 70 pixels au-dessus
+      { font: "14px Arial", fill: "#fff", fontStyle: "bold", stroke: "#000", strokeThickness: 4 }
+    ).setOrigin(0.5).setDepth(10).setVisible(false);
+
+    // Crée le cercle autour
+    this.parcheminCircle = this.add.graphics();
+    this.parcheminCircle.lineStyle(2, 0xffffff); // bordure blanche
+    this.parcheminCircle.strokeCircle(0, 0, 12); // cercle de rayon 20
+    this.parcheminCircle.setDepth(9); // derrière le texte
+    this.parcheminCircle.setVisible(false);
+    this.parcheminCircle.setPosition(this.p1.x, this.p1.y - 30); // Même position que le texte
 
     // --- ENNEMIS ---
 
@@ -121,6 +157,18 @@ export default class Niveau1 extends Basescene {
       repeat: -1
     });
 
+    this.anims.create({
+      key: 'bandit_idle_left',
+      frames: [{ key: 'img_bandit', frame: 1 }],
+      frameRate: 1,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'bandit_idle_right',
+      frames: [{ key: 'img_bandit', frame: 4 }],
+      frameRate: 1,
+      repeat: -1
+    });
     this.anims.create({
       key: 'bandit_walk_left',
       frames: this.anims.generateFrameNumbers('img_bandit', { start: 0, end: 3 }),
@@ -153,6 +201,7 @@ export default class Niveau1 extends Basescene {
     // Création
     this.enemies = this.add.group();
     this.projectiles = this.physics.add.group();
+    this.boss1Alive = true;
 
     const ennemis = this.map.getObjectLayer("ennemis")?.objects || [];
     ennemis.forEach(obj => {
@@ -164,10 +213,12 @@ export default class Niveau1 extends Basescene {
         this.enemies.add(new Bandit(this, obj.x, obj.y-32));
       }
       if (obj.properties?.find(p => p.name === "type")?.value === "boss1") {
-        const boss = new Boss1(this, obj.x, obj.y - 32);
-        boss.sonCristal = this.sonCristal; 
-        boss.bossMusic = this.sound.add("boss1music", { loop: true, volume: 0.5 });
-        this.enemies.add(boss);
+        if (this.boss1Alive) {
+          const boss = new Boss1(this, obj.x, obj.y - 32);
+          boss.sonCristal = this.sonCristal; 
+          boss.bossMusic = this.sound.add("boss1music", { loop: true, volume: 0.5 });
+          this.enemies.add(boss);
+        }
       }
 
     });
@@ -185,13 +236,22 @@ export default class Niveau1 extends Basescene {
 
         if (this.game.config.pointsDeVie <= 0) {
           this.physics.pause();
-          this.game.config.collectedFragments = 0;
+          this.boss1Alive = true;
+          this.bossNameShown = false;
+          if (this.miniCristalGreen) {
+            this.miniCristalGreen.destroy();
+            this.miniCristalGreen = null;
+          }
+          // Arrêter la musique de fond
+          if (this.mapMusic && this.mapMusic.isPlaying) {
+            this.mapMusic.stop();
+          }
           this.scene.start("defaite");
         }
       }
     });
 
-
+    // collision joueur projectiles
     this.physics.add.overlap(this.player, this.projectiles, (player, projectile) => {
       const now = this.time.now;
       if (!player.lastHit || now - player.lastHit > 1000) {
@@ -202,7 +262,13 @@ export default class Niveau1 extends Basescene {
 
         if (this.game.config.pointsDeVie <= 0) {
           this.physics.pause();
-          this.game.config.collectedFragments = 0;
+          this.boss1Alive = true;
+          this.bossNameShown = false;
+          if (this.miniCristalGreen) {
+            this.miniCristalGreen.destroy();
+            this.miniCristalGreen = null;
+          }
+          this.mapMusic.stop();
           this.scene.start("defaite");
         }
         projectile.destroy();
@@ -235,17 +301,20 @@ export default class Niveau1 extends Basescene {
         fontStyle: "bold"
     }).setOrigin(0.5).setScrollFactor(0).setAlpha(0);
 
-    // Détecte l’entrée du joueur
+    // Détecte l’entrée du joueur dans la zone du boss
     this.physics.add.overlap(this.player, this.bossZone, () => {
         if (!this.bossNameShown) {
             this.bossNameShown = true;
 
-            // Jouer la musique du boss (gestion par le boss)
+            // Jouer la musique du boss
             const boss = this.enemies.getChildren().find(e => e instanceof Boss1);
             if (boss && !boss.bossMusic.isPlaying) {
-                boss.bossMusic.play();
-            }
-
+                boss.bossMusic.play({ loop: true });
+                // Mettre la musique de fond en pause
+                if (this.mapMusic && this.mapMusic.isPlaying) {
+                    this.mapMusic.pause();
+                }
+            } 
             this.bossNameText.setAlpha(1);
             this.tweens.add({
                 targets: this.bossNameText,
@@ -254,23 +323,52 @@ export default class Niveau1 extends Basescene {
                 delay: 1500
             });
         }
-      });
+    });
+
+    
+
+    // Affiche la position du joueur toutes les 5 secondes
+    this.time.addEvent({
+      delay: 5000,
+      callback: () => {
+        console.log(`Position du joueur: x=${this.player.x}, y=${this.player.y}`);
+      },
+      callbackScope: this,
+      loop: true
+    });
   }
 
   update() {
     this.updatePlayerMovement();
     this.handleAttack(this.enemies);
-
+    super.update();
     this.enemies.children.iterate(enemy => {
       if (enemy instanceof Loup) enemy.update(this.calque_plateformes, this.player);
       if (enemy instanceof Bandit) enemy.update(this.player, this.projectiles, this.calque_plateformes);
       if (enemy instanceof Boss1) enemy.update(this.calque_plateformes, this.player);
     });
 
-    // Retour
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.action) &&
-    (this.physics.overlap(this.player, this.porte_retour) || this.physics.overlap(this.player, this.porte_retour_boss))) {
-      this.scene.switch("selection");
+    // Interaction porte
+    if (Phaser.Input.Keyboard.JustDown(this.clavier.action)) {
+      if (this.physics.overlap(this.player, this.p1)) {
+        this.p1.interact();
+        return; // si on lit le parchemin, on bloque le reste
+      }
+      if (this.physics.overlap(this.player, this.porte_retour) || this.physics.overlap(this.player, this.porte_retour_boss)) {
+        this.mapMusic.stop();
+        this.scene.switch("selection");
+      }
     }
+
+    // Test de proximité ou d'overlap
+    const isNearParchemin = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y, this.p1.x, this.p1.y
+    ) < 64 || this.physics.overlap(this.player, this.p1);
+
+    this.parcheminHelpText.setVisible(isNearParchemin);
+    this.parcheminHelpText.setPosition(this.p1.x, this.p1.y - 30);
+    this.parcheminCircle.setVisible(isNearParchemin);
+    this.parcheminCircle.setPosition(this.p1.x, this.p1.y - 30);
+
   }
 }

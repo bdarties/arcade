@@ -5,7 +5,8 @@ export default class Loup extends Enemy {
   constructor(scene, x, y) {
     super(scene, x, y, "img_loup");
     
-    this.vie = 2;
+    this.vie = 3;
+    this.dropChance = 0.1;
     this.setGravityY(300);
     this.setVelocityX(this.direction*120);
   }
