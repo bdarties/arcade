@@ -1,4 +1,4 @@
-import * as fct from "./js/fonctions.js";
+import * as fct from "./fonctions.js";
 
 /**
  * ============================================
@@ -1284,3 +1284,4 @@ activateCheckpoint(zone) {
 
 
 }
+
