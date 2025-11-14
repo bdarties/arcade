@@ -1,4 +1,4 @@
-import * as fct from "./fonctions.js";
+import * as fct from "./js/fonctions.js";
 
 /**
  * ============================================
@@ -1280,6 +1280,7 @@ activateCheckpoint(zone) {
         onComplete: () => text.destroy()
     });
 }
+
 
 
 }
