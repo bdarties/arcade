@@ -1,4 +1,4 @@
-import BaseLevel from "./baseLevel.js";
+import BaseLevel from "./baselevel.js";
 import * as fct from "./fonctions.js";
 
 /**
@@ -448,4 +448,5 @@ export class Niveau3 extends BaseLevel {
  * ============================================
  * Pour la compatibilité avec l'ancien système
  */
+
 export default Selection;
