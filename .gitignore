@@ -1,2 +1,7 @@
 .venv
-score.db
+scores.db
+.env
+.vscode/
+*.code-workspace
+__pycache__/
+*.pyc

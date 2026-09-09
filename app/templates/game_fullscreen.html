@@ -41,7 +41,7 @@
 
 			<script type="module">
 	    import  ConfirmationExit  from "/static/js/confirmationExit.js";
-  		import { get_tab_score, ajoute_score } from "/static/js/score.js";
+  		import { get_tab_score, ajoute_score } from "{{ score_module_url }}";
    		import { game } from "{{ entry_js_url }}";
 
       game.scene.add("confirmationExit",ConfirmationExit);

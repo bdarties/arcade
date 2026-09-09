@@ -2,6 +2,7 @@
 	"title": "Score",
 	"description": "Cette démo permet de tester l'enregistrement d'un score.",
 	"genre" : "Demo",
-	"authors": ["Benoit Darties"]
+	"authors": ["Benoit Darties"],
+	"hidden": true
 }
 

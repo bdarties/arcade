@@ -1,0 +1,6 @@
+-r requirements.txt
+
+# Dépendances de gpio2keys.py (borne d'arcade sur Raspberry Pi uniquement,
+# non nécessaires pour lancer le serveur web).
+gpiozero
+evdev

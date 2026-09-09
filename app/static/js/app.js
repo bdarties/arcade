@@ -82,7 +82,6 @@ class GamesGridNavigation {
 				if (this.currentIndex < this.gameCells.length - 1) {
 					this.currentIndex++;
 					this.updateFocus();
-					this.updateFocus();
 					this.updateDescription();
 				}
 				break;
