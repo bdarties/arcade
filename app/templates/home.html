@@ -19,9 +19,29 @@
         </div>
     </div>
 
+    <a href="#" class="nav-button power-button" data-action="shutdown">
+        ÉTEINDRE
+    </a>
+
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-box">
+            <p>Voulez-vous éteindre la borne ?</p>
+            <div class="confirm-actions">
+                <span class="confirm-btn focused" id="confirm-cancel">ANNULER</span>
+                <span class="confirm-btn" id="confirm-ok">ÉTEINDRE</span>
+            </div>
+        </div>
+    </div>
+
     <script>
         const buttons = document.querySelectorAll('.nav-button');
         let currentFocus = 0;
+
+        const confirmOverlay = document.getElementById('confirm-overlay');
+        const confirmCancelBtn = document.getElementById('confirm-cancel');
+        const confirmOkBtn = document.getElementById('confirm-ok');
+        let confirmOpen = false;
+        let confirmChoice = 'cancel';
 
         function updateFocus() {
             buttons.forEach((btn, index) => {
@@ -33,7 +53,76 @@
             });
         }
 
+        function updateConfirmFocus() {
+            confirmCancelBtn.classList.toggle('focused', confirmChoice === 'cancel');
+            confirmOkBtn.classList.toggle('focused', confirmChoice === 'ok');
+        }
+
+        function openConfirm() {
+            confirmOpen = true;
+            confirmChoice = 'cancel';
+            updateConfirmFocus();
+            confirmOverlay.classList.add('visible');
+        }
+
+        function closeConfirm() {
+            confirmOpen = false;
+            confirmOverlay.classList.remove('visible');
+        }
+
+        function requestShutdown() {
+            fetch("{{ url_for('routes.shutdown') }}", { method: 'POST' }).catch(() => {});
+            confirmOkBtn.textContent = 'EXTINCTION...';
+        }
+
+        function activateButton(button) {
+            if (!button) return;
+            if (button.dataset.action === 'shutdown') {
+                openConfirm();
+            } else {
+                window.location.href = button.dataset.href;
+            }
+        }
+
+        confirmCancelBtn.addEventListener('click', closeConfirm);
+        confirmOkBtn.addEventListener('click', requestShutdown);
+        buttons.forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                activateButton(btn);
+            });
+        });
+
         document.addEventListener('keydown', function(e) {
+            if (confirmOpen) {
+                switch (e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        confirmChoice = 'cancel';
+                        updateConfirmFocus();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        confirmChoice = 'ok';
+                        updateConfirmFocus();
+                        break;
+                    case 'x':
+                    case 'X':
+                        e.preventDefault();
+                        if (confirmChoice === 'ok') {
+                            requestShutdown();
+                        } else {
+                            closeConfirm();
+                        }
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        closeConfirm();
+                        break;
+                }
+                return;
+            }
+
             switch(e.key) {
                 case 'ArrowUp':
                     e.preventDefault();
@@ -48,10 +137,7 @@
                 case 'x':
                 case 'X':
                     e.preventDefault();
-                    const selectedButton = buttons[currentFocus];
-                    if (selectedButton) {
-                        window.location.href = selectedButton.dataset.href;
-                    }
+                    activateButton(buttons[currentFocus]);
                     break;
             }
         });

@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Any
 
@@ -101,6 +102,18 @@ def game_page(game_id: str):
 @bp.route("/about")
 def about():
     return render_template("about.html")
+
+@bp.route('/shutdown', methods=['POST'])
+def shutdown():
+    """
+    Éteint le Raspberry Pi. L'utilisateur exécutant Flask doit pouvoir lancer
+    `sudo shutdown` sans mot de passe (règle sudoers dédiée sur la borne).
+    """
+    try:
+        subprocess.Popen(["sudo", "shutdown", "-h", "now"])
+        return jsonify({"success": True}), 200
+    except OSError as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @bp.route('/init-db', methods=['POST'])
 def initialize_database():
