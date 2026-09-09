@@ -1,0 +1,3 @@
+# Les scripts shell sont executes sur le Raspberry Pi : toujours en fins de ligne LF,
+# meme lorsqu'ils sont commites depuis Windows (core.autocrlf=true).
+*.sh text eol=lf
