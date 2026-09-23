@@ -23,3 +23,8 @@ class Config:
 	# Token requis (header X-Init-Token) pour appeler POST /init-db. Vide = route désactivée.
 	INIT_DB_TOKEN = os.environ.get("INIT_DB_TOKEN", "")
 	USE_FAKE_SCORES = _bool_env("USE_FAKE_SCORES", False)
+	# Par défaut Jinja ne relit les templates que si DEBUG est vrai. Sur la borne,
+	# qui tourne sans debug et se met à jour par `git pull`, une modification de
+	# app/templates/ restait donc invisible jusqu'à un redémarrage manuel du
+	# service. On force la relecture : le coût est un stat() par template rendu.
+	TEMPLATES_AUTO_RELOAD = True
