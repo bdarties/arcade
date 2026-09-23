@@ -4,6 +4,13 @@
 
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export WAYLAND_DISPLAY=wayland-0
+
+# La borne heritait de LANG=fr_FR, c'est-a-dire ISO-8859-1 : Chromium affichait
+# alors les pages UTF-8 en mojibake (« À PROPOS » rendu « Ã€ PROPOS »).
+# La locale doit exister sur la machine, sinon on retombe en C :
+#   sudo localedef -i fr_FR -f UTF-8 fr_FR.UTF-8
+export LANG=fr_FR.UTF-8
+export LC_ALL=fr_FR.UTF-8
 # La session de la borne est un compositeur Wayland (labwc). Passer par
 # Xwayland (DISPLAY=:0) faisait scintiller l'ecran, la fenetre X11 et le
 # bureau Wayland se disputant le premier plan.
