@@ -2,7 +2,8 @@
 {% block title %}Arcade - Jeux{% endblock %}
 {% block content %}
 	<H1> Promo MMI2 {{ promo }} - selectionnez votre jeu puis apuyez sur le bouton start pour le lancer</H1>
-	<div class="return button" onclick="window.location.href='{{ url_for('routes.home') }}'">Retour à l'accueil</div>
+	{# Selectionne par la fleche Haut depuis la premiere ligne de la grille (app.js). #}
+	<a href="{{ url_for('routes.home') }}" id="return-button" class="nav-button subtle">Retour à la page d'accueil</a>
 
 	<div class="games-container">
 		<div class="games-grid-section">

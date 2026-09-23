@@ -71,13 +71,13 @@ html {
     font-size: 16px;
 }
 
-/* Lien vers les crédits, ancré en bas à droite de l'écran d'accueil : il doit
-   rester discret face aux boutons de promotion, sans disparaître pour autant
-   puisqu'il se sélectionne aussi aux flèches. */
-.about-button {
-    position: fixed;
-    right: 30px;
-    bottom: 30px;
+/* Variante sobre du bouton de navigation, pour les actions secondaires (retour,
+   crédits) : elles doivent rester lisibles et sélectionnables aux flèches sans
+   concurrencer visuellement les boutons principaux.
+   display: inline-block car ces boutons ne sont pas toujours dans un conteneur
+   flex — sans lui, le padding d'un <a> en ligne déborderait sur le texte voisin. */
+.nav-button.subtle {
+    display: inline-block;
     padding: 10px 18px;
     font-size: 14px;
     background-color: transparent;
@@ -85,12 +85,17 @@ html {
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* Doit suivre .nav-button.focused : à spécificité égale, c'est la dernière
-   règle du fichier qui gagne. */
-.about-button.focused {
+.nav-button.subtle.focused {
     background-color: rgba(255, 255, 255, 0.3);
     border-color: white;
     color: white;
+}
+
+/* Lien vers les crédits, ancré en bas à droite de l'écran d'accueil. */
+.about-button {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
 }
 
 /* Modale de confirmation d'extinction */

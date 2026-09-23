@@ -11,7 +11,9 @@
     <div class="container">
         <h1>À propos du projet Arcade</h1>
         <p>Description du projet...</p>
-        <a href="{{ url_for('routes.home') }}" class="back-button">RETOUR (X)</a>
+        {# Seule action de la page, donc affichee d'emblee comme selectionnee : la
+           touche X des boutons GPIO y revient (voir le script ci-dessous). #}
+        <a href="{{ url_for('routes.home') }}" class="nav-button subtle focused">Retour à la page d'accueil</a>
     </div>
 
     <script>
