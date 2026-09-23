@@ -1,0 +1,3 @@
+# Ce fichier ne sert qu'a versionner le dossier de la promo 2026 tant qu'il est vide :
+# Git ne suit pas les repertoires vides, et sans lui le bouton "Promo MMI2 2026"
+# disparaitrait de l'accueil de la borne (les promos sont deduites des dossiers de games/).

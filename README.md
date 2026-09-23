@@ -27,13 +27,19 @@ Le serveur lit sa configuration depuis un fichier `.env` (non versionné, voir `
 
 ### Routes disponibles
 
-- **`/` ou `/accueil`** : Écran d'accueil avec un bouton "Commencer"
-- **`/games/`** : Liste des jeux avec navigation par grille
-- **`/games/<nomrepertoire>`** : Jeu en plein écran
+- **`/` ou `/accueil`** : Écran d'accueil avec un bouton par promotion ("Promo MMI2 2025", "Promo MMI2 2026"...)
+- **`/games/<promo>/`** : Liste des jeux de la promotion, avec navigation par grille
+- **`/games/<promo>/<nomrepertoire>/`** : Jeu en plein écran
+
+Les jeux sont rangés par promotion : `games/<année>/<nom_du_jeu>/`. Les boutons de
+l'accueil sont déduits automatiquement des dossiers d'années présents dans `games/` :
+ouvrir une nouvelle promo ne demande aucune modification de code, il suffit de créer
+le dossier (avec un `.gitkeep` tant qu'il est vide, Git ne versionnant pas les
+répertoires vides).
 
 ### Navigation
 
-- **Page d'accueil** : Bouton "Commencer" pour accéder à la liste des jeux
+- **Page d'accueil** : un bouton par promotion pour accéder à la liste de ses jeux
 - **Liste des jeux** : 
   - Grille de 3 colonnes sur 66% de l'écran
   - Description du jeu sur 33% de droite
@@ -62,10 +68,12 @@ arcade/
       css/style.css      # Styles modernes avec effets visuels
       js/app.js          # Navigation avec flèches directionnelles
   games/
-    sample/
-      game.json
-      js/index.js
-      presentation.png   # Image de présentation (800x450)
+    2025/                # Une promotion = un dossier d'année
+      sample/
+        game.json
+        js/index.js
+        presentation.png # Image de présentation (800x450)
+    2026/
   requirements.txt
   requirements-gpio.txt  # Dépendances de gpio2keys.py (Raspberry Pi uniquement)
   .env.example
@@ -74,7 +82,7 @@ arcade/
 
 ## Ajouter un jeu
 
-1. Créez un répertoire sous `games/` avec un nom court (ex: `pacman`)
+1. Créez un répertoire sous le dossier de votre promotion, `games/<année>/`, avec un nom court (ex: `games/2026/pacman`)
 2. Ajoutez un `game.json` contenant:
    ```json
    {

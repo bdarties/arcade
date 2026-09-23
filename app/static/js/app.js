@@ -135,18 +135,19 @@ class GamesGridNavigation {
 		const title = currentCell.dataset.gameTitle;
 		const description = currentCell.dataset.gameDescription;
 		const authors = currentCell.dataset.gameAuthors;
-		const gameId = currentCell.dataset.gameId;
-		const videoPath = `/games/${gameId}/demo.mp4`;
+		// Les URL viennent du template : les jeux sont ranges par promo
+		// (games/<annee>/<jeu>/), que ce script n'a pas a connaitre.
+		const videoPath = currentCell.dataset.gameVideo;
 		this.gameTitle.textContent = title;
 		this.gameDesc.textContent = description;
 		this.gameAuthors.textContent = authors ? `Auteurs: ${authors}` : '';
-		
+
 		 this.videoPath = videoPath;
-		
+
 		const videoContainer = document.getElementById('game-demo-video');
             const videoSource = document.getElementById('video-source');
-            if (videoContainer && videoSource) {
-                videoSource.src = `/games/${gameId}/demo.mp4`;
+            if (videoContainer && videoSource && videoPath) {
+                videoSource.src = videoPath;
                 videoSource.parentElement.load();
                 videoContainer.style.display = 'block';
             }
@@ -157,9 +158,8 @@ class GamesGridNavigation {
 	
 	playCurrentGame() {
 		const currentCell = this.gameCells[this.currentIndex];
-		if (currentCell) {
-			const gameId = currentCell.dataset.gameId;
-			window.location.href = `/games/${gameId}`;
+		if (currentCell && currentCell.dataset.gameUrl) {
+			window.location.href = currentCell.dataset.gameUrl;
 		}
 	}
 }

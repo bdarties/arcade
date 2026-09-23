@@ -10,12 +10,14 @@
     <div class="background"></div>
     <div class="container-accueil">
         <div class="buttons-container">
-            <a href="{{ url_for('routes.games_list') }}" class="nav-button focused" data-href="{{ url_for('routes.games_list') }}">
-                COMMENCER
-            </a>
-            <a href="{{ url_for('routes.about') }}" class="nav-button" data-href="{{ url_for('routes.about') }}">
-                À PROPOS / CRÉDITS
-            </a>
+            {# Un bouton par promotion presente dans games/ (games/2025, games/2026...). #}
+            {% for promo in promos %}
+                <a href="{{ url_for('routes.games_list', promo=promo) }}"
+                   class="nav-button{% if loop.first %} focused{% endif %}"
+                   data-href="{{ url_for('routes.games_list', promo=promo) }}">
+                    Promo MMI2 {{ promo }}
+                </a>
+            {% endfor %}
         </div>
     </div>
 
