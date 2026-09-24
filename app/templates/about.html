@@ -8,18 +8,58 @@
 </head>
 <body>
     <div class="background"></div>
-    <div class="container">
-        <h1>À propos du projet Arcade</h1>
-        <p>Description du projet...</p>
+
+    <div class="about-page">
+        <h1>À propos / Crédits</h1>
+
+        <p class="about-intro">
+            Ces jeux ont été créés par des promotions de BUT MMI2 dans le cadre d'une SAÉ, sous la direction de<br>
+            <strong>Benoît Darties</strong> et <strong>Nicolas Maurin</strong>.
+            Chaque jeu a été développé en <strong>Phaser</strong> et créé de A à Z.
+        </p>
+
+        {# Le generique vient des game.json : une promotion ou un jeu ajoute
+           apparait ici sans retoucher ce fichier. #}
+        <div class="credits-scroll" id="credits-scroll">
+            {% for section in credits %}
+                <h2 class="promo-heading">Promo MMI2 {{ section.promo }}</h2>
+                <ul class="credits-grid">
+                    {% for game in section.games %}
+                        <li class="credit-card">
+                            <span class="credit-title">{{ game.title }}</span>
+                            <span class="credit-authors">{{ game.authors | join(', ') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        </div>
+
         {# Seule action de la page, donc affichee d'emblee comme selectionnee : la
            touche X des boutons GPIO y revient (voir le script ci-dessous). #}
-        <a href="{{ url_for('routes.home') }}" class="nav-button subtle focused">Retour à la page d'accueil</a>
+        <a href="{{ url_for('routes.home') }}" class="nav-button subtle focused about-return">Retour à la page d'accueil</a>
     </div>
 
     <script>
-        document.addEventListener('keydown', function(e) {
-            if (e.key.toLowerCase() === 'x') {
-                window.location.href = "{{ url_for('routes.home') }}";
+        // La liste s'allongera a chaque promotion : le joystick la fait defiler,
+        // le titre et le bouton de retour restant fixes.
+        const scroller = document.getElementById('credits-scroll');
+        const SCROLL_STEP = 90;
+
+        document.addEventListener('keydown', function (e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    scroller.scrollBy({ top: -SCROLL_STEP, behavior: 'smooth' });
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    scroller.scrollBy({ top: SCROLL_STEP, behavior: 'smooth' });
+                    break;
+                case 'x':
+                case 'X':
+                    e.preventDefault();
+                    window.location.href = "{{ url_for('routes.home') }}";
+                    break;
             }
         });
     </script>

@@ -96,6 +96,8 @@ arcade/
 5. Le point d'entrée doit être `js/index.js`. Il sera chargé en `type=module`
 6. Pour masquer un jeu de la liste (démo interne, jeu en cours de test, etc.) sans le supprimer,
    ajoutez `"hidden": true` dans son `game.json`
+7. Les jeux visibles alimentent automatiquement la page « À propos / crédits », qui reprend leur
+   `title` et leurs `authors`. Un jeu dont le `genre` vaut `"Demo"` reste jouable mais n'y figure pas
 
 ## Fonctionnalités
 

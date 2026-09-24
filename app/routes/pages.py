@@ -138,7 +138,21 @@ def game_page(promo: str, game_id: str):
 
 @bp.route("/about")
 def about():
-    return render_template("about.html")
+    """
+    Le generique se construit a partir des game.json, donc un jeu ajoute y figure
+    sans qu'on touche au template. Les demos internes (genre "Demo") en sont
+    ecartees : ce ne sont pas des realisations de promotion.
+    """
+    credits = []
+    for promo in list_promos():
+        games = [
+            game
+            for game in load_games_metadata(promo)
+            if str(game.get("genre", "")).strip().lower() != "demo"
+        ]
+        if games:
+            credits.append({"promo": promo, "games": games})
+    return render_template("about.html", credits=credits)
 
 @bp.route('/shutdown', methods=['POST'])
 def shutdown():

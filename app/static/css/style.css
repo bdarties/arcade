@@ -396,3 +396,112 @@ html {
     text-transform: uppercase;
 }
 
+/* Page À propos / crédits */
+.about-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+    padding: 24px 50px 28px;
+}
+
+/* Le h1 commun reserve beaucoup de place verticale ; ici la liste en a besoin. */
+.about-page h1 {
+    padding: 0;
+    margin: 0 0 14px;
+    font-size: 34px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.about-intro {
+    max-width: 980px;
+    margin: 0 auto 22px;
+    padding: 14px 22px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 19px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+}
+
+.about-intro strong {
+    color: white;
+}
+
+/* Seule la liste defile : le titre, le chapeau et le bouton de retour doivent
+   rester visibles quand les promotions s'accumuleront. */
+.credits-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    padding: 0 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.1);
+}
+
+.credits-scroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.credits-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.credits-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 5px;
+}
+
+.promo-heading {
+    font-size: 21px;
+    letter-spacing: 1px;
+    margin: 4px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.credits-grid {
+    list-style: none;
+    margin: 0 0 26px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 18px;
+}
+
+/* Fond franchement sombre : les cartes passent devant des zones tres claires
+   de l'image de fond, ou les noms devenaient illisibles. */
+.credit-card {
+    background-color: rgba(0, 0, 0, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.credit-title {
+    display: block;
+    font-size: 17px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.credit-authors {
+    display: block;
+    font-size: 14px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.about-return {
+    align-self: center;
+    margin-top: 18px;
+}
+
