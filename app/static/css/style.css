@@ -62,13 +62,12 @@ html {
     background-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Bouton d'extinction, ancré en bas à gauche de l'écran d'accueil */
+/* Bouton d'extinction, ancré en bas à gauche de l'écran d'accueil. Il porte la
+   classe subtle, qui lui donne sa taille et ses couleurs. */
 .power-button {
     position: fixed;
     left: 30px;
     bottom: 30px;
-    padding: 14px 24px;
-    font-size: 16px;
 }
 
 /* Variante sobre du bouton de navigation, pour les actions secondaires (retour,
