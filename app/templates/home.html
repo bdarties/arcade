@@ -27,16 +27,19 @@
         À propos / crédits
     </a>
 
-    <a href="#" class="nav-button subtle power-button" data-action="shutdown">
-        ÉTEINDRE
+    <a href="#" class="nav-button subtle power-button" data-action="power">
+        Éteindre / Redémarrer
     </a>
 
+    {# ANNULER reste la premiere option et garde le focus a l'ouverture : la borne
+       n'expose ni Echap ni souris, c'est la seule sortie apres un appui par erreur. #}
     <div class="confirm-overlay" id="confirm-overlay">
         <div class="confirm-box">
-            <p>Voulez-vous éteindre la borne ?</p>
+            <p>Que voulez-vous faire ?</p>
             <div class="confirm-actions">
-                <span class="confirm-btn focused" id="confirm-cancel">ANNULER</span>
-                <span class="confirm-btn" id="confirm-ok">ÉTEINDRE</span>
+                <span class="confirm-btn focused" data-choice="cancel">ANNULER</span>
+                <span class="confirm-btn" data-choice="shutdown">ÉTEINDRE</span>
+                <span class="confirm-btn" data-choice="reboot">REDÉMARRER</span>
             </div>
         </div>
     </div>
@@ -46,10 +49,13 @@
         let currentFocus = 0;
 
         const confirmOverlay = document.getElementById('confirm-overlay');
-        const confirmCancelBtn = document.getElementById('confirm-cancel');
-        const confirmOkBtn = document.getElementById('confirm-ok');
+        const confirmButtons = document.querySelectorAll('.confirm-btn');
+        const powerEndpoints = {
+            shutdown: { url: "{{ url_for('routes.shutdown') }}", label: 'EXTINCTION...' },
+            reboot: { url: "{{ url_for('routes.reboot') }}", label: 'REDÉMARRAGE...' }
+        };
         let confirmOpen = false;
-        let confirmChoice = 'cancel';
+        let confirmFocus = 0;
 
         function updateFocus() {
             buttons.forEach((btn, index) => {
@@ -62,13 +68,14 @@
         }
 
         function updateConfirmFocus() {
-            confirmCancelBtn.classList.toggle('focused', confirmChoice === 'cancel');
-            confirmOkBtn.classList.toggle('focused', confirmChoice === 'ok');
+            confirmButtons.forEach((btn, index) => {
+                btn.classList.toggle('focused', index === confirmFocus);
+            });
         }
 
         function openConfirm() {
             confirmOpen = true;
-            confirmChoice = 'cancel';
+            confirmFocus = 0;
             updateConfirmFocus();
             confirmOverlay.classList.add('visible');
         }
@@ -78,22 +85,28 @@
             confirmOverlay.classList.remove('visible');
         }
 
-        function requestShutdown() {
-            fetch("{{ url_for('routes.shutdown') }}", { method: 'POST' }).catch(() => {});
-            confirmOkBtn.textContent = 'EXTINCTION...';
+        function activateConfirm(button) {
+            const endpoint = powerEndpoints[button.dataset.choice];
+            if (!endpoint) {
+                closeConfirm();
+                return;
+            }
+            fetch(endpoint.url, { method: 'POST' }).catch(() => {});
+            button.textContent = endpoint.label;
         }
 
         function activateButton(button) {
             if (!button) return;
-            if (button.dataset.action === 'shutdown') {
+            if (button.dataset.action === 'power') {
                 openConfirm();
             } else {
                 window.location.href = button.dataset.href;
             }
         }
 
-        confirmCancelBtn.addEventListener('click', closeConfirm);
-        confirmOkBtn.addEventListener('click', requestShutdown);
+        confirmButtons.forEach((btn) => {
+            btn.addEventListener('click', () => activateConfirm(btn));
+        });
         buttons.forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -106,22 +119,18 @@
                 switch (e.key) {
                     case 'ArrowLeft':
                         e.preventDefault();
-                        confirmChoice = 'cancel';
+                        confirmFocus = (confirmFocus - 1 + confirmButtons.length) % confirmButtons.length;
                         updateConfirmFocus();
                         break;
                     case 'ArrowRight':
                         e.preventDefault();
-                        confirmChoice = 'ok';
+                        confirmFocus = (confirmFocus + 1) % confirmButtons.length;
                         updateConfirmFocus();
                         break;
                     case 'x':
                     case 'X':
                         e.preventDefault();
-                        if (confirmChoice === 'ok') {
-                            requestShutdown();
-                        } else {
-                            closeConfirm();
-                        }
+                        activateConfirm(confirmButtons[confirmFocus]);
                         break;
                     case 'Escape':
                         e.preventDefault();
@@ -131,15 +140,17 @@
                 return;
             }
 
+            // Navigation circulaire : sans elle, le dernier bouton (en bas a gauche
+            // de l'ecran) semblait inatteignable depuis le haut de la liste.
             switch(e.key) {
                 case 'ArrowUp':
                     e.preventDefault();
-                    currentFocus = Math.max(0, currentFocus - 1);
+                    currentFocus = (currentFocus - 1 + buttons.length) % buttons.length;
                     updateFocus();
                     break;
                 case 'ArrowDown':
                     e.preventDefault();
-                    currentFocus = Math.min(buttons.length - 1, currentFocus + 1);
+                    currentFocus = (currentFocus + 1) % buttons.length;
                     updateFocus();
                     break;
                 case 'x':

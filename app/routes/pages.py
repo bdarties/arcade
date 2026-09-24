@@ -152,6 +152,17 @@ def shutdown():
     except OSError as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@bp.route('/reboot', methods=['POST'])
+def reboot():
+    """
+    Redémarre le Raspberry Pi. Mêmes prérequis sudo que la route /shutdown.
+    """
+    try:
+        subprocess.Popen(["sudo", "shutdown", "-r", "now"])
+        return jsonify({"success": True}), 200
+    except OSError as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @bp.route('/init-db', methods=['POST'])
 def initialize_database():
     """
