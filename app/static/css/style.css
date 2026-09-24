@@ -150,6 +150,12 @@ html {
     background-color: rgba(255, 255, 255, 0.4);
 }
 
+/* Aligne le bouton de retour sur le retrait du titre et de la grille, au lieu
+   de le coller au bord gauche de l'écran. */
+#return-button {
+    margin-left: 50px;
+}
+
 /* Styles de la liste des jeux */
 .games-container {
     display: flex;
@@ -181,7 +187,10 @@ html {
 
 
     gap: 16px;
-    max-height: calc(100vh - 40px);
+    /* Respire un peu sous le bouton de retour. Retranché de max-height pour ne
+       pas décaler d'autant le bas de la grille. */
+    margin-top: 10px;
+    max-height: calc(100vh - 50px);
 
     
     /* Limite la hauteur */
@@ -246,6 +255,9 @@ html {
 
 
 .game-cell {
+    /* La bordure s'épaissit à la sélection : comptée dans la taille de la case,
+       elle ronge l'intérieur au lieu de décaler les cases voisines. */
+    box-sizing: border-box;
     background-color: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
@@ -266,10 +278,14 @@ html {
 }
 
 
+/* La case sélectionnée doit se repérer d'un coup d'œil depuis le recul d'une
+   borne : trait deux fois plus épais, franchement blanc, et halo autour. */
 .game-cell.focused {
     transform: scale(1.05);
     background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
+    border-width: 4px;
+    border-color: white;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.5);
 }
 
 .game-image {
