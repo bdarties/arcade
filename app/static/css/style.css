@@ -187,15 +187,22 @@ html {
 
 
     gap: 16px;
-    /* Respire un peu sous le bouton de retour. Retranché de max-height pour ne
-       pas décaler d'autant le bas de la grille. */
+    /* Respire un peu sous le bouton de retour. */
     margin-top: 10px;
-    max-height: calc(100vh - 50px);
 
-    
-    /* Limite la hauteur */
-    padding-right: 16px;
-    /* Espace pour la barre de défilement */
+    /* Plafond aligné sur la zone visible réellement disponible. L'ancien calcul
+       portait sur la fenêtre et dépassait le conteneur : la grille se croyait en
+       débordement et affichait un ascenseur alors que les vignettes tenaient à
+       l'écran. Un plafond plutôt qu'une hauteur imposée, sinon une promotion
+       sans jeu réserverait toute la place et repousserait son message hors vue. */
+    max-height: calc(100% - 10px);
+    box-sizing: border-box;
+
+    /* La case sélectionnée grandit et s'entoure d'un halo : sans cette marge
+       intérieure, son relief était rogné par le bord de la zone de défilement,
+       surtout sur la colonne de droite. Le padding fait partie du scrollport,
+       il ne déclenche donc pas l'ascenseur. */
+    padding: 16px 20px;
     align-items: start;
     /* Empêche l'étirement vertical */
     overflow-y: auto;
