@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Arcade - Jeux{% endblock %}
 {% block content %}
-	<H1> Promo MMI2 {{ promo }} - selectionnez votre jeu puis apuyez sur le bouton start pour le lancer</H1>
+	<H1>
+		Promo MMI2 {{ promo }}
+		{% if games %}
+			- sélectionnez votre jeu puis appuyez sur le bouton start pour le lancer
+		{% endif %}
+	</H1>
 	{# Selectionne par la fleche Haut depuis la premiere ligne de la grille (app.js). #}
 	<a href="{{ url_for('routes.home') }}" id="return-button" class="nav-button subtle">Retour à la page d'accueil</a>
 
@@ -22,6 +27,13 @@
 					</div>
 				{% endfor %}
 			</div>
+			{# #games-grid reste present meme vide : app.js s'en sert pour decider
+			   d'activer la navigation clavier. #}
+			{% if not games %}
+				<p class="games-empty">
+					Aucun jeu n'est encore publié pour cette promotion.
+				</p>
+			{% endif %}
 		</div>
 		<div class="game-description-section">
 			<div class="game-description" id="game-description">

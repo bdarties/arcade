@@ -283,6 +283,14 @@ html {
 
 
 
+/* Message affiché quand une promotion n'a encore aucun jeu publié. */
+.games-empty {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
+    text-align: center;
+    padding: 60px 20px;
+}
+
 .game-description-section {
     flex: 3;
     /* 3/8 de la largeur */

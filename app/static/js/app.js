@@ -3,7 +3,9 @@ class GamesGridNavigation {
 	constructor() {
 		this.grid = document.getElementById('games-grid');
 		this.gameCells = document.querySelectorAll('.game-cell');
-		this.currentIndex = 0;
+		// -1 designe le bouton de retour. Une promotion sans jeu publie n'a que
+		// cette position : on y demarre pour que la page reste navigable.
+		this.currentIndex = this.gameCells.length > 0 ? 0 : -1;
 		this.gameDescription = document.getElementById('game-description');
 		this.gameTitle = document.getElementById('game-title');
 		this.gameDesc = document.getElementById('game-desc');
@@ -11,7 +13,10 @@ class GamesGridNavigation {
 		this.demoVideo = document.getElementById('game-demo-video');
 		// Bouton « Retour à la page d'accueil », selectionne quand currentIndex vaut -1.
 		this.returnButton = document.getElementById('return-button');
-		if (this.grid && this.gameCells.length > 0) {
+		// On initialise meme sans aucune case : sinon l'ecouteur clavier n'etait pas
+		// pose et une promotion sans jeu devenait un cul-de-sac au joystick, sans
+		// aucun moyen de revenir a l'accueil.
+		if (this.grid) {
 			this.init();
 		}
 	}
@@ -59,11 +64,14 @@ class GamesGridNavigation {
 			case 'ArrowDown':
 				e.preventDefault();
 				// Depuis le bouton de retour, on redescend sur la premiere case :
-				// sans ce cas, -1 + cols renvoyait sur la deuxieme ligne.
+				// sans ce cas, -1 + cols renvoyait sur la deuxieme ligne. S'il n'y a
+				// aucun jeu, on reste sur le bouton de retour.
 				if (this.currentIndex === -1) {
-					this.currentIndex = 0;
-					this.updateFocus();
-					this.updateDescription();
+					if (this.gameCells.length > 0) {
+						this.currentIndex = 0;
+						this.updateFocus();
+						this.updateDescription();
+					}
 				}
 				else if (this.currentIndex + cols < this.gameCells.length) {
 					this.currentIndex += cols;
@@ -137,10 +145,14 @@ class GamesGridNavigation {
 
 		if (this.currentIndex == -1) {
 			this.gameTitle.textContent = '';
-			this.gameDesc.textContent = 'Utilisez les flèches pour naviguer dans la grille et appuyez sur "Start" pour lancer un jeu.';
+			this.gameDesc.textContent = this.gameCells.length > 0
+				? 'Utilisez les flèches pour naviguer dans la grille et appuyez sur "Start" pour lancer un jeu.'
+				: "Aucun jeu n'est encore publié pour cette promotion. Appuyez sur Start pour revenir à l'accueil.";
 			this.gameAuthors.textContent = '';
 
-			// this.demoVideo.style.display = 'none';
+			if (this.demoVideo) {
+				this.demoVideo.style.display = 'none';
+			}
 			return;
 		}
 
