@@ -50,11 +50,11 @@ export class MenuScene extends Phaser.Scene {
 
     this.input.keyboard.on('keydown-DOWN', () => { index = (index + 1) % items.length; highlight(index); });
     this.input.keyboard.on('keydown-UP', () => { index = (index - 1 + items.length) % items.length; highlight(index); });
-    this.input.keyboard.on('keydown-ENTER', () => items[index].onSelect());
+    this.input.keyboard.on('keydown-X', () => items[index].onSelect());
     // I lance directement la partie, comme un bouton "start" d'arcade.
     this.input.keyboard.on('keydown-I', () => this.scene.start('PreloadScene'));
 
-    this.add.text(width / 2, height - 40, '↑ ↓ choisir · Entrée valider · I jouer directement', {
+    this.add.text(width / 2, height - 40, '↑ ↓ choisir · X valider · I jouer directement', {
       fontFamily: '"Courier New", monospace', fontSize: '13px', color: MUTED
     }).setOrigin(0.5);
   }
@@ -96,12 +96,12 @@ export class StoryScene extends Phaser.Scene {
       fontFamily: '"Courier New", monospace', fontSize: '15px', color: TEXT, align: 'center', lineSpacing: 6
     }).setOrigin(0.5, 0);
 
-    this.add.text(width / 2, py + panelH - 30, 'Entrée ou clic pour revenir au menu', {
+    this.add.text(width / 2, py + panelH - 30, 'X ou clic pour revenir au menu', {
       fontFamily: '"Courier New", monospace', fontSize: '13px', color: MUTED
     }).setOrigin(0.5);
 
     const back = () => this.scene.start('MenuScene');
-    this.input.keyboard.once('keydown-ENTER', back);
+    this.input.keyboard.once('keydown-X', back);
     this.input.keyboard.once('keydown-ESC', back);
     this.input.once('pointerdown', back);
   }
@@ -137,12 +137,12 @@ export class CreditsScene extends Phaser.Scene {
       fontFamily: '"Courier New", monospace', fontSize: '17px', color: TEXT, align: 'center', lineSpacing: 10
     }).setOrigin(0.5, 0);
 
-    this.add.text(width / 2, py + panelH - 30, 'Entrée ou clic pour revenir au menu', {
+    this.add.text(width / 2, py + panelH - 30, 'X ou clic pour revenir au menu', {
       fontFamily: '"Courier New", monospace', fontSize: '13px', color: MUTED
     }).setOrigin(0.5);
 
     const back = () => this.scene.start('MenuScene');
-    this.input.keyboard.once('keydown-ENTER', back);
+    this.input.keyboard.once('keydown-X', back);
     this.input.keyboard.once('keydown-ESC', back);
     this.input.once('pointerdown', back);
   }

@@ -466,7 +466,7 @@ export class GameOverScene extends Phaser.Scene {
     this.buildButton(width / 2, height / 2 + 70, 'REJOUER', () => this.scene.start('GameScene'));
     this.buildButton(width / 2, height / 2 + 130, 'MENU', () => this.scene.start('MenuScene'));
 
-    this.input.keyboard.once('keydown-ENTER', () => this.scene.start('GameScene'));
+    this.input.keyboard.once('keydown-X', () => this.scene.start('GameScene'));
     this.input.keyboard.once('keydown-I', () => this.scene.start('GameScene'));
     this.input.keyboard.once('keydown-ESC', () => this.scene.start('MenuScene'));
   }
