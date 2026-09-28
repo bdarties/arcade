@@ -1,0 +1,56 @@
+name: Inscription à une équipe de jeu
+description: Déclarez le jeu sur lequel vous travaillez pour recevoir l'accès en écriture.
+title: "Inscription"
+labels: ["inscription"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Avant de commencer
+
+        Cette demande sert à vous donner le droit d'écrire dans le dossier de
+        votre équipe, sous `games/2026/`.
+
+        **Vous n'avez pas à saisir votre pseudo GitHub** : c'est celui du compte
+        avec lequel vous êtes connecté·e en ce moment, GitHub nous le transmet
+        automatiquement. Vérifiez simplement, en haut à droite de cette page,
+        que c'est bien **votre** compte et pas celui d'un·e camarade.
+
+        Il vous reste donc une seule chose à indiquer : votre jeu.
+  - type: dropdown
+    id: groupe
+    attributes:
+      label: Votre jeu
+      description: >-
+        Le dossier de votre équipe dans `games/2026/`. En cas de doute,
+        demandez à votre enseignant·e plutôt que de deviner : c'est ce choix
+        qui décide du dossier dans lequel vous aurez le droit d'écrire.
+      options:
+        - arianite
+        - artemis
+        - deicide
+        - divisme
+        - hunting_run
+        - maestro
+        - music_party
+        - theater_showdown
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: >-
+            Je confirme que ce compte GitHub est bien le mien et que je
+            l'utiliserai pendant toute la SAÉ.
+          required: true
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        Après validation, un message de confirmation s'affichera ici et cette
+        demande se fermera toute seule. **Vous vous êtes trompé·e d'équipe ?**
+        Ouvrez simplement une seconde demande : c'est la plus récente qui
+        compte. L'invitation à collaborer arrivera ensuite par courriel.

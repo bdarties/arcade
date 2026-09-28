@@ -1,0 +1,86 @@
+name: Verification des dossiers autorises
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verifier-acces:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer l'historique Git complet
+        uses: actions/checkout@v4
+        with:
+          # Sans l'historique complet, 'git diff origin/main...HEAD' ne peut pas
+          # retrouver le point de separation des deux branches.
+          fetch-depth: 0
+
+      - name: Configuration Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Verifier les fichiers modifies par l'etudiant
+        env:
+          # Auteur de la Pull Request, et non github.actor : ce dernier designe la
+          # derniere personne ayant pousse sur la branche. Si un enseignant poussait
+          # un correctif sur la branche d'un etudiant, la verification etait
+          # entierement contournee (branche "enseignant" du script ci-dessous).
+          AUTEUR_PR: ${{ github.event.pull_request.user.login }}
+        run: |
+          python - << 'EOF'
+          import subprocess
+          import json
+          import sys
+          import os
+
+          # 1. Pseudos GitHub des enseignants (qui ont tous les droits)
+          enseignants = ["bdarties", "DamienMarill", "nico3807"]
+          auteur = os.environ.get("AUTEUR_PR", "").strip().lower()
+
+          if auteur in [e.lower() for e in enseignants]:
+              print(f"Validation OK : {auteur} est enseignant (acces total accorde).")
+              sys.exit(0)
+
+          # 2. Charger le mapping des groupes. Les cles valent 'games/2026/<jeu>/' :
+          #    les promotions precedentes (games/2025/) et les demonstrations
+          #    (games/demos/) sont donc hors zone pour tout le monde, sans qu'il
+          #    soit besoin de les citer ici.
+          with open(".github/groupes.json", "r", encoding="utf-8") as f:
+              groupes = json.load(f)
+
+          dossier_permis = None
+          for dossier, membres in groupes.items():
+              if auteur in [m.lower() for m in membres]:
+                  dossier_permis = dossier
+                  break
+
+          if not dossier_permis:
+              print(f"ERREUR : L'etudiant '{auteur}' n'est assigne a aucune equipe dans .github/groupes.json !")
+              print("Ouvrez une demande d'inscription depuis l'onglet Issues du depot,")
+              print("puis relancez cette Pull Request.")
+              sys.exit(1)
+
+          # 3. Lister les fichiers modifies par la Pull Request par rapport a 'main'
+          res = subprocess.run(["git", "diff", "--name-only", "origin/main...HEAD"], capture_output=True, text=True)
+          fichiers = [f.strip() for f in res.stdout.splitlines() if f.strip()]
+
+          print(f"Auteur : {auteur}")
+          print(f"Dossier assigne : {dossier_permis}")
+          print(f"Fichiers touches ({len(fichiers)}) : {fichiers}")
+
+          # 4. Verifier que chaque fichier modifie se trouve bien dans le dossier permis
+          hors_zone = [f for f in fichiers if not f.startswith(dossier_permis)]
+
+          if hors_zone:
+              print("\n" + "!"*60)
+              print("[BLOCAGE] Des modifications non autorisees ont ete detectees :")
+              for f in hors_zone:
+                  print(f"  ❌ INTERDIT : {f}")
+              print(f"\nVous etes autorise UNIQUEMENT a modifier : {dossier_permis}")
+              print("!"*60)
+              sys.exit(1)
+
+          print(f"\nSucces : Toutes les modifications appartiennent bien a {dossier_permis}.")
+          sys.exit(0)
+          EOF
