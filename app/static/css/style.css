@@ -38,11 +38,18 @@ html {
     height: 100vh;
 }
 
+/* stretch plutôt que center : tous les boutons prennent la largeur du plus long,
+   sinon un libellé court comme « Démos » donne un bouton visiblement plus étroit
+   au milieu de la colonne. */
 .buttons-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    align-items: center;
+    align-items: stretch;
+}
+
+.buttons-container .nav-button {
+    text-align: center;
 }
 
 .nav-button {

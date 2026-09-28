@@ -2,7 +2,8 @@
 {% block title %}Arcade - Jeux{% endblock %}
 {% block content %}
 	<H1>
-		Promo MMI2 {{ promo }}
+		{# Titre fourni par la route : "Promo MMI2 2025" ou "Démos". #}
+		{{ section_title }}
 		{% if games %}
 			- sélectionnez votre jeu puis appuyez sur le bouton start pour le lancer
 		{% endif %}
@@ -31,7 +32,7 @@
 			   d'activer la navigation clavier. #}
 			{% if not games %}
 				<p class="games-empty">
-					Aucun jeu n'est encore publié pour cette promotion.
+					Aucun jeu n'est encore publié dans cette section.
 				</p>
 			{% endif %}
 		</div>

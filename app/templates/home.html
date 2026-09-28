@@ -18,6 +18,16 @@
                     Promo MMI2 {{ promo }}
                 </a>
             {% endfor %}
+
+            {# games/demos/ n'est pas une promotion : bouton a part, affiche
+               seulement si le dossier existe. #}
+            {% if show_demos %}
+                <a href="{{ url_for('routes.games_list', promo='demos') }}"
+                   class="nav-button"
+                   data-href="{{ url_for('routes.games_list', promo='demos') }}">
+                    Démos
+                </a>
+            {% endif %}
         </div>
     </div>
 

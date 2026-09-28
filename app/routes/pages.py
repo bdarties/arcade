@@ -16,9 +16,26 @@ bp = Blueprint("routes", __name__)
 # comme des promos, pour ignorer d'eventuels fichiers parasites dans games/.
 PROMO_PATTERN = re.compile(r"^\d{4}$")
 
+# games/demos/ regroupe les demos techniques : ce n'est pas une promotion, mais la
+# liste et le lancement des jeux y fonctionnent exactement pareil, d'ou une simple
+# section supplementaire plutot qu'une route dediee.
+DEMOS_SECTION = "demos"
+
 
 def get_games_root() -> Path:
 	return Path(current_app.root_path).parent / "games"
+
+
+def section_label(section: str) -> str:
+	"""Titre affiche pour un dossier de games/."""
+	if section == DEMOS_SECTION:
+		return "Démos"
+	return "Promo MMI2 %s" % section
+
+
+def has_demos() -> bool:
+	"""Le bouton Démos n'apparait a l'accueil que si le dossier existe."""
+	return (get_games_root() / DEMOS_SECTION).is_dir()
 
 
 def list_promos() -> List[str]:
@@ -35,8 +52,8 @@ def list_promos() -> List[str]:
 
 
 def get_promo_dir(promo: str) -> Path:
-	"""Valide la promo demandee et renvoie son dossier, ou 404."""
-	if not PROMO_PATTERN.match(promo):
+	"""Valide la promo (ou la section demos) demandee et renvoie son dossier, ou 404."""
+	if promo != DEMOS_SECTION and not PROMO_PATTERN.match(promo):
 		abort(404)
 	promo_dir = get_games_root() / promo
 	if not promo_dir.is_dir():
@@ -77,7 +94,7 @@ def load_games_metadata(promo: str, include_hidden: bool = False) -> List[Dict[s
 @bp.route("/")
 @bp.route("/accueil")
 def home():
-	return render_template("home.html", promos=list_promos())
+	return render_template("home.html", promos=list_promos(), show_demos=has_demos())
 
 
 @bp.route("/games/")
@@ -90,7 +107,12 @@ def games_index():
 def games_list(promo: str):
 	get_promo_dir(promo)
 	games = load_games_metadata(promo)
-	return render_template("games_list.html", games=games, promo=promo)
+	return render_template(
+		"games_list.html",
+		games=games,
+		promo=promo,
+		section_title=section_label(promo),
+	)
 
 
 @bp.route("/games/<promo>/<game_id>/<path:filepath>")

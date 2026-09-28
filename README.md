@@ -27,8 +27,9 @@ Le serveur lit sa configuration depuis un fichier `.env` (non versionné, voir `
 
 ### Routes disponibles
 
-- **`/` ou `/accueil`** : Écran d'accueil avec un bouton par promotion ("Promo MMI2 2025", "Promo MMI2 2026"...)
+- **`/` ou `/accueil`** : Écran d'accueil avec un bouton par promotion ("Promo MMI2 2025", "Promo MMI2 2026"...), suivi d'un bouton "Démos"
 - **`/games/<promo>/`** : Liste des jeux de la promotion, avec navigation par grille
+- **`/games/demos/`** : Liste des démos techniques, identique à une liste de promotion
 - **`/games/<promo>/<nomrepertoire>/`** : Jeu en plein écran
 
 Les jeux sont rangés par promotion : `games/<année>/<nom_du_jeu>/`. Les boutons de
@@ -37,9 +38,15 @@ ouvrir une nouvelle promo ne demande aucune modification de code, il suffit de c
 le dossier (avec un `.gitkeep` tant qu'il est vide, Git ne versionnant pas les
 répertoires vides).
 
+`games/demos/` est le seul dossier de `games/` qui ne soit pas une année. Il regroupe
+les démos techniques (Tetris, mobilité...) : elles se rangent et se lancent comme les
+autres jeux, mais ne figurent pas au générique de la page « À propos / crédits », qui
+ne parcourt que les promotions. Son bouton n'apparaît à l'accueil que si le dossier
+existe.
+
 ### Navigation
 
-- **Page d'accueil** : un bouton par promotion pour accéder à la liste de ses jeux
+- **Page d'accueil** : un bouton par promotion (plus un bouton "Démos") pour accéder à la liste des jeux correspondants
 - **Liste des jeux** : 
   - Grille de 3 colonnes sur 66% de l'écran
   - Description du jeu sur 33% de droite
@@ -74,6 +81,7 @@ arcade/
         js/index.js
         presentation.png # Image de présentation (800x450)
     2026/
+    demos/               # Démos techniques, hors générique des crédits
   requirements.txt
   requirements-gpio.txt  # Dépendances de gpio2keys.py (Raspberry Pi uniquement)
   .env.example
