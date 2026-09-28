@@ -1,0 +1,171 @@
+name: Inscription des étudiants
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+  contents: read
+
+# Les inscriptions arrivent toutes dans le même quart d'heure : sans cette
+# file d'attente, deux exécutions simultanées pousseraient sur main en même
+# temps et la seconde serait rejetée.
+concurrency:
+  group: inscription-arcade
+  cancel-in-progress: false
+
+jobs:
+  valider:
+    if: contains(github.event.issue.labels.*.name, 'inscription')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          # Le jeton du checkout ne sert qu'à lire. Le push se fera plus bas
+          # avec le jeton personnel, seul capable de franchir la protection
+          # de branche.
+          persist-credentials: false
+
+      - name: Lire le jeu déclaré
+        id: lecture
+        env:
+          # Le corps de l'issue est écrit par n'importe qui sur Internet : il ne
+          # doit JAMAIS être interpolé directement dans le script shell. On le
+          # fait transiter par une variable d'environnement.
+          CORPS: ${{ github.event.issue.body }}
+          AUTEUR: ${{ github.event.issue.user.login }}
+          DEPOT: ${{ github.repository }}
+          # Tant que le jeton n'est pas en place, on ne promet pas d'invitation.
+          ARCADE_PRET: ${{ secrets.TOKEN_INSCRIPTIONS != '' }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          python - << 'EOF' > reponse.md
+          import json, os, re
+
+          # La liste des jeux valides est déduite de groupes.json : ajouter une
+          # équipe ne demande donc de toucher qu'à ce fichier et au formulaire.
+          with open(".github/groupes.json", encoding="utf-8") as f:
+              dossiers = list(json.load(f))
+          jeux = [d.removeprefix("games/2026/").rstrip("/") for d in dossiers]
+
+          corps = os.environ.get("CORPS", "")
+          auteur = os.environ.get("AUTEUR", "")
+
+          # Le formulaire rend chaque réponse sous la forme :
+          #   ### Votre jeu
+          #
+          #   arianite
+          bloc = re.search(r"###\s*Votre jeu\s*\n+(.+?)(?:\n###|\Z)", corps, re.S)
+          declare = bloc.group(1).strip().splitlines()[0].strip() if bloc else ""
+          valide = declare in jeux
+
+          if not valide:
+              print(f"@{auteur} : impossible de lire votre équipe.")
+              print()
+              print(f"La valeur trouvée est `{declare or '(vide)'}`, qui ne correspond à")
+              print("aucune équipe connue. Cela arrive quand la demande a été écrite à la")
+              print("main au lieu de passer par le formulaire.")
+              print()
+              print(f"**Fermez cette demande et recommencez** depuis [le formulaire]"
+                    f"(https://github.com/{os.environ['DEPOT']}/issues/new?template=inscription.yml),")
+              print("en choisissant votre jeu dans la liste déroulante.")
+          else:
+              print(f"Inscription enregistrée : **@{auteur}** rejoint **{declare}**.")
+              print()
+              if os.environ.get("ARCADE_PRET") == "true":
+                  print("Votre accès en écriture est en cours d'attribution ; l'invitation")
+                  print("arrive par courriel d'ici une minute. Acceptez-la, puis clonez le")
+                  print(f"dépôt. Vous travaillerez dans `games/2026/{declare}/`, et nulle part")
+                  print("ailleurs.")
+              else:
+                  print("Votre enseignant·e vous enverra l'invitation prochainement.")
+                  print(f"Vous travaillerez ensuite dans `games/2026/{declare}/`, et nulle")
+                  print("part ailleurs.")
+              print()
+              print("> Vous vous êtes trompé·e d'équipe ? Ouvrez une seconde demande :")
+              print("> c'est toujours la plus récente qui fait foi, tout se corrigera seul.")
+
+          # 'secrets' n'est pas lisible depuis un 'if:' d'étape : on fait donc
+          # transiter la présence du jeton par une sortie.
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+              f.write(f"valide={'oui' if valide else 'non'}\n")
+              f.write(f"jeu={declare if valide else ''}\n")
+              f.write(f"arcade_pret={os.environ.get('ARCADE_PRET', 'false')}\n")
+          EOF
+
+      - name: Répondre à l'étudiant·e
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ github.event.issue.number }}
+          DEPOT: ${{ github.repository }}
+        run: |
+          gh issue comment "$NUMERO" --repo "$DEPOT" --body-file reponse.md
+          if [ "${{ steps.lecture.outputs.valide }}" = "oui" ]; then
+            gh issue close "$NUMERO" --repo "$DEPOT"
+          fi
+
+      - name: Inscrire dans groupes.json
+        if: steps.lecture.outputs.valide == 'oui' && steps.lecture.outputs.arcade_pret == 'true'
+        env:
+          JETON: ${{ secrets.TOKEN_INSCRIPTIONS }}
+          AUTEUR: ${{ github.event.issue.user.login }}
+          JEU: ${{ steps.lecture.outputs.jeu }}
+          NUMERO: ${{ github.event.issue.number }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          python - << 'EOF'
+          import json, os, re
+
+          chemin = ".github/groupes.json"
+          auteur = os.environ["AUTEUR"]
+          cle = "games/2026/%s/" % os.environ["JEU"]
+
+          with open(chemin, encoding="utf-8") as f:
+              groupes = json.load(f)
+
+          # 1. Une personne n'appartient qu'à une seule équipe : on la retire
+          #    partout avant de l'ajouter, ce qui rend les corrections gratuites.
+          for k in groupes:
+              groupes[k] = [m for m in groupes[k] if m.lower() != auteur.lower()]
+
+          # 2. Les pseudos fictifs de l'équipe visée n'ont plus de raison d'être
+          #    dès qu'une vraie personne s'y déclare.
+          groupes.setdefault(cle, [])
+          groupes[cle] = [m for m in groupes[cle]
+                          if not re.fullmatch(r"pseudo_etudiant\d*", m)]
+          groupes[cle].append(auteur)
+
+          with open(chemin, "w", encoding="utf-8") as f:
+              json.dump(groupes, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+
+          print(f"{cle} -> {groupes[cle]}")
+          EOF
+
+          git config user.name "Robot inscriptions"
+          git config user.email "actions@github.com"
+          if git diff --quiet; then
+            echo "Aucun changement : $AUTEUR etait deja inscrit dans $JEU."
+          else
+            git remote set-url origin \
+              "https://x-access-token:$JETON@github.com/$GITHUB_REPOSITORY.git"
+            git add .github/groupes.json
+            git commit --quiet -m "Inscrit $AUTEUR dans $JEU (demande #$NUMERO)"
+            git push --quiet origin HEAD:main
+            echo "groupes.json mis a jour."
+          fi
+
+      - name: Inviter comme collaborateur
+        if: steps.lecture.outputs.valide == 'oui' && steps.lecture.outputs.arcade_pret == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_INSCRIPTIONS }}
+          AUTEUR: ${{ github.event.issue.user.login }}
+          DEPOT: ${{ github.repository }}
+        run: |
+          # Idempotent : reinviter un collaborateur deja present ne fait rien.
+          gh api --method PUT \
+            "repos/$DEPOT/collaborators/$AUTEUR" \
+            -f permission=push > /dev/null
+          echo "Invitation envoyee a $AUTEUR (ou deja collaborateur)."
