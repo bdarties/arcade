@@ -30,10 +30,12 @@ body:
         - artemis
         - deicide
         - divisme
+        - dusk_and_down
         - glass_garden
         - hunting_run
         - maestro
         - music_party
+        - the_longest_night
         - theater_showdown
     validations:
       required: true
