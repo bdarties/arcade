@@ -58,18 +58,33 @@ Le formulaire. Une liste déroulante (les 8 jeux) et une case à cocher de
 confirmation. Le titre est forcé à « Inscription » et l'étiquette
 `inscription` est posée automatiquement — c'est elle que le robot surveille.
 
+> **L'étiquette `inscription` doit exister dans le dépôt.** La documentation
+> GitHub est explicite : *« If a label does not already exist in the
+> repository, it will not be automatically added to the issue. »* Si elle
+> manque, la demande s'ouvre sans étiquette, le robot ne se déclenche pas et
+> il ne se passe **rien** — sans le moindre message d'erreur. Elle a été créée
+> le 28 septembre 2026 ; à recréer si elle venait à disparaître :
+>
+> ```bash
+> gh api --method POST repos/bdarties/arcade/labels \
+>   -f name=inscription -f color=0E8A16 \
+>   -f description="Demande d'accès en écriture à un dossier de jeu"
+> ```
+
 La liste déroulante est volontairement fermée : elle interdit les fautes de
 frappe et les noms d'équipe inventés.
 
 ### `.github/workflows/inscription.yml`
 
-Le robot d'inscription. Il se déclenche à l'ouverture **et à la modification**
-d'une demande portant l'étiquette `inscription`, et enchaîne quatre étapes :
+Le robot d'inscription. Il se déclenche à l'ouverture, à la modification **et
+à l'étiquetage** d'une demande portant l'étiquette `inscription`, et enchaîne
+cinq étapes :
 
 | Étape | Ce qu'elle fait | Condition |
 |---|---|---|
 | Lire le jeu déclaré | extrait le jeu du corps de la demande, vérifie qu'il existe | toujours |
-| Répondre à l'étudiant·e | poste un commentaire, ferme la demande si elle est valide | toujours |
+| Repérer une demande déjà traitée | compte les réponses déjà postées par le robot | toujours |
+| Répondre à l'étudiant·e | poste un commentaire, ferme la demande si elle est valide | demande modifiée **ou** jamais répondue |
 | Inscrire dans `groupes.json` | met à jour le fichier et pousse sur `main` | demande valide **et** jeton présent |
 | Inviter comme collaborateur | envoie l'invitation en écriture | demande valide **et** jeton présent |
 
@@ -240,7 +255,18 @@ une réponse dans la demande, la demande fermée, un commit « Inscrit … » su
 - **`concurrency: inscription-arcade`.** Les inscriptions arrivent toutes dans
   le même quart d'heure. Sans cette file d'attente, deux exécutions
   simultanées pousseraient sur `main` en même temps et la seconde serait
-  rejetée.
+  rejetée. Elle sert aussi de garantie au garde-fou ci-dessous : quand une
+  exécution démarre, la précédente est forcément terminée, donc son
+  commentaire est déjà visible.
+- **Le déclencheur `labeled` fait tourner le robot deux fois par inscription.**
+  Le formulaire pose l'étiquette au moment même de la création : GitHub émet
+  donc `opened` **et** `labeled` pour une seule demande — on le voit dans la
+  chronologie de n'importe quelle inscription, où l'évènement `labeled` porte
+  la seconde exacte de la création. Sans précaution, chaque étudiant·e
+  recevrait deux fois la même réponse. D'où l'étape « Repérer une demande déjà
+  traitée » : le robot ne répond que si aucune réponse n'existe encore, sauf
+  lorsque la demande vient d'être modifiée — auquel cas une nouvelle réponse
+  est justement ce qu'on veut.
 - **`github.event.pull_request.user.login`, pas `github.actor`.** Le second
   désigne la dernière personne ayant poussé sur la branche : si un·e
   enseignant·e poussait un correctif sur la branche d'un·e étudiant·e, la
@@ -258,7 +284,8 @@ une réponse dans la demande, la demande fermée, un commit « Inscrit … » su
 | Symptôme | Cause probable | Geste |
 |---|---|---|
 | La demande reçoit « Votre enseignant·e vous enverra l'invitation » | le secret `TOKEN_INSCRIPTIONS` est absent ou vide | §3.2 |
-| La demande reste ouverte, aucun commentaire | l'étiquette `inscription` manque (demande écrite à la main) | demander de repasser par le formulaire |
+| La demande reste ouverte, aucun commentaire, exécution `skipped` | l'étiquette `inscription` n'existe plus dans le dépôt : le formulaire ne peut donc pas la poser, et le `if:` du robot ne trouve rien | la recréer (§2, `inscription.yml`), puis poser l'étiquette sur les demandes en attente — le déclencheur `labeled` les rattrapera |
+| La demande reste ouverte, aucun commentaire | demande écrite à la main, donc sans étiquette | poser l'étiquette `inscription` dessus, ou demander de repasser par le formulaire |
 | « impossible de lire votre équipe » | demande écrite à la main, sans liste déroulante | idem |
 | Le commentaire arrive mais pas l'invitation | jeton expiré, ou permission *Administration* absente | refaire le jeton, §3.1 |
 | L'étape « Inscrire dans groupes.json » échoue au push | « Do not allow bypassing » a été coché | le décocher, §3.3 |
