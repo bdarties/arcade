@@ -35,7 +35,7 @@ body:
         - hunting_run
         - maestro
         - music_party
-        - the_loguest_night
+        - the_longest_night
         - theater_showdown
     validations:
       required: true
