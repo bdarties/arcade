@@ -93,6 +93,17 @@ soit dépasse.
 Les enseignant·es (`bdarties`, `DamienMarill`, `nico3807`) sont exemptés.
 Pour ajouter un·e collègue, modifiez la liste `enseignants` dans ce fichier.
 
+Avant tout cela, une première étape relit `.github/groupes.json` et refuse la
+Pull Request s'il est mal formé : JSON invalide, clé qui ne ressemble pas à
+`games/2026/<jeu>/`, valeur qui n'est pas une liste de chaînes, ou pseudo
+inscrit dans deux équipes à la fois. **Cette étape-là ne connaît pas
+d'exemption**, et c'est tout l'intérêt : l'exemption des enseignant·es rend la
+main avant que `groupes.json` ne soit ouvert, si bien qu'une retouche manuelle
+maladroite passait au vert sur une PR d'enseignant·e — pour ensuite casser les
+**deux** robots, pour toute la promotion, dès qu'elle arrivait sur `main`.
+Le cas s'est présenté : un pseudo ajouté à la main sans guillemets,
+`[cocolas007-ui]` au lieu de `["cocolas007-ui"]`.
+
 ### `.github/groupes.json`
 
 La liste des équipes. C'est le seul état du dispositif.

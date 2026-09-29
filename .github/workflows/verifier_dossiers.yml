@@ -20,6 +20,81 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Verifier la validite de groupes.json
+        # Ce controle vient AVANT l'exemption des enseignants de l'etape
+        # suivante, et s'applique donc a tout le monde. L'etape suivante ouvre
+        # groupes.json seulement pour les etudiants : un fichier casse par une
+        # retouche manuelle pouvait jusqu'ici passer au vert sur une Pull
+        # Request d'enseignant, arriver sur main, et faire echouer les deux
+        # robots pour toute la promotion.
+        #
+        # Le checkout d'une Pull Request porte sur sa fusion avec main : c'est
+        # donc bien le fichier tel qu'il sera APRES fusion qui est examine ici.
+        run: |
+          python - << 'EOF'
+          import json
+          import re
+          import sys
+
+          chemin = ".github/groupes.json"
+
+          try:
+              with open(chemin, "r", encoding="utf-8") as f:
+                  groupes = json.load(f)
+          except json.JSONDecodeError as e:
+              print("!"*60)
+              print(f"[BLOCAGE] {chemin} n'est pas un fichier JSON valide.")
+              print(f"  ligne {e.lineno}, colonne {e.colno} : {e.msg}")
+              print()
+              print("La cause la plus frequente est un pseudo ajoute a la main")
+              print("sans guillemets. Il faut ecrire [\"pseudo\"], et non [pseudo].")
+              print("!"*60)
+              sys.exit(1)
+
+          if not isinstance(groupes, dict):
+              print(f"[BLOCAGE] {chemin} doit contenir un objet JSON")
+              print("          de la forme {\"games/2026/<jeu>/\": [\"pseudo\", ...]}.")
+              sys.exit(1)
+
+          erreurs = []
+          # Un pseudo n'appartient qu'a une seule equipe : le gendarme retient la
+          # premiere trouvee, donc un doublon donnerait silencieusement un droit
+          # d'ecriture arbitraire.
+          vus = {}
+
+          for cle, membres in groupes.items():
+              if not re.fullmatch(r"games/2026/[A-Za-z0-9_-]+/", cle):
+                  erreurs.append(
+                      f"cle inattendue : {cle!r} "
+                      "(forme attendue : 'games/2026/<jeu>/', avec le / final)"
+                  )
+              if not isinstance(membres, list) or not all(isinstance(m, str) for m in membres):
+                  erreurs.append(
+                      f"{cle} : la valeur doit etre une liste de pseudos "
+                      "entre guillemets, par exemple [\"pseudo\"]"
+                  )
+                  continue
+              for m in membres:
+                  vus.setdefault(m.lower(), []).append(cle)
+
+          for pseudo, cles in sorted(vus.items()):
+              if len(cles) > 1:
+                  erreurs.append(
+                      f"{pseudo} est inscrit dans plusieurs equipes : {', '.join(cles)}"
+                  )
+
+          if erreurs:
+              print("!"*60)
+              print(f"[BLOCAGE] {chemin} est mal forme :")
+              for e in erreurs:
+                  print(f"  - {e}")
+              print("!"*60)
+              sys.exit(1)
+
+          total = sum(len(m) for m in groupes.values())
+          print(f"{chemin} est valide : {len(groupes)} equipes, {total} inscrit(s).")
+          EOF
+
       - name: Verifier les fichiers modifies par l'etudiant
         env:
           # Auteur de la Pull Request, et non github.actor : ce dernier designe la
