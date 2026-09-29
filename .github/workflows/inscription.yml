@@ -2,7 +2,12 @@ name: Inscription des étudiants
 
 on:
   issues:
-    types: [opened, edited]
+    # 'labeled' rattrape les demandes ecrites a la main, auxquelles un·e
+    # enseignant·e pose l'etiquette apres coup. Attention : le formulaire pose
+    # lui aussi l'etiquette a la creation, ce qui declenche 'labeled' en plus
+    # d'"opened" -- d'ou le garde-fou de l'etape « Reperer une demande deja
+    # traitee », sans lequel chaque inscription recevrait deux reponses.
+    types: [opened, edited, labeled]
 
 permissions:
   issues: write
@@ -95,7 +100,26 @@ jobs:
               f.write(f"arcade_pret={os.environ.get('ARCADE_PRET', 'false')}\n")
           EOF
 
+      - name: Repérer une demande déjà traitée
+        id: doublon
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ github.event.issue.number }}
+          DEPOT: ${{ github.repository }}
+        run: |
+          # Compte les réponses déjà postées par le robot sur cette demande.
+          # La file d'attente 'concurrency' garantit que l'exécution précédente
+          # est terminée : si elle a commenté, on le voit ici à coup sûr.
+          deja=$(gh api "repos/$DEPOT/issues/$NUMERO/comments" \
+                   --jq '[.[] | select(.user.login == "github-actions[bot]")] | length')
+          echo "deja=$deja" >> "$GITHUB_OUTPUT"
+          echo "Réponses déjà postées par le robot : $deja"
+
       - name: Répondre à l'étudiant·e
+        # Une demande modifiée mérite une nouvelle réponse : l'étudiant·e vient
+        # de changer sa réponse. Dans tous les autres cas, on ne répond qu'une
+        # fois, quel que soit l'évènement qui a réveillé le robot.
+        if: github.event.action == 'edited' || steps.doublon.outputs.deja == '0'
         env:
           GH_TOKEN: ${{ github.token }}
           NUMERO: ${{ github.event.issue.number }}
