@@ -54,7 +54,7 @@ Deux remarques qui expliquent la forme du dispositif :
 
 ### `.github/ISSUE_TEMPLATE/inscription.yml`
 
-Le formulaire. Une liste déroulante (les 8 jeux) et une case à cocher de
+Le formulaire. Une liste déroulante (un choix par jeu) et une case à cocher de
 confirmation. Le titre est forcé à « Inscription » et l'étiquette
 `inscription` est posée automatiquement — c'est elle que le robot surveille.
 
