@@ -139,7 +139,10 @@ jobs:
           NUMERO: ${{ github.event.issue.number }}
           PYTHONIOENCODING: utf-8
         run: |
-          python - << 'EOF'
+          # La modification est ecrite dans un fichier plutot que jouee ici
+          # meme : elle doit pouvoir etre rejouee telle quelle a chaque
+          # tentative de la boucle ci-dessous, sur une base fraiche.
+          cat > "$RUNNER_TEMP/inscrire.py" << 'EOF'
           import json, os, re
 
           chemin = ".github/groupes.json"
@@ -170,16 +173,42 @@ jobs:
 
           git config user.name "Robot inscriptions"
           git config user.email "actions@github.com"
-          if git diff --quiet; then
-            echo "Aucun changement : $AUTEUR etait deja inscrit dans $JEU."
-          else
-            git remote set-url origin \
-              "https://x-access-token:$JETON@github.com/$GITHUB_REPOSITORY.git"
+          git remote set-url origin \
+            "https://x-access-token:$JETON@github.com/$GITHUB_REPOSITORY.git"
+
+          # Le depot a ete recupere au commit que 'main' portait au moment ou
+          # la demande a ete deposee, et non a son etat courant : deux demandes
+          # rapprochees -- ou les deux evenements 'opened' et 'labeled' d'une
+          # seule demande -- partent donc de la meme base, et le second push
+          # est refuse en 'non-fast-forward'. On repart du 'main' reel avant
+          # chaque tentative, ce qui a deux effets : le push devient
+          # fast-forward, et une inscription deja enregistree entre-temps se
+          # solde par « Aucun changement » au lieu d'un echec.
+          for tentative in 1 2 3; do
+            git fetch --quiet origin main
+            git reset --quiet --hard FETCH_HEAD
+
+            python "$RUNNER_TEMP/inscrire.py"
+
+            if git diff --quiet; then
+              echo "Aucun changement : $AUTEUR etait deja inscrit dans $JEU."
+              exit 0
+            fi
+
             git add .github/groupes.json
             git commit --quiet -m "Inscrit $AUTEUR dans $JEU (demande #$NUMERO)"
-            git push --quiet origin HEAD:main
-            echo "groupes.json mis a jour."
-          fi
+            if git push --quiet origin HEAD:main; then
+              echo "groupes.json mis a jour."
+              exit 0
+            fi
+
+            echo "main a bouge pendant l'ecriture ; nouvelle tentative ($tentative/3)."
+            sleep $(( tentative * 3 ))
+          done
+
+          echo "::error::Inscription de $AUTEUR dans $JEU impossible : 'main'"
+          echo "::error::a change sous le robot a trois reprises."
+          exit 1
 
       - name: Inviter comme collaborateur
         if: steps.lecture.outputs.valide == 'oui' && steps.lecture.outputs.arcade_pret == 'true'

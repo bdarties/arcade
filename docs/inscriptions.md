@@ -254,10 +254,10 @@ une réponse dans la demande, la demande fermée, un commit « Inscrit … » su
   seul capable de franchir la protection de branche.
 - **`concurrency: inscription-arcade`.** Les inscriptions arrivent toutes dans
   le même quart d'heure. Sans cette file d'attente, deux exécutions
-  simultanées pousseraient sur `main` en même temps et la seconde serait
-  rejetée. Elle sert aussi de garantie au garde-fou ci-dessous : quand une
-  exécution démarre, la précédente est forcément terminée, donc son
-  commentaire est déjà visible.
+  simultanées se marcheraient dessus. Elle sert surtout de garantie au
+  garde-fou des doublons : quand une exécution démarre, la précédente est
+  forcément terminée, donc son commentaire est déjà visible. Elle ne suffit
+  **pas** à régler le problème du push — voir plus bas.
 - **Le déclencheur `labeled` fait tourner le robot deux fois par inscription.**
   Le formulaire pose l'étiquette au moment même de la création : GitHub émet
   donc `opened` **et** `labeled` pour une seule demande — on le voit dans la
@@ -267,6 +267,23 @@ une réponse dans la demande, la demande fermée, un commit « Inscrit … » su
   traitée » : le robot ne répond que si aucune réponse n'existe encore, sauf
   lorsque la demande vient d'être modifiée — auquel cas une nouvelle réponse
   est justement ce qu'on veut.
+- **Le robot repart du `main` réel avant d'écrire.** La file d'attente ne
+  suffit pas : `actions/checkout` récupère le dépôt au commit que `main`
+  portait **au moment où la demande a été déposée**, et non à son état courant.
+  Les deux exécutions d'une même demande partent donc de la même base, et la
+  seconde se voit refuser son push en `non-fast-forward` :
+
+  ```
+  Updates were rejected because the remote contains work
+  that you do not have locally
+   ! [rejected]  HEAD -> main (fetch first)
+  ```
+
+  D'où le `git fetch` + `git reset --hard FETCH_HEAD` en tête de l'étape
+  d'écriture. Il a deux effets : le push redevient *fast-forward*, et une
+  inscription déjà enregistrée entre-temps se solde par « Aucun changement »
+  au lieu d'un échec. La boucle qui l'entoure — trois tentatives — ne couvre
+  que la course résiduelle, quand `main` bouge entre le `fetch` et le `push`.
 - **`github.event.pull_request.user.login`, pas `github.actor`.** Le second
   désigne la dernière personne ayant poussé sur la branche : si un·e
   enseignant·e poussait un correctif sur la branche d'un·e étudiant·e, la
@@ -284,6 +301,8 @@ une réponse dans la demande, la demande fermée, un commit « Inscrit … » su
 | Symptôme | Cause probable | Geste |
 |---|---|---|
 | La demande reçoit « Votre enseignant·e vous enverra l'invitation » | le secret `TOKEN_INSCRIPTIONS` est absent ou vide | §3.2 |
+| L'invitation arrive par courriel, mais le lien donne une **page 404** | la page d'invitation n'est visible que par le compte invité ; le navigateur est connecté sous un autre compte | se connecter sous le compte invité, puis ouvrir `/invitations` sur le dépôt. Une invitation expire au bout de 7 jours : passé ce délai, la renvoyer avec `outils/inscrire.py` |
+| L'étape « Inscrire dans groupes.json » échoue en `non-fast-forward` | `main` a bougé sous le robot plus de trois fois de suite | relancer l'exécution ; si cela se reproduit, augmenter le nombre de tentatives |
 | La demande reste ouverte, aucun commentaire, exécution `skipped` | l'étiquette `inscription` n'existe plus dans le dépôt : le formulaire ne peut donc pas la poser, et le `if:` du robot ne trouve rien | la recréer (§2, `inscription.yml`), puis poser l'étiquette sur les demandes en attente — le déclencheur `labeled` les rattrapera |
 | La demande reste ouverte, aucun commentaire | demande écrite à la main, donc sans étiquette | poser l'étiquette `inscription` dessus, ou demander de repasser par le formulaire |
 | « impossible de lire votre équipe » | demande écrite à la main, sans liste déroulante | idem |
