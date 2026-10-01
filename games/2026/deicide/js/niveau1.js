@@ -2,6 +2,7 @@ import * as fct from "./fonctions.js";
 import { creerPersonnage, majPersonnage } from "./Personnage/personnage.js";
 import { creerHud } from "./Personnage/hud.js";
 import * as ennemis from "./ennemis.js";
+import * as lumiere from "./lumiere.js";
 
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
@@ -63,6 +64,7 @@ export default class niveau1 extends Phaser.Scene {
       this.blesserJoueur(1, "Abattu par un archer");
     });
     this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy());
+    lumiere.creerVoile(this); // voile d'obscurité, créé en dernier
   }
 
   update() {
@@ -74,6 +76,7 @@ export default class niveau1 extends Phaser.Scene {
         this.scene.switch("selection");
       }
     }
+    lumiere.majVoile(this);
   }
 
   blesserJoueur(degats, cause) {

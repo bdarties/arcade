@@ -69,6 +69,7 @@ export default class niveau2 extends Phaser.Scene {
         this.scene.switch("selection");
       }
     }
+    lumiere.majVoile(this);
   }
   blesserJoueur(degats, cause) {
     this.pv -= degats;

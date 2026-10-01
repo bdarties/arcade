@@ -48,10 +48,27 @@ export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de c
     return lanterne;
 }
 export function creerVoile(scene) { // permet de creer le voile de lumière
+    creerTextureHalo(scene);
     const voile = scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height); // crée une image en premiere plan que l'on peut ensuite modifier
     voile.setOrigin(0, 0); // on place l'origine du voile en 0 0 
     voile.setScrollFactor(0); // on fait en sorte qu'il reste fixe
     voile.setDepth(50); // on met la profondeur au premier pan
-    voile.fill(0x000000, 0.85); // on peint le voile opaque avec une opacité de 85%
+    voile.fill(0x000000, 0.7); // on peint le voile opaque avec une opacité de 70%
+    scene.pinceauLumiere = scene.make.image({ key: "halo", add: false }); // creer la gomme qui permettra de mettre de la lumière autour du joueur
     scene.voile = voile; // on le met dans une variable
+}
+function percerVoile(scene, x, y, rayon) { // gomme qui permet de percer le voile
+    const camera = scene.cameras.main; // camera qui permet de cradrer la position du joueur 
+    const pinceau = scene.pinceauLumiere; // creer le pinceau
+    pinceau.setScale(rayon / 128); // L'image du halo fait 256 px, donc 128 px de rayon. On la met à l'échelle pour obtenir le rayon voulu
+    pinceau.setPosition(x - camera.scrollX, y - camera.scrollY); // permet de fixer la lumière sur le joueur, car x y sont une position sur la map et non liée à la caméra
+    scene.voile.erase(pinceau); // erase fait office de gomme, il fait l'inverse du pinceau
+}
+export function majVoile(scene) { // update le voile chaque seconde
+    scene.voile.clear(); // on vide le voile et on le repeint en noir 
+    scene.voile.fill(0x000000, 0.5); // on réactualise le voile pour enlever les trous 
+    percerVoile(scene, scene.player.body.center.x, scene.player.body.center.y, 130); // permet de faire le trou dans le voile
+    if (scene.zonesLumiere) { // perce un trou pour chaque zone de lumiere
+        scene.zonesLumiere.getChildren().forEach(zone => percerVoile(scene, zone.x, zone.y, zone.body.radius * 1.2));
+    }
 }
