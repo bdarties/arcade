@@ -64,11 +64,20 @@ export default class niveau1 extends Phaser.Scene {
       this.blesserJoueur(1, "Abattu par un archer");
     });
     this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy());
+    // lumière : zones qui brûlent le joueur et lanternes qu'on éteint en tirant dessus
+    this.zonesLumiere = this.physics.add.staticGroup(); // groupe des zones de lumière (dégâts)
+    this.prochainDegatLumiere = 0; // instant à partir duquel la lumière peut de nouveau blesser le joueur
+    lumiere.creerTextureHalo(this); // dessine la texture du halo avant de poser les lumières
+    carte.getObjectLayer("lumière").objects.forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100)); // une zone de lumière sur chaque point du calque "lumière" de Tiled
+    this.lanternes = this.physics.add.staticGroup(); // groupe des lanternes
+    carte.getObjectLayer("lanterne").objects.forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
+    this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne)); // un tir éteint la lanterne
     lumiere.creerVoile(this); // voile d'obscurité, créé en dernier
     carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
   }
 
   update() {
+    lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
 
