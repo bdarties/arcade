@@ -45,8 +45,7 @@ export default class victoire extends Phaser.Scene {
       { texte: "Revanche", scene: "combat" },
       { texte: "Changer d'artistes", scene: "selection" },
       { texte: "Menu principal", scene: "menu" }
-    ], 640, 565, 52);
-    this.menu.textes.forEach((t) => t.setFontSize(32));
+    ], 640, 565, 52, 32);
     this.touches = creerTouchesDeuxJoueurs(this);
   }
 

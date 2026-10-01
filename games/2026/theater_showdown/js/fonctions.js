@@ -136,11 +136,12 @@ export function transitionRideau(scene, video, suite) {
 /***********************************************************************/
 
 // options : [{ texte: "...", actif: true/false, ... }]
-export function creerMenu(scene, options, x, y, ecart) {
+// (la taille est donnée dès la création : changer la police ensuite redessine chaque texte)
+export function creerMenu(scene, options, x, y, ecart, taille = 40) {
   const menu = { index: 0, options: options, textes: [] };
   options.forEach((option, i) => {
     const couleur = option.actif === false ? "#8a7f86" : "#ffffff";
-    menu.textes.push(scene.add.text(x, y + i * ecart, option.texte, style(40, couleur)).setOrigin(0.5).setDepth(20));
+    menu.textes.push(scene.add.text(x, y + i * ecart, option.texte, style(taille, couleur)).setOrigin(0.5).setDepth(20));
   });
   menu.curseurGauche = scene.add.image(0, 0, "note_hud").setTint(0xf5c542).setScale(1.3).setDepth(20);
   menu.curseurDroit = scene.add.image(0, 0, "note_hud").setTint(0xf5c542).setScale(1.3).setDepth(20).setFlipX(true);

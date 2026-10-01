@@ -543,7 +543,16 @@ export default class combat extends Phaser.Scene {
   /** INTERFACE (barres de vie, chrono, jauges de notes, manches)
   /*********************************************************************/
   creerHUD() {
-    this.hud = this.add.graphics().setDepth(100);
+    // manches gagnées, de part et d'autre du chrono : elles ne changent pas pendant
+    // une manche, on les dessine donc une seule fois (et pas à chaque frame)
+    const hud = this.add.graphics().setDepth(100);
+    for (let j = 0; j < 2; j++) {
+      for (let k = 0; k < MANCHES_GAGNANTES; k++) {
+        const px = j === 0 ? 588 - k * 26 : 692 + k * 26;
+        hud.fillStyle(k < this.donnees.victoires[j] ? 0xffd65a : 0x3a2a30, 1).fillCircle(px, 46, 9);
+        hud.lineStyle(2, 0x1a0008).strokeCircle(px, 46, 9);
+      }
+    }
     this.texteChrono = this.add.text(640, 46, DUREE_MANCHE, fct.style(48, "#ffffff")).setOrigin(0.5).setDepth(101);
     this.add.text(640, 88, "Manche " + this.donnees.manche, fct.style(18, "#e8d8c0")).setOrigin(0.5).setDepth(101);
     this.add.text(640, 706, "F / Échap : pause", fct.style(16, "#e8d8c0")).setOrigin(0.5).setAlpha(0.7).setDepth(101);
@@ -588,30 +597,40 @@ export default class combat extends Phaser.Scene {
     image.setCrop(miroir ? image.width - largeur : 0, 0, largeur, image.height);
   }
 
+  // Appelée à chaque frame : pour ménager le processeur de la borne, on ne touche
+  // aux images que lorsque la valeur affichée a changé depuis la frame précédente.
   dessinerHUD(temps) {
-    const g = this.hud;
-    g.clear();
     this.combattants.forEach((c, j) => {
-      c.pvAffiches = Phaser.Math.Linear(c.pvAffiches, c.pv, 0.06);
-      this.rognerBarre(this.barres[j].pleine, c.pv / PV_MAX, j === 1);
-      this.rognerBarre(this.barres[j].fantome, c.pvAffiches / PV_MAX, j === 1);
-
-      // manches gagnées, de part et d'autre du chrono
-      for (let k = 0; k < MANCHES_GAGNANTES; k++) {
-        const px = j === 0 ? 588 - k * 26 : 692 + k * 26;
-        g.fillStyle(k < this.donnees.victoires[j] ? 0xffd65a : 0x3a2a30, 1).fillCircle(px, 46, 9);
-        g.lineStyle(2, 0x1a0008).strokeCircle(px, 46, 9);
+      const barre = this.barres[j];
+      // la barre "fantôme" rattrape la vraie vie, puis s'arrête dessus
+      c.pvAffiches = Math.abs(c.pvAffiches - c.pv) < 0.1 ? c.pv : Phaser.Math.Linear(c.pvAffiches, c.pv, 0.06);
+      if (barre.pv !== c.pv) {
+        barre.pv = c.pv;
+        this.rognerBarre(barre.pleine, c.pv / PV_MAX, j === 1);
+      }
+      if (barre.pvAffiches !== c.pvAffiches) {
+        barre.pvAffiches = c.pvAffiches;
+        this.rognerBarre(barre.fantome, c.pvAffiches / PV_MAX, j === 1);
       }
 
       // notes de la jauge : pleines, en cours de remplissage ou vides
       const pleine = c.energie >= ENERGIE_MAX;
-      this.notesHUD[j].forEach((note, k) => {
-        const remplissage = Phaser.Math.Clamp(c.energie / 20 - k, 0, 1);
-        note.pleine.setAlpha(remplissage >= 1 ? 1 : remplissage * 0.6);
-        const echelle = pleine ? 1 + 0.15 * Math.sin(temps / 90 + k) : 1;
-        note.pleine.setScale(echelle);
-        note.vide.setScale(echelle);
-      });
+      if (barre.energie !== c.energie) {
+        barre.energie = c.energie;
+        this.notesHUD[j].forEach((note, k) => {
+          const remplissage = Phaser.Math.Clamp(c.energie / 20 - k, 0, 1);
+          note.pleine.setAlpha(remplissage >= 1 ? 1 : remplissage * 0.6).setScale(1);
+          note.vide.setScale(1);
+        });
+      }
+      // jauge pleine : les notes pulsent
+      if (pleine) {
+        this.notesHUD[j].forEach((note, k) => {
+          const echelle = 1 + 0.15 * Math.sin(temps / 90 + k);
+          note.pleine.setScale(echelle);
+          note.vide.setScale(echelle);
+        });
+      }
     });
   }
 }

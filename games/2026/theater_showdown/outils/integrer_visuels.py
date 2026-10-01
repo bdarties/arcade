@@ -140,6 +140,9 @@ def hud():
 T = 128
 
 
+COLONNES = 9  # frames par ligne dans les planches des personnages
+
+
 def planche_pixel(dossier, fichier, nom):
     attaque = src("personnages", dossier, fichier).convert("RGBA")
     f = [attaque.crop((i * T, 0, (i + 1) * T, T)) for i in range(4)]
@@ -168,9 +171,12 @@ def planche_pixel(dossier, fichier, nom):
         f[1],                                                    # victoire
         f[1], f[2], f[3],                                        # séquence d'attaque
     ]
-    feuille = Image.new("RGBA", (T * len(frames), T), (0, 0, 0, 0))
+    # grille de COLONNES frames par ligne : une seule ligne ferait 2176 px de large,
+    # au-delà de la taille de texture maximale du GPU du Raspberry Pi 3 (2048 px)
+    lignes = -(-len(frames) // COLONNES)
+    feuille = Image.new("RGBA", (T * COLONNES, T * lignes), (0, 0, 0, 0))
     for i, img in enumerate(frames):
-        feuille.alpha_composite(img, (i * T, 0))
+        feuille.alpha_composite(img, ((i % COLONNES) * T, (i // COLONNES) * T))
     sauver(feuille, nom)
 
 
@@ -190,7 +196,7 @@ def presentation():
     logo = largeur(Image.open(os.path.join(IMAGES, "logo.png")).convert("RGBA"), 520)
     img.alpha_composite(logo, ((800 - logo.width) // 2, 8))
     for i, nom in enumerate(("doremi", "symphanie")):
-        perso = Image.open(os.path.join(IMAGES, f"perso_{nom}.png")).crop((13 * T, 0, 14 * T, T))
+        perso = Image.open(os.path.join(IMAGES, f"perso_{nom}.png")).crop((13 % COLONNES * T, 13 // COLONNES * T, (13 % COLONNES + 1) * T, (13 // COLONNES + 1) * T))
         perso = perso.resize((T * 2, T * 2), Image.NEAREST)
         if i == 1:
             perso = perso.transpose(Image.FLIP_LEFT_RIGHT)

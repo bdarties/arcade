@@ -19,6 +19,12 @@ var config = {
     parent: "game-container",
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
+  // réglages pour le GPU modeste du Raspberry Pi 3 de la borne
+  render: {
+    antialiasGL: false, // pas d'anticrénelage MSAA : très coûteux sur ce GPU
+    powerPreference: "high-performance",
+    roundPixels: true // positions entières : moins de scintillement sur le pixel art
+  },
   physics: {
     default: "arcade", // mode arcade : des rectangles pour gérer les collisions
     arcade: {
@@ -33,5 +39,5 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };
 
-// création et lancement du jeu
-var game = new Phaser.Game(config);
+// création et lancement du jeu (exporté : la borne importe "game" depuis index.js)
+export var game = new Phaser.Game(config);

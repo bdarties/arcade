@@ -29,8 +29,7 @@ export default class pause extends Phaser.Scene {
       { texte: "Recommencer le duel", action: "recommencer" },
       { texte: "Changer d'artistes", action: "selection" },
       { texte: "Menu principal", action: "menu" }
-    ], 640, 285, 64);
-    this.menu.textes.forEach((t) => t.setFontSize(34));
+    ], 640, 285, 64, 34);
 
     this.add.text(640, 655, "A : valider     B / F / Échap : reprendre", fct.style(22, "#e8d8c0")).setOrigin(0.5);
 
