@@ -1,0 +1,9 @@
+Tileset d'origine : "Dawn of the Gods" par surt
+https://opengameart.org/content/dawn-of-the-gods
+Licence : CC0 (domaine public) — crédit non obligatoire mais apprécié.
+
+Adaptation noir et blanc "ombre et lumière" pour DEICIDE :
+- tileset_ombre.png   : premier plan (plateformes), pierre sombre à arêtes éclairées
+- tileset_fond.png    : arrière-plan (murs, arches, colonnes), gris moyen peu contrasté
+- tileset_lumiere.png : marbre blanc (temple du Dieu de la Lumière, structures lumineuses)
+Fond bleu d'origine rendu transparent. Même disposition que l'original (tuiles de 32 px, 41 colonnes, image 1312x1504).
