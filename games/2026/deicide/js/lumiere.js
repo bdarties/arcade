@@ -47,3 +47,11 @@ export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de c
     lanterne.eteinte = false;
     return lanterne;
 }
+export function creerVoile(scene) { // permet de creer le voile de lumière
+    const voile = scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height); // crée une image en premiere plan que l'on peut ensuite modifier
+    voile.setOrigin(0, 0); // on place l'origine du voile en 0 0 
+    voile.setScrollFactor(0); // on fait en sorte qu'il reste fixe
+    voile.setDepth(50); // on met la profondeur au premier pan
+    voile.fill(0x000000, 0.85); // on peint le voile opaque avec une opacité de 85%
+    scene.voile = voile; // on le met dans une variable
+}

@@ -54,6 +54,7 @@ export default class niveau2 extends Phaser.Scene {
       this.blesserJoueur(1, "Abattu par un archer"); // donne la raison de la mort
     });
     this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy()); // la fleche se détuit si il rencontre un mur
+    lumiere.creerVoile(this);
   }
 
 
