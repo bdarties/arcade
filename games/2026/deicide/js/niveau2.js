@@ -63,7 +63,7 @@ export default class niveau2 extends Phaser.Scene {
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
 
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.space) == true) {
+    if (Phaser.Input.Keyboard.JustDown(this.player.touches.porte) == true) {
       if (this.physics.overlap(this.player, this.porte_retour)) {
         console.log("niveau 3 : retour vers selection");
         this.scene.switch("selection");
