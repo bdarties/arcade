@@ -16,6 +16,8 @@
 // Touches gérées par majPersonnage : flèches (déplacement, saut), F (tir), MAJ (dash).
 // Saut de mur : en l'air contre un mur, en poussant vers lui, le robot glisse lentement ;
 // un nouvel appui sur la flèche du haut le fait rebondir dans l'autre sens.
+// Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur F
+// (haut, haut en diagonale, droit devant) ; vers le bas, seulement en l'air (voir animationDeTir).
 // Les balles sont rangées dans scene.tirsJoueur (le groupe est créé au premier tir s'il n'existe pas)
 // et s'arrêtent sur scene.groupe_plateformes quand la scène en a un.
 
@@ -44,6 +46,13 @@ const IMAGES_DASH = 7;
 const VITESSE_BALLE = 700; // px/s
 const DUREE_BALLE = 1500; // ms avant que la balle disparaisse si elle ne touche rien
 const BOUCHE = { x: 40, y: 10 }; // où naît la balle dans la frame de tir : le centre de la boule de flash du canon
+// Les visées vers le haut et le bas (bande "shoot aim.png") ont été fabriquées à partir de "shoot without FX.png" et
+// "shoot FX.png" : le fusil et les poings sont tournés de 45° ou 90° autour du poing avant, la flamme les suit, le haut
+// du torse est refait. Leurs frames sont plus hautes (117 x 58) car la flamme dépasse du dessin d'origine :
+// 16 lignes ajoutées au-dessus du robot et 16 en dessous.
+const HAUTEUR_VISEE = 58;
+const MARGE_HAUT_VISEE = 16;
+const DIAGONALE = Math.SQRT1_2; // cos 45° : une balle en diagonale va aussi vite que les autres
 
 // Petite balle d'énergie (elle n'est pas dans les spritesheets) : 8 x 6 pixels aux couleurs du robot.
 const BALLE = ["..cccc..", ".cwwwwc.", "cwwwwwwc", "cwwwwwwc", ".cwwwwc.", "..cccc.."];
@@ -68,6 +77,11 @@ const CORPS_MORT = { y: 14, w: 10, h: 11 }; // robot à terre
 //   sansGravite      : le robot ne tombe pas pendant l'animation (dash)
 //   figee            : reste sur la dernière image à la fin (mort)
 //   debut            : fonction appelée quand l'animation démarre (le tir fait partir la balle)
+//   hauteur          : hauteur d'une frame de la bande (HAUTEUR par défaut)
+//   haut             : lignes ajoutées au-dessus du dessin d'origine dans la frame (0 par défaut)
+//   visee            : direction de la balle quand le robot regarde à droite, { x, y } (droit devant par défaut)
+//   bouche           : où naît la balle dans la frame (BOUCHE par défaut)
+const VISEE = { hauteur: HAUTEUR_VISEE, haut: MARGE_HAUT_VISEE, repeat: 0, corps: CORPS_DEBOUT, debut: tirer };
 const ANIMATIONS = {
     repos: { fichier: "static idle.png", images: [0], repeat: -1, corps: CORPS_REPOS },
     marche: { fichier: "move with FX.png", images: serie(8), repeat: -1, corps: CORPS_DEBOUT },
@@ -76,6 +90,12 @@ const ANIMATIONS = {
     reveil: { fichier: "wake.png", images: serie(5), repeat: 0, corps: CORPS_DEBOUT, bloquant: true },
     charge: { fichier: "charge.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT },
     tir: { fichier: "shoot with FX.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT, debut: tirer },
+    // les 4 autres visées partagent une seule bande, "shoot aim.png" (4 images par visée, retournées pour viser à gauche)
+    // bouche = où se trouve le centre de la flamme dans la frame (calculé comme BOUCHE, en suivant la rotation du canon)
+    tir_haut_diag: { ...VISEE, fichier: "shoot aim.png", images: [0, 1, 2, 3], visee: { x: DIAGONALE, y: -DIAGONALE }, bouche: { x: 38, y: 14 } },
+    tir_haut: { ...VISEE, bande: "tir_haut_diag", images: [4, 5, 6, 7], visee: { x: 0, y: -1 }, bouche: { x: 27, y: 10 } },
+    tir_bas_diag: { ...VISEE, bande: "tir_haut_diag", images: [8, 9, 10, 11], visee: { x: DIAGONALE, y: DIAGONALE }, bouche: { x: 40, y: 42 } },
+    tir_bas: { ...VISEE, bande: "tir_haut_diag", images: [12, 13, 14, 15], visee: { x: 0, y: 1 }, bouche: { x: 29, y: 48 } },
     dash: { fichier: null, images: serie(IMAGES_DASH), repeat: 0, fps: 20, corps: CORPS_DEBOUT, centre: TORSE_DASH - DECALAGE_DASH, bloquant: true, elan: 500, sansGravite: true }, // pas de bande à charger : la texture est assemblée par creerTextureDash ; à 20 fps il dure 350 ms, soit environ 175 px
     degats: { fichier: "damaged.png", images: serie(2), repeat: 0, corps: CORPS_DEBOUT },
     mort: { fichier: "death.png", images: serie(6), repeat: 0, corps: CORPS_MORT, bloquant: true, figee: true }
@@ -87,9 +107,9 @@ function serie(n) {
 
 // à appeler dans preload() : charge toutes les bandes du Bot Wheel
 export function chargerPersonnage(scene) {
-    const bande = (cle, fichier) => scene.load.spritesheet(PREFIXE + cle, DOSSIER + fichier, { frameWidth: LARGEUR, frameHeight: HAUTEUR });
+    const bande = (cle, fichier, hauteur = HAUTEUR) => scene.load.spritesheet(PREFIXE + cle, DOSSIER + fichier, { frameWidth: LARGEUR, frameHeight: hauteur });
     for (const [nom, anim] of Object.entries(ANIMATIONS)) {
-        if (anim.fichier) bande(nom, anim.fichier);
+        if (anim.fichier) bande(nom, anim.fichier, anim.hauteur);
     }
     bande("dash_robot", "GAS dash with FX.png"); // le robot (sa dernière image est sans fumée)
     bande("dash_fumee", "GAS dash FX.png"); // la fumée seule
@@ -253,7 +273,7 @@ export function majPersonnage(joueur, clavier) {
         jouerAction(joueur, "dash");
     } else if (libre && veutTir && maintenant >= joueur.prochainTir) {
         joueur.prochainTir = maintenant + DELAI_TIR;
-        jouerAction(joueur, "tir");
+        jouerAction(joueur, animationDeTir(clavier, auSol));
     }
 
     if (!joueur.action) {
@@ -263,14 +283,28 @@ export function majPersonnage(joueur, clavier) {
     }
 }
 
+// Choisit la visée d'après les flèches tenues quand on appuie sur F. Le côté (gauche ou droite) vient du sens
+// dans lequel regarde le robot : il tourne déjà vers la flèche tenue, et au mur il tourne le dos au mur.
+//   rien, ou seulement gauche / droite : "tir"      haut : "tir_haut"      haut + côté : "tir_haut_diag"
+//   bas (en l'air) : "tir_bas"                      bas + côté : "tir_bas_diag"
+// Au sol, la flèche du bas est ignorée : une balle qui part vers le sol s'écraserait aussitôt dessus.
+function animationDeTir(clavier, auSol) {
+    const haut = clavier.up.isDown;
+    const bas = clavier.down.isDown && !auSol;
+    const cote = clavier.left.isDown || clavier.right.isDown;
+    if (haut === bas) return "tir"; // aucune flèche verticale, ou haut et bas ensemble qui s'annulent
+    if (haut) return cote ? "tir_haut_diag" : "tir_haut";
+    return cote ? "tir_bas_diag" : "tir_bas";
+}
+
 // où en est la recharge du dash : 0 = vient d'être utilisé, 1 = prêt (sert à la jauge du HUD)
 export function rechargeDash(joueur) {
     return Phaser.Math.Clamp(1 - (joueur.prochainDash - joueur.scene.time.now) / DELAI_DASH, 0, 1);
 }
 
-// joue une animation ponctuelle : "reveil", "charge", "tir", "dash", "degats" ou "mort"
+// joue une animation ponctuelle : "reveil", "charge", "tir" (ou tir_haut, tir_haut_diag, tir_bas, tir_bas_diag), "dash", "degats" ou "mort"
 // les animations "bloquantes" (reveil, dash, mort) coupent les touches jusqu'à leur fin
-// (F et MAJ appellent ça avec "tir" et "dash", mais on peut aussi l'appeler depuis les niveaux)
+// (F et MAJ appellent ça avec un tir et "dash", mais on peut aussi l'appeler depuis les niveaux)
 export function jouerAction(joueur, nom) {
     if (joueur.action === "mort") return; // une fois mort, plus rien ne bouge
     const anim = ANIMATIONS[nom];
@@ -284,10 +318,13 @@ export function jouerAction(joueur, nom) {
     if (anim.debut) anim.debut(joueur);
 }
 
-// fait partir une balle du canon, dans le sens où regarde le robot
+// fait partir une balle du canon, dans le sens où regarde le robot et dans la direction de la visée en cours
 function tirer(joueur) {
     const scene = joueur.scene;
+    const anim = ANIMATIONS[joueur.nomAnim]; // l'animation de tir qui vient de démarrer
     const sens = joueur.regardeGauche ? -1 : 1;
+    const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
+    const bouche = anim.bouche ?? BOUCHE;
     if (!scene.tirsJoueur || !scene.tirsJoueur.scene) { // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
         scene.tirsJoueur = scene.physics.add.group({ allowGravity: false });
     }
@@ -295,12 +332,12 @@ function tirer(joueur) {
     if (scene.groupe_plateformes && !tirs.collisionPlateformes) { // une seule fois par groupe : les balles disparaissent contre les plateformes
         tirs.collisionPlateformes = scene.physics.add.collider(tirs, scene.groupe_plateformes, (balle) => balle.destroy());
     }
-    const x = joueur.x + sens * (BOUCHE.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
-    const y = joueur.y + (BOUCHE.y - PIED_Y) * ECHELLE;
+    const x = joueur.x + sens * (bouche.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
+    const y = joueur.y + (bouche.y - PIED_Y - (anim.haut ?? 0)) * ECHELLE;
     const balle = tirs.create(x, y, PREFIXE + "balle");
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
-    balle.setVelocityX(sens * VITESSE_BALLE);
+    balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE);
     joueur.scene.time.delayedCall(DUREE_BALLE, () => balle.destroy());
 }
 
@@ -324,8 +361,9 @@ function orienter(joueur) {
 
     const centre = miroir ? LARGEUR - (anim.centre ?? CENTRE_X) : (anim.centre ?? CENTRE_X); // colonne du torse à l'écran
     const corps = anim.corps;
+    const marge = anim.haut ?? 0; // lignes ajoutées au-dessus du robot dans cette animation : tout descend d'autant
     joueur.setFlipX(miroir);
-    joueur.setOrigin(centre / LARGEUR, PIED_Y / HAUTEUR); // x,y du sprite = milieu du torse, pieds
+    joueur.setOrigin(centre / LARGEUR, (PIED_Y + marge) / (anim.hauteur ?? HAUTEUR)); // x,y du sprite = milieu du torse, pieds
     joueur.body.setSize(corps.w, corps.h, false);
-    joueur.body.setOffset(centre - corps.w / 2, corps.y);
+    joueur.body.setOffset(centre - corps.w / 2, corps.y + marge);
 }
