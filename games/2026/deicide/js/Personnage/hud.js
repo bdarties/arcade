@@ -1,18 +1,24 @@
-// HUD du joueur : barre de vie (barreDeVie.js), vies et jauge de dash.
+// HUD du joueur : barre de vie (barreDeVie.js), vies, jauge de dash, score et chrono.
 //
-// Tout est dessiné pixel par pixel avec la palette du Bot Wheel, comme la barre de vie. Les vies et la jauge
-// sont fabriquées en code au moment de creerHud (aucune image en plus à charger).
+// Tout est dessiné pixel par pixel avec la palette du Bot Wheel, comme la barre de vie. Le reste est
+// fabriqué en code au moment de creerHud (aucune image en plus à charger).
+//   - barre de vie : en haut à gauche, toujours affichée (5 PV par défaut).
 //   - vies : une plaque "VIES" avec une mini-tête du robot par vie. Une vie perdue s'éteint et se brise en éclats.
 //   - dash : une roue dont les crampons s'allument pendant la recharge ; elle clignote quand le dash est prêt.
-// Le nombre de vies est gardé dans scene.registry ("vies") pour rester le même d'un niveau à l'autre.
+//   - score et chrono : deux plaques en haut à droite. Le score a 6 chiffres (les zéros de devant sont atténués,
+//     un chiffre qui change s'éclaire). Le chrono compte les minutes et les secondes (MM:SS) depuis le début.
+// Les vies, le score et le chrono sont gardés dans scene.registry ("vies", "score", "chrono") pour rester
+// les mêmes d'un niveau à l'autre. Le chrono ne tourne que dans les scènes qui ont un HUD.
 //
 // Utilisation :
 //   preload() de "selection"  : chargerHud(this)
-//   create()  d'un niveau     : this.hud = creerHud(this, this.player, this.pv)   (sans pv : pas de barre de vie)
+//   create()  d'un niveau     : this.hud = creerHud(this, this.player, this.pv)   (pv : PV de départ, 5 si on ne le donne pas)
 //   quand les PV changent     : this.hud.majPV(this.pv)
 //   quand les vies changent   : this.hud.perdreVie() / this.hud.gagnerVie() / this.hud.majVies(n)
+//   quand le score change     : this.hud.ajouterScore(100) / this.hud.majScore(n)
+//   pour repartir de 00:00    : this.hud.reinitialiserChrono()
 
-import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie } from "./barreDeVie.js";
+import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE } from "./barreDeVie.js";
 import { rechargeDash } from "./personnage.js";
 
 const ECHELLE = 2; // même agrandissement que le robot et la barre de vie
@@ -48,26 +54,67 @@ const DUREE_FLASH_VIE = 90;
 const ECLATS_PAR_VIE = 8;
 const COULEURS_ECLATS = [0xe7e0e9, 0xac98b6, 0x372b3e, 0x251d2a];
 
+// --- plaques de droite : score (en haut) et chrono (dessous). Même plaque d'armure que celle des vies, retournée :
+// le bord plat est contre le bord de l'écran, le bout coupé et ses rivets sont à gauche.
+const Y_SCORE = 20;
+const Y_CHRONO = 64; // les deux plaques finissent à la même hauteur que la plaque des vies
+const PLAQUE_DROITE_L = 72; // en pixels du dessin (x2 à l'écran)
+const PLAQUE_DROITE_H = 18;
+const CREUX = { x: 29, y: 3, w: 40, h: 12 }; // le creux où s'allument les chiffres
+const CHIFFRE_Y = 5; // ligne des chiffres dans la plaque (7 lignes de chiffre + 1 d'ombre)
+const PAS_CHIFFRE = 6; // 5 colonnes de chiffre + 1 d'ombre
+const SCORE_X = 31; // colonne du premier chiffre du score
+const CHRONO_X = [35, 41, 51, 57]; // colonnes des chiffres du chrono : minutes (2), puis secondes (2)
+const DEUX_POINTS_X = 47; // colonne des deux-points, entre les minutes et les secondes
+const SCORE_CHIFFRES = 6;
+const SCORE_MAX = 999999;
+const CHRONO_MAX = 99 * 60 + 59; // en secondes : l'affichage s'arrête à 99:59
+const DUREE_FLASH_CHIFFRE = 90; // ms d'éclat blanc quand un chiffre du score change
+const IMAGE_DEUX_POINTS = 10; // images de "hud_chiffres" : 0 à 9, 10 = deux-points, 11 à 20 = les mêmes chiffres atténués
+const IMAGE_ATTENUEE = 11;
+const HAUTEUR_CHIFFRE = 8;
+
 const LETTRES = {
     V: ["#...#", "#...#", ".#.#.", ".#.#.", "..#.."],
     I: ["###", ".#.", ".#.", ".#.", "###"],
     E: ["###", "#..", "###", "#..", "###"],
-    S: [".##", "#..", ".#.", "..#", "##."]
+    S: [".##", "#..", ".#.", "..#", "##."],
+    C: [".##", "#..", "#..", "#..", ".##"],
+    O: [".#.", "#.#", "#.#", "#.#", ".#."],
+    R: ["##.", "#.#", "##.", "#.#", "#.#"],
+    T: ["###", ".#.", ".#.", ".#.", ".#."],
+    M: ["#...#", "##.##", "#.#.#", "#...#", "#...#"],
+    P: ["##.", "#.#", "##.", "#..", "#.."]
 };
+
+// chiffres : 5 colonnes sur 7 lignes
+const CHIFFRES = [
+    [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
+    ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+    [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+    [".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###."],
+    ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+    ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
+    ["..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."],
+    ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
+    [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+    [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."]
+];
+const DEUX_POINTS = ["...", ".#.", ".#.", "...", ".#.", ".#.", "..."];
 
 // à appeler dans preload()
 export function chargerHud(scene) {
     chargerBarreDeVie(scene);
 }
 
-// Crée le HUD. joueur sert à la jauge de dash. pv (facultatif) : si on le donne, la barre de vie est affichée.
+// Crée le HUD. joueur sert à la jauge de dash. pv (facultatif) : les PV de départ, PV_MAX_BARRE (5) si on ne le donne pas.
 export function creerHud(scene, joueur, pv) {
     creerTextures(scene);
     const poser = (image) => image.setOrigin(0, 0).setScale(ECHELLE).setScrollFactor(0).setDepth(100); // fixe à l'écran, au-dessus du décor
-    const hud = { scene, joueur, viesMax: VIES_MAX, impulsion: false, dashPret: true };
+    const hud = { scene, joueur, viesMax: VIES_MAX, impulsion: false, dashPret: true, secondesAffichees: -1 };
 
-    // barre de vie
-    hud.barre = pv === undefined ? null : creerBarreDeVie(scene, MARGE, Y_BARRE, pv);
+    // barre de vie : toujours affichée, même dans un niveau qui n'a pas encore de règles de dégâts
+    hud.barre = creerBarreDeVie(scene, MARGE, Y_BARRE, pv ?? PV_MAX_BARRE);
 
     // vies : la valeur vit dans le registre du jeu, donc elle passe d'un niveau à l'autre
     if (scene.registry.get("vies") === undefined) scene.registry.set("vies", VIES_DEPART);
@@ -80,8 +127,21 @@ export function creerHud(scene, joueur, pv) {
 
     // jauge de dash, à droite de la plaque des vies
     hud.dash = poser(scene.add.image(MARGE + plaqueLargeur(VIES_MAX) * ECHELLE + 8, Y_DASH, "hud_dash", IMAGE_PRET));
-    const majChaqueImage = () => majDash(hud);
-    const auReveil = () => synchroniserVies(hud); // les vies ont pu changer dans un autre niveau pendant que celui-ci dormait
+    // score et chrono, à droite : la valeur vit dans le registre du jeu, comme les vies
+    if (scene.registry.get("score") === undefined) scene.registry.set("score", 0);
+    if (scene.registry.get("chrono") === undefined) scene.registry.set("chrono", 0);
+    const droite = scene.cameras.main.width - MARGE - PLAQUE_DROITE_L * ECHELLE; // plaques collées à la marge de droite
+    const chiffre = (yPlaque, colonne, image) => poser(scene.add.image(droite + colonne * ECHELLE, yPlaque + CHIFFRE_Y * ECHELLE, "hud_chiffres", image));
+    hud.plaqueScore = poser(scene.add.image(droite, Y_SCORE, "hud_plaque_score"));
+    hud.plaqueChrono = poser(scene.add.image(droite, Y_CHRONO, "hud_plaque_chrono"));
+    hud.chiffresScore = Array.from({ length: SCORE_CHIFFRES }, (_, i) => chiffre(Y_SCORE, SCORE_X + i * PAS_CHIFFRE, 0));
+    hud.chiffresChrono = CHRONO_X.map((colonne) => chiffre(Y_CHRONO, colonne, 0));
+    chiffre(Y_CHRONO, DEUX_POINTS_X, IMAGE_DEUX_POINTS);
+    afficherScore(hud, false);
+    afficherChrono(hud);
+
+    const majChaqueImage = (temps, delta) => { majDash(hud); majChrono(hud, delta); };
+    const auReveil = () => synchroniser(hud); // les vies et le score ont pu changer dans un autre niveau pendant que celui-ci dormait
     scene.events.on(Phaser.Scenes.Events.UPDATE, majChaqueImage);
     scene.events.on(Phaser.Scenes.Events.WAKE, auReveil);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -89,11 +149,60 @@ export function creerHud(scene, joueur, pv) {
         scene.events.off(Phaser.Scenes.Events.WAKE, auReveil);
     });
 
-    hud.majPV = (nouveauxPV) => { if (hud.barre) majBarreDeVie(hud.barre, nouveauxPV); };
+    hud.majPV = (nouveauxPV) => majBarreDeVie(hud.barre, nouveauxPV);
     hud.majVies = (n) => majVies(hud, n);
     hud.perdreVie = () => majVies(hud, hud.viesAffichees - 1);
     hud.gagnerVie = () => majVies(hud, hud.viesAffichees + 1);
+    hud.majScore = (n) => majScore(hud, n);
+    hud.ajouterScore = (n) => majScore(hud, scene.registry.get("score") + n);
+    hud.reinitialiserChrono = () => {
+        scene.registry.set("chrono", 0);
+        hud.secondesAffichees = -1; // force l'affichage de 00:00
+        afficherChrono(hud);
+    };
     return hud;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Score et chrono
+// ---------------------------------------------------------------------------------------------
+
+function majScore(hud, n) {
+    hud.scene.registry.set("score", Phaser.Math.Clamp(Math.round(n), 0, SCORE_MAX));
+    afficherScore(hud, true);
+}
+
+// anime = true : les chiffres qui changent s'éclairent (pas à la création ni au réveil du niveau)
+function afficherScore(hud, anime) {
+    const texte = String(Phaser.Math.Clamp(Math.floor(hud.scene.registry.get("score")), 0, SCORE_MAX)).padStart(SCORE_CHIFFRES, "0");
+    const premier = texte.search(/[1-9]/); // premier chiffre qui n'est pas un zéro (-1 : le score est 0)
+    const attenues = premier === -1 ? SCORE_CHIFFRES - 1 : premier; // les zéros de devant sont atténués ; le dernier chiffre reste allumé
+    hud.chiffresScore.forEach((image, i) => {
+        const numero = (i < attenues ? IMAGE_ATTENUEE : 0) + Number(texte[i]);
+        if (image.numero === numero) return; // ce chiffre n'a pas changé
+        image.numero = numero;
+        image.setFrame(numero);
+        if (anime) {
+            image.setTintFill(0xffffff); // flash blanc, comme une vie qui se rallume
+            hud.scene.time.delayedCall(DUREE_FLASH_CHIFFRE, () => { if (image.active) image.clearTint(); });
+        }
+    });
+}
+
+// le chrono compte le temps passé dans les scènes qui ont un HUD (delta = ms depuis l'image précédente)
+function majChrono(hud, delta) {
+    const registre = hud.scene.registry;
+    registre.set("chrono", registre.get("chrono") + delta);
+    afficherChrono(hud);
+}
+
+function afficherChrono(hud) {
+    const secondes = Math.min(CHRONO_MAX, Math.floor(hud.scene.registry.get("chrono") / 1000));
+    if (secondes === hud.secondesAffichees) return; // rien à redessiner tant que la seconde ne change pas
+    hud.secondesAffichees = secondes;
+    const minutes = Math.floor(secondes / 60);
+    const reste = secondes % 60;
+    [Math.floor(minutes / 10), minutes % 10, Math.floor(reste / 10), reste % 10].forEach((n, i) => hud.chiffresChrono[i].setFrame(n));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -130,11 +239,14 @@ function majVies(hud, n) {
     for (let i = ancien; i < n; i++) gagnerIcone(hud, i);
 }
 
-// remet les cases d'après le registre, sans animation (au réveil d'un niveau)
-function synchroniserVies(hud) {
+// remet les cases, le score et le chrono d'après le registre, sans animation (au réveil d'un niveau)
+function synchroniser(hud) {
     const n = Phaser.Math.Clamp(hud.scene.registry.get("vies"), 0, hud.viesMax);
     hud.viesAffichees = n;
     hud.icones.forEach((icone, i) => { icone.clearTint(); icone.setFrame(i < n ? 0 : 1); });
+    afficherScore(hud, false);
+    hud.secondesAffichees = -1;
+    afficherChrono(hud);
 }
 
 function perdreIcone(hud, i, rang) {
@@ -193,6 +305,21 @@ function creerTextures(scene) {
     fabriquer("hud_vie", 12, 24, (ctx) => { dessinerVie(ctx, 0, true); dessinerVie(ctx, 12, false); }, [[0, 0, 0, 12, 12], [1, 0, 12, 12, 12]]);
     const imagesDash = Array.from({ length: 18 }, (_, i) => [i, 0, i * DASH_TAILLE, DASH_TAILLE, DASH_TAILLE]);
     fabriquer("hud_dash", DASH_TAILLE, DASH_TAILLE * 18, (ctx) => imagesDash.forEach(([i]) => dessinerRoueDash(ctx, i * DASH_TAILLE, i)), imagesDash);
+    fabriquer("hud_plaque_score", PLAQUE_DROITE_L, PLAQUE_DROITE_H, (ctx) => dessinerPlaqueDroite(ctx, "SCORE"));
+    fabriquer("hud_plaque_chrono", PLAQUE_DROITE_L, PLAQUE_DROITE_H, (ctx) => dessinerPlaqueDroite(ctx, "TEMPS"));
+    // les chiffres, empilés : 0 à 9 (lignes 0 à 79), deux-points (80), puis 0 à 9 atténués (88 et suivantes)
+    const imagesChiffres = [
+        ...CHIFFRES.map((_, i) => [i, 0, i * HAUTEUR_CHIFFRE, 6, HAUTEUR_CHIFFRE]),
+        [IMAGE_DEUX_POINTS, 0, 10 * HAUTEUR_CHIFFRE, 4, HAUTEUR_CHIFFRE],
+        ...CHIFFRES.map((_, i) => [IMAGE_ATTENUEE + i, 0, (11 + i) * HAUTEUR_CHIFFRE, 6, HAUTEUR_CHIFFRE])
+    ];
+    fabriquer("hud_chiffres", 6, HAUTEUR_CHIFFRE * 21, (ctx) => {
+        CHIFFRES.forEach((glyphe, i) => {
+            dessinerChiffre(ctx, glyphe, i * HAUTEUR_CHIFFRE, false);
+            dessinerChiffre(ctx, glyphe, (11 + i) * HAUTEUR_CHIFFRE, true);
+        });
+        dessinerChiffre(ctx, DEUX_POINTS, 10 * HAUTEUR_CHIFFRE, false);
+    }, imagesChiffres);
 }
 
 // plaque d'armure : même construction que la barre de vie (contour sombre, filet lavande en haut, ombre en bas)
@@ -211,6 +338,35 @@ function dessinerPlaque(ctx, n) {
     texte(ctx, "VIES", 3, 5);
     // creux derrière chaque case
     for (let i = 0; i < n; i++) for (let y = CASE_Y; y < CASE_Y + 12; y++) for (let x = caseX(i); x < caseX(i) + 12; x++) px(ctx, x, y, "a");
+}
+
+// plaque du score ou du chrono : la plaque des vies retournée (bord plat à droite, bout coupé et rivets à gauche),
+// avec le mot à gauche et le creux où s'allument les chiffres à droite
+function dessinerPlaqueDroite(ctx, mot) {
+    const L = PLAQUE_DROITE_L, H = PLAQUE_DROITE_H;
+    const dans = (x, y) => x >= 0 && x < L && y >= 0 && y < H && !(x === 0 && (y === 0 || y === H - 1));
+    for (let y = 0; y < H; y++) for (let x = 0; x < L; x++) {
+        if (!dans(x, y)) continue;
+        const bord = !dans(x - 1, y) || !dans(x + 1, y) || !dans(x, y - 1) || !dans(x, y + 1);
+        px(ctx, x, y, bord ? "K" : "c");
+    }
+    for (let x = 2; x <= L - 2; x++) px(ctx, x, 1, "n"); // filet lumineux en haut
+    for (let x = 1; x <= L - 2; x++) px(ctx, x, H - 2, "b"); // ombre en bas
+    px(ctx, 1, 4, "L"); px(ctx, 1, H - 5, "L"); // rivets du bout
+    texte(ctx, mot, 5, 6);
+    for (let y = CREUX.y; y < CREUX.y + CREUX.h; y++) for (let x = CREUX.x; x < CREUX.x + CREUX.w; x++) {
+        const hautGauche = y === CREUX.y || x === CREUX.x;
+        const basDroite = y === CREUX.y + CREUX.h - 1 || x === CREUX.x + CREUX.w - 1;
+        px(ctx, x, y, hautGauche ? "K" : basDroite ? "d" : "a"); // creux : ombre en haut à gauche, bord clair en bas à droite
+    }
+}
+
+// un chiffre (ou les deux-points) en (0, oy) : clair en haut, lavande en bas, sur une ombre portée ; atténué : les mêmes en sombre
+function dessinerChiffre(ctx, glyphe, oy, attenue) {
+    const cases = [];
+    glyphe.forEach((ligne, y) => [...ligne].forEach((c, x) => { if (c === "#") cases.push([x, y]); }));
+    cases.forEach(([x, y]) => px(ctx, x + 1, oy + y + 1, "K"));
+    cases.forEach(([x, y]) => px(ctx, x, oy + y, attenue ? (y <= 3 ? "m" : "d") : (y <= 3 ? "W" : "L")));
 }
 
 // petite police, deux tons (haut clair, bas lavande) sur une ombre portée

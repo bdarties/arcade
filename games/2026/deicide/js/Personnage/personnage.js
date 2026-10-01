@@ -18,6 +18,7 @@
 // un nouvel appui sur la flèche du haut le fait rebondir dans l'autre sens.
 // Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur F
 // (haut, haut en diagonale, droit devant) ; vers le bas, seulement en l'air (voir animationDeTir).
+// Tir vers le bas : le tir fait reculer le robot vers le haut, une seule fois par saut (voir reculer).
 // Les balles sont rangées dans scene.tirsJoueur (le groupe est créé au premier tir s'il n'existe pas)
 // et s'arrêtent sur scene.groupe_plateformes quand la scène en a un.
 
@@ -53,6 +54,8 @@ const BOUCHE = { x: 40, y: 10 }; // où naît la balle dans la frame de tir : le
 const HAUTEUR_VISEE = 58;
 const MARGE_HAUT_VISEE = 16;
 const DIAGONALE = Math.SQRT1_2; // cos 45° : une balle en diagonale va aussi vite que les autres
+const RECUL_BAS = 420; // vitesse vers le haut (px/s) donnée par un tir droit vers le bas : environ 90 px de haut, la moitié d'un saut (SAUT = 600)
+const RECUL_BAS_DIAG = 300; // la même chose pour un tir en diagonale vers le bas, plus faible
 
 // Petite balle d'énergie (elle n'est pas dans les spritesheets) : 8 x 6 pixels aux couleurs du robot.
 const BALLE = ["..cccc..", ".cwwwwc.", "cwwwwwwc", "cwwwwwwc", ".cwwwwc.", "..cccc.."];
@@ -81,6 +84,7 @@ const CORPS_MORT = { y: 14, w: 10, h: 11 }; // robot à terre
 //   haut             : lignes ajoutées au-dessus du dessin d'origine dans la frame (0 par défaut)
 //   visee            : direction de la balle quand le robot regarde à droite, { x, y } (droit devant par défaut)
 //   bouche           : où naît la balle dans la frame (BOUCHE par défaut)
+//   recul            : vitesse vers le haut (px/s) que le tir donne au robot (aucun par défaut)
 const VISEE = { hauteur: HAUTEUR_VISEE, haut: MARGE_HAUT_VISEE, repeat: 0, corps: CORPS_DEBOUT, debut: tirer };
 const ANIMATIONS = {
     repos: { fichier: "static idle.png", images: [0], repeat: -1, corps: CORPS_REPOS },
@@ -94,8 +98,8 @@ const ANIMATIONS = {
     // bouche = où se trouve le centre de la flamme dans la frame (calculé comme BOUCHE, en suivant la rotation du canon)
     tir_haut_diag: { ...VISEE, fichier: "shoot aim.png", images: [0, 1, 2, 3], visee: { x: DIAGONALE, y: -DIAGONALE }, bouche: { x: 38, y: 14 } },
     tir_haut: { ...VISEE, bande: "tir_haut_diag", images: [4, 5, 6, 7], visee: { x: 0, y: -1 }, bouche: { x: 27, y: 10 } },
-    tir_bas_diag: { ...VISEE, bande: "tir_haut_diag", images: [8, 9, 10, 11], visee: { x: DIAGONALE, y: DIAGONALE }, bouche: { x: 40, y: 42 } },
-    tir_bas: { ...VISEE, bande: "tir_haut_diag", images: [12, 13, 14, 15], visee: { x: 0, y: 1 }, bouche: { x: 29, y: 48 } },
+    tir_bas_diag: { ...VISEE, bande: "tir_haut_diag", images: [8, 9, 10, 11], visee: { x: DIAGONALE, y: DIAGONALE }, bouche: { x: 40, y: 42 }, recul: RECUL_BAS_DIAG },
+    tir_bas: { ...VISEE, bande: "tir_haut_diag", images: [12, 13, 14, 15], visee: { x: 0, y: 1 }, bouche: { x: 29, y: 48 }, recul: RECUL_BAS },
     dash: { fichier: null, images: serie(IMAGES_DASH), repeat: 0, fps: 20, corps: CORPS_DEBOUT, centre: TORSE_DASH - DECALAGE_DASH, bloquant: true, elan: 500, sansGravite: true }, // pas de bande à charger : la texture est assemblée par creerTextureDash ; à 20 fps il dure 350 ms, soit environ 175 px
     degats: { fichier: "damaged.png", images: serie(2), repeat: 0, corps: CORPS_DEBOUT },
     mort: { fichier: "death.png", images: serie(6), repeat: 0, corps: CORPS_MORT, bloquant: true, figee: true }
@@ -191,6 +195,7 @@ export function creerPersonnage(scene, x, y) {
     joueur.touches = scene.input.keyboard.addKeys({ tir: "F", dash: "SHIFT" }, false); // false : on ne bloque pas les raccourcis du navigateur (Ctrl+F...)
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
+    joueur.reculDispo = true; // le recul d'un tir vers le bas ne marche qu'une fois par saut : il revient au sol ou contre un mur
     // une action non figée est terminée quand son animation est finie : on rend la main aux animations automatiques
     joueur.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation) => {
         if (joueur.action && animation.key === PREFIXE + joueur.action && !ANIMATIONS[joueur.action].figee) {
@@ -264,6 +269,7 @@ export function majPersonnage(joueur, clavier) {
         joueur.enSaut = true;
         joueur.surMur = false;
     }
+    if (auSol || joueur.surMur) joueur.reculDispo = true; // le recul est de nouveau possible
 
     // lus à chaque image, même quand ils sont inutilisables, pour ne pas garder un appui "en attente"
     const veutDash = Phaser.Input.Keyboard.JustDown(joueur.touches.dash);
@@ -339,6 +345,16 @@ function tirer(joueur) {
     balle.body.setAllowGravity(false);
     balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE);
     joueur.scene.time.delayedCall(DUREE_BALLE, () => balle.destroy());
+    if (anim.recul) reculer(joueur, anim.recul);
+}
+
+// Pousse le robot vers le haut quand il tire vers le bas. Une seule fois par saut : sans cette limite, on pourrait
+// monter sans fin en tirant vers le bas toutes les 300 ms (et le niveau 1 est une montée de 6400 px).
+// Un recul ne ralentit jamais une montée déjà plus rapide (un saut à 600 px/s n'est pas freiné par un recul à 420).
+function reculer(joueur, vitesse) {
+    if (!joueur.reculDispo) return;
+    joueur.reculDispo = false;
+    joueur.setVelocityY(Math.min(joueur.body.velocity.y, -vitesse));
 }
 
 // lance l'animation "nom" puis règle ancrage et hitbox pour cette animation

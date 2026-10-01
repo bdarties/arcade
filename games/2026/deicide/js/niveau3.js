@@ -29,7 +29,7 @@ export default class niveau3 extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.clavier = this.input.keyboard.createCursorKeys();
     this.physics.add.collider(this.player, this.groupe_plateformes);
-    this.hud = creerHud(this, this.player); // HUD : vies et jauge de dash (pas de barre de vie : ce niveau n'a pas de PV)
+    this.hud = creerHud(this, this.player); // HUD complet : barre de vie (5 PV par défaut), vies, jauge de dash, score et chrono
   }
 
   update() {
