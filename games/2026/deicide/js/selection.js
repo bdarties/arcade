@@ -168,7 +168,7 @@ export default class selection extends Phaser.Scene {
 
     majPersonnage(player, clavier);
 
-    if (Phaser.Input.Keyboard.JustDown(clavier.space) == true) {
+    if (Phaser.Input.Keyboard.JustDown(player.touches.porte) == true) {
       if (this.physics.overlap(player, this.porte1))
         this.scene.switch("niveau1");
       if (this.physics.overlap(player, this.porte2))

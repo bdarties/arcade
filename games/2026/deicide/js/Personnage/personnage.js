@@ -13,7 +13,7 @@
 //   update()  de chaque niveau      : majPersonnage(this.player, this.clavier)
 //   pour une animation ponctuelle   : jouerAction(this.player, "degats")
 //
-// Touches gérées par majPersonnage : flèches (déplacement, saut), F (tir), MAJ (dash).
+// Touches gérées par majPersonnage : flèches (déplacement, saut), I (tir), K (dash). O (ouvrir les portes) est lue par les niveaux.
 // Saut de mur : en l'air contre un mur, en poussant vers lui, le robot glisse lentement ;
 // un nouvel appui sur la flèche du haut le fait rebondir dans l'autre sens.
 // Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur F
@@ -192,7 +192,7 @@ export function creerPersonnage(scene, x, y) {
     joueur.sensMur = 0; // dernier mur touché en l'air : -1 = à gauche, 1 = à droite
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
-    joueur.touches = scene.input.keyboard.addKeys({ tir: "F", dash: "SHIFT" }, false); // false : on ne bloque pas les raccourcis du navigateur (Ctrl+F...)
+    joueur.touches = scene.input.keyboard.addKeys({ tir: "I", dash: "K", porte: "O" }, false); // I = tir, K = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.reculDispo = true; // le recul d'un tir vers le bas ne marche qu'une fois par saut : il revient au sol ou contre un mur
@@ -310,7 +310,7 @@ export function rechargeDash(joueur) {
 
 // joue une animation ponctuelle : "reveil", "charge", "tir" (ou tir_haut, tir_haut_diag, tir_bas, tir_bas_diag), "dash", "degats" ou "mort"
 // les animations "bloquantes" (reveil, dash, mort) coupent les touches jusqu'à leur fin
-// (F et MAJ appellent ça avec un tir et "dash", mais on peut aussi l'appeler depuis les niveaux)
+// (I et K appellent ça avec un tir et "dash", mais on peut aussi l'appeler depuis les niveaux)
 export function jouerAction(joueur, nom) {
     if (joueur.action === "mort") return; // une fois mort, plus rien ne bouge
     const anim = ANIMATIONS[nom];

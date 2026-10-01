@@ -8,12 +8,12 @@ import niveau3 from "./js/niveau3.js";
 var config = {
   width: 1280, // largeur en pixels
   height: 720, // hauteur en pixels
-   type: Phaser.AUTO,
+  type: Phaser.AUTO,
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
     autoCenter: Phaser.Scale.CENTER_BOTH,
-  
+
   },
   physics: {
     // définition des parametres physiques
@@ -23,7 +23,7 @@ var config = {
       gravity: {
         y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
       },
-      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
   scene: [selection, niveau1, niveau2, niveau3],
