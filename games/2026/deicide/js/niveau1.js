@@ -65,6 +65,7 @@ export default class niveau1 extends Phaser.Scene {
     });
     this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy());
     lumiere.creerVoile(this); // voile d'obscurité, créé en dernier
+    carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
   }
 
   update() {

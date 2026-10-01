@@ -66,7 +66,7 @@ function percerVoile(scene, x, y, rayon) { // gomme qui permet de percer le voil
 }
 export function majVoile(scene) { // update le voile chaque seconde
     scene.voile.clear(); // on vide le voile et on le repeint en noir 
-    scene.voile.fill(0x000000, 0.5); // on réactualise le voile pour enlever les trous 
+    scene.voile.fill(0x000000, 0.3); // on réactualise le voile pour enlever les trous 
     percerVoile(scene, scene.player.body.center.x, scene.player.body.center.y, 130); // permet de faire le trou dans le voile
     if (scene.zonesLumiere) { // perce un trou pour chaque zone de lumiere
         scene.zonesLumiere.getChildren().forEach(zone => percerVoile(scene, zone.x, zone.y, zone.body.radius * 1.2));

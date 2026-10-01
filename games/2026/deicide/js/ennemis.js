@@ -4,6 +4,10 @@ export function chargerEnnemis(scene) {
     scene.load.spritesheet("archer_touche", "./assets/images/ennemis/archer_touche.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation touche archer
     scene.load.spritesheet("archer_mort", "./assets/images/ennemis/archer_mort.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation mort archer
     scene.load.spritesheet("fleche", "./assets/images/ennemis/fleche.png", { frameWidth: 24, frameHeight: 5 }); // chargement animation fleche archer
+    scene.load.spritesheet("mage_idle", "./assets/images/ennemis/mage_idle.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation idle mage
+    scene.load.spritesheet("mage_attaque", "./assets/images/ennemis/mage_attaque.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation attaque mage
+    scene.load.spritesheet("mage_touche", "./assets/images/ennemis/mage_touche.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation touche mage
+    scene.load.spritesheet("mage_mort", "./assets/images/ennemis/mage_mort.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation mort mage
 }
 export function creerAnimationsEnnemis(scene) { // permet de creer les animations des ennemis
     if (scene.anims.exists("archer_idle")) return; // permet de savoir si l'animation archer_idle existe deja, si c est le cas on passe
@@ -12,6 +16,10 @@ export function creerAnimationsEnnemis(scene) { // permet de creer les animation
     scene.anims.create({ key: "archer_touche", frames: scene.anims.generateFrameNumbers("archer_touche"), frameRate: 12, repeat: 0 });// permet de creer l'animation de touche
     scene.anims.create({ key: "archer_mort", frames: scene.anims.generateFrameNumbers("archer_mort"), frameRate: 12, repeat: 0 });// permet de creer l'animation de mort
     scene.anims.create({ key: "fleche", frames: scene.anims.generateFrameNumbers("fleche"), frameRate: 10, repeat: -1 });// permet de creer l'animation fleche
+    scene.anims.create({ key: "mage_idle", frames: scene.anims.generateFrameNumbers("mage_idle"), frameRate: 8, repeat: -1 }); // permet de creer l'animation d'idle du mage, en boucle
+    scene.anims.create({ key: "mage_attaque", frames: scene.anims.generateFrameNumbers("mage_attaque"), frameRate: 12, repeat: 0 }); // permet de creer l'animation d'attaque du mage, jouée une fois
+    scene.anims.create({ key: "mage_touche", frames: scene.anims.generateFrameNumbers("mage_touche"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de touche du mage
+    scene.anims.create({ key: "mage_mort", frames: scene.anims.generateFrameNumbers("mage_mort"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de mort du mage
 }
 export function creerArcher(scene, x, y) { // fonction qui permet de creer un archer
     const archer = scene.ennemis.create(x, y, "archer_idle");
@@ -24,7 +32,43 @@ export function creerArcher(scene, x, y) { // fonction qui permet de creer un ar
     archer.etat = "attente"; // etat de l'archer
     archer.prochainTir = 0; // moment à partir du quel l'archer peut tirer, 0 veut dire tout de suite 
     archer.play("archer_idle"); // fait en sorte que de base le joueur joue l'idle
+    ajouterHalo(scene, archer, 110); // halo violet large et diffus autour de l'archer
     return archer; // renvoie l'archer à la fonctione qui le demande
+}
+export function creerMage(scene, x, y) { // fonction qui permet de creer un mage
+    const mage = scene.ennemis.create(x, y, "mage_idle"); // crée le mage dans le groupe ennemis, comme les archers
+    mage.setScale(0.8); // réduit le mage pour qu'il fasse la taille des autres personnages
+    mage.body.setSize(30, 70); // met la taille du corps physique du mage (largeur de son corps, de la tête aux pieds)
+    mage.type = "mage"; // défini le type en mage, toucherEnnemi s'en sert pour jouer mage_touche et mage_mort
+    mage.pv = 3; // nombre de pv du mage, plus résistant que l'archer
+    mage.points = 150; // nombre de points quand on tue le mage
+    mage.etat = "attente"; // etat de départ du mage
+    mage.prochainTir = 0; // moment à partir duquel le mage peut tirer, 0 veut dire tout de suite
+    mage.play("mage_idle"); // de base le mage joue l'idle
+    ajouterHalo(scene, mage, 130); // halo violet large et diffus autour du mage
+    return mage; // renvoie le mage à la fonction qui le demande
+}
+function creerTextureHaloDoux(scene) { // dessine un dégradé large et peu concentré pour les halos des ennemis
+    if (scene.textures.exists("halo_doux")) return; // si la texture existe deja on la réutilise
+    const tex = scene.textures.createCanvas("halo_doux", 256, 256); // crée une zone de dessin de 256 x 256 px
+    const ctx = tex.getContext(); // récupère le pinceau pour dessiner dans la zone
+    const degrade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128); // dégradé rond qui part du centre jusqu'au bord
+    degrade.addColorStop(0, "rgba(255,255,255,0.35)"); // centre : seulement 35 % d'opacité, au lieu de 80 %
+    degrade.addColorStop(0.5, "rgba(255,255,255,0.15)"); // à mi-chemin il reste encore de la lumière
+    degrade.addColorStop(1, "rgba(255,255,255,0)"); // au bord : complètement transparent
+    ctx.fillStyle = degrade; // dit au pinceau de peindre avec ce dégradé
+    ctx.fillRect(0, 0, 256, 256); // peint tout le carré avec le dégradé
+    tex.refresh(); // envoie le dessin à Phaser pour qu'il puisse l'utiliser
+}
+function ajouterHalo(scene, ennemi, rayon) { // fonction qui ajoute un halo violet autour d'un ennemi
+    creerTextureHaloDoux(scene); // crée la texture du halo doux si elle n'existe pas encore
+    const halo = scene.add.image(ennemi.x, ennemi.y, "halo_doux"); // affiche le dégradé doux à la position de l'ennemi
+    halo.setScale(rayon / 128); // met le halo à la bonne taille (l'image fait 128 px de rayon)
+    halo.setTint(0xc79bff); // colore le halo en violet clair
+    halo.setBlendMode(Phaser.BlendModes.ADD); // mode additif : le halo éclaire ce qu'il y a dessous au lieu de le cacher
+    halo.setAlpha(0.8); // le dégradé est déjà faible, on garde donc une transparence légère
+    halo.setDepth(51); // place le halo juste au-dessus du voile (50) mais sous le HUD (100)
+    ennemi.halo = halo; // range le halo dans l'ennemi pour le retrouver plus tard
 }
 export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tuer l'ennemi
     tir.destroy(); // si le tir touche l'ennemi, le tir est détruit
@@ -33,6 +77,7 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
     if (ennemi.pv <= 0) { // vérifie si l'ennemi à 0pv
         ennemi.etat = "mort"; // si il a 0 pv on passe son état à mort
         ennemi.body.enable = false; // on fait disparaitre le corp physique de l'ennemi
+        scene.tweens.add({ targets: ennemi.halo, alpha: 0, duration: 500, onComplete: () => ennemi.halo.destroy() }); // le halo s'éteint en 0,5 s puis il est supprimé
         ennemi.play(ennemi.type + "_mort"); // il joue alors son animation de mort
         ennemi.once("animationcomplete-" + ennemi.type + "_mort", () => ennemi.destroy()); // quand l'animation de mort est fini on fait disparaitre l'archer
         return;
@@ -50,6 +95,7 @@ function repere(scene, ennemi) { // permet d'implémenter le fait que l'ennemi n
 }
 export function majEnnemis(scene) { // fonction qui sera appelé presque chaque seconde pour vérifier les informations liées à l'ennemi
     scene.ennemis.getChildren().forEach(ennemi => { // renvoie un tableau avec la liste de tous les ennemis du groupe, exectute le code dans les accolades pour chaque éléments
+        if (ennemi.halo) ennemi.halo.setPosition(ennemi.body.center.x, ennemi.body.center.y); // le halo suit le centre de l'ennemi à chaque image
         if (ennemi.type === "archer") majArcher(scene, ennemi);
     });
 }
