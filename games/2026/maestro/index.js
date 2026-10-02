@@ -39,4 +39,5 @@ var config = {
 
 
 // création et lancement du jeu
+// 'export' est OBLIGATOIRE : le hub de la borne fait « import { game } from index.js »
 export var game = new Phaser.Game(config);
