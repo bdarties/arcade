@@ -11,7 +11,7 @@
 // les mêmes d'un niveau à l'autre. Le chrono ne tourne que dans les scènes qui ont un HUD.
 //
 // Utilisation :
-//   preload() de "selection"  : chargerHud(this)
+//   preload() de "niveau1"    : chargerHud(this)
 //   create()  d'un niveau     : this.hud = creerHud(this, this.player, this.pv)   (pv : PV de départ, 5 si on ne le donne pas)
 //   quand les PV changent     : this.hud.majPV(this.pv)
 //   quand les vies changent   : this.hud.perdreVie() / this.hud.gagnerVie() / this.hud.majVies(n)

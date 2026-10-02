@@ -11,7 +11,7 @@
 // Rien de tout ça quand les PV montent.
 //
 // Utilisation :
-//   preload() de "selection"  : chargerBarreDeVie(this)
+//   preload() de "niveau1"    : chargerBarreDeVie(this)
 //   create()  d'un niveau     : this.barrePV = creerBarreDeVie(this, 20, 20, this.pv)
 //   quand les PV changent     : majBarreDeVie(this.barrePV, this.pv)
 

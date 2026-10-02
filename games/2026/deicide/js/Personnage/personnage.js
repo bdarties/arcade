@@ -1,3 +1,6 @@
+import { jouerSon } from "../sons.js"; // permet de jouer les bruitages
+import { traineeDash } from "../effets.js"; // copies fantômes derrière le robot pendant le dash
+
 // Personnage principal : le robot "Bot Wheel"
 //
 // Les images du Bot Wheel sont des bandes verticales : chaque frame fait 117 x 26 pixels
@@ -7,8 +10,8 @@
 // c'est ce qui permet de retourner le robot à gauche sans qu'il "saute" de côté.
 //
 // Utilisation :
-//   preload() de "selection"        : chargerPersonnage(this)
-//   create()  de "selection"        : creerAnimationsPersonnage(this)  (une seule fois, les animations sont globales)
+//   preload() de "niveau1"          : chargerPersonnage(this)
+//   create()  de "niveau1"          : creerAnimationsPersonnage(this)  (une seule fois, les animations sont globales)
 //   create()  de chaque niveau      : this.player = creerPersonnage(this, x, y)
 //   update()  de chaque niveau      : majPersonnage(this.player, this.clavier)
 //   pour une animation ponctuelle   : jouerAction(this.player, "degats")
@@ -46,6 +49,8 @@ const DECALAGE_DASH = 6; // on décale le tout de 6 px vers la gauche : le robot
 const IMAGES_DASH = 7;
 const VITESSE_BALLE = 700; // px/s
 const DUREE_BALLE = 1500; // ms avant que la balle disparaisse si elle ne touche rien
+const PORTEE_AUTO = 700; // distance max (en px) à laquelle la visée auto cherche un ennemi : presque tout l'écran
+const ANGLE_AUTO = 80; // écart max (en degrés) avec l'horizontale : presque tout ce qui est devant le robot, même très haut ou très bas
 const BOUCHE = { x: 40, y: 10 }; // où naît la balle dans la frame de tir : le centre de la boule de flash du canon
 // Les visées vers le haut et le bas (bande "shoot aim.png") ont été fabriquées à partir de "shoot without FX.png" et
 // "shoot FX.png" : le fusil et les poings sont tournés de 45° ou 90° autour du poing avant, la flamme les suit, le haut
@@ -236,7 +241,10 @@ export function majPersonnage(joueur, clavier) {
         } else {
             joueur.setVelocityX(0);
         }
-        if (clavier.up.isDown && auSol) joueur.setVelocityY(-SAUT);
+        if (clavier.up.isDown && auSol) {
+            joueur.setVelocityY(-SAUT);
+            jouerSon(joueur.scene, "saut"); // bruit du réacteur au décollage
+        }
     }
 
     // Glisse et saut de mur. Le robot touche un mur (bord du monde ou côté d'une plateforme) quand Phaser
@@ -263,6 +271,7 @@ export function majPersonnage(joueur, clavier) {
     if (libre && veutSaut && !auSol && maintenant - joueur.instantMur < DELAI_MUR) {
         joueur.setVelocityY(-SAUT);
         joueur.setVelocityX(-joueur.sensMur * VITESSE_SAUT_MUR);
+        jouerSon(joueur.scene, "saut"); // même bruit pour le saut de mur
         joueur.regardeGauche = joueur.sensMur === 1; // il regarde dans le sens où il part
         joueur.verrouJusqua = maintenant + DUREE_VERROU;
         joueur.instantMur = -1e9; // un contact = un saut
@@ -277,6 +286,8 @@ export function majPersonnage(joueur, clavier) {
     if (libre && veutDash && maintenant >= joueur.prochainDash) {
         joueur.prochainDash = maintenant + DELAI_DASH;
         jouerAction(joueur, "dash");
+        jouerSon(joueur.scene, "dash"); // bruit du dash
+        traineeDash(joueur); // laisse une traînée de fantômes rouges
     } else if (libre && veutTir && maintenant >= joueur.prochainTir) {
         joueur.prochainTir = maintenant + DELAI_TIR;
         jouerAction(joueur, animationDeTir(clavier, auSol));
@@ -323,7 +334,29 @@ export function jouerAction(joueur, nom) {
     jouer(joueur, nom, false);
     if (anim.debut) anim.debut(joueur);
 }
-
+// cherche l'ennemi le plus proche devant le robot, renvoie null s'il n'y en a pas
+function chercherCible(joueur, x, y) {
+    const scene = joueur.scene; // la scène où se trouve le robot
+    if (!scene.ennemis) return null; // pas d'ennemis dans cette scène (ex : niveau 3) : pas de cible
+    const sens = joueur.regardeGauche ? -1 : 1; // -1 si le robot regarde à gauche, 1 s'il regarde à droite
+    let cible = null; // le meilleur ennemi trouvé pour l'instant (aucun au départ)
+    let meilleureDistance = PORTEE_AUTO; // on ne garde que les ennemis plus proches que la portée
+    scene.ennemis.getChildren().forEach(ennemi => { // on regarde chaque ennemi un par un
+        if (ennemi.etat === "mort") return; // ennemi en train de mourir : on l'ignore
+        if (!scene.cameras.main.worldView.contains(ennemi.x, ennemi.y)) return; // ennemi hors de l'écran : on ne vise pas ce qu'on ne voit pas
+        const dx = (ennemi.body.center.x - x) * sens; // écart horizontal, positif si l'ennemi est devant le robot
+        const dy = ennemi.body.center.y - y; // écart vertical entre le canon et l'ennemi
+        if (dx <= 0) return; // l'ennemi est derrière le robot : on l'ignore
+        const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'ennemi, en degrés
+        if (angle > ANGLE_AUTO) return; // ennemi trop haut ou trop bas : on l'ignore
+        const distance = Math.hypot(dx, dy); // distance réelle entre le canon et l'ennemi
+        if (distance < meilleureDistance) { // il est plus proche que le meilleur trouvé jusqu'ici
+            cible = ennemi; // il devient la cible
+            meilleureDistance = distance; // et sa distance devient celle à battre
+        }
+    });
+    return cible; // renvoie l'ennemi trouvé, ou null si aucun ne convient
+}
 // fait partir une balle du canon, dans le sens où regarde le robot et dans la direction de la visée en cours
 function tirer(joueur) {
     const scene = joueur.scene;
@@ -341,9 +374,16 @@ function tirer(joueur) {
     const x = joueur.x + sens * (bouche.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
     const y = joueur.y + (bouche.y - PIED_Y - (anim.haut ?? 0)) * ECHELLE;
     const balle = tirs.create(x, y, PREFIXE + "balle");
+    jouerSon(scene, "tir"); // bruit du tir
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
-    balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE);
+    const cible = chercherCible(joueur, x, y); // cherche un ennemi à viser automatiquement depuis le canon
+    if (cible) { // un ennemi est à portée
+        const angle = Phaser.Math.Angle.Between(x, y, cible.body.center.x, cible.body.center.y); // angle entre le canon et le centre de l'ennemi
+        scene.physics.velocityFromRotation(angle, VITESSE_BALLE, balle.body.velocity); // envoie la balle dans cette direction, à la vitesse normale
+    } else { // aucun ennemi à portée
+        balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE); // tir normal, dans la direction de la visée
+    }
     joueur.scene.time.delayedCall(DUREE_BALLE, () => balle.destroy());
     if (anim.recul) reculer(joueur, anim.recul);
 }

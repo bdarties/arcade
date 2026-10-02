@@ -1,8 +1,10 @@
 import * as fct from "./fonctions.js";
-import { creerPersonnage, majPersonnage } from "./Personnage/personnage.js";
-import { creerHud } from "./Personnage/hud.js";
+import { chargerPersonnage, creerAnimationsPersonnage, creerPersonnage, majPersonnage } from "./Personnage/personnage.js";
+import { chargerHud, creerHud } from "./Personnage/hud.js";
 import * as ennemis from "./ennemis.js";
 import * as lumiere from "./lumiere.js";
+import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
+import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
@@ -11,16 +13,30 @@ export default class niveau1 extends Phaser.Scene {
       key: "niveau1" //  ici on précise le nom de la classe en tant qu'identifiant
     });
   }
-  preload() {
+  preload() { // niveau 1 = première scène du jeu : on y charge tous les assets (le cache est partagé avec les niveaux 2 et 3)
+    this.load.setBaseURL(this.sys.game.config.baseURL); // chemin du jeu, pour que les assets se chargent aussi depuis la borne
+    this.load.image("img_ciel", "./assets/sky.png"); // fond des niveaux 2 et 3
+    this.load.image("img_plateforme", "./assets/platform.png"); // plateformes des niveaux 2 et 3
+    this.load.image("img_porte2", "./assets/door2.png"); // porte du niveau 2
+    this.load.image("img_porte3", "./assets/door3.png"); // porte du niveau 3
+    chargerPersonnage(this); // images du robot
+    chargerHud(this); // images du HUD
+    this.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
+    this.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
+    this.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
+    ennemis.chargerEnnemis(this); // images des ennemis
+    chargerSons(this); // bruitages et musique
   }
 
   create() {
     fct.doNothing();
     fct.doAlsoNothing();
+    creerAnimationsPersonnage(this); // animations du robot (une seule fois, elles servent aussi aux niveaux 2 et 3)
+    ennemis.creerAnimationsEnnemis(this); // animations des archers, des mages, des orcs et des flèches
 
     // la map Tiled : 40 x 200 tuiles de 32 px = 1280 x 6400 px, on part d'en bas
     const carte = this.make.tilemap({ key: "carte_niveau1" });
-    // le 1er nom est celui du tileset dans Tiled, le 2e la clé de l'image chargée dans selection.js
+    // le 1er nom est celui du tileset dans Tiled, le 2e la clé de l'image chargée dans preload()
     const tuilesDawn = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn");
     const tuileBlanc = carte.addTilesetImage("white", "tuile_blanc");
     const tilesets = [tuilesDawn, tuileBlanc];
@@ -36,9 +52,6 @@ export default class niveau1 extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
     this.cameras.main.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
     this.cameras.main.setBackgroundColor("#3a3a3a");
-
-    // sol du bas de la map : ligne 199, soit y = 6368
-    this.porte_retour = this.physics.add.staticSprite(100, 6348, "img_porte1");
 
     this.player = creerPersonnage(this, 200, 6300);
     this.player.refreshBody();
@@ -63,7 +76,10 @@ export default class niveau1 extends Phaser.Scene {
       fleche.destroy();
       this.blesserJoueur(1, "Abattu par un archer");
     });
-    this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy());
+    this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (tir) => { // un tir ennemi qui touche un mur disparait
+      if (tir.texture.key === "fleche") jouerSon(this, "fleche_mur"); // seule la flèche fait un bruit de bois en se plantant
+      tir.destroy();
+    });
     // lumière : zones qui brûlent le joueur et lanternes qu'on éteint en tirant dessus
     this.zonesLumiere = this.physics.add.staticGroup(); // groupe des zones de lumière (dégâts)
     this.prochainDegatLumiere = 0; // instant à partir duquel la lumière peut de nouveau blesser le joueur
@@ -72,8 +88,10 @@ export default class niveau1 extends Phaser.Scene {
     this.lanternes = this.physics.add.staticGroup(); // groupe des lanternes
     carte.getObjectLayer("lanterne").objects.forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
     this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne)); // un tir éteint la lanterne
-    lumiere.creerVoile(this); // voile d'obscurité, créé en dernier
+    lumiere.creerVoile(this);
+    musiqueDeScene(this, "musique_niveau"); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
     carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
+    carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
   }
 
   update() {
@@ -81,17 +99,14 @@ export default class niveau1 extends Phaser.Scene {
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
 
-    if (Phaser.Input.Keyboard.JustDown(this.player.touches.porte) == true) {
-      if (this.physics.overlap(this.player, this.porte_retour)) {
-        this.scene.switch("selection");
-      }
-    }
     lumiere.majVoile(this);
   }
 
   blesserJoueur(degats, cause) {
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour
+    jouerSon(this, this.pv <= 0 ? "joueur_mort" : "joueur_touche"); // bruit de mort si plus de PV, sinon bruit d'impact
+    effets.joueurTouche(this); // tremblement, écran rouge et robot qui clignote
     console.log(cause);
   }
 }

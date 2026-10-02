@@ -1,4 +1,6 @@
 import * as lumiere from "./lumiere.js";
+import { jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
+import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import * as ennemis from "./ennemis.js";
 import { creerPersonnage, majPersonnage } from "./Personnage/personnage.js";
 import { creerHud } from "./Personnage/hud.js";
@@ -53,8 +55,12 @@ export default class niveau2 extends Phaser.Scene {
       fleche.destroy(); // si ils sont en collision la fleche est détruite
       this.blesserJoueur(1, "Abattu par un archer"); // donne la raison de la mort
     });
-    this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (fleche) => fleche.destroy()); // la fleche se détuit si il rencontre un mur
+    this.physics.add.collider(this.tirsEnnemis, this.groupe_plateformes, (tir) => { // un tir ennemi qui touche un mur disparait
+      if (tir.texture.key === "fleche") jouerSon(this, "fleche_mur"); // seule la flèche fait un bruit de bois en se plantant
+      tir.destroy();
+    });
     lumiere.creerVoile(this);
+    musiqueDeScene(this, "musique_niveau"); // lance la musique du niveau, et la relance quand on revient dans le niveau
   }
 
 
@@ -65,8 +71,9 @@ export default class niveau2 extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.player.touches.porte) == true) {
       if (this.physics.overlap(this.player, this.porte_retour)) {
-        console.log("niveau 3 : retour vers selection");
-        this.scene.switch("selection");
+        console.log("retour vers le niveau 1");
+        jouerSon(this, "porte"); // bruit de la porte
+        this.scene.switch("niveau1"); // plus de scène selection : la porte ramène au niveau 1
       }
     }
     lumiere.majVoile(this);
@@ -74,6 +81,8 @@ export default class niveau2 extends Phaser.Scene {
   blesserJoueur(degats, cause) {
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour
+    jouerSon(this, this.pv <= 0 ? "joueur_mort" : "joueur_touche"); // bruit de mort si plus de PV, sinon bruit d'impact
+    effets.joueurTouche(this); // tremblement, écran rouge et robot qui clignote
     console.log(cause);
   }
 }
