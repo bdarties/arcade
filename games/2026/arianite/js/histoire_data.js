@@ -9,13 +9,15 @@
 
 const FOND = "./assets/sky.png";
 const ARIA = "./assets/spritesheet/aria_stand_right.png";
-// Image du méchant : pas encore faite => une silhouette noire s'affiche à la place.
-// Quand tu auras l'image, mets-la à ce chemin (ou change le chemin ici).
+// Image du méchant : planche de 2 images (118x126 chacune) qui s'animent en boucle.
+// Mets le fichier gros_mechant_stand_right.png à ce chemin (ou change le chemin ici).
 // Si le méchant regarde du mauvais côté, ajoute flip: true dans MECHANT.
-const MECHANT_IMG = "./assets/histoire/mechant.png";
+const MECHANT_IMG = "./assets/spritesheet/gros_mechant_stand_right.png";
 
-const ARIA_G = { id: "aria", img: ARIA, cote: "gauche" };
-const MECHANT = { id: "mechant", img: MECHANT_IMG, cote: "droite" };
+// hauteur = taille du perso à l'écran en px (450 par défaut) ; plus petit = plus petit à l'écran
+const ARIA_G = { id: "aria", img: ARIA, cote: "gauche", hauteur: 380 };
+// sheet = planche animée : w/h = taille d'UNE image, vitesse = images par seconde (2 par défaut)
+const MECHANT = { id: "mechant", img: MECHANT_IMG, cote: "droite", flip: true, sheet: { w: 118, h: 126, vitesse: 2 } };
 
 export const INTRO = [
   // 1) seul le méchant, à droite

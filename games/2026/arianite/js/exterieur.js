@@ -85,8 +85,15 @@ export default class exterieur extends Phaser.Scene {
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
     this.load.image("img_opera", "./assets/opera.png");
+    this.load.audio("son_pluie", "./assets/musique/fond_paris_pluie.mp3"); // musique de fond
     Object.entries(SPRITESHEETS_PORTES).forEach(([cle, d]) => {
       this.load.spritesheet(cle, d.fichier, { frameWidth: d.largeur, frameHeight: d.hauteur });
+    });
+
+    // portier (pnj animé) : 4 frames de 36x64
+    this.load.spritesheet("portier", "./assets/spritesheet/portier.png", {
+      frameWidth: 36,
+      frameHeight: 64
     });
 
     // crocodile : 8 frames de 270x720 (frame 0 = vide, frames 1 à 7 = le saut)
@@ -243,6 +250,41 @@ export default class exterieur extends Phaser.Scene {
      *  CREATION DES ANIMATIONS *
      ****************************/
     fct.creerAnimsPerso(this);
+    fct.initVies(this, this.depuis === undefined); // barre de vie (remise à 5 si on arrive du menu)
+
+    /*****************
+     *  PNJ (calque Tiled)
+     *****************/
+    // Chaque POINT du calque d'objets "pnj" est un portier (le point = les pieds, au milieu).
+    // Propriétés Tiled optionnelles : echelle (float, défaut 3), vitesse (float, images/s, défaut 6), flip (bool)
+    if (!this.anims.exists("portier_anim")) {
+      this.anims.create({
+        key: "portier_anim",
+        frames: this.anims.generateFrameNumbers("portier", { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: -1 // en boucle
+      });
+    }
+
+    const calque_pnj = map.getObjectLayer("pnj");
+    if (!calque_pnj) {
+      console.warn('Calque d\'objets "pnj" introuvable dans la map Tiled');
+    } else {
+      calque_pnj.objects.forEach((o) => {
+        const prop = (nom, defaut) => {
+          const p = o.properties && o.properties.find((p) => p.name === nom);
+          return p ? p.value : defaut;
+        };
+        const pnj = this.add
+          .sprite(o.x, o.y, "portier", 0)
+          .setOrigin(0.5, 1)
+          .setScale(prop("echelle", 1.3))
+          .setFlipX(prop("flip", false))
+          .setDepth(-2); // derrière le joueur, devant le décor
+        pnj.anims.msPerFrame = 1000 / prop("vitesse", 6); // vitesse propre à chaque pnj
+        pnj.play("portier_anim");
+      });
+    }
 
     // animation du saut du crocodile (frames 1 à 7, la frame 0 est vide)
     if (!this.anims.exists("croco_jump")) {
@@ -338,6 +380,17 @@ export default class exterieur extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(10); // devant le joueur et les décors
+
+    this.sound.stopByKey("musique_menu"); // coupe la musique du menu (lancée dans accueil.js)
+
+    // musique de fond en boucle (ignorée si le fichier n'est pas trouvé, pour ne rien casser)
+    if (this.cache.audio.exists("son_pluie")) {
+      const musique = this.sound.add("son_pluie", { loop: true, volume: 0.5 });
+      musique.play();
+      this.events.once("shutdown", () => musique.stop()); // coupée quand on quitte la scène
+    } else {
+      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
+    }
   }
 
   /***********************************************************************/
@@ -402,26 +455,11 @@ export default class exterieur extends Phaser.Scene {
     this.perdreVie(CROCO_DEGATS, croco);
   }
 
-  // enlève des vies au joueur, avec invincibilité et recul
+  // le joueur perd des vies (voir fonctions.js) ; s'il n'en a plus, on relance la scène
   perdreVie(degats, source) {
-    if (this.invincible) return;
-    this.invincible = true;
-    this.vies -= degats;
-
-    // feedback : rouge + petit saut de recul à l'opposé du croco
-    player.setTint(0xff0000);
-    player.setVelocityY(-200);
-    player.x += player.x < source.x ? -20 : 20;
-
-    if (this.vies <= 0) {
-      this.scene.restart(); // plus de vies : on relance la scène (à remplacer par ton écran de défaite)
-      return;
+    if (fct.perdreVieJoueur(this, player, degats, source)) {
+      this.scene.restart({}); // à remplacer par ton écran de défaite
     }
-
-    this.time.delayedCall(INVINCIBILITE, () => {
-      this.invincible = false;
-      player.clearTint();
-    });
   }
 
   /***********************************************************************/

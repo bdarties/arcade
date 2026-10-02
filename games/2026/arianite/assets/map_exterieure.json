@@ -106,6 +106,30 @@
         }, 
         {
          "draworder":"topdown",
+         "id":10,
+         "name":"pnj",
+         "objects":[
+                {
+                 "height":0,
+                 "id":19,
+                 "name":"portier",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":3054.00110346525,
+                 "y":991.050293082989
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":5,
          "name":"escaliers",
          "objects":[
@@ -429,8 +453,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":10,
- "nextobjectid":19,
+ "nextlayerid":11,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

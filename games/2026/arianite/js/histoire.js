@@ -4,7 +4,7 @@
 // slides    = la séquence (voir histoire_data.js)
 // suite     = la scène qui se lance à la fin
 // suiteData = les données envoyées à cette scène (ex : { depuis: "precedent" })
-// Un slide peut avoir plusieurs personnages : persos: [{ id, img, cote, flip }]
+// Un slide peut avoir plusieurs personnages : persos: [{ id, img, cote, flip, hauteur }]
 // et un effet : disparition: "id" (le perso avec cet id disparaît dans un nuage de fumée)
 
 const VITESSE_TEXTE = 35; // ms entre deux lettres (plus petit = plus rapide)
@@ -32,7 +32,14 @@ export default class histoire extends Phaser.Scene {
     this.slides.forEach((s) => {
       if (s.fond && !this.textures.exists(s.fond)) this.load.image(s.fond, s.fond);
       this.persosDe(s).forEach((pp) => {
-        if (pp.img && !this.textures.exists(pp.img)) this.load.image(pp.img, pp.img);
+        if (pp.img && !this.textures.exists(pp.img)) {
+          if (pp.sheet) {
+            // planche animée : plusieurs images de la même taille côte à côte
+            this.load.spritesheet(pp.img, pp.img, { frameWidth: pp.sheet.w, frameHeight: pp.sheet.h });
+          } else {
+            this.load.image(pp.img, pp.img);
+          }
+        }
       });
     });
   }
@@ -126,8 +133,22 @@ export default class histoire extends Phaser.Scene {
       const x = pp.cote === "droite" ? w - 260 : 260;
       const cle = this.textures.exists(pp.img) ? pp.img : "silhouette";
       this.textures.get(cle).setFilter(Phaser.Textures.FilterMode.NEAREST); // pixels nets
-      const p = this.add.image(x, 620, cle).setOrigin(0.5, 1).setDepth(2);
-      p.setScale(HAUTEUR_PERSO / p.height);
+      const animee = pp.sheet && cle !== "silhouette";
+      const p = animee ? this.add.sprite(x, 620, cle, 0) : this.add.image(x, 620, cle);
+      p.setOrigin(0.5, 1).setDepth(2);
+      p.setScale((pp.hauteur || HAUTEUR_PERSO) / p.height); // hauteur propre au perso, sinon la valeur par défaut
+      if (animee) {
+        const anim = "anim_" + cle;
+        if (!this.anims.exists(anim)) {
+          this.anims.create({
+            key: anim,
+            frames: this.anims.generateFrameNumbers(cle, { start: 0, end: this.textures.get(cle).frameTotal - 2 }),
+            frameRate: pp.sheet.vitesse || 2,
+            repeat: -1
+          });
+        }
+        p.play(anim);
+      }
       if (pp.flip) p.setFlipX(true);
       this.elements.push(p);
       this.persosObj[pp.id || pp.img] = p;
