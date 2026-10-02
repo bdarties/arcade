@@ -1,7 +1,11 @@
 {
-	"title": "SUPER JEU",
-	"description": "Logo qui rebondit en plein écran.",
-	"genre" : "action / aventure",
-	"authors": ["Benoit Darties", "Nicolas Maurin"]
+	"title": "ARIANITE",
+	"description": "Paris s’endort. Mais sous les lumières de l’Opéra, quelque chose se réveille.
+
+Incarnez Aria, traversez les toits de Paris, affrontez ceux qui se dressent sur votre chemin et plongez au cœur d’un mystère qui dépasse tout ce que vous imaginez.
+
+La scène est prête. À vous de jouer..",
+	"genre" : "narratif / avanture",
+	"authors": ["Bousquet Lucas", "Bayse Hugo", "Thilbault Anais"]
 }
 

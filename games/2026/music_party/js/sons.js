@@ -46,7 +46,7 @@ function bip(ctx, freq, debut, duree, forme, volume, dest) {
 // INSTRUMENTS (options : pan, retard en secondes, duree, volume)
 // ---------------------------------------------------------------------------
 
-// piano_time (piano_time Time) : une fondamentale + des harmoniques qui s'éteignent plus vite
+// piano_time (piano_time) : une fondamentale + des harmoniques qui s'éteignent plus vite
 export function jouerpiano_time(scene, n, options) {
   var ctx = contexte(scene);
   if (!ctx) return;

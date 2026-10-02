@@ -1,6 +1,7 @@
 import { jouerSon } from "./sons.js"; // permet de jouer les bruitages
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { gagnerPoints } from "./points.js"; // ajoute les points au score
+import { tenterDropPV } from "./bonus.js"; // un ennemi tué peut laisser un PV à ramasser
 const PORTEE_COUP = 90; // distance (px) à partir de laquelle l'orc donne son coup de faux (la faux porte jusqu'à environ 130 px)
 const VITESSE_ORC = 90; // vitesse de marche de l'orc (px/s)
 export function chargerEnnemis(scene) {
@@ -117,6 +118,7 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
         jouerSon(scene, "ennemi_mort"); // cri de mort de l'ennemi
         effets.ennemiMort(scene, ennemi); // flash blanc, gerbe d'éclats, tremblement et micro-pause
         gagnerPoints(scene, ennemi.points, ennemi.body.center.x, ennemi.body.top); // ajoute les points de cet ennemi au score
+        tenterDropPV(scene, ennemi.body.center.x, ennemi.body.center.y); // 30 % de chances qu'il laisse un PV à ramasser (voir bonus.js)
         ennemi.etat = "mort"; // si il a 0 pv on passe son état à mort
         ennemi.body.enable = false; // on fait disparaitre le corp physique de l'ennemi
         scene.tweens.add({ targets: ennemi.halo, alpha: 0, duration: 500, onComplete: () => ennemi.halo.destroy() }); // le halo s'éteint en 0,5 s puis il est supprimé

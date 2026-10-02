@@ -18,7 +18,6 @@ export default class menu extends Phaser.Scene {
 
     fondAssombri(this, this.jeu.fond, 0.55);
     var titre = this.add.text(640, 105, this.jeu.titre, style(80, OR, 12)).setOrigin(0.5);
-    this.tweens.add({ targets: titre, angle: 1.5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.add
       .text(640, 178, this.jeu.slogan, { fontFamily: "Georgia, serif", fontSize: "28px", fontStyle: "italic", color: "#ffffff" })
       .setOrigin(0.5);
