@@ -1,10 +1,3 @@
-// ============================================================================
-//  js/gameover.js — ÉCRAN « GAME OVER »
-//
-//  Affiché quand il ne reste plus aucun cœur. On revient à l'accueil
-//  (plus tard : retour au lobby).
-// ============================================================================
-
 import { creerClavierMenu } from "./controles.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';

@@ -1,9 +1,3 @@
-// ============================================================================
-//  js/accueil.js — ÉCRAN D'ACCUEIL : le titre MAESTRO + le bouton PLAY
-//
-//  Commandes : bouton A (I ou R), Entrée ou Espace pour valider.
-// ============================================================================
-
 import { creerClavierMenu } from "./controles.js";
 
 // La scène qui s'ouvre quand on appuie sur PLAY
