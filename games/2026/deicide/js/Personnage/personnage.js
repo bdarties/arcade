@@ -50,7 +50,8 @@ const IMAGES_DASH = 7;
 const VITESSE_BALLE = 700; // px/s
 const DUREE_BALLE = 1500; // ms avant que la balle disparaisse si elle ne touche rien
 const PORTEE_AUTO = 700; // distance max (en px) à laquelle la visée auto cherche un ennemi : presque tout l'écran
-const ANGLE_AUTO = 80; // écart max (en degrés) avec l'horizontale : presque tout ce qui est devant le robot, même très haut ou très bas
+const ANGLE_AUTO = 80; // écart max (en degrés) avec l'horizontale : presque tout ce qui est à gauche ou à droite du robot, même très haut ou très bas
+const DUREE_REGARD_TIR = 250; // ms pendant lesquelles le robot reste tourné vers l'ennemi visé, même si on tient l'autre flèche
 const BOUCHE = { x: 40, y: 10 }; // où naît la balle dans la frame de tir : le centre de la boule de flash du canon
 // Les visées vers le haut et le bas (bande "shoot aim.png") ont été fabriquées à partir de "shoot without FX.png" et
 // "shoot FX.png" : le fusil et les poings sont tournés de 45° ou 90° autour du poing avant, la flamme les suit, le haut
@@ -234,10 +235,10 @@ export function majPersonnage(joueur, clavier) {
             // on laisse la vitesse du saut de mur telle quelle
         } else if (gauche) {
             joueur.setVelocityX(-VITESSE);
-            joueur.regardeGauche = true;
+            if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = true; // pendant un tir visé, le robot reste tourné vers l'ennemi
         } else if (droite) {
             joueur.setVelocityX(VITESSE);
-            joueur.regardeGauche = false;
+            if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = false; // pendant un tir visé, le robot reste tourné vers l'ennemi
         } else {
             joueur.setVelocityX(0);
         }
@@ -334,19 +335,17 @@ export function jouerAction(joueur, nom) {
     jouer(joueur, nom, false);
     if (anim.debut) anim.debut(joueur);
 }
-// cherche l'ennemi le plus proche devant le robot, renvoie null s'il n'y en a pas
+// cherche l'ennemi le plus proche à gauche ou à droite du robot, renvoie null s'il n'y en a pas
 function chercherCible(joueur, x, y) {
     const scene = joueur.scene; // la scène où se trouve le robot
     if (!scene.ennemis) return null; // pas d'ennemis dans cette scène (ex : niveau 3) : pas de cible
-    const sens = joueur.regardeGauche ? -1 : 1; // -1 si le robot regarde à gauche, 1 s'il regarde à droite
     let cible = null; // le meilleur ennemi trouvé pour l'instant (aucun au départ)
     let meilleureDistance = PORTEE_AUTO; // on ne garde que les ennemis plus proches que la portée
     scene.ennemis.getChildren().forEach(ennemi => { // on regarde chaque ennemi un par un
         if (ennemi.etat === "mort") return; // ennemi en train de mourir : on l'ignore
         if (!scene.cameras.main.worldView.contains(ennemi.x, ennemi.y)) return; // ennemi hors de l'écran : on ne vise pas ce qu'on ne voit pas
-        const dx = (ennemi.body.center.x - x) * sens; // écart horizontal, positif si l'ennemi est devant le robot
-        const dy = ennemi.body.center.y - y; // écart vertical entre le canon et l'ennemi
-        if (dx <= 0) return; // l'ennemi est derrière le robot : on l'ignore
+        const dx = Math.abs(ennemi.body.center.x - x); // écart horizontal, que l'ennemi soit à gauche ou à droite
+        const dy = ennemi.body.center.y - y; // écart vertical entre le robot et l'ennemi
         const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'ennemi, en degrés
         if (angle > ANGLE_AUTO) return; // ennemi trop haut ou trop bas : on l'ignore
         const distance = Math.hypot(dx, dy); // distance réelle entre le canon et l'ennemi
@@ -361,7 +360,15 @@ function chercherCible(joueur, x, y) {
 function tirer(joueur) {
     const scene = joueur.scene;
     const anim = ANIMATIONS[joueur.nomAnim]; // l'animation de tir qui vient de démarrer
-    const sens = joueur.regardeGauche ? -1 : 1;
+    let cible = chercherCible(joueur, joueur.body.center.x, joueur.body.center.y); // cherche un ennemi à viser automatiquement, des deux côtés du robot
+    const cibleAGauche = cible && cible.body.center.x < joueur.body.center.x; // vrai si l'ennemi trouvé est à gauche du robot
+    if (cible && joueur.surMur && cibleAGauche !== joueur.regardeGauche) cible = null; // contre un mur, un ennemi derrière est côté mur : on tirerait dans le mur, donc pas de visée auto
+    if (cible && !joueur.surMur) { // un ennemi est à portée et le robot n'est pas collé à un mur
+        joueur.regardeGauche = cibleAGauche; // le robot se tourne vers l'ennemi
+        joueur.regardJusqua = scene.time.now + DUREE_REGARD_TIR; // et reste tourné vers lui le temps du tir
+        orienter(joueur); // retourne l'image tout de suite, avant de calculer la position du canon
+    }
+    const sens = joueur.regardeGauche ? -1 : 1; // sens du tir, calculé après le demi-tour éventuel
     const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
     const bouche = anim.bouche ?? BOUCHE;
     if (!scene.tirsJoueur || !scene.tirsJoueur.scene) { // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
@@ -377,7 +384,6 @@ function tirer(joueur) {
     jouerSon(scene, "tir"); // bruit du tir
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
-    const cible = chercherCible(joueur, x, y); // cherche un ennemi à viser automatiquement depuis le canon
     if (cible) { // un ennemi est à portée
         const angle = Phaser.Math.Angle.Between(x, y, cible.body.center.x, cible.body.center.y); // angle entre le canon et le centre de l'ennemi
         scene.physics.velocityFromRotation(angle, VITESSE_BALLE, balle.body.velocity); // envoie la balle dans cette direction, à la vitesse normale

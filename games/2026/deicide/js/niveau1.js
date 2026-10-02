@@ -6,6 +6,7 @@ import * as lumiere from "./lumiere.js";
 import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { figerCalques } from "./optimisation.js"; // décor dessiné une seule fois (optimisation pour la borne)
+import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
@@ -95,13 +96,14 @@ export default class niveau1 extends Phaser.Scene {
     musiqueDeScene(this, "musique_niveau"); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
     carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
     carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
+    this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
   }
 
   update() {
     lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
-
+    arene.verifierArene(this); // si le joueur arrive en haut, on ferme l'arène
     lumiere.majVoile(this);
   }
 
