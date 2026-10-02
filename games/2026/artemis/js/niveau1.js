@@ -61,12 +61,19 @@ const DISTANCE_HALO_LASER = [30, 80]; // px : près du joueur le halo est étein
 // éclat à l'impact d'un laser (mur ou caillou) : il s'éteint progressivement
 const HALO_ECLAT = [[56, 0.2], [32, 0.4], [16, 0.8]];
 const DUREE_ECLAT = 150; // ms
+const HALO_TIR_ENNEMI = [[34, 0.2], [18, 0.5], [9, 0.85]]; // lumière portée par un tir d'alien
 const VITESSE_LASER = 500; // px/s
 const DUREE_VIE_LASER = 1200; // ms : le laser disparait s'il ne touche rien
 const DEPART_LASER = 16; // px : le laser part un peu devant le joueur
 const EQUIPEMENTS = ["pioche", "laser"]; // H passe de l'un à l'autre
 // variante des sprites du joueur selon l'équipement (cf. VARIANTES_JOUEUR dans selection.js)
 const VARIANTE_SPRITE = { pioche: "", laser: "_gun" };
+
+/* >>>>> AJOUT SON <<<<< */ // sons de la partie (gardés d'un niveau à l'autre)
+/* >>>>> AJOUT SON <<<<< */ var musique_de_fond;
+/* >>>>> AJOUT SON <<<<< */ var son_echelle;
+/* >>>>> AJOUT SON <<<<< */ var son_game_over;
+/* >>>>> AJOUT SON <<<<< */ var musique_en_cours = false;
 
 // scene de jeu : elle est relancée à chaque changement de niveau (descente ou montée), avec le numéro du niveau voulu
 // l'état de chaque niveau visité est gardé dans this.registry ("niveaux") : on retrouve un niveau tel qu'on l'a laissé
@@ -92,6 +99,20 @@ export default class niveau1 extends Phaser.Scene {
 
   create() {
     this.changement_niveau = false; // true pendant le fondu vers un autre niveau
+
+    /* >>>>> AJOUT SON <<<<< */ // sons : ajoutés une seule fois au gestionnaire, puis réutilisés à chaque niveau
+    /* >>>>> AJOUT SON <<<<< */ if (!musique_de_fond) {
+    /* >>>>> AJOUT SON <<<<< */ musique_de_fond = this.sound.add("fondSonore");
+    /* >>>>> AJOUT SON <<<<< */ son_echelle = this.sound.add("echelle");
+    /* >>>>> AJOUT SON <<<<< */ son_game_over = this.sound.add("gameOver");
+    /* >>>>> AJOUT SON <<<<< */ }
+    /* >>>>> AJOUT SON <<<<< */ son_echelle.stop(); // on vient d'arriver : le bruit d'échelle s'arrête
+    /* >>>>> AJOUT SON <<<<< */ if (!musique_en_cours) {
+    /* >>>>> AJOUT SON <<<<< */ musique_de_fond.play({ loop: true, volume: 0.5 });
+    /* >>>>> AJOUT SON <<<<< */ musique_en_cours = true;
+    /* >>>>> AJOUT SON <<<<< */ }
+    /* >>>>> AJOUT SON <<<<< */ this.game_over = false;
+    this.game_over_lance = false; // true une fois l'écran de game over programmé (cf. update)
 
     /*************************************
      *  CREATION DE LA MAP (procédurale) *
@@ -341,6 +362,8 @@ export default class niveau1 extends Phaser.Scene {
     this.butin.forEach((objet) => {
       if (objet.definition.lumiere) this.dessinerHalo(objet.x, objet.y, bonus.HALO_POTION, 1, 1);
     });
+    // les tirs des aliens verts se voient de loin (on doit pouvoir les esquiver)
+    this.tirs_ennemis.getChildren().forEach((tir) => this.dessinerHalo(tir.x, tir.y, HALO_TIR_ENNEMI, 1, 1));
     // les cristaux aussi, avec une pulsation lente (chacun la sienne)
     this.cristaux.forEach((cristal) => {
       this.dessinerHalo(cristal.x, cristal.y, cristaux.HALO_CRISTAL, 1, 0.85 + 0.15 * Math.sin(t * 0.002 + cristal.phase));
@@ -462,7 +485,7 @@ export default class niveau1 extends Phaser.Scene {
     this.etat.cailloux = cases_libres.slice(0, NB_CAILLOUX).map((tuile) => ({
       x: tuile.getCenterX(),
       y: tuile.getCenterY(),
-      image: Phaser.Utils.Array.GetRandom(["img_caillou_1", "img_caillou_2"]),
+      image: Phaser.Utils.Array.GetRandom(["img_caillou_1", "img_caillou_2", "img_caillou_lune_1", "img_caillou_lune_2"]),
       coups_restants: COUPS_CAILLOU,
       cache_le_trou: false
     }));
@@ -629,6 +652,7 @@ export default class niveau1 extends Phaser.Scene {
     this.changement_niveau = true;
     this.compteur_echelle.setVisible(false);
     this.sauvegarderEtat();
+    /* >>>>> AJOUT SON <<<<< */ son_echelle.play(); // bruit d'échelle pendant la descente ou la montée
 
     // les joueurs montent sur l'échelle et la descendent (ou la montent) : l'animation d'Inas, de dos, qui s'efface
     const descente = arrivee === "haut";
@@ -734,6 +758,28 @@ export default class niveau1 extends Phaser.Scene {
   update(time, delta) {
     if (this.changement_niveau) {
       this.majLumieres(delta / 1000); // la lumière suit les joueurs pendant l'animation d'échelle
+      return;
+    }
+
+    /* >>>>> AJOUT SON <<<<< */ // game over : tous les joueurs sont à 0 PV
+    /* >>>>> AJOUT SON <<<<< */ if (!this.game_over && this.joueurs.every((j) => j.pv <= 0)) {
+    /* >>>>> AJOUT SON <<<<< */ this.game_over = true;
+    /* >>>>> AJOUT SON <<<<< */ musique_de_fond.stop();
+    /* >>>>> AJOUT SON <<<<< */ musique_en_cours = false; // la prochaine partie relancera la musique
+    /* >>>>> AJOUT SON <<<<< */ son_echelle.stop();
+    /* >>>>> AJOUT SON <<<<< */ son_game_over.play();
+    /* >>>>> AJOUT SON <<<<< */ }
+    if (this.game_over) {
+      // la partie est perdue : tout s'immobilise un instant (joueurs grisés), puis l'écran de game over (cf. gameover.js)
+      if (!this.game_over_lance) {
+        this.game_over_lance = true;
+        this.joueurs.forEach((j) => { j.sprite.setVelocity(0, 0).setTint(0x777788); j.sprite.anims.stop(); });
+        this.ennemis.getChildren().forEach((e) => e.setVelocity(0, 0));
+        this.time.delayedCall(1200, () => this.cameras.main.fadeOut(DUREE_FONDU));
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+          this.scene.start("gameover", { niveau: this.niveau, pierres: pierres.nombrePierres(this) });
+        });
+      }
       return;
     }
 
