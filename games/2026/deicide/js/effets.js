@@ -15,6 +15,8 @@ function creerTexturePixel(scene) { // crée une texture d'un carré blanc de 4 
 const ECLATS_ENNEMI_TOUCHE = [0xc79bff, 160]; // éclats violets d'un ennemi touché
 const ECLATS_ENNEMI_MORT = [0xc79bff, 320]; // grosse gerbe violette d'un ennemi qui meurt
 const ECLATS_LANTERNE = [0xf3e6b8, 220]; // éclats de verre doré d'une lanterne
+const ECLATS_VIVANTE_OR = [0xffd45c, 300]; // gerbe dorée d'une lanterne vivante qui meurt
+const ECLATS_VIVANTE_BLANC = [0xffffff, 190]; // et ses étincelles blanches, plus lentes
 
 function emetteurEclats(scene, couleur, vitesse) { // l'émetteur d'éclats de cette couleur et de cette vitesse (fabriqué la première fois)
     creerTexturePixel(scene); // s'assure que la texture des particules existe
@@ -76,6 +78,17 @@ export function lanterneCassee(scene, lanterne) { // effets quand une lanterne s
     scene.cameras.main.shake(80, 0.004); // tout petit tremblement
 }
 
+export function lanterneVivanteMorte(scene, x, y) { // effets quand une lanterne vivante est abattue : peu d'objets, pour rester léger
+    eclats(scene, x, y, ECLATS_VIVANTE_OR[0], 14, ECLATS_VIVANTE_OR[1]); // gerbe dorée (14 éclats)
+    eclats(scene, x, y, ECLATS_VIVANTE_BLANC[0], 8, ECLATS_VIVANTE_BLANC[1]); // étincelles blanches (8 éclats)
+    if (scene.textures.exists("halo")) { // un éclair doré qui grandit et s'efface : une seule image, pas de particules en plus
+        const eclair = scene.add.image(x, y, "halo");
+        eclair.setBlendMode(Phaser.BlendModes.ADD).setTint(0xfff2c0).setScale(0.15).setDepth(52).setPipeline("SinglePipeline");
+        scene.tweens.add({ targets: eclair, scale: 1.1, alpha: 0, duration: 260, ease: "Quad.Out", onComplete: () => eclair.destroy() });
+    }
+    scene.cameras.main.shake(70, 0.003); // tout petit tremblement
+}
+
 export function traineeDash(joueur) { // laisse des copies fantômes du robot derrière lui pendant le dash
     const scene = joueur.scene; // la scène du robot
     scene.time.addEvent({ // répète une action plusieurs fois
@@ -126,7 +139,7 @@ function rendreTexte(scene, texte) { // le texte n'est plus affiché : il retour
 export function preparerEffets(scene) { // à appeler au début d'un niveau : fabrique d'avance les textes et les émetteurs d'éclats pour ne pas le faire en pleine action
     scene.reserveTextes = {}; // réserve vide : les textes d'une partie précédente ont été détruits avec elle
     scene.emetteursEclats = {}; // pareil pour les émetteurs d'éclats
-    for (const [couleur, vitesse] of [ECLATS_ENNEMI_TOUCHE, ECLATS_ENNEMI_MORT, ECLATS_LANTERNE]) emetteurEclats(scene, couleur, vitesse);
+    for (const [couleur, vitesse] of [ECLATS_ENNEMI_TOUCHE, ECLATS_ENNEMI_MORT, ECLATS_LANTERNE, ECLATS_VIVANTE_OR, ECLATS_VIVANTE_BLANC]) emetteurEclats(scene, couleur, vitesse);
     const fabriquer = (contenu, style, nombre) => {
         const textes = [];
         for (let i = 0; i < nombre; i++) textes.push(prendreTexte(scene, 0, 0, contenu, style));
@@ -136,6 +149,7 @@ export function preparerEffets(scene) { // à appeler au début d'un niveau : fa
     for (const points of [100, 200, 400]) fabriquer("+" + points, STYLE_POINTS, 3);
     fabriquer("+1 PV", STYLE_POINTS, 2); // le texte quand on ramasse un PV (voir bonus.js)
     fabriquer("PV MAX", STYLE_POINTS, 1); // ...ou quand la barre est déjà pleine
+    for (const niveau of [1, 2, 3]) fabriquer("BOOST " + niveau, STYLE_POINTS, 1); // le texte quand une lanterne vivante donne un boost (voir boost.js)
 }
 
 export function alerte(scene, ennemi, symbole) { // affiche « ! » (il t'a vu) ou « ? » (il t'a perdu) au-dessus d'un ennemi

@@ -65,7 +65,7 @@ export function eteindreLanterne(scene, tir, lanterne) {
     scene.tweens.add({ targets: halo, alpha: 0, duration: 300, onComplete: () => halo.destroy() });
 }
 // dessin de la lanterne en pixel art : chaque lettre est un pixel, "." = transparent
-const MOTIF_LANTERNE = [
+export const MOTIF_LANTERNE = [ // (exporté : lanterneVivante.js s'en sert pour dessiner la lanterne vivante)
     "....##....", // anneau pour l'accrocher
     "...#..#...",
     "....##....",
