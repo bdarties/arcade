@@ -1,6 +1,7 @@
 import { jouerSon } from "./sons.js"; // permet de jouer les bruitages
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { gagnerPoints } from "./points.js"; // ajoute les points au score
+import { tenterDropPV } from "./bonus.js"; // un ennemi tué peut laisser un PV à ramasser
 const PORTEE_COUP = 90; // distance (px) à partir de laquelle l'orc donne son coup de faux (la faux porte jusqu'à environ 130 px)
 const VITESSE_ORC = 90; // vitesse de marche de l'orc (px/s)
 export function chargerEnnemis(scene) {
@@ -106,6 +107,7 @@ function ajouterHalo(scene, ennemi, rayon) { // fonction qui ajoute un halo viol
     halo.setBlendMode(Phaser.BlendModes.ADD); // mode additif : le halo éclaire ce qu'il y a dessous au lieu de le cacher
     halo.setAlpha(0.8); // le dégradé est déjà faible, on garde donc une transparence légère
     halo.setDepth(51); // place le halo juste au-dessus du voile (50) mais sous le HUD (100)
+    halo.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : une seule image à lire, donc le shader le plus simple (voir optimisation.js)
     ennemi.halo = halo; // range le halo dans l'ennemi pour le retrouver plus tard
 }
 export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tuer l'ennemi
@@ -116,6 +118,7 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
         jouerSon(scene, "ennemi_mort"); // cri de mort de l'ennemi
         effets.ennemiMort(scene, ennemi); // flash blanc, gerbe d'éclats, tremblement et micro-pause
         gagnerPoints(scene, ennemi.points, ennemi.body.center.x, ennemi.body.top); // ajoute les points de cet ennemi au score
+        tenterDropPV(scene, ennemi.body.center.x, ennemi.body.center.y); // 30 % de chances qu'il laisse un PV à ramasser (voir bonus.js)
         ennemi.etat = "mort"; // si il a 0 pv on passe son état à mort
         ennemi.body.enable = false; // on fait disparaitre le corp physique de l'ennemi
         scene.tweens.add({ targets: ennemi.halo, alpha: 0, duration: 500, onComplete: () => ennemi.halo.destroy() }); // le halo s'éteint en 0,5 s puis il est supprimé
@@ -138,6 +141,7 @@ function repere(scene, ennemi) { // permet d'implémenter le fait que l'ennemi n
 }
 export function majEnnemis(scene) { // fonction qui sera appelé presque chaque seconde pour vérifier les informations liées à l'ennemi
     scene.ennemis.getChildren().forEach(ennemi => { // renvoie un tableau avec la liste de tous les ennemis du groupe, exectute le code dans les accolades pour chaque éléments
+        if (ennemi.endormi) return; // OPTIMISATION (borne) : un ennemi loin du joueur dort, il ne fait rien (voir endormirLesLoins dans optimisation.js)
         if (ennemi.halo) ennemi.halo.setPosition(ennemi.body.center.x, ennemi.body.center.y); // le halo suit le centre de l'ennemi à chaque image
         if (ennemi.etat !== "mort") { // un ennemi en train de mourir ne repère plus personne
             const voit = repere(scene, ennemi); // est ce que l'ennemi voit le joueur à cette image
@@ -253,6 +257,7 @@ function lancerOrbe(scene, mage) { // fait apparaitre l'orbe de lumière et l'en
     orbe.setTint(0xfff2c0); // teinte doré pâle, la couleur de la lumière divine
     orbe.setBlendMode(Phaser.BlendModes.ADD); // mode additif : l'orbe brille
     orbe.setDepth(51); // au-dessus du voile pour qu'on la voie arriver dans le noir
+    orbe.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : comme les halos, une seule image à lire
     jouerSon(scene, "orbe"); // bruit du sort lancé
     scene.physics.moveToObject(orbe, scene.player, 220); // envoie l'orbe vers la position du joueur à 220 px/s
     scene.time.delayedCall(4000, () => orbe.destroy()); // l'orbe disparait au bout de 4 s si elle n'a rien touché

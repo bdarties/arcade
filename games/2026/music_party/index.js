@@ -29,4 +29,4 @@ var config = {
 };
 
 // création et lancement du jeu (la 1re scène de la liste démarre toute seule)
-var game = new Phaser.Game(config);
+export var game = new Phaser.Game(config);
