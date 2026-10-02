@@ -1,7 +1,6 @@
 {
-	"title": "SUPER JEU",
-	"description": "Logo qui rebondit en plein écran.",
-	"genre" : "action / aventure",
-	"authors": ["Benoit Darties", "Nicolas Maurin"]
+	"title": "DEICIDE",
+	"description": "Le Dieu de la Lumière a volé toutes les couleurs du monde. Tu incarnes un démon, la dernière étincelle qu'il n'a pas pu éteindre. Grimpe sa tour en dashant de mur en mur, fuis la lumière qui te brûle, brise les lanternes et abats archers, mages et orcs. Tout en haut, dans son arène, le Dieu de la Lumière t'attend.",
+	"genre" : "action / plateforme",
+	"authors": ["Thomas Siegel-boissiere","Paul Pouyadoux","Mathys Ribes"]
 }
-
