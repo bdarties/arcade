@@ -18,14 +18,14 @@
 //   quand le score change     : this.hud.ajouterScore(100) / this.hud.majScore(n)
 //   pour repartir de 00:00    : this.hud.reinitialiserChrono()
 
-import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE } from "./barreDeVie.js";
+import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE, ECHELLE_HUD, HAUTEUR_BARRE } from "./barreDeVie.js";
 import { rechargeDash } from "./personnage.js";
 
-const ECHELLE = 2; // même agrandissement que le robot et la barre de vie
-const MARGE = 20; // écart avec le bord gauche de l'écran
-const Y_BARRE = 20;
-const Y_VIES = 68; // sous la barre de vie
-const Y_DASH = 64;
+const ECHELLE = ECHELLE_HUD; // le HUD est plus gros que le robot (x2) pour rester lisible : on le règle dans barreDeVie.js
+const ECHELLE_TOUCHES = 2; // l'aide des touches, à droite, est plus petite que le reste du HUD
+const MARGE = 24; // écart avec les bords de l'écran
+const ECART = 10; // espace entre deux éléments empilés
+const Y_BARRE = MARGE;
 const VIES_DEPART = 3;
 const VIES_MAX = 3; // nombre de cases sur la plaque
 
@@ -44,6 +44,8 @@ const CASE_Y = 2;
 
 // --- jauge de dash : 20 x 20, 16 secteurs (comme les crampons du pneu). Images 0..15 = recharge, 16 = prêt, 17 = éclat blanc
 const DASH_TAILLE = 20;
+const Y_VIES = Y_BARRE + HAUTEUR_BARRE * ECHELLE + ECART; // sous la barre de vie
+const Y_DASH = Y_VIES + (PLAQUE_H - DASH_TAILLE) * ECHELLE / 2; // centrée sur la plaque des vies
 const SECTEURS = 16;
 const IMAGE_PRET = 16;
 const IMAGE_IMPULSION = 17;
@@ -56,10 +58,10 @@ const COULEURS_ECLATS = [0xe7e0e9, 0xac98b6, 0x372b3e, 0x251d2a];
 
 // --- plaques de droite : score (en haut) et chrono (dessous). Même plaque d'armure que celle des vies, retournée :
 // le bord plat est contre le bord de l'écran, le bout coupé et ses rivets sont à gauche.
-const Y_SCORE = 20;
-const Y_CHRONO = 64; // les deux plaques finissent à la même hauteur que la plaque des vies
-const PLAQUE_DROITE_L = 72; // en pixels du dessin (x2 à l'écran)
+const PLAQUE_DROITE_L = 72; // en pixels du dessin (agrandis par ECHELLE à l'écran)
 const PLAQUE_DROITE_H = 18;
+const Y_SCORE = MARGE;
+const Y_CHRONO = Y_SCORE + PLAQUE_DROITE_H * ECHELLE + ECART; // les deux plaques finissent à la même hauteur que la plaque des vies
 const CREUX = { x: 29, y: 3, w: 40, h: 12 }; // le creux où s'allument les chiffres
 const CHIFFRE_Y = 5; // ligne des chiffres dans la plaque (7 lignes de chiffre + 1 d'ombre)
 const PAS_CHIFFRE = 6; // 5 colonnes de chiffre + 1 d'ombre
@@ -84,8 +86,38 @@ const LETTRES = {
     R: ["##.", "#.#", "##.", "#.#", "#.#"],
     T: ["###", ".#.", ".#.", ".#.", ".#."],
     M: ["#...#", "##.##", "#.#.#", "#...#", "#...#"],
-    P: ["##.", "#.#", "##.", "#..", "#.."]
+    P: ["##.", "#.#", "##.", "#..", "#.."],
+    A: [".#.", "#.#", "###", "#.#", "#.#"],
+    B: ["##.", "#.#", "##.", "#.#", "##."],
+    D: ["##.", "#.#", "#.#", "#.#", "##."],
+    G: [".##", "#..", "#.#", "#.#", ".##"],
+    H: ["#.#", "#.#", "###", "#.#", "#.#"],
+    K: ["#.#", "#.#", "##.", "#.#", "#.#"],
+    U: ["#.#", "#.#", "#.#", "#.#", "###"]
 };
+
+// --- aide des touches : une plaque sous le chrono, une ligne par action (la ou les touches, puis le mot).
+// Pour changer une touche : modifier sa ligne ici ET la touche dans personnage.js (addKeys) ou dans les niveaux.
+// Les noms "gauche", "droite", "haut", "bas" dessinent une flèche ; les autres noms sont des lettres de LETTRES.
+const TOUCHES = [
+    { touches: ["gauche", "droite"], mot: "BOUGER" },
+    { touches: ["haut"], mot: "SAUT" },
+    { touches: ["I"], mot: "TIR" },
+    { touches: ["K"], mot: "DASH" },
+    { touches: ["O"], mot: "PORTE" }
+];
+const FLECHES = {
+    gauche: ["..#..", ".##..", "#####", ".##..", "..#.."],
+    droite: ["..#..", "..##.", "#####", "..##.", "..#.."],
+    haut: ["..#..", ".###.", "#.#.#", "..#..", "..#.."],
+    bas: ["..#..", "..#..", "#.#.#", ".###.", "..#.."]
+};
+const TOUCHE_L = 9; // une touche : 9 colonnes sur 9 lignes, plus 1 ligne d'ombre dessous
+const LIGNE_TOUCHES = 12; // hauteur d'une ligne de l'aide
+const AIDE_L = 56;
+const AIDE_H = TOUCHES.length * LIGNE_TOUCHES + 4;
+const AIDE_MOT_X = 27; // colonne où commencent les mots
+const AIDE_TOUCHES_FIN = 23; // les touches sont alignées à droite, jusqu'à cette colonne
 
 // chiffres : 5 colonnes sur 7 lignes
 const CHIFFRES = [
@@ -126,7 +158,7 @@ export function creerHud(scene, joueur, pv) {
     }
 
     // jauge de dash, à droite de la plaque des vies
-    hud.dash = poser(scene.add.image(MARGE + plaqueLargeur(VIES_MAX) * ECHELLE + 8, Y_DASH, "hud_dash", IMAGE_PRET));
+    hud.dash = poser(scene.add.image(MARGE + plaqueLargeur(VIES_MAX) * ECHELLE + ECART, Y_DASH, "hud_dash", IMAGE_PRET));
     // score et chrono, à droite : la valeur vit dans le registre du jeu, comme les vies
     if (scene.registry.get("score") === undefined) scene.registry.set("score", 0);
     if (scene.registry.get("chrono") === undefined) scene.registry.set("chrono", 0);
@@ -139,6 +171,11 @@ export function creerHud(scene, joueur, pv) {
     chiffre(Y_CHRONO, DEUX_POINTS_X, IMAGE_DEUX_POINTS);
     afficherScore(hud, false);
     afficherChrono(hud);
+
+    // aide des touches, sous le chrono et plus petite que le reste du HUD
+    const aideX = scene.cameras.main.width - MARGE - AIDE_L * ECHELLE_TOUCHES;
+    const aideY = Y_CHRONO + PLAQUE_DROITE_H * ECHELLE + ECART;
+    hud.aideTouches = scene.add.image(aideX, aideY, "hud_aide_touches").setOrigin(0, 0).setScale(ECHELLE_TOUCHES).setScrollFactor(0).setDepth(100);
 
     const majChaqueImage = (temps, delta) => { majDash(hud); majChrono(hud, delta); };
     const auReveil = () => synchroniser(hud); // les vies et le score ont pu changer dans un autre niveau pendant que celui-ci dormait
@@ -307,6 +344,7 @@ function creerTextures(scene) {
     fabriquer("hud_dash", DASH_TAILLE, DASH_TAILLE * 18, (ctx) => imagesDash.forEach(([i]) => dessinerRoueDash(ctx, i * DASH_TAILLE, i)), imagesDash);
     fabriquer("hud_plaque_score", PLAQUE_DROITE_L, PLAQUE_DROITE_H, (ctx) => dessinerPlaqueDroite(ctx, "SCORE"));
     fabriquer("hud_plaque_chrono", PLAQUE_DROITE_L, PLAQUE_DROITE_H, (ctx) => dessinerPlaqueDroite(ctx, "TEMPS"));
+    fabriquer("hud_aide_touches", AIDE_L, AIDE_H, (ctx) => dessinerAideTouches(ctx));
     // les chiffres, empilés : 0 à 9 (lignes 0 à 79), deux-points (80), puis 0 à 9 atténués (88 et suivantes)
     const imagesChiffres = [
         ...CHIFFRES.map((_, i) => [i, 0, i * HAUTEUR_CHIFFRE, 6, HAUTEUR_CHIFFRE]),
@@ -340,10 +378,9 @@ function dessinerPlaque(ctx, n) {
     for (let i = 0; i < n; i++) for (let y = CASE_Y; y < CASE_Y + 12; y++) for (let x = caseX(i); x < caseX(i) + 12; x++) px(ctx, x, y, "a");
 }
 
-// plaque du score ou du chrono : la plaque des vies retournée (bord plat à droite, bout coupé et rivets à gauche),
-// avec le mot à gauche et le creux où s'allument les chiffres à droite
-function dessinerPlaqueDroite(ctx, mot) {
-    const L = PLAQUE_DROITE_L, H = PLAQUE_DROITE_H;
+// la plaque des vies retournée (bord plat à droite, bout coupé et rivets à gauche), sans rien dedans :
+// sert au score, au chrono et à l'aide des touches
+function plaqueRetournee(ctx, L, H) {
     const dans = (x, y) => x >= 0 && x < L && y >= 0 && y < H && !(x === 0 && (y === 0 || y === H - 1));
     for (let y = 0; y < H; y++) for (let x = 0; x < L; x++) {
         if (!dans(x, y)) continue;
@@ -353,12 +390,43 @@ function dessinerPlaqueDroite(ctx, mot) {
     for (let x = 2; x <= L - 2; x++) px(ctx, x, 1, "n"); // filet lumineux en haut
     for (let x = 1; x <= L - 2; x++) px(ctx, x, H - 2, "b"); // ombre en bas
     px(ctx, 1, 4, "L"); px(ctx, 1, H - 5, "L"); // rivets du bout
+}
+
+// plaque du score ou du chrono : le mot à gauche et le creux où s'allument les chiffres à droite
+function dessinerPlaqueDroite(ctx, mot) {
+    plaqueRetournee(ctx, PLAQUE_DROITE_L, PLAQUE_DROITE_H);
     texte(ctx, mot, 5, 6);
     for (let y = CREUX.y; y < CREUX.y + CREUX.h; y++) for (let x = CREUX.x; x < CREUX.x + CREUX.w; x++) {
         const hautGauche = y === CREUX.y || x === CREUX.x;
         const basDroite = y === CREUX.y + CREUX.h - 1 || x === CREUX.x + CREUX.w - 1;
         px(ctx, x, y, hautGauche ? "K" : basDroite ? "d" : "a"); // creux : ombre en haut à gauche, bord clair en bas à droite
     }
+}
+
+// aide des touches : la plaque retournée, avec une ligne par action de TOUCHES (les touches alignées à droite, puis le mot)
+function dessinerAideTouches(ctx) {
+    plaqueRetournee(ctx, AIDE_L, AIDE_H);
+    TOUCHES.forEach(({ touches, mot }, i) => {
+        const y = 3 + i * LIGNE_TOUCHES;
+        const x0 = AIDE_TOUCHES_FIN - (touches.length * (TOUCHE_L + 1) - 1);
+        touches.forEach((nom, j) => dessinerTouche(ctx, x0 + j * (TOUCHE_L + 1), y, nom));
+        texte(ctx, mot, AIDE_MOT_X, y + 2);
+    });
+}
+
+// une touche de clavier en relief en (x, y) : dessus lavande avec un reflet en haut, bord sombre aux coins coupés,
+// ombre dessous, et le dessin de la touche (flèche ou lettre) en foncé au milieu
+function dessinerTouche(ctx, x, y, nom) {
+    const dans = (cx, cy) => cx >= 0 && cx < TOUCHE_L && cy >= 0 && cy < 9 && !((cx === 0 || cx === TOUCHE_L - 1) && (cy === 0 || cy === 8));
+    for (let cy = 0; cy < 9; cy++) for (let cx = 0; cx < TOUCHE_L; cx++) {
+        if (!dans(cx, cy)) continue;
+        const bord = !dans(cx - 1, cy) || !dans(cx + 1, cy) || !dans(cx, cy - 1) || !dans(cx, cy + 1);
+        px(ctx, x + cx, y + cy, bord ? "K" : cy === 1 ? "W" : cy === 7 ? "n" : "L");
+    }
+    for (let cx = 1; cx < TOUCHE_L - 1; cx++) px(ctx, x + cx, y + 9, "b"); // ombre sous la touche
+    const glyphe = FLECHES[nom] ?? LETTRES[nom];
+    const decalage = Math.floor((TOUCHE_L - 2 - glyphe[0].length) / 2); // centré dans les 7 colonnes du dessus
+    glyphe.forEach((ligne, gy) => [...ligne].forEach((c, gx) => { if (c === "#") px(ctx, x + 1 + decalage + gx, y + 2 + gy, "a"); }));
 }
 
 // un chiffre (ou les deux-points) en (0, oy) : clair en haut, lavande en bas, sur une ombre portée ; atténué : les mêmes en sombre
