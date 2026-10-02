@@ -9,7 +9,7 @@ import selection from "./js/selection.js"; // choix du mini-jeu
 import menu from "./js/menu.js"; // solo ou duo
 import choix from "./js/choix.js"; // choix des persos
 import music_fall from "./js/music_fall.js"; // mini-jeu Music Fall
-import piano_time from "./js/piano_time.js"; // mini-jeu piano_time Time
+import piano_time from "./js/piano_time.js"; // mini-jeu piano_time
 import resultats from "./js/resultats.js"; // scores et gagnant 
 
 // configuration générale du jeu
