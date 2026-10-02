@@ -1,27 +1,4 @@
-// ============================================================================
-//  js/niveau2.js — NIVEAU 2 : le théâtre (carte Tiled map2maestro + tilesetmap2)
-//
-//  Ce fichier REMPLACE js/niveau2.js du gabarit. Il ne touche à aucun autre fichier.
-//
-//  POUR LE BRANCHER
-//  1. Copie dans le dossier assets/ :   tilesetmap2.png   map2maestro.json   map2_sombre.png
-//  2. Remplace js/niveau2.js par ce fichier. C'est tout : index.js et selection.js
-//     (la porte n°2 de la sélection mène déjà à "niveau2") ne changent pas.
-//
-//  CE QUE LE NIVEAU RÉUTILISE DE LA SÉLECTION
-//  - le sprite "img_perso" et ses animations (anim_tourne_gauche, anim_face, anim_tourne_droite)
-//  - l'image de porte "img_porte2" (porte de retour vers la sélection)
-//
-//  COMMANDES : flèches gauche/droite = marcher, haut = sauter,
-//              haut/bas devant une échelle = monter/descendre,
-//              Espace devant la porte (près du départ) = retour à la sélection,
-//              Espace devant le rideau rouge = terminer le niveau.
-// ============================================================================
 
-// ----------------------------------------------------------------------------
-// Réglages du niveau (faciles à modifier)
-// ----------------------------------------------------------------------------
-const LARGEUR_CARTE = 2176;   // 68 tuiles x 32 px
 const HAUTEUR_CARTE = 736;    // 23 tuiles x 32 px
 const VITESSE_MARCHE = 160;
 const VITESSE_SAUT = -330;    // même saut que les autres niveaux du gabarit
