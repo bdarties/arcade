@@ -1,2 +1,116 @@
-Template pour un jeu phaser disposant d'un niveau selection et de 3 niveaux.
-Le tmeplate possèdé également la structure pour rassembler des fonctions dans un meme fichier et les importer dans d'autres fichiers
+# Arcade (Flask + Phaser)
+
+Projet Flask servant de hub pour une borne d'arcade affichant des jeux Phaser avec une interface moderne et intuitive.
+
+## Installation
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # puis ajustez les valeurs si besoin
+python run.py
+```
+
+Ouvrez `http://localhost:5000`.
+
+### Configuration (.env)
+
+Le serveur lit sa configuration depuis un fichier `.env` (non versionné, voir `.env.example`) :
+
+- `FLASK_DEBUG`, `FLASK_RUN_HOST`, `FLASK_RUN_PORT` : mode debug et interface/port d'écoute
+- `DB_PATH` : emplacement du fichier SQLite des scores (par défaut `scores.db` à la racine)
+- `INIT_DB_TOKEN` : jeton requis (header `X-Init-Token`) pour appeler `POST /init-db`
+- `USE_FAKE_SCORES` : utilise `static/js/score_fake.js` (scores simulés) au lieu de `static/js/score.js`
+
+## Interface
+
+### Routes disponibles
+
+- **`/` ou `/accueil`** : Écran d'accueil avec un bouton par promotion ("Promo MMI2 2025", "Promo MMI2 2026"...), suivi d'un bouton "Démos"
+- **`/games/<promo>/`** : Liste des jeux de la promotion, avec navigation par grille
+- **`/games/demos/`** : Liste des démos techniques, identique à une liste de promotion
+- **`/games/<promo>/<nomrepertoire>/`** : Jeu en plein écran
+
+Les jeux sont rangés par promotion : `games/<année>/<nom_du_jeu>/`. Les boutons de
+l'accueil sont déduits automatiquement des dossiers d'années présents dans `games/` :
+ouvrir une nouvelle promo ne demande aucune modification de code, il suffit de créer
+le dossier (avec un `.gitkeep` tant qu'il est vide, Git ne versionnant pas les
+répertoires vides).
+
+`games/demos/` est le seul dossier de `games/` qui ne soit pas une année. Il regroupe
+les démos techniques (Tetris, mobilité...) : elles se rangent et se lancent comme les
+autres jeux, mais ne figurent pas au générique de la page « À propos / crédits », qui
+ne parcourt que les promotions. Son bouton n'apparaît à l'accueil que si le dossier
+existe.
+
+### Navigation
+
+- **Page d'accueil** : un bouton par promotion (plus un bouton "Démos") pour accéder à la liste des jeux correspondants
+- **Liste des jeux** : 
+  - Grille de 3 colonnes sur 66% de l'écran
+  - Description du jeu sur 33% de droite
+  - Navigation avec les flèches directionnelles
+  - Mise à jour automatique de la description lors du changement de focus
+  - Bouton "Jouer" pour lancer le jeu sélectionné
+- **Jeu** : Affichage en plein écran avec bouton "Retour"
+
+## Structure
+
+```
+arcade/
+  app/
+    __init__.py
+    config.py
+    db.py
+    routes/
+      pages.py           # Pages HTML (accueil, liste des jeux, jeu plein écran)
+      api.py             # API JSON (/api/scores)
+    templates/
+      base.html
+      home.html          # Page d'accueil
+      games_list.html    # Liste des jeux
+      game_fullscreen.html # Jeu en plein écran
+    static/
+      css/style.css      # Styles modernes avec effets visuels
+      js/app.js          # Navigation avec flèches directionnelles
+  games/
+    2025/                # Une promotion = un dossier d'année
+      sample/
+        game.json
+        js/index.js
+        presentation.png # Image de présentation (800x450)
+    2026/
+    demos/               # Démos techniques, hors générique des crédits
+  requirements.txt
+  requirements-gpio.txt  # Dépendances de gpio2keys.py (Raspberry Pi uniquement)
+  .env.example
+  run.py
+```
+
+## Ajouter un jeu
+
+1. Créez un répertoire sous le dossier de votre promotion, `games/<année>/`, avec un nom court (ex: `games/2026/pacman`)
+2. Ajoutez un `game.json` contenant:
+   ```json
+   {
+     "title": "Nom du jeu",
+     "description": "Description du jeu",
+     "authors": ["Auteur 1", "Auteur 2"]
+   }
+   ```
+3. Placez votre code Phaser (ex: `js/index.js`, `assets/`, etc.)
+4. Ajoutez une image `presentation.png` (format paysage 16:9 recommandé)
+5. Le point d'entrée doit être `js/index.js`. Il sera chargé en `type=module`
+6. Pour masquer un jeu de la liste (démo interne, jeu en cours de test, etc.) sans le supprimer,
+   ajoutez `"hidden": true` dans son `game.json`
+7. Les jeux visibles alimentent automatiquement la page « À propos / crédits », qui reprend leur
+   `title` et leurs `authors`. Un jeu dont le `genre` vaut `"Demo"` reste jouable mais n'y figure pas
+
+## Fonctionnalités
+
+- **Interface moderne** : Design avec dégradés et effets de transparence
+- **Navigation intuitive** : Flèches directionnelles pour naviguer dans la grille
+- **Responsive** : Adaptation automatique aux différentes tailles d'écran
+- **Plein écran** : Jeux affichés sans interface pour une expérience immersive
+- **Images de présentation** : Support des images de couverture pour chaque jeu
