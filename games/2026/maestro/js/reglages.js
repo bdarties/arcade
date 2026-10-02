@@ -23,10 +23,20 @@ export const REGLAGES = {
   // ---- Détective : la lampe torche ----
   // Les valeurs de batterie sont des POURCENTAGES (100 = pleine).
   lampe: {
-    rayon: 150, // rayon du cercle de lumière (px)
+    rayon: 150, // rayon de la tache de lumière projetée par la lampe (px)
+    portee: 130, // distance entre le Détective et le centre de la tache de lumière (px)
+    rayonProche: 70, // petit cercle toujours éclairé autour du Détective (px)
+    vitesseVisee: 90, // vitesse d'orientation de la lampe, haut / bas du joystick (degrés par seconde)
+    angleMax: 75, // inclinaison maximale de la lampe, vers le haut ou le bas (degrés)
+    persistanceMs: 1200, // une plateforme révélée reste solide ce temps après avoir quitté la lumière (ms)
     batterieSec: 30, // durée d'une batterie pleine allumée en continu (s)
     rechargeParAppui: 10, // % de batterie gagnés à chaque appui sur le bouton C
     seuilClignote: 20 // sous ce % la lumière clignote
+  },
+
+  // ---- Échelles ----
+  echelle: {
+    vitesse: 120 // vitesse de montée / descente (px/s)
   },
 
   // ---- Points de vie (cœurs) ----
