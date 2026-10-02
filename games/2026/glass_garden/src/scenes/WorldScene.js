@@ -2,8 +2,9 @@ import InputManager from '../systems/InputManager.js';
 import timer from '../systems/TimerSystem.js';
 import { RecolteEtoiles } from '../systems/RecolteEtoiles.js';
 import { areAllStarsCollected } from '../systems/StarSystem.js';
+import { createBulletAnimations, explodeBullet, shoot } from '../systems/fonctionTir.js';
 import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear } from '../systems/MirrorSystem.js';
-import { getPaletteTexture } from '../systems/PaletteSystem.js';
+import { applyTint } from '../systems/TintSystem.js';
 import { pickVariant } from '../utils/helpers.js';
 import {
   SCENES,
@@ -13,11 +14,12 @@ import {
   ANIMATED_TILES,
   ANIMATED_TILES_BLOCK_PLAYER,
   WORLDS,
-  WORLD_PALETTES,
+  WORLD_TINTS,
   NORMAL_WORLD,
   MIRROR_SPAWN_OFFSET,
   MIRROR_VANISH,
   PLAYER,
+  BULLET,
   INTERACT_DISTANCE,
   MESSAGE_DURATION_MS,
   DEPTH,
@@ -63,6 +65,12 @@ export default class WorldScene extends Phaser.Scene {
     this.load.image(ASSETS.TILESET_GARDEN, 'assets/images/tilesets/tileset_garden.png');
     this.load.image('etoile', 'assets/images/sprites/Etoile.png');
     this.load.image(ASSETS.TILESET_DECO, 'assets/images/tilesets/tileset_deco.png');
+
+    // * Les balles : balle.png est une bande de 33 images de 16 x 16 pixels, chargée comme un spritesheet
+    this.load.spritesheet(BULLET.KEY, 'assets/images/sprites/balle.png', {
+      frameWidth: BULLET.FRAME_SIZE,
+      frameHeight: BULLET.FRAME_SIZE,
+    });
 
     // * Le spritesheet du miroir, découpé en images de 32 x 32 pixels.
     // Un sprite créé sans préciser l'image affiche la première (le miroir entier).
@@ -153,6 +161,7 @@ export default class WorldScene extends Phaser.Scene {
       // * Le sprite prend la place exacte de la tuile (son centre), puis joue son animation.
       // Il utilise la texture d'eau de ce monde et l'animation qui lui correspond (voir createTileAnimations).
       const sprite = this.add.sprite(tile.getCenterX(), tile.getCenterY(), waterTexture);
+      this.waterSprites.push(sprite); // pour leur donner la teinte du monde (voir applyTint)
       sprite.play(animation + animationSuffix);
 
       // * On reporte l'orientation de la tuile (posée dans Tiled avec les touches Z, X, Y) sur le sprite.
@@ -173,6 +182,7 @@ export default class WorldScene extends Phaser.Scene {
     // ! Sinon un message encore affiché au moment de partir bloquerait le texte d'aide au retour
     this.messageActive = false;
     this.gameWon = false;
+    this.waterSprites = []; // les sprites de l'eau animée de CETTE visite (remplis par createAnimatedTiles)
 
     // * Le chronomètre et son affichage sont globaux : ils ne dépendent pas du monde.
     // On lance l'interface une seule fois, puis on la garde au premier plan à chaque monde.
@@ -183,14 +193,12 @@ export default class WorldScene extends Phaser.Scene {
     this.scene.bringToTop(SCENES.UI);
     timer.start(); // sans effet s'il tourne déjà
 
-    // * La palette de couleurs de ce monde (voir WORLD_PALETTES dans constants.js). Sans palette (le jardin),
-    // on garde les textures d'origine ; avec une palette, on utilise des copies recolorées.
-    const paletteName = WORLD_PALETTES[this.getWorldName()];
-
-    // * L'eau : une copie recolorée du spritesheet (avec ses images numérotées de 32 x 32), ou l'original.
-    // Les images numérotées doivent exister AVANT de créer les animations, sinon Phaser les ignore sans erreur.
-    const waterTexture = getPaletteTexture(this, ASSETS.WATER, paletteName, { width: TILE_SIZE, height: TILE_SIZE });
-    const animationSuffix = waterTexture === ASSETS.WATER ? '' : `@${paletteName}`;
+    // * Les couleurs de ce monde sont une TEINTE (voir WORLD_TINTS), posée plus bas sur les tuiles (voir applyTint).
+    // Les textures sont donc toujours les originales.
+    // ? Les palettes (PaletteSystem.js, getPaletteTexture) ne sont plus appelées : pour les réactiver, l'eau et le tileset
+    // de construction repasseraient par getPaletteTexture, avec WORLD_PALETTES.
+    const waterTexture = ASSETS.WATER;
+    const animationSuffix = '';
 
     this.createTileAnimations(waterTexture, animationSuffix);
     this.createMirrorAnimation();
@@ -198,15 +206,11 @@ export default class WorldScene extends Phaser.Scene {
     // * On construit la carte à partir du JSON Tiled
     const map = this.make.tilemap({ key: this.mapKey });
 
-    // * Le tileset de construction (sol, murs) : une copie recolorée si ce monde a une palette (voir plus haut).
-    // Les décors (tileset_deco) ne sont jamais recolorés : ils gardent leurs couleurs.
-    const gardenTexture = getPaletteTexture(this, ASSETS.TILESET_GARDEN, paletteName);
-
     // ! Le 1er nom est celui du tileset DANS Tiled, le 2e est la clé de l'image à utiliser.
     // Une carte peut utiliser plusieurs tilesets : on les passe tous à chaque calque, qui prend dans chacun
     // les tuiles qu'il utilise. Un tileset absent de la carte renvoie null : filter(Boolean) l'écarte.
     const tilesets = [
-      map.addTilesetImage('tileset_garden', gardenTexture),
+      map.addTilesetImage('tileset_garden', ASSETS.TILESET_GARDEN),
       map.addTilesetImage('tileset_deco', ASSETS.TILESET_DECO),
     ].filter(Boolean);
 
@@ -229,6 +233,9 @@ export default class WorldScene extends Phaser.Scene {
     // Il commence de face (vers le bas), sur le point de départ
     this.player = this.physics.add.sprite(spawn.x, spawn.y, ASSETS.PLAYER_1, PLAYER.FRAMES.DOWN);
     this.player.setCollideWorldBounds(true);
+
+    // * Dans quelle direction regarde le joueur ? C'est la direction des tirs. Il commence de face (vers le bas).
+    this.facing = 'down';
 
     // * La boîte de collision est plus petite que l'image et placée au niveau des pieds :
     // le joueur peut passer « devant » un mur sans que sa tête ne le bloque
@@ -304,8 +311,20 @@ export default class WorldScene extends Phaser.Scene {
     // * Les touches passent par l'InputManager : la scène ne connaît aucune touche
     this.input1 = new InputManager(this, 1);
 
+    // * Les balles : les animations (créées une seule fois pour tout le jeu) et le groupe des balles de ce monde.
+    // Le groupe est créé ICI, une fois par visite, et non à chaque tir (voir shoot dans fonctionTir.js).
+    // ? Tout monde peut tirer pour l'instant (pour tester) : le GDD ne prévoit le tir que dans les mondes 2 et 4.
+    createBulletAnimations(this);
+    this.bullets = this.physics.add.group();
+
+    // * Une balle qui touche un mur explose (le premier objet reçu est la balle, le second la tuile du mur)
+    this.physics.add.collider(this.bullets, walls, (bullet) => explodeBullet(bullet));
+
     // * Les étoiles de ce monde, posées dans Tiled (le joueur existe déjà : l'étoile a besoin de lui)
     this.createStars(map);
+
+    // * La teinte du monde, posée en dernier : tous les calques et les sprites d'eau existent. Le jardin n'en a pas.
+    applyTint(map, this.waterSprites, WORLD_TINTS[this.getWorldName()]);
   }
 
   /**
@@ -410,10 +429,25 @@ export default class WorldScene extends Phaser.Scene {
 
     // * On change l'image selon la direction. À l'arrêt, on garde la dernière image.
     // En diagonale, la direction horizontale est prioritaire.
-    if (x > 0) this.player.setFrame(PLAYER.FRAMES.RIGHT);
-    else if (x < 0) this.player.setFrame(PLAYER.FRAMES.LEFT);
-    else if (y < 0) this.player.setFrame(PLAYER.FRAMES.UP);
-    else if (y > 0) this.player.setFrame(PLAYER.FRAMES.DOWN);
+    // * On retient aussi la direction regardée (this.facing) : à l'arrêt, le joueur tire toujours dans la dernière direction.
+    if (x > 0) {
+      this.player.setFrame(PLAYER.FRAMES.RIGHT);
+      this.facing = 'right';
+    } else if (x < 0) {
+      this.player.setFrame(PLAYER.FRAMES.LEFT);
+      this.facing = 'left';
+    } else if (y < 0) {
+      this.player.setFrame(PLAYER.FRAMES.UP);
+      this.facing = 'up';
+    } else if (y > 0) {
+      this.player.setFrame(PLAYER.FRAMES.DOWN);
+      this.facing = 'down';
+    }
+
+    // * Tir : une balle par appui, dans la direction regardée
+    if (this.input1.justPressed('shoot')) {
+      shoot(this, this.bullets, this.player, this.facing);
+    }
 
     // * On donne une vitesse (en pixels par seconde) : c'est la physique Phaser qui déplace
     // le joueur et qui l'arrête contre les murs
@@ -427,10 +461,11 @@ export default class WorldScene extends Phaser.Scene {
     );
 
     // On ne réécrit pas le texte pendant l'affichage du message d'interaction
-    // ? La touche affichée (E) est provisoire : à changer avec les boutons de la borne
+    // ? Les touches sont provisoires : à changer avec les boutons de la borne (voir BINDINGS dans InputManager)
     // TODO(équipe): changer le message d'interaction (utiliser une icône de touche au-dessus des miroirs)
     if (!this.messageActive) {
-      this.hint.setText(nearMirror ? 'E : entrer dans le miroir' : '');
+      // * La touche affichée suit le mode de contrôle (I en arcade, E en pc) : l'aide ne ment jamais
+      this.hint.setText(nearMirror ? `${this.input1.getKeyLabel('interact')} : entrer dans le miroir` : '');
     }
 
     if (nearMirror && this.input1.justPressed('interact')) {

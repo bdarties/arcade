@@ -28,6 +28,8 @@ export const WORLDS = {
 // * La couleur d'origine de l'eau principale dans les images (elle sert de référence aux palettes ci-dessous)
 const WATER_ORIGINAL_COLOR = '#6bc2bd';
 
+// ! DÉSACTIVÉ pour l'instant : les palettes (et WORLD_PALETTES ci-dessous) ne sont plus appelées, les mondes utilisent les TEINTES
+// (TINTS plus bas). La logique est gardée (palette.js, PaletteSystem.js) pour une vraie recoloration plus tard.
 // * PALETTES DE COULEURS : une par ambiance. Le détail des réglages est expliqué dans src/utils/palette.js.
 // Chaque famille de couleurs (grass = herbe, stone = pierre, water = eau) se règle de l'une de ces façons :
 //   { hue, saturation, lightness }  teinte en degrés (28 = orange, 285 = violet), saturation en multiplicateur
@@ -57,6 +59,35 @@ export const PALETTES = {
 // TODO(équipe): remplacer par la vraie palette de chaque monde quand les mondes seront créés
 export const WORLD_PALETTES = {
   world_1: 'magic',
+};
+
+// * LES TEINTES : la version simple des couleurs de monde, sans toucher aux images.
+// Une teinte MULTIPLIE les couleurs de la tuile : elle assombrit et nuance, mais ne change pas vraiment de couleur
+// (une herbe verte teintée en violet devient un brun sombre). La nuit marche très bien, l'automne et la magie sont ternes.
+// ? Pour de vraies couleurs : repartir d'un tileset gris, ou réactiver les palettes ci-dessus.
+
+// * Les groupes de tuiles de tileset_garden qui reçoivent une teinte, par famille : des plages [premier, dernier]
+// de numéros de tuile (ceux de Tiled, la première tuile est la 1). Les autres tuiles ne sont jamais teintées :
+// le noir (11), le tileset de décors (tileset_deco, à partir de 33) et les cases vides.
+// ? Trouvés en analysant les couleurs de chaque tuile. À revoir si les tuiles de tileset_garden changent de place.
+export const TILE_GROUPS = {
+  stone: [[1, 3], [9, 9], [17, 18]],
+  grass: [[4, 8], [10, 10], [12, 14], [20, 22]], // 7 et 8 : les plantes, teintées comme l'herbe
+  water: [[25, 27]],
+};
+
+// * Une teinte par famille, en hexadécimal (0xffffff = aucune teinte). L'eau animée prend la teinte « water ».
+export const TINTS = {
+  night: { grass: 0x5560a0, stone: 0x6070a8, water: 0x4060b0 },
+  autumn: { grass: 0xd89a50, stone: 0xe0b080, water: 0xc09050 },
+  magic: { grass: 0xc060e0, stone: 0xe080c0, water: 0xff90d0 },
+};
+
+// * Quelle teinte pour quel monde (le nom du monde est celui de la table WORLDS).
+// Un monde absent de cette table garde ses couleurs d'origine : c'est le cas du jardin (le monde normal).
+// TODO(équipe): définir la teinte de chaque monde quand les mondes seront créés (monde 1 = la nuit)
+export const WORLD_TINTS = {
+  world_1: 'magic', // ! TEST : remettre 'night' (le monde 1 est la nuit)
 };
 
 // * Clés des assets : le nom sous lequel Phaser retrouve un fichier chargé
@@ -187,5 +218,27 @@ export const STORAGE_KEYS = {
   BEST_TIME_PREFIX: 'glass_garden_best_time_', // suivi du mode : « ..._solo », « ..._multi »
 };
 
+// * Les quatre directions du jeu (vue du dessus) : le vecteur (x, y) de chacune et l'angle d'un sprite dessiné vers la DROITE
+// qu'on veut orienter dans cette direction (en radians : un quart de tour = Math.PI / 2).
+export const DIRECTION_VECTORS = {
+  right: { x: 1, y: 0, angle: 0 },
+  down: { x: 0, y: 1, angle: Math.PI / 2 },
+  left: { x: -1, y: 0, angle: Math.PI },
+  up: { x: 0, y: -1, angle: -Math.PI / 2 },
+};
+
+// * Les balles. balle.png est une bande de 33 images de 16 x 16 pixels (528 x 16), pas une image seule :
+// images 0 à 5 = le projectile en vol (dessiné vers la droite), 6 à 15 = l'impact (explosion),
+// 16 à 32 = un rayon qui grandit puis s'efface (inutilisé pour l'instant). Les numéros sont dans FLY_ANIM et HIT_ANIM.
+export const BULLET = {
+  KEY: 'bullet',
+  FRAME_SIZE: 16,
+  FIRST_FRAME: 0, // l'image du projectile en vol
+  SPEED: 600, // pixels par seconde
+  START_OFFSET: 24, // distance entre le centre du joueur et l'endroit où la balle apparaît, en pixels
+  LIFETIME_MS: 1200, // au bout de ce temps, la balle explose toute seule (sinon elle volerait indéfiniment)
+  FLY_ANIM: { KEY: 'bullet_fly', FIRST_FRAME: 0, LAST_FRAME: 5, FRAME_RATE: 18 }, // en boucle
+  HIT_ANIM: { KEY: 'bullet_hit', FIRST_FRAME: 6, LAST_FRAME: 15, FRAME_RATE: 24 }, // une seule fois, puis la balle disparaît
+};
 // Marge (en pixels) entre les éléments d'interface et le bord de l'écran
 export const UI_MARGIN = 24;

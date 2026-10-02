@@ -5,7 +5,7 @@ import * as ennemis from "./ennemis.js";
 import * as lumiere from "./lumiere.js";
 import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
-import { figerCalques } from "./optimisation.js"; // décor dessiné une seule fois (optimisation pour la borne)
+import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 
 // charge tous les assets du jeu (le cache est partagé entre les scènes). Le menu l'appelle dans son preload, avec une barre de
@@ -48,6 +48,8 @@ export default class niveau1 extends Phaser.Scene {
     const tuilesDawn = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn");
     const tuileBlanc = carte.addTilesetImage("white", "tuile_blanc");
     const tilesets = [tuilesDawn, tuileBlanc];
+    this.carte = carte; // on garde la map dans la scène, pour que arene.js puisse y ajouter des tuiles
+    this.tilesets = tilesets; // pareil pour les tilesets, nécessaires pour créer un nouveau calque
     const calqueFond = carte.createLayer("Background and background", tilesets);
     const calqueDecor = carte.createLayer("Background", tilesets);
     const calqueGameplay = carte.createLayer("Gameplay", tilesets);
@@ -56,12 +58,20 @@ export default class niveau1 extends Phaser.Scene {
     // personnage.js arrête les balles sur groupe_plateformes : ici c'est le calque Gameplay
     this.groupe_plateformes = calqueGameplay;
     // optimisation pour la borne : le décor est dessiné une seule fois dans des images au lieu de 1 200 tuiles à chaque image (voir optimisation.js)
-    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels);
+    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels, 0x3a3a3a); // 0x3a3a3a : le gris qu'on voit là où la map est vide
 
     // le monde et la caméra prennent la taille de la map (sinon le joueur reste bloqué dans le 1er écran)
     this.physics.world.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
     this.cameras.main.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
-    this.cameras.main.setBackgroundColor("#3a3a3a");
+    // le gris de fond est peint dans les bandes du décor (voir figerCalques), la caméra n'a donc plus à repeindre un rectangle de la taille de l'écran
+    // à chaque image. Il reste la couleur d'effacement de l'écran, la même, pour ce que le tremblement découvre au bord de la map.
+    const effacement = this.sys.game.renderer.config.backgroundColor;
+    const fondGris = () => effacement.setTo(0x3a, 0x3a, 0x3a); // ce niveau est affiché
+    const fondNoir = () => effacement.setTo(0, 0, 0); // une autre scène prend le relais : elle retrouve le noir
+    fondGris();
+    this.events.on(Phaser.Scenes.Events.WAKE, fondGris); // scene.switch endort et réveille les scènes sans refaire create
+    this.events.on(Phaser.Scenes.Events.SLEEP, fondNoir);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, fondNoir);
 
     this.player = creerPersonnage(this, 200, 6300);
     this.player.refreshBody();
@@ -103,6 +113,8 @@ export default class niveau1 extends Phaser.Scene {
     carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
     carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
+    endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
+    effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
   }
 
   update() {

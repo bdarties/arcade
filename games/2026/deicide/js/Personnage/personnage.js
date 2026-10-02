@@ -22,7 +22,8 @@ import { traineeDash } from "../effets.js"; // copies fantômes derrière le rob
 // un nouvel appui sur le bouton de saut (I) le fait rebondir dans l'autre sens.
 // Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur le bouton de tir (K)
 // (haut, haut en diagonale, droit devant) ; vers le bas, seulement en l'air (voir animationDeTir).
-// La visée automatique (voir chercherCible) redresse la balle vers l'ennemi ou la lanterne allumée la plus proche.
+// La visée automatique (voir chercherCible) redresse la balle vers l'ennemi ou la lanterne allumée la plus proche, et le robot
+// prend la pose qui correspond à cette direction (droit devant, diagonale ou tout droit, en haut ou en bas : voir animationVersCible).
 // Tir vers le bas : le tir fait reculer le robot vers le haut, une seule fois par saut (voir reculer).
 // Les balles sont rangées dans scene.tirsJoueur (le groupe est créé au premier tir s'il n'existe pas)
 // et s'arrêtent sur scene.groupe_plateformes quand la scène en a un.
@@ -293,7 +294,10 @@ export function majPersonnage(joueur, clavier) {
         traineeDash(joueur); // laisse une traînée de fantômes rouges
     } else if (libre && veutTir && maintenant >= joueur.prochainTir) {
         joueur.prochainTir = maintenant + DELAI_TIR;
-        jouerAction(joueur, animationDeTir(clavier, auSol));
+        const cible = choisirCibleTir(joueur); // la visée auto choisit la cible AVANT l'animation : le robot pointe son canon vers elle
+        joueur.cibleTir = cible; // tirer() reprendra cette cible au lieu d'en chercher une autre
+        joueur.cibleTirPrete = true;
+        jouerAction(joueur, cible ? animationVersCible(joueur, cible) : animationDeTir(clavier, auSol));
     }
 
     if (!joueur.action) {
@@ -315,6 +319,20 @@ function animationDeTir(clavier, auSol) {
     if (haut === bas) return "tir"; // aucune flèche verticale, ou haut et bas ensemble qui s'annulent
     if (haut) return cote ? "tir_haut_diag" : "tir_haut";
     return cote ? "tir_bas_diag" : "tir_bas";
+}
+
+// Quand la visée auto a trouvé une cible, c'est elle qui décide de la pose, pas les flèches : la balle part vers l'ennemi, alors
+// le robot pointe son canon vers lui. Les 5 poses sont des angles de 0°, 45° et 90° (en haut ou en bas) : on prend la plus proche
+// de l'angle réel entre le robot et la cible (moins de 22,5° : droit devant ; de 22,5° à 67,5° : diagonale ; au-delà : tout droit).
+// Ici le bas est permis même au sol : un ennemi sur une plateforme plus basse se vise comme un autre.
+function animationVersCible(joueur, cible) {
+    const dx = Math.abs(cible.body.center.x - joueur.body.center.x); // écart horizontal (le robot est déjà tourné vers la cible)
+    const dy = cible.body.center.y - joueur.body.center.y; // écart vertical : négatif = la cible est au-dessus
+    const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // 0° = à la même hauteur, 90° = pile au-dessus ou en dessous
+    if (angle < 22.5) return "tir";
+    const haut = dy < 0;
+    if (angle < 67.5) return haut ? "tir_haut_diag" : "tir_bas_diag";
+    return haut ? "tir_haut" : "tir_bas";
 }
 
 // où en est la recharge du dash : 0 = vient d'être utilisé, 1 = prêt (sert à la jauge du HUD)
@@ -358,18 +376,32 @@ function chercherCible(joueur, x, y) {
     if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
     return cible; // renvoie la cible trouvée, ou null si aucune ne convient
 }
-// fait partir une balle du canon, dans le sens où regarde le robot et dans la direction de la visée en cours
-function tirer(joueur) {
+// choisit la cible de la visée auto au moment où on appuie sur tir : l'ennemi ou la lanterne la plus proche, des deux côtés du robot.
+// Le robot se tourne tout de suite vers elle. Renvoie null s'il n'y en a pas (ou si elle est du côté du mur sur lequel le robot glisse).
+function choisirCibleTir(joueur) {
     const scene = joueur.scene;
-    const anim = ANIMATIONS[joueur.nomAnim]; // l'animation de tir qui vient de démarrer
     let cible = chercherCible(joueur, joueur.body.center.x, joueur.body.center.y); // cherche un ennemi à viser automatiquement, des deux côtés du robot
     const cibleAGauche = cible && cible.body.center.x < joueur.body.center.x; // vrai si l'ennemi trouvé est à gauche du robot
     if (cible && joueur.surMur && cibleAGauche !== joueur.regardeGauche) cible = null; // contre un mur, un ennemi derrière est côté mur : on tirerait dans le mur, donc pas de visée auto
     if (cible && !joueur.surMur) { // un ennemi est à portée et le robot n'est pas collé à un mur
         joueur.regardeGauche = cibleAGauche; // le robot se tourne vers l'ennemi
         joueur.regardJusqua = scene.time.now + DUREE_REGARD_TIR; // et reste tourné vers lui le temps du tir
-        orienter(joueur); // retourne l'image tout de suite, avant de calculer la position du canon
     }
+    return cible;
+}
+// fait partir une balle du canon : vers la cible de la visée auto, sinon dans la direction de la pose de tir en cours
+function tirer(joueur) {
+    const scene = joueur.scene;
+    const anim = ANIMATIONS[joueur.nomAnim]; // l'animation de tir qui vient de démarrer
+    let cible;
+    if (joueur.cibleTirPrete) { // majPersonnage a déjà choisi la cible (et la pose qui va avec) : on la reprend
+        cible = joueur.cibleTir;
+        joueur.cibleTirPrete = false;
+    } else { // tir lancé par un niveau avec jouerAction : on cherche la cible ici
+        cible = choisirCibleTir(joueur);
+        if (cible) orienter(joueur); // retourne l'image tout de suite, avant de calculer la position du canon
+    }
+    joueur.cibleTir = null;
     const sens = joueur.regardeGauche ? -1 : 1; // sens du tir, calculé après le demi-tour éventuel
     const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
     const bouche = anim.bouche ?? BOUCHE;
@@ -401,6 +433,7 @@ function tirer(joueur) {
 // Un recul ne ralentit jamais une montée déjà plus rapide (un saut à 600 px/s n'est pas freiné par un recul à 420).
 function reculer(joueur, vitesse) {
     if (!joueur.reculDispo) return;
+    if (joueur.body.blocked.down || joueur.body.touching.down) return; // au sol (un ennemi plus bas, visé automatiquement) : pas de recul, ce serait un saut gratuit
     joueur.reculDispo = false;
     joueur.setVelocityY(Math.min(joueur.body.velocity.y, -vitesse));
 }
