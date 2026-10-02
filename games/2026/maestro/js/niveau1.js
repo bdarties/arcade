@@ -136,12 +136,12 @@ export default class niveau1 extends Phaser.Scene {
     const tuilesComplements = this.textures.exists("ts_complements")
       ? this.carte.addTilesetImage("coulisses_complements", "ts_complements")
       : null;
-    this.avecTuiles = tuilesPlateformes != null && tuilesComplements != null;
+    // Chaque jeu d'images est indépendant : s'il manque, on dessine un décor de secours à la place
+    this.avecTuilesPlateformes = tuilesPlateformes != null;
+    this.avecTuilesComplements = tuilesComplements != null;
 
     this.creerFond();
-    if (this.avecTuiles == true) {
-      this.creerCalquesDeTuiles([tuilesPlateformes, tuilesComplements]);
-    }
+    this.creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements);
 
     // ---- Les objets de la carte ----
     const objetsDe = (calque) => this.carte.getObjectLayer(calque).objects;
@@ -153,7 +153,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Échelles : on garde le point où le personnage se tient en haut et en bas (= dessus des plateformes)
     this.echelles = deType("echelle").map((objet) => {
-      if (this.avecTuiles == false) {
+      if (this.avecTuilesComplements == false) {
         this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3);
       }
       return {
@@ -219,24 +219,31 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
-  // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche
-  creerCalquesDeTuiles(tuiles) {
-    this.carte.createLayer("structure", tuiles).setDepth(1).setAlpha(0.65);
-    this.carte.createLayer("plateformes_tuiles", tuiles).setDepth(2);
-    this.carte.createLayer("echelles", tuiles).setDepth(3);
-    this.carte.createLayer("decorations", tuiles).setDepth(4);
-    // Les passerelles fantômes : chaque tuile aura son propre alpha (voir afficherFantome)
-    this.calque_passerelles = this.carte.createLayer("passerelles_temporaires", tuiles).setDepth(5);
-    this.calque_passerelles.forEachTile((tuile) => {
-      tuile.alpha = 0; // invisibles tant qu'elles ne sont pas éclairées
-    });
+  // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche.
+  // Chaque calque n'utilise qu'UN des deux jeux d'images : on ne crée que ceux dont l'image est présente.
+  creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements) {
+    // Calques dessinés avec coulisses_complements.png : la structure et les échelles
+    if (tuilesComplements != null) {
+      this.carte.createLayer("structure", tuilesComplements).setDepth(1).setAlpha(0.65);
+      this.carte.createLayer("echelles", tuilesComplements).setDepth(3);
+    }
+    // Calques dessinés avec plateformes-coulisses-grid-50.png : plateformes, décors, passerelles
+    if (tuilesPlateformes != null) {
+      this.carte.createLayer("plateformes_tuiles", tuilesPlateformes).setDepth(2);
+      this.carte.createLayer("decorations", tuilesPlateformes).setDepth(4);
+      // Les passerelles fantômes : chaque tuile aura son propre alpha (voir afficherFantome)
+      this.calque_passerelles = this.carte.createLayer("passerelles_temporaires", tuilesPlateformes).setDepth(5);
+      this.calque_passerelles.forEachTile((tuile) => {
+        tuile.alpha = 0; // invisibles tant qu'elles ne sont pas éclairées
+      });
+    }
   }
 
   // Une plateforme solide = un rectangle invisible avec un corps statique (qui ne bouge pas)
   ajouterPlateforme(objet) {
     const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height);
     this.groupe_plateformes.add(zone); // ajouter au groupe statique lui donne un corps solide
-    if (this.avecTuiles == false) {
+    if (this.avecTuilesPlateformes == false) {
       // décor de secours : on dessine la plateforme en bois
       this.add.tileSprite(zone.x, zone.y, objet.width, objet.height, "tex_bois").setDepth(2);
     }
@@ -251,7 +258,7 @@ export default class niveau1 extends Phaser.Scene {
     zone.eclaireJusqua = 0; // reste solide jusqu'à cet instant (ms)
     zone.alphaVisuel = 0; // 0 = invisible, 1 = bien visible (monte et descend en douceur)
 
-    if (this.avecTuiles == true) {
+    if (this.avecTuilesPlateformes == true) {
       // les tuiles de la passerelle dessinées dans Tiled : la surface + une rangée au-dessus et une en dessous
       zone.tuiles = [];
       for (let colonne = objet.x / 16; colonne < (objet.x + objet.width) / 16; colonne++) {
@@ -1075,9 +1082,10 @@ export default class niveau1 extends Phaser.Scene {
       this.jouerAnimation(perso, perso.nom + "_idle");
     });
     this.physics.pause();
-    this.cameras.main.fadeOut(700, 0, 0, 0);
+    this.afficherMessage("Niveau 1 terminé ! Direction le niveau 2...", 2000);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("niveau_termine");
+      this.scene.start("niveau2"); // la victoire mène directement au niveau 2
     });
   }
 

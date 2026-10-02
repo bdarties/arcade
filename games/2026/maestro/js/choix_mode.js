@@ -12,7 +12,7 @@ import { creerClavierMenu } from "./controles.js";
 import { REGLAGES } from "./reglages.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
-const SCENE_SUIVANTE = "niveau1";
+const SCENE_SUIVANTE = "lobby"; // on apparaît dans le lobby, d'où l'on lance le niveau 1
 
 // Les deux choix proposés
 const MODES = [
