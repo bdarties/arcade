@@ -26,6 +26,7 @@ var config = {
     }
   },
   roundPixels: true,
+  render: { antialiasGL: false, powerPreference: "high-performance" },
   scene: [chargement, menu, jeu, fin],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };

@@ -8,7 +8,10 @@ export function creerCarte(scene) {
 
   const carte = scene.add.tilemap("carte");
   const tuiles = carte.addTilesetImage("sol", "sol_tuiles");
-  carte.createLayer("sol", tuiles).setDepth(PROFONDEUR.sol);
+  const sol = carte.createLayer("sol", tuiles);
+  const solFixe = scene.add.renderTexture(0, 0, MONDE.largeur, MONDE.hauteur).setOrigin(0).setDepth(PROFONDEUR.sol);
+  solFixe.draw(sol);
+  sol.destroy();
 
   for (const objet of carte.getObjectLayer("paves").objects) {
     scene.add
