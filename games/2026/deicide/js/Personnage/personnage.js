@@ -16,11 +16,13 @@ import { traineeDash } from "../effets.js"; // copies fantômes derrière le rob
 //   update()  de chaque niveau      : majPersonnage(this.player, this.clavier)
 //   pour une animation ponctuelle   : jouerAction(this.player, "degats")
 //
-// Touches gérées par majPersonnage : flèches (déplacement, saut), I (tir), K (dash). O (ouvrir les portes) est lue par les niveaux.
+// Touches gérées par majPersonnage : flèches (déplacement et visée), I (saut), K (tir), L (dash). O (ouvrir les portes) est lue par les niveaux.
+// Ce sont les boutons de la borne (gpio2keys.py) : I = bouton 1, K = bouton 4, L = bouton 5, O = bouton 2.
 // Saut de mur : en l'air contre un mur, en poussant vers lui, le robot glisse lentement ;
-// un nouvel appui sur la flèche du haut le fait rebondir dans l'autre sens.
-// Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur F
+// un nouvel appui sur le bouton de saut (I) le fait rebondir dans l'autre sens.
+// Tir en 8 directions : la balle part dans le sens des flèches tenues au moment où on appuie sur le bouton de tir (K)
 // (haut, haut en diagonale, droit devant) ; vers le bas, seulement en l'air (voir animationDeTir).
+// La visée automatique (voir chercherCible) redresse la balle vers l'ennemi ou la lanterne allumée la plus proche.
 // Tir vers le bas : le tir fait reculer le robot vers le haut, une seule fois par saut (voir reculer).
 // Les balles sont rangées dans scene.tirsJoueur (le groupe est créé au premier tir s'il n'existe pas)
 // et s'arrêtent sur scene.groupe_plateformes quand la scène en a un.
@@ -33,7 +35,7 @@ const PIED_Y = 25; // ligne du sol dans la frame : le bas du robot est toujours 
 const CENTRE_X = 23; // colonne du centre du torse dans la frame (quand le robot regarde à droite)
 const ECHELLE = 2; // le robot est petit : on l'agrandit x2 (pixel art)
 const FPS = 10; // le fichier aseprite donne 100 ms par image pour toutes les animations
-const VITESSE = 300; // mêmes valeurs que le "dude" d'origine
+const VITESSE = 260; // vitesse de marche (300 avant : un peu trop rapide)
 const SAUT = 600; // vitesse de décollage : avec 1000 de gravité à la montée, il monte d'environ 180 px comme avant, mais en 0,6 s au lieu de 1,1 s
 const SEUIL_SAUT = 150; // vitesse verticale (px/s) à partir de laquelle on considère que le robot saute ou tombe (le petit rebond à l'atterrissage reste en dessous)
 const VITESSE_GLISSE = 90; // vitesse de chute maximale (px/s) quand le robot glisse contre un mur
@@ -197,7 +199,7 @@ export function creerPersonnage(scene, x, y) {
     joueur.sensMur = 0; // dernier mur touché en l'air : -1 = à gauche, 1 = à droite
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
-    joueur.touches = scene.input.keyboard.addKeys({ tir: "I", dash: "K", porte: "O" }, false); // I = tir, K = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
+    joueur.touches = scene.input.keyboard.addKeys({ saut: "I", tir: "K", dash: "L", porte: "O" }, false); // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.reculDispo = true; // le recul d'un tir vers le bas ne marche qu'une fois par saut : il revient au sol ou contre un mur
@@ -241,7 +243,7 @@ export function majPersonnage(joueur, clavier) {
         } else {
             joueur.setVelocityX(0);
         }
-        if (clavier.up.isDown && auSol) {
+        if (joueur.touches.saut.isDown && auSol) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
             joueur.setVelocityY(-SAUT);
             jouerSon(joueur.scene, "saut"); // bruit du réacteur au décollage
         }
@@ -249,7 +251,7 @@ export function majPersonnage(joueur, clavier) {
 
     // Glisse et saut de mur. Le robot touche un mur (bord du monde ou côté d'une plateforme) quand Phaser
     // signale un contact à gauche ou à droite : il faut donc pousser vers le mur pour rester collé.
-    const veutSaut = Phaser.Input.Keyboard.JustDown(clavier.up); // appui neuf : garder la flèche enfoncée ne rechaîne pas les sauts
+    const veutSaut = Phaser.Input.Keyboard.JustDown(joueur.touches.saut); // appui neuf : garder le bouton enfoncé ne rechaîne pas les sauts de mur
     const bords = joueur.scene.physics.world.bounds; // identifie si le joueur se trouve contre un bord de la map
     const auBordGauche = joueur.body.left <= bords.left + 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
     const auBordDroit = joueur.body.right >= bords.right - 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
@@ -300,7 +302,7 @@ export function majPersonnage(joueur, clavier) {
     }
 }
 
-// Choisit la visée d'après les flèches tenues quand on appuie sur F. Le côté (gauche ou droite) vient du sens
+// Choisit la visée d'après les flèches tenues quand on appuie sur le bouton de tir (K). Le côté (gauche ou droite) vient du sens
 // dans lequel regarde le robot : il tourne déjà vers la flèche tenue, et au mur il tourne le dos au mur.
 //   rien, ou seulement gauche / droite : "tir"      haut : "tir_haut"      haut + côté : "tir_haut_diag"
 //   bas (en l'air) : "tir_bas"                      bas + côté : "tir_bas_diag"
@@ -321,7 +323,7 @@ export function rechargeDash(joueur) {
 
 // joue une animation ponctuelle : "reveil", "charge", "tir" (ou tir_haut, tir_haut_diag, tir_bas, tir_bas_diag), "dash", "degats" ou "mort"
 // les animations "bloquantes" (reveil, dash, mort) coupent les touches jusqu'à leur fin
-// (I et K appellent ça avec un tir et "dash", mais on peut aussi l'appeler depuis les niveaux)
+// (K et L appellent ça avec un tir et "dash", mais on peut aussi l'appeler depuis les niveaux)
 export function jouerAction(joueur, nom) {
     if (joueur.action === "mort") return; // une fois mort, plus rien ne bouge
     const anim = ANIMATIONS[nom];
@@ -334,28 +336,28 @@ export function jouerAction(joueur, nom) {
     jouer(joueur, nom, false);
     if (anim.debut) anim.debut(joueur);
 }
-// cherche l'ennemi le plus proche devant le robot, renvoie null s'il n'y en a pas
+// cherche la cible la plus proche devant le robot : un ennemi ou une lanterne encore allumée. Renvoie null s'il n'y en a pas.
 function chercherCible(joueur, x, y) {
     const scene = joueur.scene; // la scène où se trouve le robot
-    if (!scene.ennemis) return null; // pas d'ennemis dans cette scène (ex : niveau 3) : pas de cible
     const sens = joueur.regardeGauche ? -1 : 1; // -1 si le robot regarde à gauche, 1 s'il regarde à droite
-    let cible = null; // le meilleur ennemi trouvé pour l'instant (aucun au départ)
-    let meilleureDistance = PORTEE_AUTO; // on ne garde que les ennemis plus proches que la portée
-    scene.ennemis.getChildren().forEach(ennemi => { // on regarde chaque ennemi un par un
-        if (ennemi.etat === "mort") return; // ennemi en train de mourir : on l'ignore
-        if (!scene.cameras.main.worldView.contains(ennemi.x, ennemi.y)) return; // ennemi hors de l'écran : on ne vise pas ce qu'on ne voit pas
-        const dx = (ennemi.body.center.x - x) * sens; // écart horizontal, positif si l'ennemi est devant le robot
-        const dy = ennemi.body.center.y - y; // écart vertical entre le canon et l'ennemi
-        if (dx <= 0) return; // l'ennemi est derrière le robot : on l'ignore
-        const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'ennemi, en degrés
-        if (angle > ANGLE_AUTO) return; // ennemi trop haut ou trop bas : on l'ignore
-        const distance = Math.hypot(dx, dy); // distance réelle entre le canon et l'ennemi
+    let cible = null; // la meilleure cible trouvée pour l'instant (aucune au départ)
+    let meilleureDistance = PORTEE_AUTO; // on ne garde que ce qui est plus proche que la portée
+    const essayer = (objet) => { // regarde si cet objet (ennemi ou lanterne) est une bonne cible
+        if (!scene.cameras.main.worldView.contains(objet.x, objet.y)) return; // hors de l'écran : on ne vise pas ce qu'on ne voit pas
+        const dx = (objet.body.center.x - x) * sens; // écart horizontal, positif si l'objet est devant le robot
+        const dy = objet.body.center.y - y; // écart vertical entre le canon et l'objet
+        if (dx <= 0) return; // il est derrière le robot : on l'ignore
+        const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'objet, en degrés
+        if (angle > ANGLE_AUTO) return; // trop haut ou trop bas : on l'ignore
+        const distance = Math.hypot(dx, dy); // distance réelle entre le canon et l'objet
         if (distance < meilleureDistance) { // il est plus proche que le meilleur trouvé jusqu'ici
-            cible = ennemi; // il devient la cible
+            cible = objet; // il devient la cible
             meilleureDistance = distance; // et sa distance devient celle à battre
         }
-    });
-    return cible; // renvoie l'ennemi trouvé, ou null si aucun ne convient
+    };
+    if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); }); // les ennemis (sauf ceux qui sont en train de mourir)
+    if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
+    return cible; // renvoie la cible trouvée, ou null si aucune ne convient
 }
 // fait partir une balle du canon, dans le sens où regarde le robot et dans la direction de la visée en cours
 function tirer(joueur) {

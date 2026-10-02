@@ -7,6 +7,23 @@ import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages 
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { figerCalques } from "./optimisation.js"; // décor dessiné une seule fois (optimisation pour la borne)
 
+// charge tous les assets du jeu (le cache est partagé entre les scènes). Le menu l'appelle dans son preload, avec une barre de
+// chargement : quand on clique sur Jouer tout est déjà chargé. Le preload du niveau 1 le rappelle, mais il n'a plus rien à charger.
+export function chargerJeu(scene) {
+    scene.load.setBaseURL(scene.sys.game.config.baseURL); // chemin du jeu, pour que les assets se chargent aussi depuis la borne
+    scene.load.image("img_ciel", "./assets/sky.png"); // fond des niveaux 2 et 3
+    scene.load.image("img_plateforme", "./assets/platform.png"); // plateformes des niveaux 2 et 3
+    scene.load.image("img_porte2", "./assets/door2.png"); // porte du niveau 2
+    scene.load.image("img_porte3", "./assets/door3.png"); // porte du niveau 3
+    chargerPersonnage(scene); // images du robot
+    chargerHud(scene); // images du HUD
+    scene.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
+    scene.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
+    scene.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
+    ennemis.chargerEnnemis(scene); // images des ennemis
+    chargerSons(scene); // bruitages et musique
+}
+
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
   constructor() {
@@ -14,19 +31,8 @@ export default class niveau1 extends Phaser.Scene {
       key: "niveau1" //  ici on précise le nom de la classe en tant qu'identifiant
     });
   }
-  preload() { // niveau 1 = première scène du jeu : on y charge tous les assets (le cache est partagé avec les niveaux 2 et 3)
-    this.load.setBaseURL(this.sys.game.config.baseURL); // chemin du jeu, pour que les assets se chargent aussi depuis la borne
-    this.load.image("img_ciel", "./assets/sky.png"); // fond des niveaux 2 et 3
-    this.load.image("img_plateforme", "./assets/platform.png"); // plateformes des niveaux 2 et 3
-    this.load.image("img_porte2", "./assets/door2.png"); // porte du niveau 2
-    this.load.image("img_porte3", "./assets/door3.png"); // porte du niveau 3
-    chargerPersonnage(this); // images du robot
-    chargerHud(this); // images du HUD
-    this.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
-    this.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
-    this.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
-    ennemis.chargerEnnemis(this); // images des ennemis
-    chargerSons(this); // bruitages et musique
+  preload() { // tous les assets sont normalement déjà chargés par le menu (voir menu.js) ; sinon ils se chargent ici
+    chargerJeu(this);
   }
 
   create() {
