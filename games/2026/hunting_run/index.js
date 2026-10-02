@@ -26,4 +26,4 @@ var config = {
 };
 
 // création et lancement du jeu
-new Phaser.Game(config);
+export var game = new Phaser.Game(config);
