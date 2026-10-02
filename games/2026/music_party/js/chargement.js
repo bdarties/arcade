@@ -28,10 +28,14 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_fond_scene", "./assets/images/fond_scene.jpg");
 
     // les 4 persos d'opéra et leur tete (affichée à coté du score)
-    PERSOS.forEach((perso) => {
+  PERSOS.forEach((perso) => {
+    if (perso.cle == "diva") {
+      this.load.spritesheet(perso.texture, "./assets/images/La_reine_de_la_nuit_spritesheet.png", { frameWidth: 235, frameHeight: 256 });
+    } else {
       this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
-      this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
-    });
+    }
+    this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
+  });
 
     // Music Fall : persos du pack Sunny Land
     // renard : repos 0-3, course 4-9, saut 10, music_fall 11, blessé 12-13
@@ -73,5 +77,13 @@ export default class chargement extends Phaser.Scene {
     this.registry.set("perso1", "carmen");
     this.registry.set("perso2", "maestro");
     this.scene.start("accueil");
+    this.anims.create({
+      key: "anim_diva",
+      frames: this.anims.generateFrameNumbers("img_diva", { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1
+    });
   }
+
+  
 }
