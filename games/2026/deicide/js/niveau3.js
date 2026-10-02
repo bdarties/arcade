@@ -37,8 +37,8 @@ export default class niveau3 extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.player.touches.porte) == true) {
       if (this.physics.overlap(this.player, this.porte_retour)) {
-        console.log("niveau 3 : retour vers selection");
-        this.scene.switch("selection");
+        console.log("retour vers le niveau 1");
+        this.scene.switch("niveau1"); // plus de scène selection : la porte ramène au niveau 1
       }
     }
   }

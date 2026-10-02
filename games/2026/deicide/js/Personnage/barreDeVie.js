@@ -11,7 +11,7 @@
 // Rien de tout ça quand les PV montent.
 //
 // Utilisation :
-//   preload() de "selection"  : chargerBarreDeVie(this)
+//   preload() de "niveau1"    : chargerBarreDeVie(this)
 //   create()  d'un niveau     : this.barrePV = creerBarreDeVie(this, 20, 20, this.pv)
 //   quand les PV changent     : majBarreDeVie(this.barrePV, this.pv)
 
@@ -20,7 +20,9 @@ const CLE_YEUX = "barre_pv_yeux"; // calque des yeux plissés, fabriqué en code
 const FICHIER = "./assets/Spritesheet/hud/barre_pv.png";
 const LARGEUR = 112; // taille d'une image de la bande
 const HAUTEUR = 20;
-const ECHELLE = 2; // même agrandissement que le robot, pour que les pixels aient la même taille
+export const HAUTEUR_BARRE = HAUTEUR; // (hud.js s'en sert pour poser les plaques sous la barre)
+export const ECHELLE_HUD = 3; // agrandissement de tout le HUD (barre, vies, jauge, score, chrono) : le robot, lui, reste à x2
+const ECHELLE = ECHELLE_HUD;
 export const PV_MAX_BARRE = 5; // nombre de cellules de la barre
 const IMAGE_FAIBLE = 6; // "1 PV" atténué
 const DELAI_CLIGNOTEMENT = 400; // ms entre deux images quand il ne reste qu'1 PV
