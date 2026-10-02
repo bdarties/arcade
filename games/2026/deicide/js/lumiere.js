@@ -107,15 +107,21 @@ export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de c
     lanterne.eteinte = false;
     return lanterne;
 }
+// OPTIMISATION (borne) : l'ombre est un dégradé très doux, on la dessine donc à un quart de la largeur et de la hauteur de
+// l'écran (320 x 180) puis on l'agrandit : la carte graphique a 16 fois moins de pixels à repeindre à chaque image,
+// et à l'écran la différence est à peine visible. (0.5 = moitié, plus net mais 4 fois plus lourd.)
+const ECHELLE_VOILE = 0.25;
 export function creerVoile(scene) { // permet de creer le voile de lumière
     creerTextureHalo(scene);
-    const voile = scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height); // crée une image en premiere plan que l'on peut ensuite modifier
-    voile.setOrigin(0, 0); // on place l'origine du voile en 0 0 
+    const voile = scene.add.renderTexture(0, 0, scene.scale.width * ECHELLE_VOILE, scene.scale.height * ECHELLE_VOILE); // crée une image en premiere plan que l'on peut ensuite modifier (demi-taille)
+    voile.setOrigin(0, 0); // on place l'origine du voile en 0 0
+    voile.setScale(1 / ECHELLE_VOILE); // et on l'agrandit pour qu'il recouvre tout l'écran
     voile.setScrollFactor(0); // on fait en sorte qu'il reste fixe
     voile.setDepth(50); // on met la profondeur au premier pan
     voile.fill(0x000000, 0.7); // on peint le voile opaque avec une opacité de 70%
     scene.pinceauLumiere = scene.make.image({ key: "halo", add: false }); // creer la gomme qui permettra de mettre de la lumière autour du joueur
     scene.voile = voile; // on le met dans une variable
+    scene.voileEtat = { camX: NaN, camY: NaN, joueurX: NaN, joueurY: NaN, nbZones: -1, images: 0 }; // ce qui a servi à dessiner le voile la dernière fois (voir majVoile)
 }
 function percerVoile(scene, x, y, rayon, alpha) { // ajoute un trou au lot de trous à effacer dans le voile
     const camera = scene.cameras.main; // camera qui permet de cadrer la position
@@ -123,16 +129,34 @@ function percerVoile(scene, x, y, rayon, alpha) { // ajoute un trou au lot de tr
     const ecranY = y - camera.scrollY;
     if (ecranX < -rayon || ecranX > camera.width + rayon || ecranY < -rayon || ecranY > camera.height + rayon) return; // lumière hors de l'écran : inutile de la dessiner
     const pinceau = scene.pinceauLumiere; // la gomme
-    pinceau.setScale(rayon / 128); // L'image du halo fait 256 px, donc 128 px de rayon. On la met à l'échelle pour obtenir le rayon voulu
+    pinceau.setScale(rayon / 128 * ECHELLE_VOILE); // L'image du halo fait 256 px, donc 128 px de rayon. On la met à l'échelle pour obtenir le rayon voulu (réduit comme le voile)
     pinceau.setAlpha(alpha); // force de la gomme : 1 = efface complètement, 0.6 = efface en partie
-    pinceau.setPosition(ecranX, ecranY); // place la gomme à l'endroit de la lumière sur l'écran
+    pinceau.setPosition(ecranX * ECHELLE_VOILE, ecranY * ECHELLE_VOILE); // place la gomme à l'endroit de la lumière sur l'écran (réduit comme le voile)
     scene.voile.texture.batchDraw(pinceau); // ajoute ce trou au lot, sans le dessiner tout de suite
 }
-export function majVoile(scene) { // redessine le voile à chaque image
+function halosVisibles(scene, tout) { // OPTIMISATION (borne) : ne dessine que les halos qui sont à l'écran
+    const vue = scene.cameras.main.worldView; // la partie de la map qu'on voit
+    const masquer = (halo) => { // un halo hors écran n'éclaire rien : le cacher évite de le dessiner (chaque halo additif coûte un appel de dessin)
+        if (!halo || !halo.active) return;
+        const reste = halo.displayWidth / 2 + 32; // son rayon, plus une marge pour les tremblements d'écran
+        halo.visible = tout || (halo.x > vue.x - reste && halo.x < vue.right + reste && halo.y > vue.y - reste && halo.y < vue.bottom + reste);
+    };
+    if (scene.zonesLumiere) scene.zonesLumiere.getChildren().forEach(zone => masquer(zone.halo)); // halos des lanternes et des zones de lumière
+    if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => masquer(ennemi.halo)); // halos violets des ennemis
+}
+export function majVoile(scene) { // met à jour le voile
+    const camera = scene.cameras.main;
+    const etat = scene.voileEtat;
+    etat.images++;
+    halosVisibles(scene, etat.images <= 2); // cache les halos hors écran (pendant les 2 premières images la caméra n'est pas encore à sa place : on les laisse tous)
+    const joueur = scene.player.body.center;
+    const nbZones = scene.zonesLumiere ? scene.zonesLumiere.getLength() : 0;
+    if (etat.camX === camera.scrollX && etat.camY === camera.scrollY && etat.joueurX === joueur.x && etat.joueurY === joueur.y && etat.nbZones === nbZones) return; // rien n'a bougé depuis la dernière fois (ni la caméra, ni le joueur, ni les lumières) : le voile est déjà bon, on ne le redessine pas
+    etat.camX = camera.scrollX; etat.camY = camera.scrollY; etat.joueurX = joueur.x; etat.joueurY = joueur.y; etat.nbZones = nbZones;
     scene.voile.clear(); // on vide le voile
     scene.voile.fill(0x000000, 0.6); // et on le repeint en noir (60 % au lieu de 30 % : l'ombre se sent vraiment) pour enlever les trous de l'image précédente
     scene.voile.texture.beginDraw(); // ouvre un lot : tous les trous seront effacés d'un seul coup, au lieu d'une passe de rendu par trou
-    percerVoile(scene, scene.player.body.center.x, scene.player.body.center.y, 130, 1); // trou autour du joueur, le voile y est complètement effacé
+    percerVoile(scene, joueur.x, joueur.y, 130, 1); // trou autour du joueur, le voile y est complètement effacé
     if (scene.zonesLumiere) { // perce un trou pour chaque zone de lumiere visible à l'écran
         scene.zonesLumiere.getChildren().forEach(zone => percerVoile(scene, zone.x, zone.y, zone.body.radius * 1.2, 0.6)); // autour des lumières on n'efface le voile qu'en partie
     }

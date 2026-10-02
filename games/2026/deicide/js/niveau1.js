@@ -5,6 +5,7 @@ import * as ennemis from "./ennemis.js";
 import * as lumiere from "./lumiere.js";
 import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
+import { figerCalques } from "./optimisation.js"; // décor dessiné une seule fois (optimisation pour la borne)
 
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
@@ -40,13 +41,15 @@ export default class niveau1 extends Phaser.Scene {
     const tuilesDawn = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn");
     const tuileBlanc = carte.addTilesetImage("white", "tuile_blanc");
     const tilesets = [tuilesDawn, tuileBlanc];
-    carte.createLayer("Background and background", tilesets);
-    carte.createLayer("Background", tilesets);
+    const calqueFond = carte.createLayer("Background and background", tilesets);
+    const calqueDecor = carte.createLayer("Background", tilesets);
     const calqueGameplay = carte.createLayer("Gameplay", tilesets);
     // seules les tuiles du calque Gameplay qui ont la propriété "colision" dans Tiled sont solides
     calqueGameplay.setCollisionByProperty({ colision: true });
     // personnage.js arrête les balles sur groupe_plateformes : ici c'est le calque Gameplay
     this.groupe_plateformes = calqueGameplay;
+    // optimisation pour la borne : le décor est dessiné une seule fois dans des images au lieu de 1 200 tuiles à chaque image (voir optimisation.js)
+    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels);
 
     // le monde et la caméra prennent la taille de la map (sinon le joueur reste bloqué dans le 1er écran)
     this.physics.world.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
