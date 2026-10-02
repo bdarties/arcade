@@ -204,7 +204,8 @@ export default class niveau1 extends Phaser.Scene {
     this.add.text(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !", style).setOrigin(0.5).setDepth(6);
   }
 
-  // Le fond : l'image de la carte (si elle est là), sinon le décor du lobby qui défile moins vite
+  // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
+  // Dans les deux cas l'image est ÉTIRÉE pour couvrir toute la carte, quelle que soit sa taille d'origine.
   creerFond() {
     if (this.textures.exists("img_fond_coulisse")) {
       this.add
@@ -214,8 +215,7 @@ export default class niveau1 extends Phaser.Scene {
         .setAlpha(OPACITE_FOND)
         .setDepth(0);
     } else {
-      this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setScrollFactor(0.5).setDepth(0);
-      this.add.image(1280, 0, "img_fond_niveau1").setOrigin(0, 0).setScrollFactor(0.5).setFlipX(true).setDepth(0);
+      this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0);
     }
   }
 
