@@ -93,6 +93,7 @@ const LETTRES = {
     G: [".##", "#..", "#.#", "#.#", ".##"],
     H: ["#.#", "#.#", "###", "#.#", "#.#"],
     K: ["#.#", "#.#", "##.", "#.#", "#.#"],
+    L: ["#..", "#..", "#..", "#..", "###"],
     U: ["#.#", "#.#", "#.#", "#.#", "###"]
 };
 
@@ -101,9 +102,10 @@ const LETTRES = {
 // Les noms "gauche", "droite", "haut", "bas" dessinent une flèche ; les autres noms sont des lettres de LETTRES.
 const TOUCHES = [
     { touches: ["gauche", "droite"], mot: "BOUGER" },
-    { touches: ["haut"], mot: "SAUT" },
-    { touches: ["I"], mot: "TIR" },
-    { touches: ["K"], mot: "DASH" },
+    { touches: ["haut", "bas"], mot: "VISER" },
+    { touches: ["I"], mot: "SAUT" },
+    { touches: ["K"], mot: "TIR" },
+    { touches: ["L"], mot: "DASH" },
     { touches: ["O"], mot: "PORTE" }
 ];
 const FLECHES = {

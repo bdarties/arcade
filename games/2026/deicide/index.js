@@ -1,4 +1,5 @@
 // chargement des librairies
+import menu from "./js/menu.js";
 import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
@@ -29,11 +30,10 @@ var config = {
     antialiasGL: false, // pas de lissage MSAA du canvas : lourd pour la carte graphique d'un Pi 3, et sans effet visible ici (tout est aligné sur les pixels)
     powerPreference: "high-performance" // demande au navigateur la carte graphique la plus rapide
   },
-  scene: [niveau1, niveau2, niveau3],
+  scene: [menu, niveau1, niveau2, niveau3], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
 
 // création et lancement du jeu
-export var game = new Phaser.Game(config);
-game.scene.start("niveau1"); // le joueur arrive directement dans le niveau 1
+export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
