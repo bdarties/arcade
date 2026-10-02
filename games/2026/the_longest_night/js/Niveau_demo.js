@@ -209,7 +209,7 @@ export default class Niveau_demo extends Phaser.Scene {
       fct.doNothing();
       fct.doAlsoNothing();
       //definition du timer
-      temps_restant = 10;
+      temps_restant = 80;
       cles_creees = 0;
       cles_recuperees = 0;
       nombre_ennemis_apparissant = 4
