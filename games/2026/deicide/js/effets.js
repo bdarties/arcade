@@ -134,6 +134,8 @@ export function preparerEffets(scene) { // à appeler au début d'un niveau : fa
     };
     for (const symbole of ["!", "?"]) fabriquer(symbole, { ...STYLE_ALERTE, color: COULEUR_ALERTE[symbole] }, 4);
     for (const points of [100, 200, 400]) fabriquer("+" + points, STYLE_POINTS, 3);
+    fabriquer("+1 PV", STYLE_POINTS, 2); // le texte quand on ramasse un PV (voir bonus.js)
+    fabriquer("PV MAX", STYLE_POINTS, 1); // ...ou quand la barre est déjà pleine
 }
 
 export function alerte(scene, ennemi, symbole) { // affiche « ! » (il t'a vu) ou « ? » (il t'a perdu) au-dessus d'un ennemi
