@@ -25,6 +25,10 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
+  render: { // réglages du rendu pour la borne (Raspberry Pi 3)
+    antialiasGL: false, // pas de lissage MSAA du canvas : lourd pour la carte graphique d'un Pi 3, et sans effet visible ici (tout est aligné sur les pixels)
+    powerPreference: "high-performance" // demande au navigateur la carte graphique la plus rapide
+  },
   scene: [niveau1, niveau2, niveau3],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
