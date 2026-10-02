@@ -32,6 +32,7 @@ var camJ1;
 var camJ1UI;
 var camJ2;
 var camJ2UI;
+var camGlobalUI;
 var scoreText;
 var score_J1_affiche;
 var score_J2_affiche;
@@ -39,19 +40,21 @@ var balle_restanteJ1_affiche;
 var balle_restanteJ2_affiche;
 var points_viesJ1_affiche;
 var points_viesJ2_affiche;
-var cles_restantesJ1_affiche;
-var cles_restantesJ2_affiche;
+var son_blesse;
+var son_areignne_blesse;
+var son_cle;
+var cles_restantes_affiche;
 var temps_restant_affiche
 var temps_restant;
 var groupe_areignee;
-var arreignee
+var arreignee;
 var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points
 var sortie_ouverte = false;
 var gameOver = false;
 // définition de la classe "selection"
-export default class selection extends Phaser.Scene {
+export default class Niveau_demo extends Phaser.Scene {
   constructor() {
-    super({ key: "selection" }); // mettre le meme nom que le nom de la classe
+    super({ key: "Niveau_demo" }); // mettre le meme nom que le nom de la classe
   }
 
 
@@ -176,9 +179,9 @@ export default class selection extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 64
     });
-    this.load.spritesheet("areignee_ennemie", "./assets/enemies/areignee.png", {
-      frameWidth: 40,
-      frameHeight: 32
+    this.load.spritesheet("areignee_ennemie", "./assets/enemies/araignee.png", {
+      frameWidth: 48,
+      frameHeight:48
     });
     this.load.image("bullet", "./assets/star.png");
     this.load.image("sortie1_fermee", "./assets/door.png");
@@ -186,7 +189,10 @@ export default class selection extends Phaser.Scene {
     this.load.image("sortie2", "./assets/door2.png");
     this.load.image("sortie3", "./assets/door3.png");
     this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
-    this.load.audio("MusiqueNiveau1","./assets/musique_et_sons/musique_niveau1.mp3")
+    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
+    this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
+    this.load.audio("areignee_blesse","./assets/musique_et_sons/areigne_blesse.mp3")
+    this.load.audio("cle_collecte","./assets/musique_et_sons/cle_collecte.mp3")
   }
 
   /***********************************************************************/
@@ -249,7 +255,9 @@ export default class selection extends Phaser.Scene {
   player2_spawn = {x:243.333, y:673.333};8
   tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:40.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}];
 
-  //**INSTALATION*/
+  /**************************
+   * INSTALATION DES ELEMENTS
+  ***************************/
   groupeBullets = this.physics.add.group();
   this.porte1 = this.physics.add.staticSprite(600, 414, "sortie1_fermee");
   groupe_cle = this.physics.add.group();
@@ -275,6 +283,7 @@ export default class selection extends Phaser.Scene {
     player.balle_restante = 10;
     player.score = 0;
     player.points_vies = 5;
+    player.prochaineDegat = 0;
     player.direction = "down"; //on définit une direction par défaut au lencement du jeu pour éviter qu'on se retrouve sans animation dès le début du jeu.
     // propriétées physique de l'objet player :
     calque_mur.setCollisionByProperty({estSolide: true});
@@ -291,12 +300,13 @@ export default class selection extends Phaser.Scene {
       player2.balle_restante = 10;
       player2.score = 0;
       player2.points_vies = 5;
+      player2.prochaineDegat = 0;
       player2.direction = "down";
     //  propriétées physique de l'objet player2 :
     player2.setCollideWorldBounds(true); // le player se cognera contre les bords du monde
     calque_mur.setCollisionByProperty({estSolide: true});
-    this.physics.add.collider(player2, calque_mur);
-    this.physics.add.collider(player2, groupe_cle, recuperer_cle, null, this);
+    this.physics.add.overlap(player2, calque_mur);
+    this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
   }
     /***************************
      *  CREATION DES ANIMATIONS *
@@ -534,7 +544,7 @@ export default class selection extends Phaser.Scene {
       key: "animation_areignee",
       frames: this.anims.generateFrameNumbers("areignee_ennemie", {
         start: 0,
-        end: 4
+        end: 7
       }), 
       frameRate: 3, 
       repeat: -1 
@@ -564,40 +574,40 @@ export default class selection extends Phaser.Scene {
     camJ2UI.setScroll(0, 0);
     camJ2UI.ignore(this.children.list);
     }
+    camGlobalUI = this.cameras.add(0, 0, 1280, 720);
+    camGlobalUI.setScroll(0, 0);
+    camGlobalUI.ignore(this.children.list);
 
     /************************************ 
      * ELEMENTS DE L'UI
     ************************************/
     //élements de l'UI du joueur 1
-    score_J1_affiche = this.add.text(100, 16, 'Score : ' + player.score, { fontSize: '32px', fill: '#FFFFFF'});
+    score_J1_affiche = this.add.text(100, 16, 'Score : ' + player.score, { fontSize: '32px', fill: '#3bd5f0'});
     score_J1_affiche.setOrigin(0.5, 0);
     score_J1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    balle_restanteJ1_affiche = this.add.text(180,64,'Balle restante : ' + player.balle_restante,{ fontSize: '32px', fill: '#f1c489'})
+    balle_restanteJ1_affiche = this.add.text(180,64,'Balle restante : ' + player.balle_restante,{ fontSize: '32px', fill: '#c9a326'})
     balle_restanteJ1_affiche.setOrigin(0.5, 0);
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    points_viesJ1_affiche = this.add.text(160, 144, 'Points de vie : ' + player.points_vies, { fontSize: '32px', fill: '#FFFFFF' });
+    points_viesJ1_affiche = this.add.text(160, 144, 'Points de vie : ' + player.points_vies, { fontSize: '32px', fill: '#e75550' });
     points_viesJ1_affiche.setOrigin(0.5, 0);
     points_viesJ1_affiche.setScrollFactor(0);;
-    cles_restantesJ1_affiche = this.add.text(200, 200, 'Clés à récupérer : ' + nombre_cles, { fontSize: '32px', fill: '#f1c489' });
-    cles_restantesJ1_affiche.setOrigin(0.5, 0);
-    cles_restantesJ1_affiche.setScrollFactor(0);
-    temps_restant_affiche = this.add.text(100, 100, 'Temps : ' + temps_restant, {fontSize: '32px', fill: '#2bff4e'});
+    temps_restant_affiche = this.add.text(100, 100, 'Temps : ' + temps_restant, {fontSize: '32px', fill: '#000000'});
     temps_restant_affiche.setScrollFactor(0);
     temps_restant_affiche.setOrigin(0.5, 0);
 
     //élements de l'UI du joueur 2
-    score_J2_affiche = this.add.text(100, 16, 'Score : ' + player2.score, { fontSize: '32px', fill: '#fff' });
+    score_J2_affiche = this.add.text(100, 16, 'Score : ' + player2.score, { fontSize: '32px', fill: '#f03b3b' });
     score_J2_affiche.setOrigin(0.5, 0);
     score_J2_affiche.setScrollFactor(0)
-    balle_restanteJ2_affiche = this.add.text(180,64,'Balle restante : ' + player2.balle_restante,{ fontSize: '32px', fill: '#f1c489'})
+    balle_restanteJ2_affiche = this.add.text(180,64,'Balles restante : ' + player2.balle_restante,{ fontSize: '32px', fill: '#571881'})
     balle_restanteJ2_affiche.setOrigin(0.5, 0)
     balle_restanteJ2_affiche.setScrollFactor(0)
-    points_viesJ2_affiche = this.add.text(160, 144, 'Points de vie : ' + player2.points_vies, { fontSize: '32px', fill: '#FFFFFF' });
+    points_viesJ2_affiche = this.add.text(160, 144, 'Points de vie : ' + player2.points_vies, { fontSize: '32px', fill: '#e75550' });
     points_viesJ2_affiche.setScrollFactor(0);
     points_viesJ2_affiche.setOrigin(0.5,0)
-    cles_restantesJ2_affiche = this.add.text(200, 200, 'Clés à récupérer : ' + nombre_cles, { fontSize: '32px', fill: '#f1c489' });
-    cles_restantesJ2_affiche.setOrigin(0.5, 0);
-    cles_restantesJ2_affiche.setScrollFactor(0);
+    cles_restantes_affiche = this.add.text(640, 20, 'Clés à récupérer : ' + nombre_cles, { fontSize: '32px', fill: '#cd50ff' });
+    cles_restantes_affiche.setOrigin(0.5, 0);
+    cles_restantes_affiche.setScrollFactor(0);
 
 
 
@@ -607,6 +617,9 @@ export default class selection extends Phaser.Scene {
     son_feu = this.sound.add('coupDeFeu');
     musique_niveau1 = this.sound.add('MusiqueNiveau1');
     musique_niveau1.play({ loop: true });
+    son_blesse = this.sound.add('blesse')
+    son_areignne_blesse = this.sound.add('areignee_blesse')
+    son_cle = this.sound.add('cle_collecte')
 
     /***********************
      *  CREATION DU CLAVIER ET TOUCHES *
@@ -632,9 +645,12 @@ export default class selection extends Phaser.Scene {
      ************************************************/
     //on rajoute les ennemis dans ce tableau pour qu'ils soient réorganisés plus tard.
     tableau_ennemis = [{
+      nom: "groupe_araignee",
       texture: "areignee_ennemie",
       animation: "animation_areignee",
-      points_vie: 3
+      points_vie: 3,
+      degats: 1,
+      score : 100
     }];
     //on appelera ensuite apparition_elements pour
     for (let i = 0; i < nombre_ennemis_apparissant + cles_creees ; i++){
@@ -644,19 +660,23 @@ export default class selection extends Phaser.Scene {
      *  GESTION DES INTERATIONS ENTRE  GROUPES ET ELEMENTS(+ ignorance de la caméra) *
      ******************************************************/
     this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
+    player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
+    if (mode_deux_joueurs) {
+      player2.colliderEnnemis = this.physics.add.collider(player2, groupe_araignee, degat_contact_ennemi, null, this);
+    }
     this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
-    camJ1.ignore([score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche, cles_restantesJ1_affiche, temps_restant_affiche, score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche, cles_restantesJ2_affiche]);
-    camJ1UI.ignore([score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche, cles_restantesJ2_affiche]);
-    camJ2.ignore([score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche, cles_restantesJ2_affiche, temps_restant_affiche, score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche, cles_restantesJ1_affiche]);
-    camJ2UI.ignore([score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche, cles_restantesJ1_affiche, ...groupe_cle.getChildren()]);
+    const hudJ1 = [score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche];
+    const hudJ2 = [score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche];
+    const hudCommun = [temps_restant_affiche, cles_restantes_affiche];
+
+    camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
+    camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
-      camJ2.ignore([score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche, cles_restantesJ1_affiche, temps_restant_affiche, balle_restanteJ2_affiche, ...groupe_cle.getChildren()]);
-      camJ2UI.ignore([score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche, cles_restantesJ1_affiche, temps_restant_affiche, ...groupe_cle.getChildren()]);
+      camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
+      camJ2UI.ignore([...hudJ1, temps_restant_affiche]);
     }
-    
-    
-  
+    camGlobalUI.ignore([...hudJ1, ...hudJ2, temps_restant_affiche]);
   }
   
 
@@ -665,6 +685,8 @@ export default class selection extends Phaser.Scene {
 /***********************************************************************/
 
   update() {
+    deplacement_areignee.call(this);
+
     //commandes joueur1
     player.setVelocity(0);
     if (J1Gauche.isDown){
@@ -716,7 +738,14 @@ export default class selection extends Phaser.Scene {
         }
 
     if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte1)) {
-      this.scene.switch("niveau1");
+      gagnant = "Joueur 1";
+      this.scene.switch("Ecran_fin", {
+        gagnant,
+        scoreJ1: player.score,
+        scoreJ2: mode_deux_joueurs ? player2.score : 0,
+        temps_restant,
+        cles_recuperees
+      });
     }
   //commandes joueur2
   if (mode_deux_joueurs){
@@ -769,7 +798,14 @@ export default class selection extends Phaser.Scene {
         }
 
     if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
-      this.scene.switch("niveau1");
+      gagnant = "Joueur 2";
+      this.scene.switch("Ecran_fin", {
+        gagnant,
+        scoreJ1: player.score,
+        scoreJ2: player2.score,
+        temps_restant,
+        cles_recuperees
+      });
     }
     }
   }
@@ -780,14 +816,44 @@ export default class selection extends Phaser.Scene {
 /**FONCTIONS DU JEU **/
 /************************************************************************/
 
+function deplacement_areignee() {
+  const joueurs = mode_deux_joueurs ? [player, player2] : [player];
+  groupe_araignee.children.iterate((ennemi) => {
+    if (!ennemi || !ennemi.active || !ennemi.body) {
+      return;
+    }
+    let joueur_cible = null;
+    let distance_min = Infinity;
+    joueurs.forEach((joueur) => {
+      if (!joueur || !joueur.active) {
+        return;
+      }
+      const distance = Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y);
+      if (distance < distance_min) {
+        distance_min = distance;
+        joueur_cible = joueur;
+      }
+    });
+
+    if (joueur_cible && distance_min <= 250) {
+      this.physics.moveToObject(ennemi, joueur_cible, 70);
+    } else {
+      ennemi.setVelocity(0, 0);
+    }
+  });
+}
+
 function apparition_elements() {
   if (groupe_araignee.countActive(true) + groupe_cle.countActive(true) < tableau_spawn.length) { //on empeche de accidentellement avoir plus de d'éléments que de spawn disponible
     const definition = Phaser.Utils.Array.GetRandom(tableau_ennemis);
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn); //cela permet de recuperer la valeur ET de la supprimer du tableau en même temps, évitant ainsi les spawns répétés. Sinon on aurait utilisé Phaser.Utils.Array.GetRandom si on voulait juste le récupérer. Cette méthode, combinée au fait qu'on compte la longeur du tableau ACTUELLE a chaque vérification a l'inconvénient de limiter l'apparition des éléments. Cependant, c'est un choix d'équilibrage justifiable par le fait qu'on a des munitions limitées.
     const ennemi = groupe_araignee.create(position.x, position.y, definition.texture);
     ennemi.points_vie = definition.points_vie;
+    ennemi.degats = definition.degats;
+    ennemi.score = definition.score;
     ennemi.anims.play(definition.animation, true);
     camJ1UI.ignore(ennemi);
+    camGlobalUI.ignore(ennemi);
     if (mode_deux_joueurs) {
       camJ2UI.ignore(ennemi);
     }
@@ -798,12 +864,62 @@ function apparition_elements() {
     cles_creees += 1;
     cle.anims.play("animation_cle_bronze", true);
     camJ1UI.ignore(cle);
+    camGlobalUI.ignore(cle);
     if (mode_deux_joueurs) {
       camJ2.ignore(cle);
       camJ2UI.ignore(cle);
     }
   }
 }
+
+function degat_contact_ennemi(player, ennemi) {
+  if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) {
+    return;
+  }
+  player.points_vies = Math.max(0, player.points_vies - ennemi.degats);
+  player.prochaineDegat = this.time.now + 1000;
+  player.colliderEnnemis.active = false;
+  this.tweens.add({ //fait clignoter le joueur
+    targets: player,
+    alpha: 0.2,
+    duration: 100,
+    yoyo: true,
+    repeat: 4,
+    onComplete: () => player.setAlpha(1)
+  });
+  this.time.delayedCall(1000, () => {
+    if (player.active) {
+      player.colliderEnnemis.active = true;
+      player.setAlpha(1);
+    }
+  });
+  const texteVies = player === player2 ? points_viesJ2_affiche : points_viesJ1_affiche;
+  texteVies.setText('Points de vie : ' + player.points_vies);
+}
+      function recharger(player) {
+        if (player.enRechargement || player.balle_restante === player.capacite_chargeur) {
+          return;
+        }
+        player.enRechargement = true;
+        player.peutTirer = false;
+        const texteBalles = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
+        texteBalles.setText('Rechargement...');
+        texteBalles.setColor('#f1c489');
+        this.tweens.add({
+          targets: texteBalles,
+          alpha: 0.2,
+          duration: 150,
+          yoyo: true,
+          repeat: 4
+        });
+        this.time.delayedCall(1500, () => {
+          player.balle_restante = player.capacite_chargeur;
+          player.enRechargement = false;
+          player.peutTirer = true;
+          texteBalles.setAlpha(1);
+          texteBalles.setText('Balle restante : ' + player.balle_restante);
+        });
+      }
 
       function tirer(player){
         if (player.peutTirer == true && player.balle_restante >0 ) {
@@ -820,7 +936,6 @@ function apparition_elements() {
         }
         if (player.direction == 'left' || player.direction == 'right'){
             bullet = groupeBullets.create(player.x + (25 * coefDir), player.y, 'bullet');
-            bullet.tireur = player;
             if (player.direction == 'left'){
               player.anims.play("anim_attaque_gauche_J1",true);
             }
@@ -837,7 +952,9 @@ function apparition_elements() {
               player.anims.play("anim_attaque_bas_J1",true); 
             }
           }
+          bullet.tireur = player;
           camJ1UI.ignore(bullet); //on est obligé d'ignorer les balles a ce moment la car elle sont crées qu'a ce moment la.
+          camGlobalUI.ignore(bullet);
           if (mode_deux_joueurs) {
             camJ2UI.ignore(bullet);
           }
@@ -853,6 +970,7 @@ function apparition_elements() {
           const balleRestanteText = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
           balleRestanteText.setText('Balle restante: ' + player.balle_restante);
           player.peutTirer = false;
+
        var timerTirOk = this.time.delayedCall(800,
            function () {
             player.peutTirer = true;
@@ -878,8 +996,9 @@ function apparition_elements() {
         ennemi.points_vie -= 1;
         if (ennemi.points_vie <= 0){
           ennemi.destroy();
+          son_areignne_blesse.play();
           if (tireur){ //défini simplement qui est le tireur
-            tireur.score += 100;
+            tireur.score += ennemi.score;
             const scoreText = tireur === player2 ? score_J2_affiche : score_J1_affiche;
             scoreText.setText('Score: ' + tireur.score);
           }
@@ -893,19 +1012,18 @@ function apparition_elements() {
       }
     function recuperer_cle(player, cle){
       player.cles_recuperees += 1;
+      son_cle.play();
       cles_restantes -= 1;
       cle.destroy();
       if (cles_restantes>0){
-        cles_restantesJ1_affiche.setText('Clés à récupérer : ' + cles_restantes);
-        cles_restantesJ2_affiche.setText('Clés à récupérer : ' + cles_restantes);
+        cles_restantes_affiche.setText('Clés à récupérer : ' + cles_restantes);
+      
       }
       else{
-        cles_restantesJ1_affiche.setText('Plus de clé ! Dirigez vous vers la sortie !');
-        cles_restantesJ2_affiche.setText('Plus de clé ! Dirigez vous vers la sortie !')
+        cles_restantes_affiche.setText('Dirigez vous vers la sortie !');
       }
       if (cles_creees >= nombre_cles && groupe_cle.countActive(true) === 0){
         this.porte1.setTexture("sortie1_ouverte");
         sortie_ouverte = true;
   } //la suite de cette fonction sera utile pour plus tard pour spawn des ennemis si besoin
 }; 
-
