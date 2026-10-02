@@ -55,6 +55,26 @@ export function figerCalques(scene, calques, largeur, hauteur, couleurFond) {
     return bandes;
 }
 
+// Cadence fixe : le jeu est cadencé par une minuterie (fps.forceSetTimeOut dans index.js), qui attend toujours un peu plus que prévu
+// (environ 0,8 ms de trop à chaque image : 38,7 images par seconde au lieu de 40). Chaque seconde on regarde le temps réel entre
+// deux images et on raccourcit l'attente de ce qui manque, pour tomber pile sur le nombre d'images par seconde voulu.
+export function regulerCadence(jeu, imagesParSeconde) {
+    const but = 1000 / imagesParSeconde; // durée voulue d'une image, en ms
+    const boucle = jeu.loop;
+    let debut = 0; // début de la seconde en cours
+    let images = 0; // images comptées depuis ce début
+    jeu.events.on(Phaser.Core.Events.STEP, (maintenant) => {
+        if (!boucle.raf.isSetTimeOut) return; // pas cadencé par minuterie : rien à régler
+        if (!debut) { debut = maintenant; return; }
+        images++;
+        if (maintenant - debut < 1000) return;
+        const periode = (maintenant - debut) / images; // durée moyenne réelle d'une image pendant cette seconde
+        if (periode < but * 3) boucle.raf.delay = Phaser.Math.Clamp(boucle.raf.delay + (but - periode) * 0.6, 1, but); // (si c'est bien plus long, la page était cachée : on ne règle rien)
+        debut = maintenant;
+        images = 0;
+    });
+}
+
 // Pour mesurer sur la borne : la touche F3 affiche ou cache le nombre d'images par seconde, en haut à gauche de la page
 // (on peut aussi l'afficher dès le départ en ajoutant ?fps à l'adresse du jeu). Caché, il ne coûte rien.
 export function compteurImages(jeu) {
