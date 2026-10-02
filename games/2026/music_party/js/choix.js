@@ -140,7 +140,6 @@ export default class choix extends Phaser.Scene {
       this.depart = true;
       this.registry.set("perso1", PERSOS[this.curseurs[0].index].cle);
       if (this.duo) this.registry.set("perso2", PERSOS[this.curseurs[1].index].cle);
-      this.time.delayedCall(700, () => this.partir(this.jeu.scene));
     }
   }
 
