@@ -80,7 +80,7 @@ export default class jeu extends Phaser.Scene {
   terminerPartie() {
     this.partieTerminee = true;
     this.physics.pause();
-    annoncer(this, "LES TÉNÈBRES ONT TOUT ENGLOUTI", "");
+    annoncer(this, "LES OMBRES ONT TRIOMPHÉ", "");
     this.cameras.main.fadeOut(2600, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.scene.start("fin", {

@@ -51,9 +51,9 @@ export const VAGUES = {
   distanceMax: 1000
 };
 
-export const SONS = { actifs: true, volume: 0.35, volumeMusique: 0.4 };
+export const SONS = { actifs: true, volume: 0.35, volumeMusique: 0.2 };
 
-export const POLICE_TITRE = "Cinzel";
+export const POLICE_TITRE = "Cormorant SC";
 export const POLICE_TEXTE = "Lora";
 
 export const BARRES = {

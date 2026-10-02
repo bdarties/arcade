@@ -19,12 +19,12 @@ export default class fin extends Phaser.Scene {
 
     this.add.image(cx, ECRAN.hauteur / 2, "img_vignette").setDisplaySize(1700, 1100);
     this.add
-      .text(cx, 120, "Les ténèbres ont tout englouti…", {
+      .text(cx, 120, "Les ombres ont triomphé.", {
         fontFamily: POLICE_TITRE, fontSize: "50px", color: "#ffe2a8", stroke: "#000000", strokeThickness: 7
       })
       .setOrigin(0.5);
     this.add
-      .text(cx, 176, "Mais chaque nuit appelle une nouvelle aube.", { fontFamily: POLICE_TEXTE, fontSize: "22px", fontStyle: "italic", color: "#b9ae98" })
+      .text(cx, 176, "Relevez-vous, Gardien, l'Aube a encore besoin de vous.", { fontFamily: POLICE_TEXTE, fontSize: "22px", fontStyle: "italic", color: "#b9ae98" })
       .setOrigin(0.5);
 
     const lignes = [
