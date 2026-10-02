@@ -43,7 +43,7 @@ export default class lobby extends Phaser.Scene {
     this.load.tilemapTiledJSON("carte_lobby", "./assets/lobby.json");
     this.load.image("img_lobby_fond", "./assets/lobby_fond.jpg");
     // Images des tuiles. Si l'une manque, le lobby reste jouable avec un décor de secours.
-    this.load.image("ts_lobby_tilesett", "./assets/tilesett.png");
+    this.load.image("ts_lobby_tilesett", "./assets/plateformes-coulisses-grid-50.png");
     this.load.image("ts_lobby_fond", "./assets/fond.png");
     this.load.image("ts_lobby_portail", "./assets/portail.png");
   }
