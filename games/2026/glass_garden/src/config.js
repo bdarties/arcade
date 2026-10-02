@@ -12,6 +12,8 @@ export default {
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: COLORS.BACKGROUND,
+  // * Les chemins des assets sont relatifs à l'adresse de la page : le lanceur de la borne sert le jeu depuis un sous-dossier (comme le template du prof)
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, ''),
   pixelArt: true, // pas de lissage : on veut des pixels nets
   scale: {
     // * FIT adapte le jeu à la taille de la fenêtre en gardant le ratio 16:9
