@@ -1082,9 +1082,10 @@ export default class niveau1 extends Phaser.Scene {
       this.jouerAnimation(perso, perso.nom + "_idle");
     });
     this.physics.pause();
-    this.cameras.main.fadeOut(700, 0, 0, 0);
+    this.afficherMessage("Niveau 1 terminé ! Direction le niveau 2...", 2000);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("niveau_termine");
+      this.scene.start("niveau2"); // la victoire mène directement au niveau 2
     });
   }
 
