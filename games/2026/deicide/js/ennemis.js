@@ -106,6 +106,7 @@ function ajouterHalo(scene, ennemi, rayon) { // fonction qui ajoute un halo viol
     halo.setBlendMode(Phaser.BlendModes.ADD); // mode additif : le halo éclaire ce qu'il y a dessous au lieu de le cacher
     halo.setAlpha(0.8); // le dégradé est déjà faible, on garde donc une transparence légère
     halo.setDepth(51); // place le halo juste au-dessus du voile (50) mais sous le HUD (100)
+    halo.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : une seule image à lire, donc le shader le plus simple (voir optimisation.js)
     ennemi.halo = halo; // range le halo dans l'ennemi pour le retrouver plus tard
 }
 export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tuer l'ennemi
@@ -138,6 +139,7 @@ function repere(scene, ennemi) { // permet d'implémenter le fait que l'ennemi n
 }
 export function majEnnemis(scene) { // fonction qui sera appelé presque chaque seconde pour vérifier les informations liées à l'ennemi
     scene.ennemis.getChildren().forEach(ennemi => { // renvoie un tableau avec la liste de tous les ennemis du groupe, exectute le code dans les accolades pour chaque éléments
+        if (ennemi.endormi) return; // OPTIMISATION (borne) : un ennemi loin du joueur dort, il ne fait rien (voir endormirLesLoins dans optimisation.js)
         if (ennemi.halo) ennemi.halo.setPosition(ennemi.body.center.x, ennemi.body.center.y); // le halo suit le centre de l'ennemi à chaque image
         if (ennemi.etat !== "mort") { // un ennemi en train de mourir ne repère plus personne
             const voit = repere(scene, ennemi); // est ce que l'ennemi voit le joueur à cette image
@@ -253,6 +255,7 @@ function lancerOrbe(scene, mage) { // fait apparaitre l'orbe de lumière et l'en
     orbe.setTint(0xfff2c0); // teinte doré pâle, la couleur de la lumière divine
     orbe.setBlendMode(Phaser.BlendModes.ADD); // mode additif : l'orbe brille
     orbe.setDepth(51); // au-dessus du voile pour qu'on la voie arriver dans le noir
+    orbe.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : comme les halos, une seule image à lire
     jouerSon(scene, "orbe"); // bruit du sort lancé
     scene.physics.moveToObject(orbe, scene.player, 220); // envoie l'orbe vers la position du joueur à 220 px/s
     scene.time.delayedCall(4000, () => orbe.destroy()); // l'orbe disparait au bout de 4 s si elle n'a rien touché
