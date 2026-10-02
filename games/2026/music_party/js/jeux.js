@@ -39,8 +39,8 @@ export const JEUX = [
     croissant: true
   },
   {
-    cle: "piano_time_time",
-    titre: "piano_time TIME",
+    cle: "piano_time",
+    titre: "piano_time",
     slogan: "Joue la mélodie sur le piano_time géant !",
     description: "Joue la mélodie\nen rythme sur\nle piano_time géant !",
     regles:

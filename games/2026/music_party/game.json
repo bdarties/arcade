@@ -1,6 +1,6 @@
 {
-	"title": "Music_Party",
-	"description": "Logo qui rebondit en plein écran.",
-	"genre" : "musique / opéra",
-	"authors": ["Bouaziz Mohamed", "Redares Ambre", "Lamaud Laetitia", "Nasri Alix"]
+    "title": "Music_Party",
+    "description": "Music Party : 4 mini-jeux musicaux à jouer seul ou à deux sur la borne d'arcade. Tamponne ta note sur la ligne dorée (Music Fall), joue la mélodie en rythme sur un piano géant (Piano Time), rejoue les notes du saxophone sans te tromper (Memory Song) ou rattrape les notes qui tombent du ciel avec ton livre (Note Catcher). Choisis ton personnage d'opéra (Carmen, Figaro, la Diva ou le Maestro) et bats le record !",
+    "genre" : "musique / opéra",
+    "authors": ["Bouaziz Mohamed", "Redares Ambre", "Lamaud Laetitia", "Nasri Alix"]
 } 

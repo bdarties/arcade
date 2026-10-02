@@ -93,7 +93,6 @@ export default class choix extends Phaser.Scene {
         12
       );
       c.tag.setPosition(carte.x + (c.numero == 0 ? -70 : 70), Y_CARTE - HAUTEUR_CARTE / 2 + 22);
-      c.tag.setText("J" + (c.numero + 1) + (c.valide ? " ✓" : ""));
     });
   }
 
@@ -135,15 +134,12 @@ export default class choix extends Phaser.Scene {
     }
     c.valide = true;
     jouerMotif(this, carte.perso);
-    this.tweens.add({ targets: carte.sprite, y: carte.sprite.y - 30, duration: 160, yoyo: true, ease: "Quad.easeOut" });
     this.majCurseurs();
     // tout le monde a choisi : c'est parti
     if (this.curseurs.every((cur) => cur.valide)) {
       this.depart = true;
       this.registry.set("perso1", PERSOS[this.curseurs[0].index].cle);
       if (this.duo) this.registry.set("perso2", PERSOS[this.curseurs[1].index].cle);
-      annonce(this, "C'EST PARTI !", OR, 800, 360);
-      this.time.delayedCall(700, () => this.partir(this.jeu.scene));
     }
   }
 

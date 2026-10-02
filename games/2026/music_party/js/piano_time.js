@@ -290,7 +290,6 @@ export default class piano_time extends Phaser.Scene {
   majHUD(j) {
     j.texteScore.setText(j.score);
     var multi = this.multiplicateur(j);
-    j.texteMulti.setText(multi > 1 ? "x" + multi : ""); // empeche l'affichage de X1
     j.texteCombo.setText(j.combo > 1 ? j.combo + " combos" : "");
   }
   
