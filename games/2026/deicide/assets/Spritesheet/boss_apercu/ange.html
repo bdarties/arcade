@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Dieu de la Lumière — version ange</title>
+  <style>html, body { margin: 0; background: #000; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+</head>
+<body>
+<script>
+  // Aperçu : le Dieu de la Lumière en ange géométrique, entièrement dessiné en code.
+  const W = 1280, H = 720, CX = 640, CY = 300;
+  const BLANC = 0xffffff, NOIR = 0x0a0a0a;
+
+  // Une aile = un éventail de plumes (quadrilatères fins), du centre vers l'extérieur.
+  function dessinerAile(g, nbPlumes, longueur, ouverture, alpha) {
+    for (let i = 0; i < nbPlumes; i++) {
+      const t = i / (nbPlumes - 1);
+      const a = -ouverture / 2 + t * ouverture;          // angle de la plume
+      const L = longueur * (0.55 + 0.45 * Math.sin(t * Math.PI));
+      const ax = Math.cos(a), ay = Math.sin(a);
+      const px = -ay * 7, py = ax * 7;                     // demi-largeur de la plume
+      g.fillStyle(BLANC, alpha * (0.75 + 0.25 * t));
+      g.fillPoints([
+        { x: px * 0.4, y: py * 0.4 },
+        { x: ax * L * 0.6 + px, y: ay * L * 0.6 + py },
+        { x: ax * L, y: ay * L },
+        { x: ax * L * 0.6 - px, y: ay * L * 0.6 - py },
+        { x: -px * 0.4, y: -py * 0.4 },
+      ], true);
+      g.lineStyle(1, 0x3a3a3a, 0.8).lineBetween(0, 0, ax * L, ay * L);
+    }
+  }
+
+  class Ange extends Phaser.Scene {
+    constructor() { super('ange'); }
+    preload() {
+      this.load.spritesheet('demon', 'demon_idle.png', { frameWidth: 250, frameHeight: 250 });
+    }
+    create() {
+      this.add.rectangle(W / 2, H / 2, W, H, 0x3a3a3a);   // fond gris moyen
+      this.add.rectangle(W / 2, 680, W, 80, NOIR);        // sol
+
+      // halo général derrière l'ange
+      const halo = this.add.graphics();
+      for (let i = 12; i > 0; i--) { halo.fillStyle(BLANC, 0.03); halo.fillCircle(CX, CY - 40, 60 + i * 22); }
+
+      this.boss = this.add.container(CX, CY);
+
+      // 3 paires d'ailes (haut, milieu, bas), chaque aile est un Graphics qu'on fait battre
+      this.ailes = [];
+      [[-0.8, 250, 0.6, 0.95], [-0.2, 290, 0.55, 1], [0.4, 210, 0.5, 0.8]].forEach(([angle, L, ouv, alpha]) => {
+        [-1, 1].forEach(cote => {
+          const g = this.add.graphics();
+          dessinerAile(g, 7, L, ouv, alpha);
+          g.x = cote * 30; g.y = -70;
+          // aile droite : angle tel quel ; aile gauche : symétrique par rapport à la verticale
+          g.rotation = cote > 0 ? angle : Math.PI - angle;
+          g.setData({ base: g.rotation, cote });
+          this.boss.add(g);
+          this.ailes.push(g);
+        });
+      });
+
+      // corps : longue robe en losange étiré + épaules
+      const corps = this.add.graphics();
+      corps.fillStyle(BLANC, 1);
+      corps.fillPoints([{ x: 0, y: -110 }, { x: 42, y: -60 }, { x: 26, y: 120 }, { x: 0, y: 190 }, { x: -26, y: 120 }, { x: -42, y: -60 }], true);
+      corps.lineStyle(3, NOIR, 1).lineBetween(0, -60, 0, 170);             // pli central
+      corps.lineBetween(-20, 40, -10, 150); corps.lineBetween(20, 40, 10, 150);
+      this.boss.add(corps);
+
+      // tête sans visage : ovale blanc + fente noire
+      const tete = this.add.graphics();
+      tete.fillStyle(BLANC, 1).fillEllipse(0, -140, 44, 54);
+      tete.fillStyle(NOIR, 1).fillRect(-12, -142, 24, 4);
+      this.boss.add(tete);
+
+      // auréole : anneau épais + anneau fin, qui tourne
+      this.aureole = this.add.graphics({ x: 0, y: -185 });
+      this.aureole.lineStyle(5, BLANC, 1).strokeEllipse(0, 0, 90, 26);
+      this.aureole.lineStyle(1, BLANC, 0.6).strokeEllipse(0, 0, 120, 36);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; this.aureole.fillStyle(BLANC, 1).fillRect(Math.cos(a) * 60 - 2, Math.sin(a) * 18 - 2, 4, 4); }
+      this.boss.add(this.aureole);
+
+      // lance de lumière tenue verticalement
+      const lance = this.add.graphics();
+      lance.fillStyle(BLANC, 1).fillRect(56, -170, 5, 330);
+      lance.fillTriangle(58, -230, 44, -170, 72, -170);
+      lance.fillStyle(NOIR, 1).fillTriangle(58, -212, 52, -178, 64, -178);
+      this.boss.add(lance);
+
+      // 4 piliers (mécanique de vulnérabilité)
+      [150, 400, 880, 1130].forEach(x => {
+        const p = this.add.graphics(), y = 610;
+        p.fillStyle(BLANC, 0.12).fillRect(x - 40, 0, 80, y);
+        p.fillStyle(NOIR, 1).fillRect(x - 22, y - 150, 44, 150);
+        p.fillStyle(BLANC, 1).fillTriangle(x, y - 205, x - 20, y - 165, x + 20, y - 165);
+        p.fillTriangle(x, y - 135, x - 20, y - 165, x + 20, y - 165);
+      });
+
+      this.anims.create({ key: 'idle', frames: this.anims.generateFrameNumbers('demon', { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
+      this.add.sprite(640, 723, 'demon').setOrigin(0.5, 1).play('idle');
+
+      this.add.text(20, 16, 'DIEU DE LA LUMIÈRE — version ange, dessiné en code (Phaser 3.60)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' });
+      window.PRET = true;
+    }
+    update(t) {
+      // flottement vertical + battement lent des ailes + auréole qui ondule
+      this.boss.y = CY + Math.sin(t * 0.0015) * 10;
+      this.ailes.forEach((g, i) => {
+        const c = g.getData('cote');
+        g.rotation = g.getData('base') + c * Math.sin(t * 0.002 + i * 0.3) * 0.08;
+      });
+      this.aureole.scaleX = 1 + Math.sin(t * 0.003) * 0.05;
+    }
+  }
+
+  new Phaser.Game({ type: Phaser.WEBGL, width: W, height: H, scene: [Ange], render: { preserveDrawingBuffer: true } });
+</script>
+</body>
+</html>
