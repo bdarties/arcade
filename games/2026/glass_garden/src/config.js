@@ -8,7 +8,7 @@ import { GAME_WIDTH, GAME_HEIGHT, COLORS } from './utils/constants.js';
 // * Configuration Phaser. La résolution est celle de la borne d'arcade : 1280 x 720 (16:9).
 export default {
   type: Phaser.AUTO,
-  parent: 'game',
+  parent: 'game-container', // * l'id de la div dans index.html (pas « game » : cela créerait une variable globale du même nom, voir main.js)
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: COLORS.BACKGROUND,
