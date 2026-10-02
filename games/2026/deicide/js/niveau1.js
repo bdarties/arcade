@@ -48,6 +48,8 @@ export default class niveau1 extends Phaser.Scene {
     const tuilesDawn = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn");
     const tuileBlanc = carte.addTilesetImage("white", "tuile_blanc");
     const tilesets = [tuilesDawn, tuileBlanc];
+    this.carte = carte; // on garde la map dans la scène, pour que arene.js puisse y ajouter des tuiles
+    this.tilesets = tilesets; // pareil pour les tilesets, nécessaires pour créer un nouveau calque
     const calqueFond = carte.createLayer("Background and background", tilesets);
     const calqueDecor = carte.createLayer("Background", tilesets);
     const calqueGameplay = carte.createLayer("Gameplay", tilesets);
