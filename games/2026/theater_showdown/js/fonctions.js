@@ -125,7 +125,8 @@ export function transitionRideau(scene, video, suite) {
     terminee = true;
     suite();
   };
-  const rideau = scene.add.video(640, 360, video).setDepth(1000);
+  // vidéo encodée en 640x360 (plus légère pour le Pi 3), agrandie x2 pour couvrir l'écran
+  const rideau = scene.add.video(640, 360, video).setScale(2).setDepth(1000);
   rideau.once("complete", terminer);
   scene.time.delayedCall(1600, terminer); // sécurité si la vidéo ne peut pas être lue
   rideau.play();
