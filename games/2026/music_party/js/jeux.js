@@ -59,7 +59,7 @@ export const JEUX = [
   }
 ];
 
-// les infos d'un mini-jeu à partir de sa clé ("piano_time_time"...)
+// les infos d'un mini-jeu à partir de sa clé ("piano_time"...)
 export function infosJeu(cle) {
   return JEUX.find((jeu) => jeu.cle == cle);
 }
