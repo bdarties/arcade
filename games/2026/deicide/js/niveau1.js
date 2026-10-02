@@ -8,6 +8,8 @@ import * as effets from "./effets.js"; // tremblements, flashs, éclats et alert
 import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
+import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
+import { preparerLanternesVivantes } from "./lanterneVivante.js"; // les lanternes ailées qui donnent le boost
 
 // charge tous les assets du jeu (le cache est partagé entre les scènes). Le menu l'appelle dans son preload, avec une barre de
 // chargement : quand on clique sur Jouer tout est déjà chargé. Le preload du niveau 1 le rappelle, mais il n'a plus rien à charger.
@@ -115,6 +117,8 @@ export default class niveau1 extends Phaser.Scene {
     carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
     preparerBonus(this); // le groupe des PV que lâchent les ennemis (30 % de chances à chaque ennemi tué)
+    preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)
+    preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
     effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
   }

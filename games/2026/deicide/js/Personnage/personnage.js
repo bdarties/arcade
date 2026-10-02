@@ -37,6 +37,9 @@ const CENTRE_X = 23; // colonne du centre du torse dans la frame (quand le robot
 const ECHELLE = 2; // le robot est petit : on l'agrandit x2 (pixel art)
 const FPS = 10; // le fichier aseprite donne 100 ms par image pour toutes les animations
 const VITESSE = 260; // vitesse de marche (300 avant : un peu trop rapide)
+export const VITESSE_JOUEUR = VITESSE; // (lanterneVivante.js s'en sert : une lanterne vivante va à la moitié de cette vitesse)
+const BONUS_VITESSE_BOOST = 0.1; // +10 % de vitesse de marche par niveau de boost (le boost vient des lanternes vivantes, voir boost.js)
+const DELAI_RAFALE = 70; // ms entre deux balles d'une rafale (chaque niveau de boost ajoute une balle à chaque tir)
 const SAUT = 600; // vitesse de décollage : avec 1000 de gravité à la montée, il monte d'environ 180 px comme avant, mais en 0,6 s au lieu de 1,1 s
 const SEUIL_SAUT = 150; // vitesse verticale (px/s) à partir de laquelle on considère que le robot saute ou tombe (le petit rebond à l'atterrissage reste en dessous)
 const VITESSE_GLISSE = 90; // vitesse de chute maximale (px/s) quand le robot glisse contre un mur
@@ -233,14 +236,15 @@ export function majPersonnage(joueur, clavier) {
     const verrou = maintenant < joueur.verrouJusqua; // juste après un saut de mur, on ne dirige plus le robot
     const gauche = libre && clavier.left.isDown;
     const droite = libre && clavier.right.isDown;
+    const vitesse = VITESSE * (1 + BONUS_VITESSE_BOOST * (joueur.boostNiveau ?? 0)); // vitesse de marche, un peu plus grande quand le robot est boosté
     if (libre) {
         if (verrou) {
             // on laisse la vitesse du saut de mur telle quelle
         } else if (gauche) {
-            joueur.setVelocityX(-VITESSE);
+            joueur.setVelocityX(-vitesse);
             if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = true; // pendant un tir visé, le robot reste tourné vers l'ennemi
         } else if (droite) {
-            joueur.setVelocityX(VITESSE);
+            joueur.setVelocityX(vitesse);
             if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = false; // pendant un tir visé, le robot reste tourné vers l'ennemi
         } else {
             joueur.setVelocityX(0);
@@ -374,6 +378,7 @@ function chercherCible(joueur, x, y) {
     };
     if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); }); // les ennemis (sauf ceux qui sont en train de mourir)
     if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
+    if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); }); // les lanternes vivantes (voir lanterneVivante.js)
     return cible; // renvoie la cible trouvée, ou null si aucune ne convient
 }
 // choisit la cible de la visée auto au moment où on appuie sur tir : l'ennemi ou la lanterne la plus proche, des deux côtés du robot.
@@ -402,6 +407,17 @@ function tirer(joueur) {
         if (cible) orienter(joueur); // retourne l'image tout de suite, avant de calculer la position du canon
     }
     joueur.cibleTir = null;
+    lancerBalle(joueur, anim, cible); // la première balle part tout de suite
+    if (anim.recul) reculer(joueur, anim.recul);
+    // Boosté (voir boost.js), le robot tire en rafale : chaque niveau de boost ajoute une balle, 70 ms après la précédente
+    for (let i = 1; i <= (joueur.boostNiveau ?? 0); i++) {
+        scene.time.delayedCall(i * DELAI_RAFALE, () => { if (joueur.active && joueur.action !== "mort") lancerBalle(joueur, anim, cible); });
+    }
+}
+
+// crée une balle au bout du canon (à l'endroit où il est à cet instant) : vers la cible si elle est encore là, sinon dans la direction de la pose
+function lancerBalle(joueur, anim, cible) {
+    const scene = joueur.scene;
     const sens = joueur.regardeGauche ? -1 : 1; // sens du tir, calculé après le demi-tour éventuel
     const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
     const bouche = anim.bouche ?? BOUCHE;
@@ -418,14 +434,14 @@ function tirer(joueur) {
     jouerSon(scene, "tir"); // bruit du tir
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
-    if (cible) { // un ennemi est à portée
+    const cibleEncoreLa = cible && cible.active && cible.body && cible.etat !== "mort"; // (pour une balle de la rafale : la cible a pu mourir entre-temps)
+    if (cibleEncoreLa) { // un ennemi est à portée
         const angle = Phaser.Math.Angle.Between(x, y, cible.body.center.x, cible.body.center.y); // angle entre le canon et le centre de l'ennemi
         scene.physics.velocityFromRotation(angle, VITESSE_BALLE, balle.body.velocity); // envoie la balle dans cette direction, à la vitesse normale
     } else { // aucun ennemi à portée
         balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE); // tir normal, dans la direction de la visée
     }
-    joueur.scene.time.delayedCall(DUREE_BALLE, () => balle.destroy());
-    if (anim.recul) reculer(joueur, anim.recul);
+    scene.time.delayedCall(DUREE_BALLE, () => balle.destroy());
 }
 
 // Pousse le robot vers le haut quand il tire vers le bas. Une seule fois par saut : sans cette limite, on pourrait
