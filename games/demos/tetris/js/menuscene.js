@@ -89,8 +89,8 @@ export class StoryScene extends Phaser.Scene {
       '',
       '← →   déplacer la pièce',
       '↓     chute lente (accélère la descente)',
-      '↑     rotation',
-      'A     chute immédiate',
+      'A     rotation',
+      'D     chute immédiate',
       'B     mettre la pièce de côté (une fois par pièce)',
       'C     pause    Échap   quitter vers le menu'
     ];

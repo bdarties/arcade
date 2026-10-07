@@ -92,7 +92,7 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Georgia, "Courier New", monospace', fontSize: '26px', color: TEXT, fontStyle: 'bold'
     }).setOrigin(0.5);
     this.add.text(BOARD_X + BOARD_W / 2, BOARD_Y + BOARD_H + 22,
-      '← → déplacer   ↓ chute lente   ↑ rotation   A chute rapide   B réserve   C pause', {
+      '← → déplacer   ↓ chute lente   A rotation   D chute rapide   B réserve   C pause', {
         fontFamily: '"Courier New", monospace', fontSize: '12px', color: MUTED
       }).setOrigin(0.5);
 
@@ -111,16 +111,20 @@ export class GameScene extends Phaser.Scene {
       fontFamily: '"Courier New", monospace', fontSize: '14px', color: TEXT, align: 'center'
     }).setOrigin(0.5).setVisible(false);
 
-    // Entrées clavier. Les touches I / O / P sont celles que la borne envoie quand
-    // on presse les boutons physiques A / B / C (voir gpio2keys.py) : l'affichage
-    // nomme les boutons, le code écoute les touches. Ne pas « corriger » l'un sans
-    // l'autre.
+    // Entrées clavier. Les touches I / K / O / P sont celles que la borne envoie
+    // quand on presse les boutons physiques A / D / B / C (voir gpio2keys.py) :
+    // l'affichage nomme les boutons, le code écoute les touches. Ne pas
+    // « corriger » l'un sans l'autre.
     this.cursors = this.input.keyboard.createCursorKeys();
+    this.input.keyboard.on('keydown-I', () => this.doRotate(1));   // bouton A
+    this.input.keyboard.on('keydown-K', () => this.hardDrop());    // bouton D
+    this.input.keyboard.on('keydown-O', () => this.holdPiece());   // bouton B
+    this.input.keyboard.on('keydown-P', () => this.togglePause()); // bouton C
+    // Conservées pour jouer au clavier hors borne, mais non affichées : la borne
+    // n'a pas de touche Z, et le joystick vers le haut doit rester une rotation
+    // par réflexe.
     this.input.keyboard.on('keydown-UP', () => this.doRotate(1));
     this.input.keyboard.on('keydown-Z', () => this.doRotate(-1));
-    this.input.keyboard.on('keydown-I', () => this.hardDrop());
-    this.input.keyboard.on('keydown-O', () => this.holdPiece());
-    this.input.keyboard.on('keydown-P', () => this.togglePause());
     this.input.keyboard.on('keydown-LEFT', () => this.tryMove(-1, 0));
     this.input.keyboard.on('keydown-RIGHT', () => this.tryMove(1, 0));
     this.input.keyboard.on('keydown-ESC', () => {
