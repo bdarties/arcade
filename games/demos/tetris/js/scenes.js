@@ -92,7 +92,7 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Georgia, "Courier New", monospace', fontSize: '26px', color: TEXT, fontStyle: 'bold'
     }).setOrigin(0.5);
     this.add.text(BOARD_X + BOARD_W / 2, BOARD_Y + BOARD_H + 22,
-      '← → déplacer   ↓ chute lente   ↑ rotation   I chute rapide   O réserve   P pause', {
+      '← → déplacer   ↓ chute lente   ↑ rotation   A chute rapide   B réserve   C pause', {
         fontFamily: '"Courier New", monospace', fontSize: '12px', color: MUTED
       }).setOrigin(0.5);
 
@@ -111,7 +111,10 @@ export class GameScene extends Phaser.Scene {
       fontFamily: '"Courier New", monospace', fontSize: '14px', color: TEXT, align: 'center'
     }).setOrigin(0.5).setVisible(false);
 
-    // entrées clavier
+    // Entrées clavier. Les touches I / O / P sont celles que la borne envoie quand
+    // on presse les boutons physiques A / B / C (voir gpio2keys.py) : l'affichage
+    // nomme les boutons, le code écoute les touches. Ne pas « corriger » l'un sans
+    // l'autre.
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.keyboard.on('keydown-UP', () => this.doRotate(1));
     this.input.keyboard.on('keydown-Z', () => this.doRotate(-1));
@@ -280,7 +283,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   togglePause() {
-    if (this.state === 'playing') { this.state = 'paused'; this.showOverlay('PAUSE', 'Appuie sur P pour reprendre'); }
+    if (this.state === 'playing') { this.state = 'paused'; this.showOverlay('PAUSE', 'Appuie sur C pour reprendre'); }
     else if (this.state === 'paused') { this.state = 'playing'; this.hideOverlay(); }
   }
 
@@ -379,7 +382,7 @@ export class UIScene extends Phaser.Scene {
     this.nextGfx = this.add.graphics();
     py += 100;
 
-    this.add.text(PANEL_X, py, 'RÉSERVE (O)', labelStyle); py += 24;
+    this.add.text(PANEL_X, py, 'RÉSERVE (B)', labelStyle); py += 24;
     this.holdBoxY = py;
     this.holdGfx = this.add.graphics();
     py += 100;
