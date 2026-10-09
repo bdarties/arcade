@@ -52,9 +52,11 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-UP', () => { index = (index - 1 + items.length) % items.length; highlight(index); });
     this.input.keyboard.on('keydown-X', () => items[index].onSelect());
     // I lance directement la partie, comme un bouton "start" d'arcade.
+    // Affiché « A » : sur la borne, le bouton physique A est câblé sur la touche I
+    // (voir gpio2keys.py). Les libellés nomment le bouton, le code écoute la touche.
     this.input.keyboard.on('keydown-I', () => this.scene.start('PreloadScene'));
 
-    this.add.text(width / 2, height - 40, '↑ ↓ choisir · X valider · I jouer directement', {
+    this.add.text(width / 2, height - 40, '↑ ↓ choisir · X valider · A jouer directement', {
       fontFamily: '"Courier New", monospace', fontSize: '13px', color: MUTED
     }).setOrigin(0.5);
   }
@@ -87,10 +89,10 @@ export class StoryScene extends Phaser.Scene {
       '',
       '← →   déplacer la pièce',
       '↓     chute lente (accélère la descente)',
-      '↑     rotation',
-      'I     chute immédiate',
-      'O     mettre la pièce de côté (une fois par pièce)',
-      'P     pause    Échap   quitter vers le menu'
+      'A     rotation',
+      'D     chute immédiate',
+      'B     mettre la pièce de côté (une fois par pièce)',
+      'C     pause    Échap   quitter vers le menu'
     ];
     this.add.text(width / 2, py + 80, lines.join('\n'), {
       fontFamily: '"Courier New", monospace', fontSize: '15px', color: TEXT, align: 'center', lineSpacing: 6
