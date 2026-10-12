@@ -33,6 +33,9 @@ var config = {
       debug: false // mettre true pour voir les hitbox et les vecteurs d'acceleration
     }
   },
+  fps: {
+    limit: 30
+  },
   // la PREMIÈRE scène de la liste est celle qui démarre : "chargement", puis "accueil"
   scene: [chargement, accueil, choix_mode, synopsis, lobby, selection, niveau1, niveau2, niveau3, niveau_termine, gameover],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
