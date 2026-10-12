@@ -359,6 +359,17 @@ export function jouerAction(joueur, nom) {
     jouer(joueur, nom, false);
     if (anim.debut) anim.debut(joueur);
 }
+// vrai si aucun mur ne se trouve sur la ligne droite entre (x1, y1) et (x2, y2) : la balle ne traverse pas les murs, donc la visée auto non plus
+function ligneDegagee(scene, x1, y1, x2, y2) {
+    const calque = scene.groupe_plateformes; // le calque Gameplay de la map Tiled
+    if (!calque || !calque.getTileAtWorldXY) return true; // ce n'est pas une map Tiled (niveaux 2 et 3) : on ne teste pas
+    const pas = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 12); // un point tous les 12 px environ (les tuiles font 32 px : aucune ne peut être sautée)
+    for (let i = 1; i < pas; i++) { // on parcourt la ligne du robot vers l'objet (sans les deux bouts)
+        const tuile = calque.getTileAtWorldXY(x1 + (x2 - x1) * i / pas, y1 + (y2 - y1) * i / pas); // la tuile sous ce point
+        if (tuile && tuile.collides) return false; // une tuile solide : le mur bloque la vue
+    }
+    return true;
+}
 // cherche la cible la plus proche à gauche ou à droite du robot : un ennemi ou une lanterne encore allumée. Renvoie null s'il n'y en a pas.
 function chercherCible(joueur, x, y) {
     const scene = joueur.scene; // la scène où se trouve le robot
@@ -370,6 +381,7 @@ function chercherCible(joueur, x, y) {
         const dy = objet.body.center.y - y; // écart vertical entre le robot et l'objet
         const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'objet, en degrés
         if (angle > ANGLE_AUTO) return; // trop haut ou trop bas : on l'ignore
+        if (!ligneDegagee(scene, x, y, objet.body.center.x, objet.body.center.y)) return; // un mur est entre le robot et l'objet : on ne le vise pas à travers
         const distance = Math.hypot(dx, dy); // distance réelle entre le robot et l'objet
         if (distance < meilleureDistance) { // il est plus proche que le meilleur trouvé jusqu'ici
             cible = objet; // il devient la cible
