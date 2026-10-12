@@ -1,10 +1,11 @@
-// points.js : les points gagnés pendant la partie et les bonus de fin
+// points.js : les points gagnés pendant la partie, et la fin de partie (temps net envoyé au classement)
 // les points de chaque ennemi sont dans ennemis.js (archer.points, mage.points, orc.points)
+// Le classement se fait au TEMPS NET : le chrono, moins du temps pour les points gagnés. Plus petit = meilleur.
 import * as effets from "./effets.js"; // pour afficher les points gagnés à l'écran
 
-const BONUS_BOSS = 3000; // points pour avoir tué le boss final
-const BONUS_RAPIDE = 1000; // points si la partie est finie assez vite
-const DUREE_RAPIDE = 3 * 60 * 1000; // 3 minutes, en millisecondes (le chrono du HUD compte en millisecondes)
+const BONUS_BOSS = 3000; // points pour avoir tué le boss final (= 30 s retirées)
+const MS_RETIREES_PAR_POINT = 10; // 100 points = 1 seconde retirée du temps
+const DELAI_FIN = 2000; // ms entre la mort du boss et l'écran de fin : on voit le bonus s'afficher
 
 export function gagnerPoints(scene, points, x, y) { // ajoute des points au score et les affiche à l'endroit x, y
     if (!scene.hud) return; // pas de HUD dans cette scène : pas de score à mettre à jour
@@ -12,10 +13,22 @@ export function gagnerPoints(scene, points, x, y) { // ajoute des points au scor
     effets.textePoints(scene, x, y, "+" + points); // fait monter le « +100 » au-dessus de l'endroit du gain
 }
 
+export function tempsNet(tempsBrutMs, points) { // le temps qui sert au classement, jamais en dessous de 0
+    return Math.max(0, tempsBrutMs - points * MS_RETIREES_PAR_POINT);
+}
+
 export function bossTue(scene, boss) { // à appeler dans boss.js quand le boss meurt : c'est la fin de la partie
     gagnerPoints(scene, BONUS_BOSS, boss.x, boss.y); // bonus pour avoir tué le boss
-    const temps = scene.registry.get("chrono"); // temps de la partie, en millisecondes
-    if (temps < DUREE_RAPIDE) { // la partie a duré moins de 3 minutes
-        scene.time.delayedCall(600, () => gagnerPoints(scene, BONUS_RAPIDE, boss.x, boss.y - 40)); // bonus de rapidité, affiché juste après celui du boss
-    }
+    finirPartie(scene); // arrête le chrono, puis ouvre l'écran de fin
+}
+
+export function finirPartie(scene) { // arrête le chrono et envoie le joueur à l'écran de classement
+    if (scene.partieFinie) return; // déjà appelée (deux déclenchements en même temps) : on ne le fait qu'une fois
+    scene.partieFinie = true;
+    scene.registry.set("chronoActif", false); // le chrono s'arrête tout de suite : le temps de l'animation ne compte pas
+    scene.time.delayedCall(DELAI_FIN, () => {
+        const tempsBrutMs = scene.registry.get("chrono");
+        const points = scene.registry.get("score");
+        scene.scene.start("classement", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points) });
+    });
 }

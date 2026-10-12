@@ -231,6 +231,7 @@ function afficherScore(hud, anime) {
 // le chrono compte le temps passé dans les scènes qui ont un HUD (delta = ms depuis l'image précédente)
 function majChrono(hud, delta) {
     const registre = hud.scene.registry;
+    if (registre.get("chronoActif") === false) return; // partie finie : le chrono est arrêté (écrit dans points.js, finirPartie)
     registre.set("chrono", registre.get("chrono") + delta);
     afficherChrono(hud);
 }

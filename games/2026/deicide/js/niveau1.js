@@ -7,6 +7,7 @@ import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages 
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
+import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
 import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
 import { preparerLanternesVivantes } from "./lanterneVivante.js"; // les lanternes ailées qui donnent le boost
@@ -120,6 +121,8 @@ export default class niveau1 extends Phaser.Scene {
     preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
+    this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
+    this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
     effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
   }
 

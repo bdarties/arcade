@@ -4,6 +4,7 @@ import menu from "./js/menu.js";
 import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
+import classement from "./js/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
 // Un écran de 60 Hz affiche 60 images par seconde. Quand le chiffre ci-dessus divise 60 (60, 30, 20), le jeu saute simplement
@@ -46,7 +47,7 @@ var config = {
     powerPreference: "high-performance", // demande au navigateur la carte graphique la plus rapide
     maxTextures: 4 // le shader de Phaser choisit, pour chaque pixel, parmi 16 images possibles : sur un Pi 3 c'est lourd. Avec 4 il est bien plus court (voir optimisation.js)
   },
-  scene: [menu, niveau1, niveau2, niveau3], // la première scène (le menu) démarre toute seule
+  scene: [menu, niveau1, niveau2, niveau3, classement], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
@@ -64,5 +65,6 @@ if (contexte) {
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
+game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)
