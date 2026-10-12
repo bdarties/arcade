@@ -26,7 +26,8 @@ export function chargerJeu(scene) {
     chargerPersonnage(scene); // images du robot
     chargerHud(scene); // images du HUD
     scene.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
-    scene.load.tilemapTiledJSON("carte_niveau2", "./assets/maps/niveau2.json"); // map du niveau 2 (générée par outils/generer_niveaux.py)
+    scene.load.tilemapTiledJSON("carte_niveau2", "./assets/maps/niveau2.json"); // map du niveau 2 (dessinée dans Tiled)
+    scene.load.tilemapTiledJSON("carte_arene_dieu", "./assets/maps/arene_dieu.json"); // arène du dernier combat (générée par outils/generer_niveaux.py)
     scene.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
     scene.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
     ennemis.chargerEnnemis(scene); // images des ennemis

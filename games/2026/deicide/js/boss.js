@@ -1,5 +1,5 @@
-// boss.js : le Soldat de la Lumière, le boss de fin du niveau 1, dans l'arène en haut de la map
-// Le moteur (phases, attaques, barre de vie) est réglé par un profil (PROFILS) : le Soldat est le seul pour l'instant. À 0 PV il ne meurt pas : il s'enrage (voir enrager).
+// boss.js : le Soldat de la Lumière : mini-boss de fin du niveau 1 (il s'enrage à 0 PV) et boss final (version 2, plus forte, dans l'arène de niveau3.js)
+// Le moteur (phases, attaques, barre de vie) est réglé par un profil (PROFILS) : deux profils : soldat (niveau 1) et soldat2 (dernier combat). À 0 PV il ne meurt pas : il s'enrage (voir enrager).
 // Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
 //   boss_idle (8 images, il plane), boss_charge (6, il prépare une attaque), boss_attaque (4, il la lance), boss_mort (8, il se dissout).
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss), flotte en haut de la salle et attaque.
@@ -19,9 +19,9 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 //   - piqué     : il plonge sur l'endroit où le robot se tenait, puis remonte
 // Les tirs du robot le blessent. À 0 PV il s'enrage, brise le mur de l'arène (arene.js) et le robot fuit vers le niveau 2 (poursuite.js).
-import { jouerSon, musiqueBoss } from "./sons.js";
+import { jouerSon, musiqueBoss, musiqueNiveau } from "./sons.js";
 import * as effets from "./effets.js";
-import { gagnerPoints } from "./points.js";
+import { gagnerPoints, bossTue } from "./points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
 import { lacherPV } from "./bonus.js";
 import { briserMurDroit } from "./arene.js"; // le mur de droite de l'arène du Soldat
@@ -43,6 +43,15 @@ const PROFILS = {
         pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "SOLDAT DE LA LUMIÈRE", cause: "le Soldat de la Lumière", points: 1000, enrage: true, // à 0 PV il ne meurt pas : il s'enrage, le mur de l'arène se brise et on fuit vers le niveau 2 (voir arene.js et poursuite.js) ; plus court que l'ancien boss final : 2 phases seulement
         pauses: [2000, 1500, 1500],
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
+    },
+    soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
+        pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "SOLDAT DE LA LUMIÈRE ENRAGÉ", cause: "le Soldat enragé", points: 3000,
+        pauses: [1750, 1300, 950], // des attaques beaucoup plus rapprochées
+        attaques: [
+            ["orbes", "colonne", "pluie", "lanternes", "balayage"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique"]
+        ]
     }
 };
 let profil = PROFILS.soldat; // le profil du boss en cours (un seul boss à la fois : choisi par faireApparaitreBoss)
@@ -369,7 +378,7 @@ function toucherBoss(scene, boss, tir) {
     jouerSon(scene, "ennemi_touche");
     gagnerPoints(scene, POINTS_PAR_TIR, boss.x, boss.y - 120);
     majBarre(scene, boss);
-    if (boss.pv <= 0) { enrager(scene, boss); return; } // à 0 PV le Soldat ne meurt pas : il s'enrage
+    if (boss.pv <= 0) { if (profil.enrage) enrager(scene, boss); else mourir(scene, boss); return; } // à 0 PV le Soldat du niveau 1 ne meurt pas : il s'enrage ; le dernier boss, lui, meurt
     const phase = boss.pv <= profil.seuils[1] ? 2 : boss.pv <= profil.seuils[0] ? 1 : 0;
     if (phase > boss.phase) changerDePhase(scene, boss, phase);
 }
@@ -429,5 +438,33 @@ function enrager(scene, boss) {
             jouerSon(scene, "orbe");
             for (let i = -1; i <= 1; i++) creerOrbe(scene, boss.x + 120, boss.y, Math.cos(base + i * 0.25) * 300, Math.sin(base + i * 0.25) * 300);
         } });
+    });
+}
+
+function mourir(scene, boss) { // le dernier boss meurt pour de bon : il se dissout, puis c'est la fin de la partie
+    nettoyerCombat(scene, boss);
+    boss.etat = "mort";
+    musiqueNiveau(scene); // le metal s'arrête : la musique du niveau revient pour l'écran de fin
+    boss.body.enable = false;
+    if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true); // ses lanternes s'éteignent avec lui
+    jouerSon(scene, "ennemi_mort");
+    jouerSon(scene, "joueur_mort");
+    scene.cameras.main.shake(1500, 0.008);
+    boss.play("boss_mort"); // il se dissout en 1 s
+    scene.tweens.add({ targets: boss.halo, alpha: 0, duration: 1100 });
+    scene.tweens.add({ targets: elementsBarre(boss), alpha: 0, duration: 800 });
+    scene.time.addEvent({ delay: 140, repeat: 8, callback: () => { // des éclairs et des éclats pendant qu'il disparaît
+        if (!boss.active) return;
+        effets.flash(boss, 0xffffff, 60);
+        effets.eclats(scene, boss.x + Phaser.Math.Between(-140, 140), boss.y + Phaser.Math.Between(-100, 100), ECLATS_OR[0], 10, ECLATS_OR[1]);
+    } });
+    boss.once("animationcomplete-boss_mort", () => {
+        const { x, y } = boss;
+        scene.cameras.main.flash(500, 255, 255, 255); // un dernier éclair blanc
+        effets.eclats(scene, x, y, ECLATS_OR[0], 30, ECLATS_OR[1]);
+        effets.eclats(scene, x, y, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);
+        boss.destroy();
+        elementsBarre(boss).forEach((e) => e.destroy());
+        bossTue(scene, { x, y }, profil); // points du boss, chrono arrêté, classement
     });
 }

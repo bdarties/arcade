@@ -14,7 +14,7 @@
 - **Le boss de la fuite n'est pas le moteur de `boss.js`** : ses attaques étaient liées à une arène fixe de 1280 px (sol, colonnes à x précis). Pendant la fuite tout est posé par rapport au robot et à l'écran, d'où un petit fichier à part qui réutilise juste les orbes et les feuilles d'images du boss.
 
 ## Un seul code pour les niveaux
-- `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` en hérite (`extends`). On ne copie pas 150 lignes de `create`.
+- `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.
 - `endormirLesLoins` regarde aussi la distance horizontale (sinon tous les ennemis d'un niveau large dorment ou se réveillent d'un coup).
 
@@ -23,8 +23,9 @@
 - Si on change un trou, on relance le script : il vérifie que le niveau reste faisable.
 
 ## Les boss
-- `boss.js` a un profil par boss : pour l'instant seulement le **Soldat** (fin du niveau 1, 80 PV, 2 phases). Le moteur reste réutilisable (autre boss = autre profil).
-- **Le combat contre le Dieu de la Lumière a été supprimé** : après la fuite, arriver au bout du niveau 2 termine la partie (bonus de 3 000 points = 30 s retirées). La partie reste courte, et c'est la fuite qui doit être dure.
+- `boss.js` a un profil par boss : le **Soldat** (fin du niveau 1, 80 PV, 2 phases, il s'enrage à 0 PV au lieu de mourir) et le **Soldat v2** (dernier combat, 130 PV, 3 phases, rouge et plus grand, attaques bien plus rapprochées).
+- **Dernier combat** (`niveau3.js`, une arène de la taille de l'écran) : après la fuite, on affronte le même boss en version enragée. Cette fois il meurt pour de bon : bonus de 3 000 points (30 s retirées du temps net), chrono arrêté, classement.
+- Pourquoi une scène à part : `boss.js` suppose une arène de 1280 px qui commence à x = 0, alors que le niveau 2 est large.
 - **La fuite devient plus dure en avançant** (`poursuite.js`) : le mur passe de 232 à 264 px/s (le robot marche à 260, donc à la fin il faut dasher) et le boss attaque de plus en plus souvent (toutes les 2,3 s puis toutes les 1,5 s).
 
 ## Ce qui n'est pas mesuré

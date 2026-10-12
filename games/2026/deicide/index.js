@@ -3,6 +3,7 @@ import { compteurImages, regulerCadence } from "./js/optimisation.js";
 import menu from "./js/menu.js";
 import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
+import niveau3 from "./js/niveau3.js";
 import pause from "./js/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
 import { activerReset } from "./js/reset.js"; // maintenir deux boutons de la borne = retour à l'écran d'accueil
 import classement from "./js/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
@@ -48,7 +49,7 @@ var config = {
     powerPreference: "high-performance", // demande au navigateur la carte graphique la plus rapide
     maxTextures: 4 // le shader de Phaser choisit, pour chaque pixel, parmi 16 images possibles : sur un Pi 3 c'est lourd. Avec 4 il est bien plus court (voir optimisation.js)
   },
-  scene: [menu, niveau1, niveau2, classement, pause], // la première scène (le menu) démarre toute seule
+  scene: [menu, niveau1, niveau2, niveau3, classement, pause], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

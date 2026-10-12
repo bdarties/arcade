@@ -3,7 +3,6 @@
 // Le classement se fait au TEMPS NET : le chrono, moins du temps pour les points gagnés. Plus petit = meilleur.
 import * as effets from "./effets.js"; // pour afficher les points gagnés à l'écran
 
-const BONUS_FIN = 3000; // points pour avoir fini la partie (= 30 s retirées)
 const MS_RETIREES_PAR_POINT = 10; // 100 points = 1 seconde retirée du temps
 const DELAI_FIN = 2000; // ms entre la mort du boss et l'écran de fin : on voit le bonus s'afficher
 
@@ -17,8 +16,8 @@ export function tempsNet(tempsBrutMs, points) { // le temps qui sert au classeme
     return Math.max(0, tempsBrutMs - points * MS_RETIREES_PAR_POINT);
 }
 
-export function finDeLaFuite(scene, x, y) { // à appeler quand le robot arrive au bout du niveau 2 : la partie est gagnée
-    gagnerPoints(scene, BONUS_FIN, x, y); // bonus pour avoir fini (= 30 s retirées du temps net)
+export function bossTue(scene, boss, profil) { // à appeler dans boss.js quand le boss meurt pour de bon : c'est la fin de la partie
+    gagnerPoints(scene, profil.points, boss.x, boss.y); // bonus pour avoir vaincu le boss (= 10 points par seconde retirée du temps net)
     finirPartie(scene); // arrête le chrono, puis ouvre l'écran de fin
 }
 
