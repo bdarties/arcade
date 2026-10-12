@@ -23,14 +23,19 @@ const STAMINA_MAX = 100;
 const PV_PAR_PIERRE = 5;
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
-const ZOOM_CAMERA =1.5; // la caméra grossit le monde (pas le HUD, cf. creerCameraHud)
-const MARGE_ECRAN = 40; // px : en duo, la caméra suit le milieu des joueurs et aucun ne peut sortir de l'écran
+const ZOOM_CAMERA = 1.5; // zoom maximal (joueurs proches ou solo) ; la caméra HUD n'est pas zoomée, cf. creerCameraHud
+const ZOOM_MIN = 0.7; // zoom maximal vers l'arrière : à 0,7 la caméra voit 1829 x 1029 px, soit toute la zone de sol d'un niveau
+const MARGE_ZOOM = 100; // px de monde gardés autour des joueurs quand la caméra dézoome
+const VITESSE_ZOOM = 0.08; // 0 à 1 : part de l'écart au zoom voulu rattrapée à chaque image (transition douce)
+const MARGE_ECRAN = 40; // px : filet de sécurité, aucun joueur ne peut sortir de l'écran même si le zoom n'a pas fini de s'ajuster
 const ECART_DEPART_JOUEURS = 30; // px : distance minimale entre deux joueurs à leur arrivée
 const DISTANCE_MIN_ECHELLE = 200; // px : l'échelle n'est pas cachée juste à coté des joueurs
 const DUREE_FONDU = 400; // ms
 const DUREE_ENTREE_ECHELLE = 160; // ms : le joueur se place sur l'échelle
 const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'échelle, avant le changement de niveau
 const NB_CAILLOUX = 14;
+const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
+const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
 const DISTANCE_MIN_DEPART = 72; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (hors de portée d'interaction)
 const PORTEE_INTERACTION = 40; // px : distance max à l'échelle de montée pour l'utiliser
 const COULEUR_DESCENTE = { texte: "#FFAC80", forme: 0xffac80 }; // orange de la palette
@@ -192,9 +197,10 @@ export default class niveau1 extends Phaser.Scene {
     // la caméra suit le milieu des joueurs (avec un seul joueur : le joueur lui-même)
     this.cible_camera = this.add.zone(0, 0, 1, 1);
     this.placerCible();
-    this.cameras.main.setZoom(ZOOM_CAMERA);
+    this.majZoom(true);
     this.cameras.main.startFollow(this.cible_camera);
     this.cameras.main.fadeIn(DUREE_FONDU);
+
 
     /****************************
      *  OBSCURITE + TORCHE      *
@@ -213,6 +219,16 @@ export default class niveau1 extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(fct.PROFONDEUR.hud);
+
+    // compteur de FPS : créé avant creerCameraHud, qui répartit les objets entre les deux caméras (le HUD est collé à l'écran)
+    this.texte_fps = null;
+    if (AFFICHER_FPS) {
+      this.texte_fps = this.add.text(8, this.scale.height - 8, "", { fontFamily: "monospace", fontSize: "18px", color: "#7CFF7C", stroke: "#080D1C", strokeThickness: 4 })
+        .setOrigin(0, 1)
+        .setScrollFactor(0)
+        .setDepth(fct.PROFONDEUR.hud);
+      this.prochain_fps = 0;
+    }
 
     lumiere.majLumieres(this); // sinon la première image s'affiche sans obscurité
     this.creerCameraHud();
@@ -410,6 +426,24 @@ export default class niveau1 extends Phaser.Scene {
     const y = this.joueurs.reduce((somme, j) => somme + j.sprite.y, 0) / n;
     this.cible_camera.setPosition(x, y);
   }
+
+  // zoom voulu : le plus grand possible (jusqu'à ZOOM_CAMERA) pour que tous les joueurs tiennent à l'écran, avec une marge
+  // avec un seul joueur la largeur et la hauteur sont celles de la marge seule : on retombe sur ZOOM_CAMERA
+  zoomVoulu() {
+    const xs = this.joueurs.map((j) => j.sprite.x);
+    const ys = this.joueurs.map((j) => j.sprite.y);
+    const largeur = Math.max(...xs) - Math.min(...xs) + 2 * MARGE_ZOOM;
+    const hauteur = Math.max(...ys) - Math.min(...ys) + 2 * MARGE_ZOOM;
+    return Phaser.Math.Clamp(Math.min(this.scale.width / largeur, this.scale.height / hauteur), ZOOM_MIN, ZOOM_CAMERA);
+  }
+
+  // rapproche le zoom de la caméra du zoom voulu (immediat : sans transition, pour le début du niveau)
+  majZoom(immediat = false) {
+    const camera = this.cameras.main;
+    const cible = this.zoomVoulu();
+    camera.setZoom(immediat ? cible : Phaser.Math.Linear(camera.zoom, cible, VITESSE_ZOOM));
+  }
+
 
   // en duo, aucun joueur ne peut sortir de l'écran : on le retient (ou on l'entraine avec la caméra) à la marge près
   limiterAEcran() {
@@ -684,7 +718,16 @@ export default class niveau1 extends Phaser.Scene {
 
 
 
+  // images par seconde, et nombre de lumières Light2D affichées (visibles / existantes) : de quoi mesurer le coût de la lumière
+  majFps(time) {
+    if (time < this.prochain_fps) return;
+    this.prochain_fps = time + PERIODE_FPS;
+    const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : "";
+    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres);
+  }
+
   update(time, delta) {
+    if (this.texte_fps) this.majFps(time);
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
       return;
@@ -726,6 +769,7 @@ export default class niveau1 extends Phaser.Scene {
     butin.majButin(this, secondes);
     if (this.etat.safe) offrande.majOffrande(this);
     this.placerCible();
+    this.majZoom();
     this.limiterAEcran();
     lumiere.majLumieres(this);
 

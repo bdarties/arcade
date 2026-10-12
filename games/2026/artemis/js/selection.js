@@ -72,8 +72,8 @@ export default class selection extends Phaser.Scene {
     });
 
     // synopsis (cf. synopsis.js) : une image par page, texte compris
-    ["1", "2"].forEach((numero) => {
-      this.load.image("img_synopsis_" + numero, "./assets/ui/page_synopsis" + numero + ".png");
+    [["img_synopsis_1", "page_synopsis1"], ["img_synopsis_2", "page_synopsis2"], ["img_synopsis_solo", "page_synopsis_solo"]].forEach(([cle, fichier]) => {
+      this.load.image(cle, "./assets/ui/" + fichier + ".png");
     });
 
     // menu pause (cf. pause.js)
