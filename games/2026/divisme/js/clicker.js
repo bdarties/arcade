@@ -34,7 +34,7 @@ import {
 // ==============================
 
 // Durée de la manche, en secondes
-const DUREE_MANCHE = 20;
+const DUREE_MANCHE = 15;
 
 // SOLO : le crescendo
 const GAIN_PAR_CLIC = 4;        // % de jauge gagnés à chaque clic
@@ -156,7 +156,7 @@ export default class clicker extends Phaser.Scene {
 
         if (this.nombreJoueurs === 1) {
             lignes = [
-                "Clique sur le gros bouton, ou appuie sur les boutons A à F, le plus vite possible.",
+                "Appuie sur les boutons A à F, le plus vite possible.",
                 "La jauge descend toute seule : ne t'arrête pas !",
                 "Remplis-la avant la fin du temps pour gagner."
             ];
