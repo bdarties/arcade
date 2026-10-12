@@ -1,9 +1,9 @@
 import * as fct from "./fonctions.js";
 
-export default class Ecran_fin extends Phaser.Scene {
+export default class Ecran_score extends Phaser.Scene {
   constructor() {
     super({
-      key: "Ecran_fin"
+      key: "Ecran_score"
     });
   }
 

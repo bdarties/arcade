@@ -208,7 +208,7 @@ export default class Niveau_demo extends Phaser.Scene {
   create() {
       fct.doNothing();
       fct.doAlsoNothing();
-      //definition du timer
+      //definition des paramètres du jeu
       temps_restant = 80;
       cles_creees = 0;
       cles_recuperees = 0;
@@ -676,7 +676,7 @@ export default class Niveau_demo extends Phaser.Scene {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
       camJ2UI.ignore([...hudJ1, temps_restant_affiche]);
     }
-    camGlobalUI.ignore([...hudJ1, ...hudJ2, temps_restant_affiche]);
+    camGlobalUI.ignore([...hudJ1, ...hudJ2]);
   }
   
 
@@ -799,7 +799,7 @@ export default class Niveau_demo extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
       gagnant = "Joueur 2";
-      this.scene.switch("Ecran_fin", {
+      this.scene.switch("Ecran_score", {
         gagnant,
         scoreJ1: player.score,
         scoreJ2: player2.score,
