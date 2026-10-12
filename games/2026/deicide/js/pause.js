@@ -123,9 +123,9 @@ export default class pause extends Phaser.Scene {
             this.lignes.push(texte);
             if (ligne.type !== "curseur") return;
             const valeur = reglages[ligne.reglage];
-            const volume = ligne.max === VOLUME_MAX; // les volumes ont 10 cases fines, la luminosité 5 cases larges
+            const volume = ligne.max === VOLUME_MAX; // les volumes ont 10 cases fines, la luminosité 7 cases larges
             const nbCases = volume ? VOLUME_MAX : LUMINOSITE_MAX;
-            const largeur = volume ? 20 : 40; // largeur d'une case : les deux curseurs ont à peu près la même longueur
+            const largeur = volume ? 20 : 28; // largeur d'une case : les deux curseurs ont à peu près la même longueur
                         for (let c = 0; c < nbCases; c++) {
                 this.dessin.fillStyle(c < valeur ? PLEIN : VIDE, 1);
                 this.dessin.fillRect(600 + c * (largeur + 4), y - 11, largeur, 22);

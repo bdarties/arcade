@@ -120,7 +120,7 @@ const ECHELLE_VOILE = 0.25;
 // s'éclaircit jusqu'à 100 % (écran inchangé). Le résultat à l'écran est le même, mais le voile se redessine en 2 passes pour
 // la carte graphique au lieu de 4 : (1) fond gris + lumières dessinées par-dessus avec le mode "écran" (SCREEN), qui éclaircit,
 // (2) copie dans le voile. Plus besoin de vider puis de repeindre le voile avant d'y percer les trous.
-const GRIS_PAR_LUMINOSITE = [0, 0x66, 0x80, 0x99, 0xb3, 0xcc]; // le gris de l'ombre pour chaque réglage de luminosité (1 à 5) : 3 = 60 % de gris, l'écran assombri de 40 % (c'était 0x666666 puis 0x808080 : le jeu était trop sombre)
+const GRIS_PAR_LUMINOSITE = [0, 0x66, 0x80, 0x99, 0xb3, 0xcc, 0xe6, 0xff]; // le gris de l'ombre pour chaque réglage de luminosité (1 à 7, le 7 = 0xff : plus aucune ombre) : 3 = 60 % de gris, l'écran assombri de 40 % (c'était 0x666666 puis 0x808080 : le jeu était trop sombre)
 function grisOmbre() { const g = GRIS_PAR_LUMINOSITE[reglages.luminosite]; return (g << 16) | (g << 8) | g; } // le gris du réglage, écrit en couleur (ex. 0x99 donne 0x999999)
 export function appliquerLuminosite(scene) { // change le gris de l'ombre en direct (menu pause)
     scene.fondVoile.setTint(grisOmbre()); // le fond du voile prend le nouveau gris

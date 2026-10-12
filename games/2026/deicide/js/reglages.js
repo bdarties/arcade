@@ -3,7 +3,7 @@
 
 const CLE = "deicide_reglages"; // nom sous lequel les réglages sont rangés dans le navigateur
 export const VOLUME_MAX = 10; // les volumes vont de 0 à 10 : 10 = le volume prévu à l'origine (on ne peut pas faire plus fort)
-export const LUMINOSITE_MAX = 5; // la luminosité va de 1 (sombre) à 5 (clair)
+export const LUMINOSITE_MAX = 7; // la luminosité va de 1 (sombre) à 7 (aucune ombre)
 const PAR_DEFAUT = { musique: VOLUME_MAX, effets: VOLUME_MAX, luminosite: 3 }; // luminosité 3 = le gris 0x99 réglé pour le jeu
 
 export const reglages = { ...PAR_DEFAUT }; // l'objet partagé par tout le jeu : sons.js et lumiere.js le lisent à chaque fois
