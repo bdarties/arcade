@@ -40,14 +40,18 @@ export default class infos extends Phaser.Scene {
     if (this.depuis_pause) this.time.delayedCall(DELAI_RETOUR_PAUSE, () => { this.retour = false; });
     this.cameras.main.setBackgroundColor("#080D1C");
     this.cameras.main.fadeIn(DUREE_FONDU);
-    this.add.image(0, 0, "img_fond_menu").setOrigin(0, 0);
-    // voile sombre sous le texte, pour qu'il reste lisible sur le décor
-    this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080d1c, 0.72).setOrigin(0, 0);
+    if (this.page === "commandes") {
+      // une image de 1280x720 qui contient tout : fond, titre et schéma des deux joueurs
+      this.add.image(0, 0, "img_commandes").setOrigin(0, 0);
+    } else {
+      this.add.image(0, 0, "img_fond_menu").setOrigin(0, 0);
+      // voile sombre sous le texte, pour qu'il reste lisible sur le décor
+      this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080d1c, 0.72).setOrigin(0, 0);
+      this.dessinerCredits();
+    }
 
-    if (this.page === "commandes") this.dessinerCommandes();
-    else this.dessinerCredits();
-
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur un bouton pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#BFC3CC" })
+    // le contour garde la consigne lisible sur l'image des commandes
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur un bouton pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     this.touches = fct.JOUEURS.map((joueur) => fct.creerTouches(this, joueur.touches));
