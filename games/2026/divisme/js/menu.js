@@ -25,7 +25,7 @@ export default class menu extends Phaser.Scene {
 
     // Ne lance la musique que si elle n'est pas déjà en train de jouer dans le jeu
     if (!this.sound.get('background')) {
-      var musique_de_fond = this.sound.add('background', { loop: true, volume: 0.6 }); // TODO : Vérifier si la musique est à un bon volume
+      var musique_de_fond = this.sound.add('background', { loop: true, volume: 0.5 }); 
       musique_de_fond.play();  // lancement du son background
     }
 

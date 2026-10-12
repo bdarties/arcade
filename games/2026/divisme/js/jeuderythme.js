@@ -96,7 +96,7 @@ export default class jeuderythme extends Phaser.Scene {
 
         // Images
         this.load.image("rythme_bg", "src/bg/rythme_bg.png");
-        this.load.image("chanteuse", "src/sprite/spriteMJ.png");
+        this.load.image("chanteuse", "src/sprite/sprite_mj.png");
 
         // Masques : ce sont les mêmes que dans clicker.js.
         // Si la clé existe déjà dans le jeu, Phaser ne recharge pas le fichier.
