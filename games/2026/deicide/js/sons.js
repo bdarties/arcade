@@ -19,7 +19,7 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     lanterne: 0.5, // une lanterne est éteinte (verre qui casse)
     porte: 0.5, // le joueur passe une porte
     orc_coup: 0.5, // coup de faux de l'orc
-    charge_boss: 0.55 // le boss prépare une attaque : grondement grave en ré (accord de puissance saturé + coup de sub), fabriqué par synthèse (voir DEVLOG.md)
+    charge_boss: 0.55 // le boss prépare une attaque : un laser grave (il monte de ré3 à ré4 puis « zappe » vers la2), sans aigu agressif ; fabriqué par synthèse (outils/fabriquer_charge_boss.py)
 };
 const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
 export const VOLUME_MUSIQUE_BOSS = 0.42; // la musique des combats de boss est franchement plus forte que celle du niveau (0,3 avec un morceau plus doux) // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil

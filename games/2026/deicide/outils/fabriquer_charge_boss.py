@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Fabrique le bruit de préparation d'attaque du boss (assets/sons/charge_boss.mp3), par synthèse : aucun fichier son externe.
+"""Fabrique le bruit de préparation d'attaque du boss (assets/sons/charge_boss.mp3) : un laser qui monte puis « zappe », par synthèse.
 
-Idée : la musique du boss est du metal en ré. Le bruit qui annonce une attaque doit donc être GRAVE et SATURÉ, pas un tintement aigu :
-  - un accord de puissance en ré (ré, la, ré, ré aigu), chaque note jouée par trois oscillateurs en dents de scie légèrement désaccordés (épaisseur) ;
-  - un bruit grave qui gonfle pendant la montée ;
-  - une distorsion (tanh) pour le grain du metal ;
-  - un coup de grave (55 Hz) quand l'attaque part.
+Choix pour qu'il soit grave sans être désagréable :
+  - des ondes douces (sinus + triangle), pas de dents de scie ni de grosse distorsion : pas de grain agressif ;
+  - la hauteur monte de ré3 (147 Hz) à ré4 (294 Hz) en 0,6 s (la charge), puis redescend vite jusqu'à la2 (110 Hz) en 0,2 s (le « zap ») : tout reste dans la gamme de ré ;
+  - un très léger vibrato, une attaque douce (pas de clic) et deux petits échos qui arrondissent le son ;
+  - un filtre qui coupe tout au-dessus de 2 200 Hz : rien d'aigu ni de strident.
 Utilisation :  python3 outils/fabriquer_charge_boss.py   (il faut numpy et ffmpeg)
 """
 import os
@@ -15,38 +15,39 @@ import wave
 import numpy as np
 
 SR = 44100
-DUREE = 0.85  # s : un peu plus long que la plus courte préparation d'attaque du boss
+DUREE = 1.0  # s, échos compris
 SORTIE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "sons", "charge_boss.mp3")
 
 t = np.arange(int(SR * DUREE)) / SR
-rng = np.random.default_rng(7)
+CHARGE, ZAP = 0.60, 0.20  # s : la montée, puis la descente rapide
 
+# la fréquence à chaque instant : montée en courbe douce, puis chute
+f = np.where(t < CHARGE,
+             146.83 * 2 ** (t / CHARGE),                                  # ré3 -> ré4 (une octave)
+             np.where(t < CHARGE + ZAP, 293.66 * (110.0 / 293.66) ** ((t - CHARGE) / ZAP), 110.0))  # ré4 -> la2
+f = f * (1 + 0.006 * np.sin(2 * np.pi * 6.5 * t))                        # un léger vibrato
+phase = 2 * np.pi * np.cumsum(f) / SR                                    # on intègre la fréquence pour avoir la phase (sinon le glissando « craque »)
+x = np.sin(phase) + 0.35 * np.sin(2 * phase) + 0.25 * (2 / np.pi) * np.arcsin(np.sin(phase * 1.003))  # sinus + un peu d'harmonique + triangle
 
-def dent_de_scie(f, phase=0.0):
-    return 2 * ((f * t + phase) % 1.0) - 1
+enveloppe = np.minimum(1, t / 0.06) * np.where(t < CHARGE, 0.45 + 0.55 * (t / CHARGE), np.where(t < CHARGE + ZAP, 1.0, 0.0))  # attaque douce, plus fort en montant
+enveloppe *= np.where(t >= CHARGE, np.exp(-(t - CHARGE) / 0.22), 1.0)    # le zap s'éteint doucement
+x = np.tanh(1.3 * x * enveloppe)                                         # un soupçon de saturation seulement
 
-
-x = np.zeros_like(t)
-for f, gain in [(36.71, 0.9), (73.42, 1.0), (110.0, 0.8), (146.83, 0.5)]:  # ré1, ré2, la2, ré3
-    for desaccord in (-0.35, 0.0, 0.35):  # en pourcentage de la fréquence
-        x += gain * dent_de_scie(f * (1 + desaccord / 100.0), rng.random()) / 3
-
-bruit = np.convolve(rng.standard_normal(len(t)), np.ones(40) / 40, "same")  # un bruit grave
-x += bruit * np.linspace(0, 1, len(t)) ** 2 * 0.8  # qui gonfle
-
-enveloppe = np.minimum(1, t / 0.05) * np.where(t < 0.62, (t / 0.62) ** 1.5 * 0.85 + 0.15, np.exp(-(t - 0.62) / 0.07))  # monte jusqu'à 0,62 s puis coupe net
-x = np.tanh(3.2 * x * enveloppe)  # la distorsion
-coup = np.sin(2 * np.pi * 55 * t) * np.exp(-np.maximum(0, t - 0.60) / 0.09) * (t >= 0.60) * 1.2  # le coup de grave
-x = (x * 0.8 + coup)
-x = x / np.max(np.abs(x)) * 0.9
-x[-200:] *= np.linspace(1, 0, 200)  # petit fondu final : pas de clic
+# deux petits échos : ils arrondissent le son sans le brouiller
+sortie = x.copy()
+for retard, gain in ((0.09, 0.28), (0.18, 0.14)):
+    n = int(SR * retard)
+    sortie[n:] += gain * x[:-n]
+sortie /= np.max(np.abs(sortie))
+sortie *= 0.85
+sortie[-400:] *= np.linspace(1, 0, 400)
 
 wav = SORTIE.replace(".mp3", ".tmp.wav")
-with wave.open(wav, "w") as f:
-    f.setnchannels(1)
-    f.setsampwidth(2)
-    f.setframerate(SR)
-    f.writeframes((x * 32767).astype("<i2").tobytes())
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-af", "lowpass=f=1800,alimiter=limit=0.9", "-c:a", "libmp3lame", "-b:a", "128k", SORTIE], check=True)
+with wave.open(wav, "w") as w:
+    w.setnchannels(1)
+    w.setsampwidth(2)
+    w.setframerate(SR)
+    w.writeframes((sortie * 32767).astype("<i2").tobytes())
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-af", "lowpass=f=2200,alimiter=limit=0.9", "-c:a", "libmp3lame", "-b:a", "128k", SORTIE], check=True)
 os.remove(wav)
 print("écrit :", os.path.abspath(SORTIE))
