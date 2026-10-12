@@ -48,6 +48,8 @@ var temps_restant_affiche
 var temps_restant;
 var groupe_areignee;
 var arreignee;
+var camerasFusionnees = true; //sert a former une camera globale une fois les deux proches
+var cibleCamera; // point invisible au milieu des deux joueurs
 var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points
 var sortie_ouverte = false;
 var gameOver = false;
@@ -565,11 +567,14 @@ export default class Niveau_demo extends Phaser.Scene {
     camJ1UI.setScroll(0, 0);
     camJ1UI.ignore(this.children.list);
     //cameraJoueur2
-     if (mode_deux_joueurs){
+    //note : la camera J2 aparait quand même même lorsque les
     camJ2 = this.cameras.add(1280/2, 0, 1280/2, 720);
-    camJ2.startFollow(player2, true, 0.1, 0.1);
+    if (mode_deux_joueurs){
+      camJ2.startFollow(player2, true, 0.1, 0.1);
+    }
     camJ2.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.widthInPixels);
     camJ2.setZoom(2);
+     if (mode_deux_joueurs){
     camJ2UI = this.cameras.add(1280 / 2, 0, 1280 / 2, 720);
     camJ2UI.setScroll(0, 0);
     camJ2UI.ignore(this.children.list);
@@ -577,7 +582,13 @@ export default class Niveau_demo extends Phaser.Scene {
     camGlobalUI = this.cameras.add(0, 0, 1280, 720);
     camGlobalUI.setScroll(0, 0);
     camGlobalUI.ignore(this.children.list);
-
+    cibleCamera = this.add.zone(player.x, player.y, 1, 1);
+    if (mode_deux_joueurs) {
+      fusionner_cameras();
+    } else {
+      camJ1.setViewport(0, 0, 1280, 720); // plein écran, suit uniquement player
+      camJ2.setVisible(false);
+    }
     /************************************ 
      * ELEMENTS DE L'UI
     ************************************/
@@ -596,19 +607,21 @@ export default class Niveau_demo extends Phaser.Scene {
     temps_restant_affiche.setOrigin(0.5, 0);
 
     //élements de l'UI du joueur 2
-    score_J2_affiche = this.add.text(100, 16, 'Score : ' + player2.score, { fontSize: '32px', fill: '#f03b3b' });
-    score_J2_affiche.setOrigin(0.5, 0);
-    score_J2_affiche.setScrollFactor(0)
-    balle_restanteJ2_affiche = this.add.text(180,64,'Balles restante : ' + player2.balle_restante,{ fontSize: '32px', fill: '#571881'})
-    balle_restanteJ2_affiche.setOrigin(0.5, 0)
-    balle_restanteJ2_affiche.setScrollFactor(0)
-    points_viesJ2_affiche = this.add.text(160, 144, 'Points de vie : ' + player2.points_vies, { fontSize: '32px', fill: '#e75550' });
-    points_viesJ2_affiche.setScrollFactor(0);
-    points_viesJ2_affiche.setOrigin(0.5,0)
+    if (mode_deux_joueurs){
+      score_J2_affiche = this.add.text(100, 16, 'Score : ' + player2.score, { fontSize: '32px', fill: '#f03b3b' });
+      score_J2_affiche.setOrigin(0.5, 0);
+      score_J2_affiche.setScrollFactor(0)
+      balle_restanteJ2_affiche = this.add.text(180,64,'Balles restante : ' + player2.balle_restante,{ fontSize: '32px', fill: '#571881'})
+      balle_restanteJ2_affiche.setOrigin(0.5, 0)
+      balle_restanteJ2_affiche.setScrollFactor(0)
+      points_viesJ2_affiche = this.add.text(160, 144, 'Points de vie : ' + player2.points_vies, { fontSize: '32px', fill: '#e75550' });
+      points_viesJ2_affiche.setScrollFactor(0);
+      points_viesJ2_affiche.setOrigin(0.5,0)
+    }
+    //elements UI global
     cles_restantes_affiche = this.add.text(640, 20, 'Clés à récupérer : ' + nombre_cles, { fontSize: '32px', fill: '#cd50ff' });
     cles_restantes_affiche.setOrigin(0.5, 0);
     cles_restantes_affiche.setScrollFactor(0);
-
 
 
     /*************************************
@@ -667,15 +680,14 @@ export default class Niveau_demo extends Phaser.Scene {
     this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
     const hudJ1 = [score_J1_affiche, balle_restanteJ1_affiche, points_viesJ1_affiche];
-    const hudJ2 = [score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche];
-    const hudCommun = [temps_restant_affiche, cles_restantes_affiche];
-
-    camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-    camJ1UI.ignore(hudJ2);
-    if (mode_deux_joueurs) {
-      camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-      camJ2UI.ignore([...hudJ1, temps_restant_affiche]);
-    }
+  const hudJ2 = mode_deux_joueurs ? [score_J2_affiche, balle_restanteJ2_affiche, points_viesJ2_affiche] : [];
+  const hudCommun = [temps_restant_affiche, cles_restantes_affiche];
+  camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
+  camJ1UI.ignore(hudJ2);
+  if (mode_deux_joueurs) {
+    camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
+    camJ2UI.ignore([...hudJ1, temps_restant_affiche]);
+  }
     camGlobalUI.ignore([...hudJ1, ...hudJ2]);
   }
   
@@ -685,8 +697,10 @@ export default class Niveau_demo extends Phaser.Scene {
 /***********************************************************************/
 
   update() {
+  if (mode_deux_joueurs) {
+    gerer_cameras();
+  }
     deplacement_areignee.call(this);
-
     //commandes joueur1
     player.setVelocity(0);
     if (J1Gauche.isDown){
@@ -816,6 +830,35 @@ export default class Niveau_demo extends Phaser.Scene {
 /**FONCTIONS DU JEU **/
 /************************************************************************/
 
+function gerer_cameras() {
+  const distance = Phaser.Math.Distance.Between(player.x, player.y, player2.x, player2.y);
+
+  // deux seuils différents pour prévenir le clignotement a la limite
+  if (camerasFusionnees && distance > 300) {
+    separer_cameras();
+  } else if (!camerasFusionnees && distance < 250) {
+    fusionner_cameras();
+  }
+
+  if (camerasFusionnees) {
+    cibleCamera.setPosition((player.x + player2.x) / 2, (player.y + player2.y) / 2);
+  }
+}
+
+function fusionner_cameras() {
+  camerasFusionnees = true;
+  camJ1.setViewport(0, 0, 1280, 720);
+  camJ1.startFollow(cibleCamera, true, 0.1, 0.1);
+  camJ2.setVisible(false);
+}
+
+function separer_cameras() {
+  camerasFusionnees = false;
+  camJ1.setViewport(0, 0, 1280 / 2, 720);
+  camJ1.startFollow(player, true, 0.1, 0.1);
+  camJ2.setVisible(true);
+}
+
 function deplacement_areignee() {
   const joueurs = mode_deux_joueurs ? [player, player2] : [player];
   groupe_araignee.children.iterate((ennemi) => {
@@ -823,25 +866,27 @@ function deplacement_areignee() {
       return;
     }
     let joueur_cible = null;
-    let distance_min = Infinity;
+    let distance_min_areignee = Infinity;
     joueurs.forEach((joueur) => {
       if (!joueur || !joueur.active) {
         return;
       }
-      const distance = Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y);
-      if (distance < distance_min) {
-        distance_min = distance;
+      const distance_areignee = Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y);
+      if (distance_areignee < distance_areignee) {
+        distance_min_areignee = distance_areignee;
         joueur_cible = joueur;
       }
     });
 
-    if (joueur_cible && distance_min <= 250) {
+    if (joueur_cible && distance_min_areignee <= 250) {
       this.physics.moveToObject(ennemi, joueur_cible, 70);
     } else {
       ennemi.setVelocity(0, 0);
     }
   });
 }
+
+
 
 function apparition_elements() {
   if (groupe_araignee.countActive(true) + groupe_cle.countActive(true) < tableau_spawn.length) { //on empeche de accidentellement avoir plus de d'éléments que de spawn disponible
