@@ -69,7 +69,7 @@ function attaquer(scene, p) {
     p.prochaineAttaque = scene.time.now + surLeTemps(scene, quantifier(Phaser.Math.Linear(PAUSE_ATTAQUES_DEBUT, PAUSE_ATTAQUES_FIN, Phaser.Math.Clamp((scene.player.x - scene.depart.x) / Math.max(1, scene.xFin - scene.depart.x), 0, 1))));
     p.boss.play("boss_charge");
     p.boss.once("animationcomplete-boss_charge", () => p.boss.play("boss_idle"));
-    jouerSonSurLeTemps(scene, "mage_incante");
+    jouerSonSurLeTemps(scene, "charge_boss");
     if (nom === "orbes") scene.time.delayedCall(450, () => tirerOrbes(scene, p));
     else if (nom === "pluie") annoncerPluie(scene, p);
     else annoncerColonne(scene, p);

@@ -23,6 +23,7 @@
 - **Mesure de la musique** (Boss Battle #8, analysée avec un script) : 200 battements par minute, donc un battement = 300 ms. L'introduction dure exactement 8 mesures (9,6 s) et la boucle 170 battements (51 s), donc la boucle repart bien sur un temps. La tonalité est en ré (mineur : le sib est présent).
 - **Les bruitages sont accordés** : au lieu d'une hauteur au hasard (±1 demi-ton), chaque son prend, pendant un combat de boss, la note de la gamme de ré mineur la plus proche. J'ai mesuré la hauteur de chaque son (analyse de son spectre) pour calculer de combien le décaler (tableau `ACCORD` dans `sons.js`).
 - **Les attaques sont en rythme** : leurs durées sont arrondies à des croches (150 ms), elles démarrent sur une croche (position de la musique lue avec `seek`), et les sons d'attaque (incantation, orbes, rayon) sont joués sur la croche la plus proche. Mesuré : en moyenne 14 ms d'écart à la croche, 33 ms au maximum (une image à 30 images par seconde).
+- **Le bruit avant une attaque du boss est fabriqué** (`outils/fabriquer_charge_boss.py`) : l'ancien son (incantation du mage) était un tintement aigu (énergie surtout vers 1 300 Hz). Le nouveau est un accord de puissance en ré, saturé, avec un coup de grave : 90 % de son énergie sous 300 Hz, pic à 110 Hz (la). Il monte pendant 0,6 s puis le coup tombe pile quand l'attaque part.
 - Le robot lui-même (tir, saut) reste instantané : on ne retarde jamais une action du joueur.
 
 ## Un seul code pour les niveaux
