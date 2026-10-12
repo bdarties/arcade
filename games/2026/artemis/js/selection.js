@@ -71,6 +71,16 @@ export default class selection extends Phaser.Scene {
       this.load.image("img_bouton_" + nom, "./assets/ui/bouton_" + nom + ".png");
     });
 
+    // synopsis (cf. synopsis.js) : une image par page, texte compris
+    ["1", "2"].forEach((numero) => {
+      this.load.image("img_synopsis_" + numero, "./assets/ui/page_synopsis" + numero + ".png");
+    });
+
+    // menu pause (cf. pause.js)
+    ["reprendre", "controles", "classement", "retour_menu"].forEach((nom) => {
+      this.load.image("img_pause_" + nom, "./assets/ui/pause/" + nom + ".png");
+    });
+
     // game over (cf. gameover.js)
     this.load.image("img_fond_game_over", "./assets/ui/background_game_over.jpg");
     this.load.image("img_titre_game_over", "./assets/ui/game_over.png");
@@ -129,6 +139,7 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("fondSonore", "./assets/sons/fond_sonore.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("echelle", "./assets/sons/ladder.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
+    /* >>>>> AJOUT IMAGE <<<<< */ this.load.image("img_commandes", "./assets/commandes.png");
   }
 
   /***********************************************************************/

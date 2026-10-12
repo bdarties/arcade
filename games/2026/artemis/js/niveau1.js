@@ -23,6 +23,7 @@ const STAMINA_MAX = 100;
 const PV_PAR_PIERRE = 5;
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
+const ZOOM_CAMERA =1.5; // la caméra grossit le monde (pas le HUD, cf. creerCameraHud)
 const MARGE_ECRAN = 40; // px : en duo, la caméra suit le milieu des joueurs et aucun ne peut sortir de l'écran
 const ECART_DEPART_JOUEURS = 30; // px : distance minimale entre deux joueurs à leur arrivée
 const DISTANCE_MIN_ECHELLE = 200; // px : l'échelle n'est pas cachée juste à coté des joueurs
@@ -32,6 +33,8 @@ const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'éche
 const NB_CAILLOUX = 14;
 const DISTANCE_MIN_DEPART = 72; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (hors de portée d'interaction)
 const PORTEE_INTERACTION = 40; // px : distance max à l'échelle de montée pour l'utiliser
+const COULEUR_DESCENTE = { texte: "#FFAC80", forme: 0xffac80 }; // orange de la palette
+const COULEUR_MONTEE = { texte: "#9DD9FF", forme: 0x9dd9ff }; // bleu de la palette
 const DISTANCE_MIN_CAILLOU = 64; // px : pas de caillou sur un joueur à son arrivée
 const COUPS_CAILLOU = 3; // coups de pioche pour casser un caillou
 const FRAME_IMPACT_PIOCHE = 2; // frame de l'animation de coup (0 à 3) où la pioche touche : c'est là que le caillou encaisse
@@ -169,11 +172,17 @@ export default class niveau1 extends Phaser.Scene {
       offrande.creerOffrande(this); // bulle au-dessus de la statue
     }
     ennemis.creerEnnemis(this, calque_sol, calque_murs, this.etat.safe ? 0 : undefined); // aucun ennemi dans la salle safe
-    // "1/2" affiché au-dessus d'une échelle quand un seul des deux joueurs est dessus
+   
+    // indication au-dessus d'un passage proche : texte + flèche (vers le bas pour descendre, vers le haut pour monter)
+    // profondeur au-dessus de l'obscurité : sinon le texte serait noyé dans le noir
     this.compteur_echelle = this.add.text(0, 0, "", { fontFamily: fct.POLICES.bouton, fontSize: "16px", color: "#E8EBF0", stroke: "#20283A", strokeThickness: 4 })
       .setOrigin(0.5, 1)
-      .setDepth(fct.PROFONDEUR.projectiles)
+      .setDepth(fct.PROFONDEUR.obscurite + 0.5)
       .setVisible(false);
+    this.fleche_passage = this.add.triangle(0, 0, 0, 0, 16, 0, 8, 11, 0xffffff)
+      .setDepth(fct.PROFONDEUR.obscurite + 0.5)
+      .setVisible(false);
+
 
     /****************************
      *  MONDE ET CAMERA         *
@@ -183,6 +192,7 @@ export default class niveau1 extends Phaser.Scene {
     // la caméra suit le milieu des joueurs (avec un seul joueur : le joueur lui-même)
     this.cible_camera = this.add.zone(0, 0, 1, 1);
     this.placerCible();
+    this.cameras.main.setZoom(ZOOM_CAMERA);
     this.cameras.main.startFollow(this.cible_camera);
     this.cameras.main.fadeIn(DUREE_FONDU);
 
@@ -191,6 +201,8 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     lumiere.creerObscurite(this); // le noir qui couvre l'écran (cf. lumiere.js)
     this.calque_murs = calque_murs; // les rayons de lumière s'arrêtent sur ce calque
+    lumiere.eclairerCalques(this, [calque_sol, calque_murs]);
+    lumiere.eclairerObjets(this);
 
     /****************************
      *  HUD                     *
@@ -203,6 +215,30 @@ export default class niveau1 extends Phaser.Scene {
       .setDepth(fct.PROFONDEUR.hud);
 
     lumiere.majLumieres(this); // sinon la première image s'affiche sans obscurité
+    this.creerCameraHud();
+  }
+
+  // fondu au noir de l'écran entier : le monde et le HUD ont chacun leur caméra
+  fondu() {
+    this.cameras.main.fadeOut(DUREE_FONDU);
+    this.camera_hud.fadeOut(DUREE_FONDU);
+  }
+
+  // le zoom grossit tout ce que filme la caméra principale, HUD compris : une 2e caméra, sans zoom, ne filme que le HUD
+  // - le HUD (objets collés à l'écran) : seulement la caméra du HUD
+  // - l'obscurité : seulement la caméra principale (elle grossit avec le monde, la lumière reste bien placée)
+  // - le monde (tout le reste, y compris ce qui sera créé plus tard) : seulement la caméra principale
+  creerCameraHud() {
+    const camera_hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.camera_hud = camera_hud;
+    camera_hud.fadeIn(DUREE_FONDU);
+    this.children.list.forEach((objet) => {
+      if (objet !== this.obscurite && objet.scrollFactorX === 0) this.cameras.main.ignore(objet);
+      else camera_hud.ignore(objet);
+    });
+    const ignorer = (objet) => camera_hud.ignore(objet);
+    this.events.on("addedtoscene", ignorer);
+    this.events.once("shutdown", () => this.events.off("addedtoscene", ignorer));
   }
 
   // crée un joueur : un objet qui regroupe tout ce qui lui est propre (sprite, touches, vie, outil, torche...)
@@ -492,6 +528,7 @@ export default class niveau1 extends Phaser.Scene {
   changerDeNiveau(niveau, arrivee) {
     this.changement_niveau = true;
     this.compteur_echelle.setVisible(false);
+    this.fleche_passage.setVisible(false);
     this.sauvegarderEtat();
     /* >>>>> AJOUT SON <<<<< */ son_echelle.play(); // bruit d'échelle pendant la descente ou la montée
 
@@ -521,7 +558,7 @@ export default class niveau1 extends Phaser.Scene {
     });
 
     // l'écran s'assombrit pendant la fin de l'animation
-    this.time.delayedCall(DUREE_ENTREE_ECHELLE + DUREE_ECHELLE - DUREE_FONDU, () => this.cameras.main.fadeOut(DUREE_FONDU));
+    this.time.delayedCall(DUREE_ENTREE_ECHELLE + DUREE_ECHELLE - DUREE_FONDU, () => this.fondu());
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.scene.restart({
         niveau: niveau,
@@ -596,6 +633,57 @@ export default class niveau1 extends Phaser.Scene {
     fct.majBarre(j.barre_stamina, j.stamina, STAMINA_MAX);
   }
 
+
+  // abandon de la partie depuis le menu pause : les sons de la partie s'arrêtent (la prochaine partie relancera la musique)
+  quitterPartie() {
+    musique_de_fond.stop();
+    son_echelle.stop();
+    musique_en_cours = false;
+  }
+
+  // trou (descente) et échelle (montée) : un joueur proche voit l'indication, et le bouton "interagir" change de niveau
+  // il faut que tous les joueurs soient proches ; l'un d'eux appuie. Renvoie true si on change de niveau.
+  majPassages() {
+    const passages = [];
+    if (this.trou.visible) passages.push({ objet: this.trou, niveau: this.niveau + 1, arrivee: "haut", verbe: "descendre", couleur: COULEUR_DESCENTE, vers_le_bas: true });
+    if (this.echelle_montee) passages.push({ objet: this.echelle_montee, niveau: this.niveau - 1, arrivee: "bas", verbe: "monter", couleur: COULEUR_MONTEE, vers_le_bas: false });
+
+    // on lit les appuis à chaque image, même loin d'un passage : JustDown garde un appui en mémoire
+    // jusqu'à sa lecture, sinon un appui d'avant servirait au moment d'arriver près de l'échelle
+    const appuis = this.joueurs.filter((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir));
+
+    this.passage_proche = null;
+    for (const p of passages) {
+      const proches = this.joueurs.filter((j) =>
+        Phaser.Math.Distance.Between(j.sprite.body.center.x, j.sprite.body.center.y, p.objet.x, p.objet.y) <= PORTEE_INTERACTION);
+      if (proches.length === 0) continue;
+
+      const tous = proches.length === this.joueurs.length;
+      if (tous && appuis.some((j) => proches.includes(j))) {
+        this.changerDeNiveau(p.niveau, p.arrivee);
+        return true;
+      }
+
+      // indication : "[I] descendre" quand tout le monde est là, sinon "descendre 1/2"
+      const touches = this.joueurs.map((j) => j.definition.touches.interagir).join(" / ");
+      this.compteur_echelle.setText(tous ? "[" + touches + "] " + p.verbe : p.verbe + " " + proches.length + "/" + this.joueurs.length);
+      this.compteur_echelle.setColor(p.couleur.texte);
+      // la flèche oscille doucement, dans le sens du passage
+      const oscillation = Math.sin(this.time.now / 180) * 3;
+      this.compteur_echelle.setPosition(p.objet.x, p.objet.y - 36);
+      this.fleche_passage.setPosition(p.objet.x, p.objet.y - 24 + oscillation).setAngle(p.vers_le_bas ? 0 : 180).setFillStyle(p.couleur.forme);
+      this.passage_proche = p.objet;
+      break; // un seul passage à la fois
+    }
+
+    this.compteur_echelle.setVisible(this.passage_proche !== null);
+    this.fleche_passage.setVisible(this.passage_proche !== null);
+    return false;
+  }
+
+
+
+
   update(time, delta) {
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
@@ -616,11 +704,19 @@ export default class niveau1 extends Phaser.Scene {
         this.game_over_lance = true;
         this.joueurs.forEach((j) => { j.sprite.setVelocity(0, 0).setTint(0x777788); j.sprite.anims.stop(); });
         this.ennemis.getChildren().forEach((e) => e.setVelocity(0, 0));
-        this.time.delayedCall(1200, () => this.cameras.main.fadeOut(DUREE_FONDU));
+        this.time.delayedCall(1200, () => this.fondu());
         this.cameras.main.once("camerafadeoutcomplete", () => {
           this.scene.start("gameover", { niveau: this.niveau, pierres: pierres.nombrePierres(this) });
         });
       }
+      return;
+    }
+
+    // bouton Pause d'un joueur (I / R) : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
+    if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
+      this.sound.pauseAll();
+      this.scene.pause();
+      this.scene.launch("pause");
       return;
     }
 
@@ -633,34 +729,6 @@ export default class niveau1 extends Phaser.Scene {
     this.limiterAEcran();
     lumiere.majLumieres(this);
 
-    // descente : tous les joueurs doivent être sur le trou (automatique)
-    // montée : tous les joueurs doivent être près de l'échelle et l'un d'eux appuie sur "interagir"
-    // tant qu'ils ne sont pas tous là, on affiche "1/2" au-dessus
-    let partiel = null;
-    if (this.trou.visible) {
-      const nb_dessus = this.joueurs.filter((j) => this.physics.overlap(j.sprite, this.trou)).length;
-      if (nb_dessus === this.joueurs.length) {
-        this.changerDeNiveau(this.niveau + 1, "haut");
-        return;
-      }
-      if (nb_dessus > 0) partiel = { objet: this.trou, texte: nb_dessus + "/" + this.joueurs.length };
-    }
-    if (this.echelle_montee) {
-      const proches = this.joueurs.filter((j) =>
-        Phaser.Math.Distance.Between(j.sprite.x, j.sprite.y, this.echelle_montee.x, this.echelle_montee.y) <= PORTEE_INTERACTION);
-      if (proches.length === this.joueurs.length && proches.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir))) {
-        this.changerDeNiveau(this.niveau - 1, "bas");
-        return;
-      }
-      if (proches.length > 0) {
-        const nom = proches[0].definition.touches.interagir;
-        partiel = { objet: this.echelle_montee, texte: proches.length === this.joueurs.length ? "[" + nom + "] monter" : proches.length + "/" + this.joueurs.length };
-      }
-    }
-    this.compteur_echelle.setVisible(partiel !== null);
-    if (partiel) {
-      this.compteur_echelle.setText(partiel.texte);
-      this.compteur_echelle.setPosition(partiel.objet.x, partiel.objet.y - 20);
-    }
+    if (this.majPassages()) return;
   }
 }
