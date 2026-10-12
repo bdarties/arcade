@@ -40,7 +40,8 @@ const SOLIDES = [
   [336, 752, 256, 32], // les plateformes qui mènent à la porte 2
   [608, 752, 240, 80],
   [240, 640, 160, 80],
-  [624, 592, 240, 48]
+  [624, 592, 240, 48],
+  [350, 508, 270, 18] // la passerelle sous la porte 2 : sans elle, on ne pouvait pas se tenir devant
 ];
 
 // Les échelles dessinées dans la carte (calque "decor"). La carte Tiled ne les décrit pas : on les relève ici.
@@ -50,7 +51,8 @@ const ECHELLES = [
   { x: 221, haut: 1328, bas: 1440 }, // sous l'estrade de la porte 1 (« Les Coulisses »)
   { x: 382, haut: 976, bas: 1281 }, // la longue échelle du milieu
   { x: 642, haut: 1034, bas: 1210 }, // à droite de la billetterie
-  { x: 815, haut: 596, bas: 756 } // sous la porte 2 (« Les Ombres chinoises »)
+  { x: 815, haut: 596, bas: 756 }, // sous la porte 2 (« Les Ombres chinoises »)
+  { x: 470, haut: 752, bas: 960, dessiner: true } // AJOUTÉE : relie la poutre du bas aux plateformes du haut (rien n'y menait)
 ];
 
 // Où apparaissent les joueurs (x, et y du sol sur lequel ils se posent)
@@ -168,6 +170,18 @@ export default class lobby extends Phaser.Scene {
       return meilleur;
     };
     this.echelles = ECHELLES.map((e) => ({ centreX: e.x, haut: caler(e.x, e.haut), bas: caler(e.x, e.bas) }));
+
+    // Les échelles ajoutées après coup ne sont pas dans l'illustration : on les dessine nous-mêmes
+    ECHELLES.forEach((e, i) => {
+      if (e.dessiner == true) {
+        const { haut, bas } = this.echelles[i];
+        const dessin = this.add.graphics().setDepth(4);
+        dessin.lineStyle(4, 0xc9a24a).lineBetween(e.x - 8, haut, e.x - 8, bas).lineBetween(e.x + 8, haut, e.x + 8, bas);
+        for (let y = haut + 12; y < bas; y += 18) {
+          dessin.lineBetween(e.x - 8, y, e.x + 8, y); // les barreaux
+        }
+      }
+    });
   }
 
   // Haut / bas du joystick devant une échelle pour s'y accrocher (même principe qu'au niveau 1)

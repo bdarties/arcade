@@ -1,271 +1,269 @@
+// ============================================================================
+//  js/niveau2.js — NIVEAU 2 : LES OMBRES CHINOISES (carte Tiled « map2maestro »)
+//
+//  Ce niveau « hérite » du niveau 1 (class niveau2 extends niveau1) : il reprend TOUTES ses
+//  mécaniques sans les recopier — les deux héros, la lampe, les ondes Do / Mi / Sol, les cristaux,
+//  les cœurs, la caméra, les échelles, le mode solo et duo. Il ne redéfinit que ce qui change :
+//  la carte, les objets à ramasser et les textes.
+//
+//  OBJECTIF : ramasser 3 LAMPES (il y en a 7 sur le chemin), puis rejoindre la PORTE en haut à droite.
+//
+//  - Les plateformes et les échelles sont lues dans la carte Tiled (propriétés estSolide / estEchelle).
+//  - Des CRISTAUX colorés gardent le chemin : il faut tirer la note de la même couleur (Cantatrice).
+//  - Dans la ZONE SOMBRE, des passerelles fantômes mènent à une lampe BONUS (+1 cœur) :
+//    le Détective doit les éclairer avec sa lampe.
+// ============================================================================
 
-const LARGEUR_CARTE = 2176;   // 68 tuiles x 32 px
-const HAUTEUR_CARTE = 736;    // 23 tuiles x 32 px
-const VITESSE_MARCHE = 160;
-const VITESSE_SAUT = -330;    // même saut que les autres niveaux du gabarit
-const VITESSE_ECHELLE = 120;  // vitesse de montée / descente sur une échelle
-const LAMPES_REQUISES = 0;    // lampes à ramasser pour pouvoir sortir (0 = aucune, 7 = toutes)
+import niveau1 from "./niveau1.js";
 
-// positions [x, y] des 7 lampes : 4 sur la route du haut, 3 sur la route du bas
+const LARGEUR_MONDE = 2176; // 68 tuiles de 32 px
+const HAUTEUR_MONDE = 736; // 23 tuiles de 32 px
+const TAILLE_TUILE = 32;
+const LAMPES_REQUISES = 3; // lampes à ramasser pour ouvrir la porte
+
+// Positions [x, y] des 7 lampes : 4 sur la route du haut, 3 sur la route du bas
 const POSITIONS_LAMPES = [
-  [780, 258], [1070, 258], [1350, 226], [1620, 258],   // route du haut
-  [1085, 514], [1230, 418], [1620, 514]                // route du bas
+  [780, 258], [1070, 258], [1350, 226], [1620, 258], // route du haut
+  [1085, 514], [1230, 418], [1620, 514] // route du bas
 ];
 
-export default class niveau2 extends Phaser.Scene {
-  // constructeur de la classe
+// La lampe bonus, tout en haut, et les deux passerelles fantômes qui y mènent (x, y = coin haut gauche)
+const LAMPE_BONUS = { x: 1150, y: 40 };
+const PASSERELLES = [
+  { x: 1060, y: 220, width: 64, height: 16 },
+  { x: 1120, y: 110, width: 64, height: 16 }
+];
+const ZONE_SOMBRE = { x: 1000, y: 0, largeur: 300, hauteur: 260 };
+
+// Cristaux colorés : note 0 = Do (rouge), 1 = Mi (bleu), 2 = Sol (doré)
+const CRISTAUX = [
+  { x: 760, y: 190, note: 0 },
+  { x: 1180, y: 400, note: 1 },
+  { x: 1700, y: 220, note: 2 }
+];
+
+// Les échelles de la carte (2 tuiles de large chacune) : x = milieu, haut / bas = hauteur des pieds en haut et en bas
+const ECHELLES = [
+  { centreX: 64, haut: 384, bas: 640 }, // à gauche, du sol à la plateforme du départ
+  { centreX: 2048, haut: 288, bas: 544 } // à droite, vers la porte
+];
+// Petits paliers invisibles au sommet des échelles : le haut de l'échelle n'est pas pile sous une plateforme
+const PALIERS = [
+  { x: 32, y: 384, width: 64, height: 16 },
+  { x: 1984, y: 288, width: 112, height: 16 }
+];
+
+const DEPART_J1 = { x: 120, y: 640 }; // y = hauteur du sol
+const DEPART_J2 = { x: 170, y: 640 };
+const PORTE = { x: 1836, solY: 288 }; // la porte se pose sur la plateforme d'arrivée
+const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
+
+export default class niveau2 extends niveau1 {
   constructor() {
-    super({
-      key: "niveau2" //  ici on précise le nom de la classe en tant qu'identifiant
-    });
+    super("niveau2"); // la clé de la scène
   }
 
   // --------------------------------------------------------------------------
-  // preload : chargement du fond, du tileset et de la carte
+  //  PRELOAD : le fond, l'image des tuiles et la carte
   // --------------------------------------------------------------------------
   preload() {
-    // comme dans selection.js : on indique où se trouvent les fichiers du jeu
     this.load.setBaseURL(this.sys.game.config.baseURL);
+    this.load.image("fond_theatre", "./assets/map2_sombre.jpg");
+    this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
+    this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json");
+  }
 
-    this.load.image("fond_theatre", "./assets/map2_sombre.jpg");      // fond (déjà assombri)
-    this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");    // image du tileset
-    this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json"); // la carte
+  // Ce qui change par rapport au niveau 1 (voir definirNiveau dans niveau1.js)
+  definirNiveau() {
+    this.largeurMonde = LARGEUR_MONDE;
+    this.hauteurMonde = HAUTEUR_MONDE;
+    this.couleurFond = 0x05070f;
+    this.listeTubas = []; // pas de Tuba dans ce niveau
+    this.listeCristaux = CRISTAUX;
+    this.messageVictoire = "Niveau 2 terminé ! Retour au lobby...";
+    this.niveauSuivant = "lobby";
+    this.objectif = "OBJECTIF : ramasse " + LAMPES_REQUISES + " lampes (il y en a 7 sur le chemin),\npuis rejoins la porte en haut à droite";
+    this.lampesRamassees = 0;
   }
 
   // --------------------------------------------------------------------------
-  // create : on construit le niveau (décor, objets, joueur, caméra)
+  //  La carte : décor (calques de tuiles), puis les zones solides, les échelles, les passerelles
   // --------------------------------------------------------------------------
-  create() {
-    // remise à zéro : create() est rappelée à chaque restart
-    this.estMort = false;
-    this.niveauTermine = false;
-    this.enEchelle = false;
-    this.lampesRamassees = 0;
+  creerCarte() {
+    this.groupe_plateformes = this.physics.add.staticGroup(); // plateformes solides
+    this.groupe_fantomes = this.physics.add.staticGroup(); // passerelles fantômes
+    this.groupe_murs = this.physics.add.staticGroup(); // (pas de mur dans ce niveau, mais le niveau 1 en a besoin)
+    this.avecTuilesPlateformes = false; // les passerelles fantômes utilisent le dessin de secours
 
-    // si on revient dans ce niveau après l'avoir terminé, on le recommence à zéro
-    this.events.off("wake");
-    this.events.on("wake", () => {
-      if (this.niveauTermine == true) {
-        this.scene.restart();
+    this.add.image(0, 0, "fond_theatre").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0);
+
+    // Les calques, du plus loin au plus proche : les noms doivent être identiques à ceux de Tiled
+    const carte = this.add.tilemap("carte_theatre");
+    const tuiles = carte.addTilesetImage("tileset_maestro", "tuiles_theatre");
+    const noms = [
+      "calque_background",
+      "calque_background2", // contient les échelles
+      "calque_background2_bis",
+      "Calque_deco",
+      "Calque_deco_bis",
+      "Calque_deco_ter",
+      "calque_plateformes"
+    ];
+    noms.forEach((nom, i) => carte.createLayer(nom, tuiles).setDepth(1 + i * 0.5));
+
+    this.creerSolidesDepuisLesTuiles(carte);
+    PALIERS.forEach((palier) => this.ajouterPlateforme(palier));
+    this.echelles = ECHELLES;
+
+    // Zone sombre + passerelles fantômes qui mènent à la lampe bonus
+    this.add
+      .rectangle(ZONE_SOMBRE.x, ZONE_SOMBRE.y, ZONE_SOMBRE.largeur, ZONE_SOMBRE.hauteur, 0x000008, 0.55)
+      .setOrigin(0, 0)
+      .setDepth(4);
+    PASSERELLES.forEach((passerelle) => this.ajouterFantome(passerelle));
+
+    // Ce que le niveau 1 attend de la carte
+    this.departs = { j1: DEPART_J1, j2: DEPART_J2 };
+    this.yChute = LIGNE_DE_CHUTE;
+
+    // Panneaux d'indication
+    this.ajouterIndice(250, 540, "Monte à l'échelle (haut)");
+    this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
+    this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une lampe BONUS (+1 cœur)");
+    this.ajouterIndice(1840, 110, "La porte s'ouvre quand tu as " + LAMPES_REQUISES + " lampes");
+  }
+
+  // Les tuiles marquées « estSolide » dans Tiled deviennent des rectangles invisibles solides.
+  // On regroupe les tuiles voisines (d'abord en lignes, puis les lignes identiques empilées) pour en avoir peu.
+  creerSolidesDepuisLesTuiles(carte) {
+    const calque = carte.getLayer("calque_plateformes");
+    const estSolide = (ligne, colonne) => {
+      const tuile = colonne < carte.width ? calque.data[ligne][colonne] : null;
+      return tuile != null && tuile.index != -1 && tuile.properties.estSolide == true;
+    };
+
+    // 1) les suites de tuiles solides sur chaque ligne
+    const suites = [];
+    for (let ligne = 0; ligne < carte.height; ligne++) {
+      let debut = -1;
+      for (let colonne = 0; colonne <= carte.width; colonne++) {
+        if (estSolide(ligne, colonne) == true && debut == -1) {
+          debut = colonne;
+        } else if (estSolide(ligne, colonne) == false && debut != -1) {
+          suites.push({ ligne: ligne, debut: debut, fin: colonne - 1 });
+          debut = -1;
+        }
+      }
+    }
+
+    // 2) deux suites l'une sous l'autre, de mêmes colonnes, forment un seul bloc
+    const blocs = [];
+    suites.forEach((suite) => {
+      const bloc = blocs.find((b) => b.debut == suite.debut && b.fin == suite.fin && b.ligneFin == suite.ligne - 1);
+      if (bloc !== undefined) {
+        bloc.ligneFin = suite.ligne;
+      } else {
+        blocs.push({ debut: suite.debut, fin: suite.fin, ligneDebut: suite.ligne, ligneFin: suite.ligne });
       }
     });
 
-    /*************************************
-     *  FOND + CARTE TILED               *
-     *************************************/
-    // le fond est posé en (0,0) et étiré à la taille exacte de la carte
-    this.add.image(0, 0, "fond_theatre").setOrigin(0, 0).setDisplaySize(LARGEUR_CARTE, HAUTEUR_CARTE);
-
-    // les calques, du plus loin au plus proche : les noms doivent être identiques à ceux de Tiled
-    this.carte = this.add.tilemap("carte_theatre");
-    const tileset = this.carte.addTilesetImage("tileset_maestro", "tuiles_theatre");
-    this.carte.createLayer("calque_background", tileset);
-    this.calque_echelles = this.carte.createLayer("calque_background2", tileset); // contient les échelles
-    this.carte.createLayer("calque_background2_bis", tileset);
-    this.carte.createLayer("Calque_deco", tileset);
-    this.carte.createLayer("Calque_deco_bis", tileset);
-    this.carte.createLayer("Calque_deco_ter", tileset);
-    this.calque_plateformes = this.carte.createLayer("calque_plateformes", tileset);
-    this.calque_plateformes.setCollisionByProperty({ estSolide: true });
-
-    /*************************************
-     *  DÉPART ET ARRIVÉE (calque objets)  *
-     *************************************/
-    // NOUVEAU : on lit des rectangles dessinés dans Tiled, dans le calque d'objets "objets"
-    const pointDepart = this.carte.findObject("objets", function (objet) {
-      return objet.name === "depart";
+    blocs.forEach((b) => {
+      this.ajouterPlateforme({
+        x: b.debut * TAILLE_TUILE,
+        y: b.ligneDebut * TAILLE_TUILE,
+        width: (b.fin - b.debut + 1) * TAILLE_TUILE,
+        height: (b.ligneFin - b.ligneDebut + 1) * TAILLE_TUILE
+      });
     });
-    const pointArrivee = this.carte.findObject("objets", function (objet) {
-      return objet.name === "arrivee";
-    });
+  }
 
-    // NOUVEAU : une zone invisible devant le rideau rouge (true = corps statique, ne bouge pas)
-    this.zone_sortie = this.add.zone(
-      pointArrivee.x + pointArrivee.width / 2,
-      pointArrivee.y + pointArrivee.height / 2,
-      pointArrivee.width,
-      pointArrivee.height
-    );
-    this.physics.add.existing(this.zone_sortie, true);
+  // Une plateforme = un rectangle invisible avec un corps statique (le décor est déjà dessiné par les tuiles)
+  ajouterPlateforme(objet) {
+    const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height);
+    this.groupe_plateformes.add(zone);
+  }
 
-    // (la porte de retour du gabarit n'existe plus : on revient au lobby en gagnant)
-
-    /*************************************
-     *  LAMPES À RAMASSER                *
-     *************************************/
-    // NOUVEAU : pas d'image de lampe dans le gabarit, alors on en dessine une
-    // (graphics + generateTexture fabriquent une vraie texture réutilisable)
+  // --------------------------------------------------------------------------
+  //  Objets : les lampes à ramasser et la porte de sortie
+  // --------------------------------------------------------------------------
+  creerObjets() {
+    // Pas d'image de lampe : on en dessine une (graphics + generateTexture fabriquent une vraie texture)
     if (this.textures.exists("img_lampe_theatre") == false) {
-      const dessin = this.add.graphics();
-      dessin.fillStyle(0xff9a1f).fillRect(6, 18, 8, 7);   // le pied
-      dessin.fillStyle(0xffd24a).fillCircle(10, 10, 9);   // la flamme
-      dessin.fillStyle(0xffffff).fillCircle(8, 8, 3);     // un reflet
+      const dessin = this.make.graphics({ add: false });
+      dessin.fillStyle(0xff9a1f).fillRect(6, 18, 8, 7); // le pied
+      dessin.fillStyle(0xffd24a).fillCircle(10, 10, 9); // la flamme
+      dessin.fillStyle(0xffffff).fillCircle(8, 8, 3); // un reflet
       dessin.generateTexture("img_lampe_theatre", 20, 26);
       dessin.destroy();
     }
-    this.groupe_lampes = this.physics.add.group();
-    POSITIONS_LAMPES.forEach((position) => {
-      const lampe = this.groupe_lampes.create(position[0], position[1], "img_lampe_theatre");
-      lampe.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-    });
-    this.physics.add.collider(this.groupe_lampes, this.calque_plateformes);
 
-    /*************************************
-     *  PERSONNAGE + CLAVIER             *
-     *************************************/
-    this.player = this.physics.add.sprite(pointDepart.x + 20, pointDepart.y + 24, "cantatrice_idle");
-    this.player.body.setSize(24, 54).setOffset(20, 10); // hitbox plus fine que l'image 64 x 64
-    this.player.setCollideWorldBounds(true);
-    this.clavier = this.input.keyboard.createCursorKeys();
-    this.physics.add.collider(this.player, this.calque_plateformes);
-    this.physics.add.overlap(this.player, this.groupe_lampes, this.ramasserLampe, null, this);
+    this.groupe_lampes = this.physics.add.group({ allowGravity: false });
+    POSITIONS_LAMPES.forEach((position) => this.ajouterLampe(position[0], position[1], false));
+    this.ajouterLampe(LAMPE_BONUS.x, LAMPE_BONUS.y, true);
 
-    /*************************************
-     *  MONDE + CAMÉRA                   *
-     *************************************/
-    this.physics.world.setBounds(0, 0, LARGEUR_CARTE, HAUTEUR_CARTE);
-    // NOUVEAU : (gauche, droite, haut, bas) -> le bas du monde ne bloque plus : on peut tomber dans les fosses
-    this.physics.world.setBoundsCollision(true, true, true, false);
-    this.cameras.main.setBounds(0, 0, LARGEUR_CARTE, HAUTEUR_CARTE);
-    this.cameras.main.startFollow(this.player);
-    this.cameras.main.fadeIn(600); // NOUVEAU : fondu à l'arrivée
-
-    /*************************************
-     *  TEXTES FIXÉS À L'ÉCRAN           *
-     *************************************/
-    const police = 'Georgia, "Goudy Bookletter 1911", Times, serif';
-    this.texte_lampes = this.add.text(20, 20, "Lampes : 0 / " + POSITIONS_LAMPES.length, {
-      fontFamily: police, fontSize: "20pt", fill: "#fff", stroke: "#000", strokeThickness: 4
-    });
-    this.texte_lampes.setScrollFactor(0).setDepth(10); // setScrollFactor(0) : le texte ne suit pas la caméra
-
-    this.texte_message = this.add.text(640, 90, "Niveau 2 : le théâtre", {
-      fontFamily: police, fontSize: "22pt", fill: "#ffe9a8", stroke: "#000", strokeThickness: 4
-    });
-    this.texte_message.setOrigin(0.5).setScrollFactor(0).setDepth(10);
-    this.afficherMessage("Niveau 2 : le théâtre\n↑ ↓ pour grimper aux échelles · Espace devant le rideau rouge pour sortir", 5000);
+    // La porte de sortie (même image que le niveau 1), fermée au début
+    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie", 0);
+    this.porte.setDepth(3);
+    this.porteOuverte = false;
   }
 
-  // --------------------------------------------------------------------------
-  // update : tourne en boucle (~60 fois par seconde)
-  // --------------------------------------------------------------------------
-  update() {
-    // rien à faire pendant la mort ou la sortie du niveau
-    if (this.estMort == true || this.niveauTermine == true) {
+  ajouterLampe(x, y, bonus) {
+    const lampe = this.groupe_lampes.create(x, y, "img_lampe_theatre");
+    lampe.setDepth(6);
+    lampe.bonus = bonus;
+    if (bonus == true) {
+      lampe.setTint(0x9fd8ff).setScale(1.3); // la lampe bonus est bleutée et plus grosse
+    }
+    // elle flotte doucement
+    this.tweens.add({ targets: lampe, y: y - 8, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  }
+
+  // Ramasser les lampes, franchir la porte
+  collisionsObjets() {
+    this.physics.add.overlap(this.persos, this.groupe_lampes, this.ramasserLampe, null, this);
+    this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
+  }
+
+  ramasserLampe(perso, lampe) {
+    lampe.disableBody(true, true); // la lampe disparaît
+
+    if (lampe.bonus == true) {
+      // la lampe de l'ombre rend un cœur (sans dépasser le maximum)
+      this.vies = Math.min(this.vies + 1, this.viesMax);
+      this.majCoeurs();
+      this.afficherMessage("Lampe de l'ombre ! +1 cœur", 3000);
       return;
     }
 
-    // ---- Échelle : on s'accroche en appuyant haut/bas devant une échelle, on lâche en la quittant ----
-    const surUneEchelle = this.estSurEchelle();
-    if (surUneEchelle == true && (this.clavier.up.isDown || this.clavier.down.isDown)) {
-      this.enEchelle = true;
-    }
-    if (surUneEchelle == false) {
-      this.enEchelle = false;
-    }
-    // NOUVEAU : sur l'échelle, on coupe la gravité de ce joueur seulement
-    this.player.body.allowGravity = (this.enEchelle == false);
-
-    // ---- Gauche / droite ----
-    if (this.clavier.left.isDown) {
-      this.player.setVelocityX(-VITESSE_MARCHE);
-      this.player.setFlipX(true);
-      this.player.anims.play("cantatrice_walk", true);
-    } else if (this.clavier.right.isDown) {
-      this.player.setVelocityX(VITESSE_MARCHE);
-      this.player.setFlipX(false);
-      this.player.anims.play("cantatrice_walk", true);
-    } else {
-      this.player.setVelocityX(0);
-      this.player.anims.play("cantatrice_idle", true);
-    }
-
-    // ---- Vertical : monter / descendre sur l'échelle, sinon sauter ----
-    if (this.enEchelle == true) {
-      if (this.clavier.up.isDown) {
-        this.player.setVelocityY(-VITESSE_ECHELLE);
-      } else if (this.clavier.down.isDown) {
-        this.player.setVelocityY(VITESSE_ECHELLE);
-      } else {
-        this.player.setVelocityY(0); // immobile sur l'échelle
-      }
-    } else if (this.clavier.up.isDown && this.player.body.blocked.down) {
-      // avec une tilemap on utilise blocked.down (et non touching.down)
-      this.player.setVelocityY(VITESSE_SAUT);
-    }
-
-    // ---- Chute dans une fosse : sous le bas de la carte, on recommence ----
-    if (this.player.y > HAUTEUR_CARTE + 60) {
-      this.mourir();
-      return;
-    }
-
-    // ---- Touche Espace : porte de retour ou sortie du niveau ----
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.space) == true) {
-      if (this.physics.overlap(this.player, this.zone_sortie)) {
-        this.sortirDuNiveau();
-      }
-    }
-  }
-
-  // ==========================================================================
-  //  Méthodes du niveau
-  // ==========================================================================
-
-  // NOUVEAU : vrai si le joueur est devant une tuile d'échelle.
-  // On regarde la tuile au centre du joueur ET celle sous ses pieds, puis on lit la propriété
-  // "estEchelle" posée dans Tiled (comme "estSolide", mais pour les échelles).
-  estSurEchelle() {
-    const corps = this.player.body;
-    const tuileCentre = this.calque_echelles.getTileAtWorldXY(corps.center.x, corps.center.y);
-    const tuilePieds = this.calque_echelles.getTileAtWorldXY(corps.center.x, corps.bottom - 2);
-    return this.tuileEstUneEchelle(tuileCentre) || this.tuileEstUneEchelle(tuilePieds);
-  }
-
-  tuileEstUneEchelle(tuile) {
-    // getTileAtWorldXY renvoie null s'il n'y a pas de tuile à cet endroit
-    return tuile != null && tuile.properties != null && tuile.properties.estEchelle == true;
-  }
-
-  // Le joueur ramasse une lampe (même principe que les étoiles du tutoriel)
-  ramasserLampe(un_player, une_lampe) {
-    une_lampe.disableBody(true, true);
     this.lampesRamassees += 1;
-    this.texte_lampes.setText("Lampes : " + this.lampesRamassees + " / " + POSITIONS_LAMPES.length);
+    this.texteFragment.setText(Math.min(this.lampesRamassees, LAMPES_REQUISES) + " / " + LAMPES_REQUISES);
+    if (this.lampesRamassees == LAMPES_REQUISES) {
+      this.porteOuverte = true;
+      this.porte.anims.play("porte_ouvre"); // la porte s'ouvre
+      this.iconeFragment.clearTint();
+      this.afficherMessage("Assez de lampes ! La porte est ouverte, rejoins-la en haut à droite.", 4000);
+    } else if (this.lampesRamassees < LAMPES_REQUISES) {
+      this.afficherMessage("Lampe " + this.lampesRamassees + " / " + LAMPES_REQUISES, 1500);
+    }
   }
 
-  // Sortie par le rideau rouge : possible seulement si on a assez de lampes
-  sortirDuNiveau() {
-    if (this.lampesRamassees < LAMPES_REQUISES) {
-      this.afficherMessage("Il te faut " + LAMPES_REQUISES + " lampes pour ouvrir le rideau !", 2500);
+  // Devant la porte : si elle est fermée on explique pourquoi, sinon le niveau est gagné
+  franchirPorte() {
+    if (this.porteOuverte == false) {
+      if (this.time.now > this.messageJusqua) {
+        this.afficherMessage("Il te faut " + LAMPES_REQUISES + " lampes pour ouvrir la porte !", 2000);
+      }
       return;
     }
-    this.niveauTermine = true;
-    this.player.setVelocity(0, 0);
-    this.physics.pause();
-    this.afficherMessage("Bravo, niveau terminé !", 2000);
-    this.cameras.main.fadeOut(1200); // NOUVEAU : fondu au noir
-    this.time.delayedCall(1200, () => {
-      this.scene.start("lobby"); // niveau gagné : retour au lobby
-    });
+    super.franchirPorte();
   }
 
-  // Mort dans une fosse : le joueur devient rouge, puis le niveau recommence
-  mourir() {
-    this.estMort = true;
-    this.player.setTint(0xff0000);
-    this.physics.pause();
-    this.cameras.main.fadeOut(600);
-    this.time.delayedCall(700, () => {
-      this.scene.restart();
-    });
-  }
-
-  // Affiche un message au centre de l'écran, puis l'efface après "duree" millisecondes
-  afficherMessage(texte, duree) {
-    this.texte_message.setText(texte);
-    this.time.delayedCall(duree, () => {
-      this.texte_message.setText("");
-    });
+  // --------------------------------------------------------------------------
+  //  Interface : on reprend celle du niveau 1, le compteur affiche les lampes à la place du parchemin
+  // --------------------------------------------------------------------------
+  creerInterface() {
+    super.creerInterface();
+    this.iconeFragment.setTexture("img_lampe_theatre").setDisplaySize(30, 40);
+    this.texteFragment.setText("0 / " + LAMPES_REQUISES);
   }
 }

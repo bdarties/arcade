@@ -41,15 +41,33 @@ const NOTES = [
 
 // La carte Tiled ne place pas d'ennemis : on les place ici (positions en pixels)
 const TUBAS = [{ x: 1900, solY: 620, xMin: 1820, xMax: 1990 }]; // sur la grande plateforme du bas, entre les 2 échelles
+// Chaque cristal a une COULEUR (= une note). Seule l'onde de la même note le détruit ;
+// une autre note ne fait que l'étourdir un instant.
 const CRISTAUX = [
-  { x: 700, y: 250 },
-  { x: 1000, y: 340 },
-  { x: 1620, y: 380 }
+  { x: 700, y: 250, note: 0 }, // Do (rouge)
+  { x: 1000, y: 340, note: 1 }, // Mi (bleu)
+  { x: 1620, y: 380, note: 2 } // Sol (doré)
 ];
 
 export default class niveau1 extends Phaser.Scene {
-  constructor() {
-    super({ key: "niveau1" });
+  // niveau2.js « hérite » de cette classe : il reprend toutes les mécaniques (héros, lampe, ondes, ennemis, vies)
+  // et ne redéfinit que ce qui change (la carte, les objets à ramasser, les textes). On lui passe donc sa clé.
+  constructor(cle = "niveau1") {
+    super({ key: cle });
+  }
+
+  // --------------------------------------------------------------------------
+  //  Ce qui change d'un niveau à l'autre (niveau2.js redéfinit cette méthode)
+  // --------------------------------------------------------------------------
+  definirNiveau() {
+    this.largeurMonde = LARGEUR_MONDE;
+    this.hauteurMonde = HAUTEUR_MONDE;
+    this.couleurFond = COULEUR_FOND;
+    this.listeTubas = TUBAS;
+    this.listeCristaux = CRISTAUX;
+    this.messageVictoire = "Niveau 1 terminé ! Direction le niveau 2...";
+    this.niveauSuivant = "niveau2";
+    this.objectif = "OBJECTIF : récupère le parchemin tout en haut,\npuis franchis la porte de sortie";
   }
 
   // ==========================================================================
@@ -71,6 +89,7 @@ export default class niveau1 extends Phaser.Scene {
   // ==========================================================================
   create() {
     // create() est rappelée à chaque (re)lancement : on remet tout à zéro
+    this.definirNiveau();
     this.mode = this.registry.get("mode") || "solo"; // "solo" ou "duo" (choisi dans choix_mode)
     this.fini = false; // vrai quand le niveau est gagné ou perdu
     this.fragmentRecupere = false;
@@ -82,10 +101,10 @@ export default class niveau1 extends Phaser.Scene {
 
     // La gravité de CE niveau (les autres scènes du gabarit gardent la leur)
     this.physics.world.gravity.y = REGLAGES.gravite;
-    this.physics.world.setBounds(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE);
+    this.physics.world.setBounds(0, 0, this.largeurMonde, this.hauteurMonde);
     // (gauche, droite, haut, bas) : le bas du monde ne bloque pas, on peut tomber dans le vide
     this.physics.world.setBoundsCollision(true, true, true, false);
-    this.cameras.main.setBackgroundColor(COULEUR_FOND);
+    this.cameras.main.setBackgroundColor(this.couleurFond);
 
     this.creerTexturesDeSecours();
     this.creerCarte();
@@ -97,6 +116,42 @@ export default class niveau1 extends Phaser.Scene {
     this.creerInterface();
 
     this.afficherMessage(this.texteCommandes(), 7000);
+    this.afficherObjectif();
+  }
+
+  // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface
+  afficherObjectif() {
+    const texte = this.add
+      .text(640, 48, this.objectif, {
+        fontFamily: POLICE,
+        fontSize: "17pt",
+        fontStyle: "bold",
+        color: "#ffe9a8",
+        align: "center",
+        stroke: "#000000",
+        strokeThickness: 5,
+        backgroundColor: "#000000aa",
+        padding: { x: 14, y: 8 }
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+    this.tweens.add({ targets: texte, alpha: 0, delay: 8000, duration: 1500 });
+  }
+
+  // Un panneau d'indication posé dans le décor (lisible sur n'importe quel fond)
+  ajouterIndice(x, y, texte) {
+    const style = {
+      fontFamily: POLICE,
+      fontSize: "13pt",
+      color: "#ffe9a8",
+      align: "center",
+      stroke: "#000000",
+      strokeThickness: 4,
+      backgroundColor: "#000000aa", // fond sombre semi-transparent pour bien lire sur le décor
+      padding: { x: 10, y: 6 }
+    };
+    this.add.text(x, y, texte, style).setOrigin(0.5).setDepth(6);
   }
 
   // --------------------------------------------------------------------------
@@ -192,22 +247,14 @@ export default class niveau1 extends Phaser.Scene {
         .setDepth(4);
     });
 
-    // Deux panneaux d'indication posés dans le décor
-    const style = {
-      fontFamily: POLICE,
-      fontSize: "13pt",
-      color: "#ffe9a8",
-      align: "center",
-      stroke: "#000000",
-      strokeThickness: 4,
-      backgroundColor: "#000000aa", // fond sombre semi-transparent pour bien lire sur le décor
-      padding: { x: 10, y: 6 }
-    };
-    this.add
-      .text(960, 255, "Passerelles fantômes !\nDétective : allume la lampe (B) et oriente-la (haut / bas)", style)
-      .setOrigin(0.5)
-      .setDepth(6);
-    this.add.text(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !", style).setOrigin(0.5).setDepth(6);
+    // Panneaux d'indication posés dans le décor
+    this.ajouterIndice(
+      960,
+      255,
+      "Passerelles fantômes !\nDétective : éclaire-les avec la lampe (B, haut / bas pour orienter)\nElles restent en place une fois révélées"
+    );
+    this.ajouterIndice(330, 150, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
+    this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !");
   }
 
   // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
@@ -349,8 +396,8 @@ export default class niveau1 extends Phaser.Scene {
     this.groupe_cristaux = this.physics.add.group({ allowGravity: false }); // les cristaux flottent
     this.groupe_ondes_ennemies = this.physics.add.group({ allowGravity: false }); // ondes du Tuba
 
-    TUBAS.forEach((t) => this.creerTuba(t.x, t.solY, t.xMin, t.xMax));
-    CRISTAUX.forEach((c) => this.creerCristal(c.x, c.y));
+    this.listeTubas.forEach((t) => this.creerTuba(t.x, t.solY, t.xMin, t.xMax));
+    this.listeCristaux.forEach((c) => this.creerCristal(c.x, c.y, c.note));
   }
 
   creerTuba(x, solY, xMin, xMax) {
@@ -368,13 +415,16 @@ export default class niveau1 extends Phaser.Scene {
     tuba.prochaineOnde = this.time.now + REGLAGES.tuba.ondeToutesMs;
   }
 
-  creerCristal(x, y) {
+  creerCristal(x, y, note) {
     const cristal = this.groupe_cristaux.create(x, y, "cristal_idle");
     cristal.setDepth(9);
     cristal.setCollideWorldBounds(true);
     cristal.body.setCircle(20, 12, 16); // hitbox ronde
     cristal.play("cristal_idle");
-    cristal.pv = REGLAGES.cristal.pv; // points de vie : 2 ondes pour le détruire
+    cristal.pv = REGLAGES.cristal.pv; // points de vie : 1 onde de la bonne note suffit
+    cristal.note = NOTES[note].nom; // la note qui le détruit ("do", "mi" ou "sol")
+    cristal.couleur = parseInt(NOTES[note].couleur.replace("#", ""), 16); // teinte du cristal
+    cristal.setTint(cristal.couleur);
     cristal.etourdiJusqua = 0;
     cristal.mort = false;
   }
@@ -436,7 +486,11 @@ export default class niveau1 extends Phaser.Scene {
     });
     this.physics.add.overlap(this.persos, this.groupe_ondes_ennemies, this.ondeEnnemieTouche, null, this);
 
-    // Ramasser le parchemin, franchir la porte
+    this.collisionsObjets();
+  }
+
+  // Ramasser le parchemin, franchir la porte (niveau2.js remplace le parchemin par des lampes)
+  collisionsObjets() {
     this.physics.add.overlap(this.persos, this.partition, this.ramasserFragment, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
   }
@@ -445,9 +499,9 @@ export default class niveau1 extends Phaser.Scene {
   //  Caméra : solo = suit le perso actif · duo = suit le milieu des deux joueurs
   // --------------------------------------------------------------------------
   creerCamera() {
-    this.cameras.main.setBounds(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE);
+    this.cameras.main.setBounds(0, 0, this.largeurMonde, this.hauteurMonde);
     // Une "cible" invisible que la caméra suit ; on la déplace à chaque image
-    this.cible_camera = this.add.zone(this.cantatrice.x, HAUTEUR_MONDE / 2, 10, 10);
+    this.cible_camera = this.add.zone(this.cantatrice.x, this.hauteurMonde / 2, 10, 10);
     this.cameras.main.startFollow(this.cible_camera, true, 0.08, 0.08);
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
@@ -700,6 +754,7 @@ export default class niveau1 extends Phaser.Scene {
     onde.setDepth(8);
     onde.setScale(1.5);
     onde.setFlipX(sens < 0);
+    onde.note = NOTES[this.noteActuelle].nom; // pour savoir quel cristal elle peut détruire
     onde.play("onde_" + NOTES[this.noteActuelle].nom); // la couleur dépend de la note choisie
     onde.body.setSize(22, 18);
     onde.setVelocityX(sens * REGLAGES.onde.vitesse);
@@ -801,10 +856,13 @@ export default class niveau1 extends Phaser.Scene {
         const toutPres = this.distanceAuRectangle(centre.x, centre.y, passerelle.rect) <= REGLAGES.lampe.rayonProche;
         if (dansLaTache || toutPres) {
           passerelle.eclaireJusqua = temps + REGLAGES.lampe.persistanceMs;
+          if (REGLAGES.lampe.passerellesFixes == true) {
+            passerelle.revelee = true; // révélée une fois : elle ne disparaîtra plus
+          }
         }
       }
-      // lampe éteinte (ou batterie vide) : la passerelle disparaît tout de suite
-      const eclairee = lampe.allumee == true && temps < passerelle.eclaireJusqua;
+      // sinon : lampe éteinte (ou batterie vide) = la passerelle disparaît tout de suite
+      const eclairee = passerelle.revelee == true || (lampe.allumee == true && temps < passerelle.eclaireJusqua);
       passerelle.setData("allumee", eclairee);
 
       // elle apparaît / disparaît en douceur
@@ -903,7 +961,7 @@ export default class niveau1 extends Phaser.Scene {
       cristal.setTint(0x8899ff);
       return;
     }
-    cristal.clearTint();
+    cristal.setTint(cristal.couleur); // il reprend sa couleur après l'étourdissement
 
     const cible = this.persoLePlusProche(cristal);
     const distance = Phaser.Math.Distance.Between(cristal.x, cristal.y, cible.x, cible.y);
@@ -931,13 +989,19 @@ export default class niveau1 extends Phaser.Scene {
     }
     onde.destroy();
     if (ennemi.pv !== undefined) {
-      this.blesserCristal(ennemi); // le cristal perd un point de vie
+      this.blesserCristal(ennemi, onde.note); // détruit seulement si c'est la bonne note
     } else {
       this.etourdir(ennemi, REGLAGES.onde.etourdissementMs); // le tuba est étourdi
     }
   }
 
-  blesserCristal(cristal) {
+  blesserCristal(cristal, note) {
+    if (note != cristal.note) {
+      // mauvaise note : il est juste étourdi un court instant
+      this.etourdir(cristal, REGLAGES.cristal.etourdissementMauvaiseNoteMs);
+      this.afficherMessage("Mauvaise note ! Ce cristal est " + cristal.note.toUpperCase() + " (P pour changer de note)", 2500);
+      return;
+    }
     cristal.pv -= 1;
     if (cristal.pv <= 0) {
       cristal.mort = true;
@@ -1116,10 +1180,10 @@ export default class niveau1 extends Phaser.Scene {
       this.jouerAnimation(perso, perso.nom + "_idle");
     });
     this.physics.pause();
-    this.afficherMessage("Niveau 1 terminé ! Direction le niveau 2...", 2000);
+    this.afficherMessage(this.messageVictoire, 2000);
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("niveau2"); // la victoire mène directement au niveau 2
+      this.scene.start(this.niveauSuivant); // la victoire mène directement au niveau suivant
     });
   }
 
@@ -1162,7 +1226,7 @@ export default class niveau1 extends Phaser.Scene {
       x = Phaser.Math.Linear(milieu, this.actif.x, poids);
     }
     // la hauteur du niveau tient presque dans l'écran : la caméra ne bouge qu'à l'horizontale
-    this.cible_camera.setPosition(x, HAUTEUR_MONDE / 2);
+    this.cible_camera.setPosition(x, this.hauteurMonde / 2);
   }
 
   // --------------------------------------------------------------------------
