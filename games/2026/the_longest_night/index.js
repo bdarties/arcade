@@ -8,6 +8,9 @@ import niveau3 from "./js/niveau3.js";
 var config = {
   width: 1280, // largeur en pixels
   height: 720, // hauteur en pixels
+  render:{
+    pixelArt : true
+  },
    type: Phaser.AUTO,
   scale: {
     mode: Phaser.Scale.FIT,

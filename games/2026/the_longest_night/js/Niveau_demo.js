@@ -672,6 +672,7 @@ export default class Niveau_demo extends Phaser.Scene {
     /*****************************************************
      *  GESTION DES INTERATIONS ENTRE  GROUPES ET ELEMENTS(+ ignorance de la caméra) *
      ******************************************************/
+    this.physics.add.collider(player,player2);
     this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
     player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
     if (mode_deux_joueurs) {
