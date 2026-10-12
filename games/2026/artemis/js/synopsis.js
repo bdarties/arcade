@@ -5,8 +5,9 @@ import * as fct from "./fonctions.js";
 /** le bouton "frapper / tirer" (K ou F) passe à la page suivante, puis lance la partie
 /***********************************************************************/
 
-// les pages (images chargées dans selection.js ; le texte est dessiné dans l'image)
-const PAGES = ["img_synopsis_1", "img_synopsis_2"];
+// les pages selon le nombre de joueurs (images chargées dans selection.js ; le texte est dessiné dans l'image)
+const PAGES_DUO = ["img_synopsis_1", "img_synopsis_2"]; // deux frères
+const PAGES_SOLO = ["img_synopsis_solo", "img_synopsis_2"]; // Télégonos seul : la page 2 est la même
 const DUREE_FONDU = 300; // ms
 const DELAI_OUVERTURE = 250; // ms : le bouton qui a validé le menu est peut-être encore enfoncé, on ignore les touches un instant
 
@@ -24,9 +25,10 @@ export default class synopsis extends Phaser.Scene {
     this.verrou = true; // true : on ignore les touches (délai d'ouverture, puis chaque fondu)
     this.time.delayedCall(DELAI_OUVERTURE, () => { this.verrou = false; });
 
+    this.pages = this.registry.get("nb_joueurs") === 1 ? PAGES_SOLO : PAGES_DUO;
     // les pages sont bien plus grandes que l'écran : on adoucit le filtre (le mode pixel art les rendrait crénelées)
-    PAGES.forEach((cle) => this.textures.get(cle).setFilter(Phaser.Textures.FilterMode.LINEAR));
-    this.image = this.add.image(0, 0, PAGES[0]).setOrigin(0, 0);
+    this.pages.forEach((cle) => this.textures.get(cle).setFilter(Phaser.Textures.FilterMode.LINEAR));
+    this.image = this.add.image(0, 0, this.pages[0]).setOrigin(0, 0);
     this.ajusterImage();
 
     this.add.text(this.scale.width / 2, this.scale.height - 34, "Bouton : continuer", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
@@ -47,12 +49,12 @@ export default class synopsis extends Phaser.Scene {
     this.cameras.main.fadeOut(DUREE_FONDU);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.page++;
-      if (this.page >= PAGES.length) {
+      if (this.page >= this.pages.length) {
         this.sound.get("accueil")?.stop(); // la musique d'accueil a continué pendant le synopsis
         this.scene.start("niveau1", { niveau: 1 });
         return;
       }
-      this.image.setTexture(PAGES[this.page]);
+      this.image.setTexture(this.pages[this.page]);
       this.ajusterImage();
       this.cameras.main.fadeIn(DUREE_FONDU);
       this.verrou = false;
