@@ -192,7 +192,6 @@ function lancerAttaque(scene, boss, nom) {
     boss.etat = "attaque";
     boss.derniereAttaque = nom;
     boss.play("boss_charge");
-    jouerSonSurLeTemps(scene, "charge_boss"); // grondement grave avant l'attaque (plus l'incantation aiguë du mage), calé sur la musique
     const apres = quantifier(ATTAQUES[nom].apres + (dure(boss) && nom === "orbes" ? 500 : 0)); // (durées arrondies à des croches : tout reste en rythme avec la musique) // (phase 3 dure : l'attaque dure plus longtemps pour laisser partir la deuxième salve d'orbes)
     const charge = quantifier(ATTAQUES[nom].charge * (dure(boss) ? 0.7 : 1)); // phase 3 dure : l'attaque est annoncée 30 % plus vite, il faut réagir plus vite
     const annonce = annoncer(scene, boss, nom); // ce qui prévient le joueur pendant la préparation
@@ -403,7 +402,6 @@ function changerDePhase(scene, boss, phase) {
     boss.phase = phase;
     boss.etat = "transition"; // intouchable un instant
     boss.play("boss_charge");
-    jouerSonSurLeTemps(scene, "charge_boss");
     scene.cameras.main.flash(300, 255, 242, 192);
     scene.cameras.main.shake(400, 0.009);
     effets.eclats(scene, boss.x, boss.y, ECLATS_OR[0], 28, ECLATS_OR[1]);

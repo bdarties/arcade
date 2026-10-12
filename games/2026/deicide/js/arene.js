@@ -80,7 +80,6 @@ export function briserMurDroit(scene, boss) {
     const xMur = COLONNES_MUR[0] * 32;
     const y = boss.y;
     // 1. la charge : une boule rouge-orangé qui grossit devant le boss (0,7 s)
-    jouerSon(scene, "mage_incante");
     const boule = scene.add.image(boss.x + 140, y, "halo").setTint(0xff7a40).setBlendMode(Phaser.BlendModes.ADD).setDepth(52).setScale(0.1);
     scene.tweens.add({ targets: boule, scale: 1.7, duration: 700, ease: "Quad.In" });
     scene.cameras.main.shake(700, 0.006);

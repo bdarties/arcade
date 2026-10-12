@@ -18,8 +18,7 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     ennemi_mort: 0.5, // un ennemi meurt
     lanterne: 0.5, // une lanterne est éteinte (verre qui casse)
     porte: 0.5, // le joueur passe une porte
-    orc_coup: 0.5, // coup de faux de l'orc
-    charge_boss: 0.55 // le boss prépare une attaque : un laser grave (il monte de ré3 à ré4 puis « zappe » vers la2), sans aigu agressif ; fabriqué par synthèse (outils/fabriquer_charge_boss.py)
+    orc_coup: 0.5 // coup de faux de l'orc
 };
 const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
 export const VOLUME_MUSIQUE_BOSS = 0.42; // la musique des combats de boss est franchement plus forte que celle du niveau (0,3 avec un morceau plus doux) // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
@@ -42,7 +41,7 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
 //  - les sons d'attaque du boss sont joués sur la croche la plus proche de la musique (jouerSonSurLeTemps), et les attaques elles-mêmes sont calées
 //    sur la même grille (surLeTemps) : elles partent en rythme.
 const CROCHE = 150; // ms : une croche de la musique du boss
-const ACCORD = { charge_boss: 0, orbe: 400, mage_incante: -200, dash: -141, lanterne: 57, ennemi_touche: 14, ennemi_mort: 240, joueur_mort: -121, tir: 168 }; // centièmes de ton, pour tomber sur une note de ré mineur
+const ACCORD = { orbe: 400, mage_incante: -200, dash: -141, lanterne: 57, ennemi_touche: 14, ennemi_mort: 240, joueur_mort: -121, tir: 168 }; // centièmes de ton, pour tomber sur une note de ré mineur
 export function musiqueDeBossEnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss")); }
 export const quantifier = (ms) => Math.max(CROCHE, Math.round(ms / CROCHE) * CROCHE); // arrondit une durée à un nombre entier de croches
 
