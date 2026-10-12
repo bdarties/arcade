@@ -1,8 +1,7 @@
-import { creerTextures } from "./textures.js";
 import { PERSOS } from "./persos.js";
 
 // Scène de chargement : on charge TOUTES les images et la musique une seule
-// fois, on dessine les petites textures et on crée les animations.
+// fois et on crée les animations.
 // Ensuite on passe à l'écran titre.
 export default class chargement extends Phaser.Scene {
   constructor() {
@@ -35,6 +34,10 @@ export default class chargement extends Phaser.Scene {
       this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
     }
     this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
+    this.load.spritesheet(perso.marche, "./assets/images/marche_" + perso.cle + ".png", {
+      frameWidth: perso.tailleMarche[0],
+      frameHeight: perso.tailleMarche[1]
+    });
   });
 
     // Music Fall : persos du pack Sunny Land
@@ -46,18 +49,34 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_tete_renard2", "./assets/images/tete_renard2.png");
     this.load.image("img_touche_note", "./assets/images/touche_note.png");
 
+    // petits éléments graphiques (pixel art)
+    this.load.image("img_etoile", "./assets/images/etoile.png");   // étoile quand on réussit
+    this.load.image("img_vie", "./assets/images/vie.png");         // une vie = une croche dorée
+    this.load.image("img_halo", "./assets/images/halo.png");       // halo derrière le perso choisi
+    this.load.image("img_page", "./assets/images/page.png");       // la feuille de partition de Music Fall
+    this.load.image("img_note", "./assets/images/note.png");       // la croche qui tombe avec le perso
+    this.load.image("img_rideau", "./assets/images/rideau.png");   // le rideau rouge (essai 3)
+
     // musique de fond (pack SunnyLand Music)
     this.load.audio("musique", "./assets/sons/musique.ogg");
   }
 
   create() {
-    creerTextures(this);
-
     // les persos Sunny Land sont en pixel art tout petit : quand on les
     // agrandit, on garde des pixels nets au lieu de les flouter
-    ["img_renard", "img_renard2", "img_grenouille"].forEach((cle) =>
+    ["img_renard", "img_renard2", "img_grenouille", "img_etoile", "img_vie", "img_halo", "img_page", "img_note"].forEach((cle) =>
       this.textures.get(cle).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
+    // les 4 persos d'opéra : pixel art aussi, et une animation de marche chacun
+    PERSOS.forEach((perso) => {
+      this.textures.get(perso.marche).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      this.anims.create({
+        key: perso.animMarche,
+        frames: this.anims.generateFrameNumbers(perso.marche, { start: 0, end: 5 }),
+        frameRate: 12,
+        repeat: -1
+      });
+    });
     [
       ["anim_renard_repos", "img_renard", 8],
       ["anim_renard2_repos", "img_renard2", 8],

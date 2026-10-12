@@ -53,7 +53,7 @@ export default class choix extends Phaser.Scene {
     var x = X_CARTES[i];
     this.add.rectangle(x, Y_CARTE, LARGEUR_CARTE, HAUTEUR_CARTE, 0x1b1030, 0.88).setStrokeStyle(3, perso.teinte);
     // un halo de la couleur du perso derrière lui (le Maestro est très sombre)
-    this.add.image(x, Y_CARTE - 40, "tx_halo").setScale(2.2).setTint(perso.teinte).setAlpha(0.8);
+    this.add.image(x, Y_CARTE - 40, "img_halo").setScale(2.2).setTint(perso.teinte).setAlpha(0.8);
     var sprite = this.add.sprite(x, Y_CARTE + 70, perso.texture).setOrigin(0.5, 1).setScale(0.82);
     if (perso.cle == "diva") sprite.play("anim_diva");
     this.add.text(x, Y_CARTE + 100, perso.nom.toUpperCase(), style(26, perso.couleur, 6)).setOrigin(0.5);

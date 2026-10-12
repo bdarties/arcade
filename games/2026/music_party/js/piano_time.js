@@ -20,7 +20,8 @@ const HAUTEUR_ZONE = 64;                  // Epaisseur de la zone de selection
 const Y_CLAVIER = 580;                    // Hauteur du haut des touches du piano
 const Y_PIEDS = 694;                      // Les persos sont sur les touches
 
-const ECHELLE_PERSO = 0.5;                // Taille des persos : 0.5
+const ECHELLE_PERSO = 2;                  // Taille des persos : x2 (pixel art de ~65 px de haut)
+const DUREE_PAS = 120;                    // temps pour marcher d'une touche à la suivante (ms)
 
 // Vitesse du jeu //
 const PX_PAR_TEMPS = 150;                 // Ecart vertical entre 2 temps de la partition
@@ -257,9 +258,9 @@ export default class piano_time extends Phaser.Scene {
     this.dessinerPiste(j);
     this.dessinerClavier(j);
 
-    // le perso est debout sur la touche du milieu
+    // le perso est debout sur la touche du milieu (image 0 de sa marche)
     j.sprite = this.add
-      .image(this.xCouloir(j, 1), Y_PIEDS, perso.texture)
+      .sprite(this.xCouloir(j, 1), Y_PIEDS, perso.marche, 0)
       .setOrigin(0.5, 1)
       .setScale(ECHELLE_PERSO)
       .setDepth(PROF.perso)
@@ -413,10 +414,34 @@ export default class piano_time extends Phaser.Scene {
     });
   }
 
+  // le perso marche jusqu'au couloir c, puis s'arrête
+  marcherVers(j, c) {
+    var xCible = this.xCouloir(j, c);
+    if (j.marche) j.marche.stop();                 // s'il marchait déjà, on part de là où il est
+    if (xCible == j.sprite.x) {
+      j.sprite.stop();
+      j.sprite.setFrame(0);
+      return;
+    }
+
+    var distance = Math.abs(xCible - j.sprite.x);
+    j.sprite.setFlipX(xCible < j.sprite.x);        // il regarde dans le sens où il marche
+    j.sprite.play(j.perso.animMarche, true);       // true = on ne relance pas l'anim si elle tourne déjà
+    j.marche = this.tweens.add({
+      targets: j.sprite,
+      x: xCible,
+      duration: DUREE_PAS * (distance / LARGEUR_COULOIR),
+      onComplete: () => {
+        j.sprite.stop();
+        j.sprite.setFrame(0);                      // il s'arrête, debout
+      }
+    });
+  }
+
   // le joueur appuie sur le bouton du couloir c
   appuyer(j, c) {
-    // Le perso se place sur la touche jouée
-    j.sprite.setX(this.xCouloir(j, c));
+    // Le perso marche jusqu'à la touche jouée
+    this.marcherVers(j, c);
     this.eclairer(j, c);
 
     // la tuile de ce couloir la plus proche de la zone

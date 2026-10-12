@@ -58,7 +58,7 @@ export default class music_fall extends Phaser.Scene {
     this.creerDecor();
     this.joueurs = participants(this.registry).map((perso, i) => this.creerJoueur(perso, i));
     if (this.essai.rideau) {
-      this.rideau = this.add.image(640, 230, "tx_rideau").setOrigin(0.5, 0).setDepth(PROFONDEUR.rideau);
+      this.rideau = this.add.image(640, 230, "img_rideau").setOrigin(0.5, 0).setDepth(PROFONDEUR.rideau);
     }
     this.creerScores();
 
@@ -104,7 +104,7 @@ export default class music_fall extends Phaser.Scene {
   // ===========================================================================
   creerDecor() {
     this.add.image(0, 0, "img_fond_music_fall").setOrigin(0).setDisplaySize(1280, 720);
-    this.add.image(190, 30, "tx_page").setOrigin(0);
+    this.add.image(190, 30, "img_page").setOrigin(0);
 
     // la portée : 4 lignes grises + la ligne dorée à viser
     var dessin = this.add.graphics();
@@ -189,7 +189,7 @@ export default class music_fall extends Phaser.Scene {
     // la note, de la couleur du perso. Son bas est au niveau des pattes :
     // c'est ce point qu'on mesure
     var note = this.add
-      .image(x + ecartNote, Y_DEPART, "tx_note")
+      .image(x + ecartNote, Y_DEPART, "img_note")
       .setOrigin(0.5, 1)
       .setScale(0.9)
       .setTint(perso.teinte)
@@ -374,7 +374,7 @@ fermerPanneau() {
     // le tampon : une copie de la note qui reste sur la partition
     var note = joueur.note;
     joueur.tampon = this.add
-      .image(note.x, note.y, "tx_note")
+      .image(note.x, note.y, "img_note")
       .setOrigin(0.5, 1)
       .setScale(0.9)
       .setTint(joueur.perso.teinte)
@@ -498,7 +498,7 @@ fermerPanneau() {
     this.tweens.add({ targets: texte, scale: 1.2, duration: 300, yoyo: true, repeat: 3 });
 
     for (var k = 0; k < 14; k++) {
-      var etoile = this.add.image(joueur.x, Y_LIGNE - 40, "tx_etoile").setDepth(PROFONDEUR.texte);
+      var etoile = this.add.image(joueur.x, Y_LIGNE - 40, "img_etoile").setDepth(PROFONDEUR.texte);
       this.tweens.add({
         targets: etoile,
         x: joueur.x + Phaser.Math.Between(-180, 180),
