@@ -22,6 +22,8 @@ const HAUTEUR_BANDE = 512;
 const MARGE = 32; // pixels de marge autour de l'écran avant de cacher une bande (le tremblement d'écran bouge un peu la vue)
 const IMAGES_SANS_TRI = 2; // pendant les 2 premières images la caméra n'est pas encore à sa place : on affiche tout
 const DISTANCE_VEILLE = 900; // un ennemi est réveillé quand le joueur est à moins de 900 px de hauteur de lui (un écran fait 720 px)
+const DISTANCE_VEILLE_X = 1500; // ... et à moins de 1500 px de largeur (un écran fait 1280 px) : sert aux niveaux horizontaux
+const LARGEUR_BANDE = 512; // pour un niveau horizontal, les bandes du décor sont verticales : 512 px de large chacune
 const IMAGES_AVANT_VEILLE = 90; // 1,5 s au départ : le temps que les ennemis tombent sur le sol
 
 // calques : les calques de la map à figer, dans l'ordre où ils se superposent (le premier est tout au fond).
@@ -32,11 +34,15 @@ const IMAGES_AVANT_VEILLE = 90; // 1,5 s au départ : le temps que les ennemis t
 // (les bandes doivent se trouver sous eux dans l'ordre d'affichage). Renvoie la liste des bandes.
 export function figerCalques(scene, calques, largeur, hauteur, couleurFond) {
     const bandes = [];
-    for (let y0 = 0; y0 < hauteur; y0 += HAUTEUR_BANDE) {
-        const bande = scene.add.renderTexture(0, y0, largeur, Math.min(HAUTEUR_BANDE, hauteur - y0)); // une zone de dessin de la taille de la bande
+    const horizontal = largeur > hauteur; // une map plus large que haute (niveau 2) est découpée en bandes verticales, sinon en bandes horizontales
+    const longueur = horizontal ? largeur : hauteur; // la longueur à découper
+    const pas = horizontal ? LARGEUR_BANDE : HAUTEUR_BANDE; // la taille d'une bande
+    for (let debut = 0; debut < longueur; debut += pas) {
+        const taille = Math.min(pas, longueur - debut); // la dernière bande peut être plus courte
+        const bande = horizontal ? scene.add.renderTexture(debut, 0, taille, hauteur) : scene.add.renderTexture(0, debut, largeur, taille); // une zone de dessin de la taille de la bande
         bande.setOrigin(0, 0);
         bande.fill(couleurFond); // le fond d'abord, les tuiles par-dessus
-        bande.draw(calques, 0, -y0); // dessine tous les calques dedans, décalés pour que la bonne tranche de la map tombe dans la bande
+        bande.draw(calques, horizontal ? -debut : 0, horizontal ? 0 : -debut); // dessine tous les calques dedans, décalés pour que la bonne tranche de la map tombe dans la bande
         bande.setPipeline("SinglePipeline"); // shader simple : une bande = une seule image (voir plus haut)
         bandes.push(bande);
     }
@@ -45,10 +51,14 @@ export function figerCalques(scene, calques, largeur, hauteur, couleurFond) {
     let images = 0;
     const trier = () => { // chaque image : on n'affiche que les bandes qui touchent l'écran
         const camera = scene.cameras.main;
-        const haut = camera.scrollY - MARGE;
-        const bas = camera.scrollY + camera.height + MARGE;
+        const haut = (horizontal ? camera.scrollX : camera.scrollY) - MARGE;
+        const bas = (horizontal ? camera.scrollX + camera.width : camera.scrollY + camera.height) + MARGE;
         images++;
-        bandes.forEach(bande => { bande.visible = images <= IMAGES_SANS_TRI || (bande.y < bas && bande.y + bande.height > haut); });
+        bandes.forEach(bande => {
+            const debut = horizontal ? bande.x : bande.y; // le bord de la bande dans le sens du niveau
+            const taille = horizontal ? bande.width : bande.height;
+            bande.visible = images <= IMAGES_SANS_TRI || (debut < bas && debut + taille > haut);
+        });
     };
     scene.events.on(Phaser.Scenes.Events.UPDATE, trier);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, trier));
@@ -102,7 +112,7 @@ export function endormirLesLoins(scene) {
         for (let i = 0; i < liste.length; i++) {
             const ennemi = liste[i];
             if (ennemi.etat === "mort" || ennemi.etat === "touche") continue; // il finit sa mort ou son coup reçu
-            const loin = Math.abs(ennemi.y - joueur.y) > DISTANCE_VEILLE;
+            const loin = Math.abs(ennemi.y - joueur.y) > DISTANCE_VEILLE || Math.abs(ennemi.x - joueur.x) > DISTANCE_VEILLE_X;
             if (loin === Boolean(ennemi.endormi)) continue; // rien ne change pour lui
             if (loin && !ennemi.body.blocked.down) continue; // encore en l'air : il doit d'abord se poser
             ennemi.endormi = loin;

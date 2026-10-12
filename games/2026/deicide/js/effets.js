@@ -45,7 +45,7 @@ export function eclats(scene, x, y, couleur, nombre, vitesse) { // fait jaillir 
 
 export function flash(objet, couleur, duree) { // colore entièrement un sprite pendant un court instant
     objet.setTintFill(couleur); // remplit le sprite d'une seule couleur (la forme reste, les détails disparaissent)
-    objet.scene.time.delayedCall(duree, () => { if (objet.active) objet.clearTint(); }); // puis lui rend ses vraies couleurs
+    objet.scene.time.delayedCall(duree, () => { if (!objet.active) return; if (objet.teinteBase) objet.setTint(objet.teinteBase); else objet.clearTint(); }); // puis lui rend ses vraies couleurs (ou sa teinte de départ, comme le Dieu doré)
 }
 
 export function arretSurImage(scene, duree) { // fige toute la physique un très court instant : chaque coup donne l'impression de « peser »

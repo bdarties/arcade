@@ -17,7 +17,7 @@ const POLICE = "monospace"; // la police du menu et du HUD
 // sortie : les colonnes de l'ouverture du sol du dessus, bouchées jusqu'à la fin du combat (une liste, il peut y en avoir plusieurs)
 // tuilesEntree, tuilesSortie : les numéros de tuiles des deux sols (alternées une colonne sur deux, comme le sol à côté)
 // ennemis : [type, x, y] ; x, y = les pieds de l'ennemi sur le sol (il tombe dessus), en px dans la map
-const SALLES = [
+export const SALLES_NIVEAU1 = [
     {
         nom: "salle1",
         ligneSol: 153, ligneSortie: 136, // sol de la ligne 153 ; la sortie est dans le sol de la ligne 136
@@ -31,20 +31,28 @@ const SALLES = [
         ennemis: [["orc", 150, 2848], ["orc", 480, 2848], ["orc", 700, 2848], ["archer", 300, 2848], ["archer", 950, 2848], ["mage", 480, 2464], ["mage", 830, 2464]] // les mages sont sur les plateformes
     }
 ];
+// Salle HORIZONTALE (niveau 2) : type "horizontale", colonnes = [première, dernière] de la salle (40 colonnes = un écran), lignes = [haut, bas] des murs de
+// lumière posés à gauche (derrière le joueur, définitif) et à droite (la sortie, jusqu'à la mort du dernier ennemi).
+export const SALLES_NIVEAU2 = [
+    {
+        nom: "salle_n2", type: "horizontale",
+        colonnes: [232, 271], lignes: [0, 19], tuilesEntree: [625], tuilesSortie: [625],
+        ennemis: [["orc", 7700, 640], ["orc", 8080, 640], ["orc", 8400, 640], ["archer", 7850, 640], ["archer", 8560, 640], ["mage", 7790, 512], ["mage", 8300, 512]] // les mages sont sur les plateformes
+    }
+];
 const DECALAGE_PIEDS = { orc: 60, archer: 40, mage: 50 }; // de combien on pose chaque ennemi au-dessus de ses pieds (les créateurs d'ennemis placent leur centre)
 const CREER = { orc: ennemis.creerOrc, archer: ennemis.creerArcher, mage: ennemis.creerMage };
 
-export function preparerSalles(scene) { // à appeler dans le create() du niveau
+export function preparerSalles(scene, salles) { // à appeler dans le create() du niveau, avec la liste des salles de ce niveau (vide pour un niveau sans salle)
     scene.salleActive = null; // la salle en cours de combat (le niveau recommence avec la même scène après une mort : on remet à zéro)
-    scene.salles = SALLES.map((salle) => ({ ...salle, etat: "attente" })); // "attente" : pas encore atteinte, "combat" : fermée, "finie" : ouverte
+    scene.salles = salles.map((salle) => ({ ...salle, etat: "attente" })); // "attente" : pas encore atteinte, "combat" : fermée, "finie" : ouverte
 }
 
 export function verifierSalles(scene) { // à appeler dans update()
     const joueur = scene.player.body;
     for (const salle of scene.salles) {
         if (salle.etat === "attente") {
-            const sousLePlafond = joueur.bottom > salle.ligneSortie * TUILE; // le joueur est bien dans la salle, pas au-dessus
-            if (!scene.salleActive && !scene.partieFinie && joueur.bottom <= salle.ligneSol * TUILE && sousLePlafond) fermerSalle(scene, salle); // ses pieds sont passés au-dessus du sol
+            if (!scene.salleActive && !scene.partieFinie && joueurDansLaSalle(joueur, salle)) fermerSalle(scene, salle);
         } else if (salle.etat === "combat" && salle.apparus) { // (on ne compte qu'une fois les ennemis apparus : ils arrivent 1 s après la fermeture)
             const restants = compterRestants(scene, salle);
             if (restants !== salle.restants) { salle.restants = restants; salle.compteur.setText("ENNEMIS RESTANTS : " + restants); }
@@ -53,23 +61,40 @@ export function verifierSalles(scene) { // à appeler dans update()
     }
 }
 
+function joueurDansLaSalle(joueur, salle) { // vrai quand le joueur est entré dans la salle
+    if (salle.type === "horizontale") { // il a passé le mur de gauche de quelques tuiles, et n'est pas déjà sorti à droite
+        return joueur.center.x > (salle.colonnes[0] + 3) * TUILE && joueur.center.x < salle.colonnes[1] * TUILE;
+    }
+    const sousLePlafond = joueur.bottom > salle.ligneSortie * TUILE; // le joueur est bien dans la salle, pas au-dessus
+    return joueur.bottom <= salle.ligneSol * TUILE && sousLePlafond; // ses pieds sont passés au-dessus du sol
+}
+
+function cellulesEntree(salle) { // les cases de tuiles qui ferment l'entrée : [colonne, ligne]
+    if (salle.type === "horizontale") return colonneDeMur(salle.colonnes[0], salle.lignes);
+    return plage(salle.entree, salle.ligneSol);
+}
+function cellulesSortie(salle) { // les cases qui bouchent la sortie
+    if (salle.type === "horizontale") return colonneDeMur(salle.colonnes[1], salle.lignes);
+    return salle.sortie.flatMap((tranche) => plage(tranche, salle.ligneSortie));
+}
+function plage([debut, fin], ligne) { return Array.from({ length: fin - debut + 1 }, (_, i) => [debut + i, ligne]); } // des cases côte à côte sur une ligne
+function colonneDeMur(colonne, [haut, bas]) { return Array.from({ length: bas - haut + 1 }, (_, i) => [colonne, haut + i]); } // des cases l'une sur l'autre dans une colonne
+
 function compterRestants(scene, salle) { // le nombre d'ennemis de la salle encore vivants
     return scene.ennemis.getChildren().filter((ennemi) => ennemi.salle === salle && ennemi.etat !== "mort").length;
 }
 
-function poserTuiles(scene, salle, ligne, colonnes, tuiles) { // pose des tuiles de sol sur une ligne ; renvoie les cases posées, et le calque visible
-    const visible = scene.carte.createBlankLayer("mur_" + salle.nom + "_" + ligne, scene.tilesets); // calque qui montre les nouvelles tuiles (le calque Gameplay n'est plus dessiné, voir figerCalques)
+function poserTuiles(scene, salle, nom, cellules, tuiles) { // pose des tuiles de sol sur ces cases ; renvoie les cases posées, et le calque visible
+    const visible = scene.carte.createBlankLayer("mur_" + salle.nom + "_" + nom, scene.tilesets); // calque qui montre les nouvelles tuiles (le calque Gameplay n'est plus dessiné, voir figerCalques)
     visible.setDepth(1); // au-dessus du décor mais SOUS le voile (50) : le sol ajouté est assombri comme le reste
     const cases = [];
-    colonnes.forEach(([debut, fin]) => {
-        for (let colonne = debut; colonne <= fin; colonne++) {
-            if (scene.groupe_plateformes.getTileAt(colonne, ligne)) continue; // il y a déjà une tuile (pilier) : on n'y touche pas
-            const index = tuiles[colonne % tuiles.length]; // une colonne sur deux, les tuiles alternent
-            visible.putTileAt(index, colonne, ligne);
-            const solide = scene.groupe_plateformes.putTileAt(index, colonne, ligne); // la même tuile dans le calque Gameplay : le joueur, les tirs et les orcs la sentent comme du sol
-            solide.setCollision(true, true, true, true);
-            cases.push([colonne, ligne]);
-        }
+    cellules.forEach(([colonne, ligne], i) => {
+        if (scene.groupe_plateformes.getTileAt(colonne, ligne)) return; // il y a déjà une tuile (pilier, plateforme) : on n'y touche pas
+        const index = tuiles[(salle.type === "horizontale" ? i : colonne) % tuiles.length]; // les tuiles alternent d'une case à l'autre
+        visible.putTileAt(index, colonne, ligne);
+        const solide = scene.groupe_plateformes.putTileAt(index, colonne, ligne); // la même tuile dans le calque Gameplay : le joueur, les tirs et les orcs la sentent comme du sol
+        solide.setCollision(true, true, true, true);
+        cases.push([colonne, ligne]);
     });
     visible.setAlpha(0); // les tuiles sont invisibles au départ...
     scene.tweens.add({ targets: visible, alpha: 1, duration: 300 }); // ...et apparaissent en 0,3 s
@@ -82,10 +107,11 @@ function fermerSalle(scene, salle) {
     scene.salleActive = salle; // une seule salle à la fois
     const camera = scene.cameras.main;
     camera.stopFollow(); // la caméra arrête de suivre le joueur...
-    const centreY = (salle.ligneSortie + 1 + salle.ligneSol) / 2 * TUILE; // le milieu de la salle (entre le sol du dessus et le sol du dessous)
-    camera.pan(640, centreY, 800, "Sine.easeInOut"); // ...et glisse en 0,8 s pour cadrer toute la salle
-    salle.entreeMur = poserTuiles(scene, salle, salle.ligneSol, [salle.entree], salle.tuilesEntree); // l'ouverture se referme derrière le joueur (elle reste fermée)
-    salle.sortieMur = poserTuiles(scene, salle, salle.ligneSortie, salle.sortie, salle.tuilesSortie); // et la sortie se bouche, jusqu'à la mort du dernier ennemi
+    const centreX = salle.type === "horizontale" ? (salle.colonnes[0] + salle.colonnes[1] + 1) / 2 * TUILE : 640; // le milieu de la salle
+    const centreY = salle.type === "horizontale" ? scene.carte.heightInPixels / 2 : (salle.ligneSortie + 1 + salle.ligneSol) / 2 * TUILE; // (en hauteur : entre le sol du dessus et celui du dessous)
+    camera.pan(centreX, centreY, 800, "Sine.easeInOut"); // ...et glisse en 0,8 s pour cadrer toute la salle
+    salle.entreeMur = poserTuiles(scene, salle, "entree", cellulesEntree(salle), salle.tuilesEntree); // l'entrée se referme derrière le joueur (elle reste fermée)
+    salle.sortieMur = poserTuiles(scene, salle, "sortie", cellulesSortie(salle), salle.tuilesSortie); // et la sortie se bouche, jusqu'à la mort du dernier ennemi
     camera.shake(300, 0.01); // tremblement : on sent que la salle se referme
     salle.restants = salle.ennemis.length;
     salle.compteur = scene.add.text(640, 36, "ENNEMIS RESTANTS : " + salle.restants, { fontFamily: POLICE, fontSize: "24px", color: "#e7e0e9", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(100); // le compteur, en haut au milieu de l'écran

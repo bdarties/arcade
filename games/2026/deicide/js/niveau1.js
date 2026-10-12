@@ -9,7 +9,7 @@ import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor de
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 import { chargerBoss } from "./boss.js"; // le sprite du Dieu de la Lumière
 import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
-import { preparerSalles, verifierSalles } from "./salles.js"; // salles de combat fermées au-dessus de certains sols
+import { preparerSalles, verifierSalles, SALLES_NIVEAU1 } from "./salles.js"; // salles de combat fermées au-dessus de certains sols
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
 import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
@@ -26,6 +26,8 @@ export function chargerJeu(scene) {
     chargerPersonnage(scene); // images du robot
     chargerHud(scene); // images du HUD
     scene.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
+    scene.load.tilemapTiledJSON("carte_niveau2", "./assets/maps/niveau2.json"); // map du niveau 2 (générée par outils/generer_niveaux.py)
+    scene.load.tilemapTiledJSON("carte_arene_dieu", "./assets/maps/arene_dieu.json"); // arène du Dieu de la Lumière (générée aussi)
     scene.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
     scene.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
     ennemis.chargerEnnemis(scene); // images des ennemis
@@ -35,12 +37,24 @@ export function chargerJeu(scene) {
 
 const DUREE_INVINCIBLE = 1000; // ms d'invincibilité du robot après un coup
 
+// Ce qui change d'un niveau à l'autre. Le niveau 2 (niveau2.js) est une classe qui hérite de celle-ci avec sa propre config :
+// tout le reste (robot, ennemis, lumière, pause, salles de combat, mort) est partagé.
+export const CONFIG_NIVEAU1 = {
+  carte: "carte_niveau1", // la clé de la map Tiled (chargée dans chargerJeu)
+  depart: { x: 200, y: 6300 }, // où apparaît le robot
+  musique: "musique_niveau", // la musique du niveau
+  salles: SALLES_NIVEAU1, // les salles de combat fermées (voir salles.js)
+  arene: arene.verifierArene, // appelée à chaque image : ferme l'arène du boss quand le joueur y arrive
+  teleportBoss: { x: 300, y: 760 } // touche F8 (test) : téléporte le robot dans l'arène du boss
+};
+
 export default class niveau1 extends Phaser.Scene {
-  // constructeur de la classe
-  constructor() {
+  // constructeur de la classe : la clé de la scène et la config du niveau (par défaut celles du niveau 1)
+  constructor(cle = "niveau1", config = CONFIG_NIVEAU1) {
     super({
-      key: "niveau1" //  ici on précise le nom de la classe en tant qu'identifiant
+      key: cle //  ici on précise le nom de la classe en tant qu'identifiant
     });
+    this.cfg = config;
   }
   preload() { // tous les assets sont normalement déjà chargés par le menu (voir menu.js) ; sinon ils se chargent ici
     chargerJeu(this);
@@ -53,7 +67,7 @@ export default class niveau1 extends Phaser.Scene {
     ennemis.creerAnimationsEnnemis(this); // animations des archers, des mages, des orcs et des flèches
 
     // la map Tiled : 40 x 200 tuiles de 32 px = 1280 x 6400 px, on part d'en bas
-    const carte = this.make.tilemap({ key: "carte_niveau1" });
+    const carte = this.make.tilemap({ key: this.cfg.carte });
     // le 1er nom est celui du tileset dans Tiled, le 2e la clé de l'image chargée dans preload()
     const tuilesDawn = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn");
     const tuileBlanc = carte.addTilesetImage("white", "tuile_blanc");
@@ -68,7 +82,7 @@ export default class niveau1 extends Phaser.Scene {
     // personnage.js arrête les balles sur groupe_plateformes : ici c'est le calque Gameplay
     this.groupe_plateformes = calqueGameplay;
     // optimisation pour la borne : le décor est dessiné une seule fois dans des images au lieu de 1 200 tuiles à chaque image (voir optimisation.js)
-    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels, 0x3a3a3a); // 0x3a3a3a : le gris qu'on voit là où la map est vide
+    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels, this.cfg.fondVide ?? 0x3a3a3a); // le gris qu'on voit là où la map est vide (noir dans le niveau 2 : c'est le vide des trous)
 
     // le monde et la caméra prennent la taille de la map (sinon le joueur reste bloqué dans le 1er écran)
     this.physics.world.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
@@ -76,14 +90,15 @@ export default class niveau1 extends Phaser.Scene {
     // le gris de fond est peint dans les bandes du décor (voir figerCalques), la caméra n'a donc plus à repeindre un rectangle de la taille de l'écran
     // à chaque image. Il reste la couleur d'effacement de l'écran, la même, pour ce que le tremblement découvre au bord de la map.
     const effacement = this.sys.game.renderer.config.backgroundColor;
-    const fondGris = () => effacement.setTo(0x3a, 0x3a, 0x3a); // ce niveau est affiché
+    const gris = this.cfg.fondVide ?? 0x3a3a3a; // la couleur de la map vide, même réglage que figerCalques
+    const fondGris = () => effacement.setTo((gris >> 16) & 255, (gris >> 8) & 255, gris & 255); // ce niveau est affiché
     const fondNoir = () => effacement.setTo(0, 0, 0); // une autre scène prend le relais : elle retrouve le noir
     fondGris();
     this.events.on(Phaser.Scenes.Events.WAKE, fondGris); // scene.switch endort et réveille les scènes sans refaire create
     this.events.on(Phaser.Scenes.Events.SLEEP, fondNoir);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, fondNoir);
 
-    this.player = creerPersonnage(this, 200, 6300);
+    this.player = creerPersonnage(this, this.cfg.depart.x, this.cfg.depart.y);
     this.player.refreshBody();
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
@@ -119,7 +134,7 @@ export default class niveau1 extends Phaser.Scene {
     carte.getObjectLayer("lanterne").objects.forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
     this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne)); // un tir éteint la lanterne
     lumiere.creerVoile(this);
-    musiqueDeScene(this, "musique_niveau"); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
+    musiqueDeScene(this, this.cfg.musique); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
     carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
     carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
@@ -128,13 +143,14 @@ export default class niveau1 extends Phaser.Scene {
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée) ; remis à zéro quand le niveau recommence après une mort
-    preparerSalles(this); // les salles de combat fermées (voir salles.js)
+    preparerSalles(this, this.cfg.salles); // les salles de combat fermées (voir salles.js)
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
     this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup)
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
     this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
-    this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(300, 760); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
+    this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(this.cfg.teleportBoss.x, this.cfg.teleportBoss.y); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
+    if (this.cfg.creer) this.cfg.creer(this); // ce qui est propre à ce niveau (vide, faisceaux...)
     preparerPause(this); // Échap ou X ouvre le menu pause
     effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
   }
@@ -144,7 +160,7 @@ export default class niveau1 extends Phaser.Scene {
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
     verifierSalles(this); // ferme une salle de combat quand le joueur y entre, l'ouvre quand tous les ennemis sont morts
-    arene.verifierArene(this); // si le joueur arrive en haut, on ferme l'arène
+    this.cfg.arene(this); // si le joueur arrive en haut, on ferme l'arène
     lumiere.majVoile(this);
   }
 
