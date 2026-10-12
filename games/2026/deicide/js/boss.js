@@ -24,11 +24,12 @@ import * as effets from "./effets.js";
 import { gagnerPoints, bossTue } from "./points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
 import { lacherPV } from "./bonus.js";
-import { casserMurDroit } from "./arene.js"; // le mur de droite de l'arène du Soldat
+import { briserMurDroit } from "./arene.js"; // le mur de droite de l'arène du Soldat
 
 
 const LARGEUR_IMAGE = 152; // une image des feuilles
 const HAUTEUR_IMAGE = 116;
+const ECHELLE_ENRAGE = 1.7; // de combien le Soldat gonfle en s'enrageant (3 x 1,7 = 5,1 : environ 775 px de large)
 const COULEUR_ENRAGE = 0xff6a5a; // la teinte rouge du boss enragé (aussi dans poursuite.js)
 const ECHELLE = 3; // le sprite est agrandi x3 : 456 x 348 px à l'écran, avec des pixels francs de 3 px comme le HUD (l'arène fait 1280 px de large)
 const DUREE_TRANSITION = 2000; // ms d'invulnérabilité à chaque changement de phase (plus que la plus longue préparation d'attaque)
@@ -418,7 +419,8 @@ function changerDePhase(scene, boss, phase) {
     });
 }
 
-// Le Soldat arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer ; le mur de droite de l'arène se brise (arene.js) et le robot doit fuir.
+// Le Soldat arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer au corps à corps ; il détruit le mur de droite de l'arène
+// (arene.js : briserMurDroit) puis le robot doit fuir. Pendant la fuite il lance des orbes.
 function enrager(scene, boss) {
     nettoyerCombat(scene, boss);
     boss.etat = "enrage";
@@ -431,13 +433,18 @@ function enrager(scene, boss) {
     scene.cameras.main.flash(500, 255, 90, 60);
     scene.cameras.main.shake(1100, 0.012);
     effets.eclats(scene, boss.x, boss.y, 0xff5a3c, 30, 320);
-    scene.tweens.add({ targets: boss, scaleX: profil.echelle * 1.25, scaleY: profil.echelle * 1.25, duration: 700, ease: "Back.Out" }); // il gonfle
+    scene.tweens.add({ targets: boss, scaleX: profil.echelle * ECHELLE_ENRAGE, scaleY: profil.echelle * ECHELLE_ENRAGE, duration: 900, ease: "Back.Out" }); // il gonfle : bien plus grand qu'avant
     scene.tweens.add({ targets: elementsBarre(boss), alpha: 0, duration: 600 }); // la barre de vie disparaît
-    scene.time.delayedCall(1400, () => { // le mur se brise, le boss recule et reste là en grondant
-        if (!boss.active) return;
-        casserMurDroit(scene);
-        boss.play("boss_idle");
-        scene.tweens.add({ targets: boss, x: 320, duration: 900, ease: "Sine.InOut" }); // il s'éloigne vers la gauche : la sortie est à droite
+    scene.tweens.add({ targets: boss, x: 330, y: boss.departY + 40, duration: 900, ease: "Sine.InOut" }); // il se place à gauche, face au mur
+    scene.time.delayedCall(1500, () => { if (boss.active) briserMurDroit(scene, boss); }); // le mur est détruit en trois temps visibles
+    // pendant la fuite, il tire des orbes sur le robot
+    scene.time.delayedCall(4200, () => {
+        const tir = scene.time.addEvent({ delay: 1900, loop: true, callback: () => {
+            if (!boss.active || scene.partieFinie || scene.mort) { tir.remove(); return; }
+            const base = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y);
+            jouerSon(scene, "orbe");
+            for (let i = -1; i <= 1; i++) creerOrbe(scene, boss.x + 120, boss.y, Math.cos(base + i * 0.22) * 300, Math.sin(base + i * 0.22) * 300);
+        } });
     });
 }
 

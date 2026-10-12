@@ -23,7 +23,7 @@ export function preparerPoursuite(scene) { // à appeler dans le create() du niv
     const x = scene.depart.x - AVANCE_DEPART;
     const mur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR, hauteur + 200, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     const lueur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR * 3, hauteur + 200, 0xffb890, 0.18).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); // une lueur plus large autour
-    const boss = scene.add.sprite(x + 400, scene.depart.y - 150, "boss_idle", 0).setScale(2.4).setDepth(51); // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
+    const boss = scene.add.sprite(x + 400, scene.depart.y - 150, "boss_idle", 0).setScale(3.8).setDepth(51); // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
     boss.setTint(COULEUR_ENRAGE);
     boss.teinteBase = COULEUR_ENRAGE;
     boss.play("boss_idle");
