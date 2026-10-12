@@ -224,55 +224,77 @@ export function creerPersonnage(scene, x, y, options = {}) {
     return joueur;
 }
 
-// à appeler dans update() : déplacements, saut et choix de l'animation
+// à appeler dans update() : déplacements, saut et choix de l'animation. Chaque étape a sa fonction (plus bas), dans cet ordre :
 export function majPersonnage(joueur, clavier) {
+    const etat = lireEtat(joueur, clavier); // ce dont les étapes suivantes ont besoin : au sol ? libre de ses mouvements ? flèches tenues ?
+    appliquerGravite(joueur, etat);
+    marcherEtSauter(joueur, etat);
+    glisserEtSauterDuMur(joueur, etat);
+    dasherOuTirer(joueur, clavier, etat);
+    choisirAnimation(joueur, etat);
+}
+
+// L'état du robot à cette image, calculé une seule fois et passé aux étapes de majPersonnage.
+function lireEtat(joueur, clavier) {
     const action = joueur.action ? ANIMATIONS[joueur.action] : null;
     const maintenant = joueur.scene.time.now;
-    const auSol = joueur.body.blocked.down || joueur.body.touching.down;
+    const libre = !(action && action.bloquant); // pas de contrôle pendant le réveil, le dash, la mort
+    return {
+        maintenant,
+        auSol: joueur.body.blocked.down || joueur.body.touching.down,
+        libre,
+        verrou: maintenant < joueur.verrouJusqua, // juste après un saut de mur, on ne dirige plus le robot
+        gauche: libre && clavier.left.isDown,
+        droite: libre && clavier.right.isDown
+    };
+}
+
+// La gravité change selon que le robot monte ou tombe (il monte vite et s'arrête net), et on retient s'il est au sol ou en l'air.
+function appliquerGravite(joueur, etat) {
     if (joueur.body.velocity.y > 0) { // permet de savoir si le personnage est en train de tomber
         joueur.body.setGravityY(1100); // quand il tombe : 300 + 1100 = 1400
     } else {
         joueur.body.setGravityY(700); // quand il monte : 300 + 700 = 1000, il monte vite et s'arrête net
     }
-    if (auSol) joueur.instantSol = maintenant; // le dernier instant où le robot avait les pieds sur un sol
-    if (auSol) joueur.enSaut = false;
+    if (etat.auSol) joueur.instantSol = etat.maintenant; // le dernier instant où le robot avait les pieds sur un sol
+    if (etat.auSol) joueur.enSaut = false;
     else if (Math.abs(joueur.body.velocity.y) > SEUIL_SAUT) joueur.enSaut = true;
+}
 
-    const libre = !(action && action.bloquant); // pas de contrôle pendant le réveil, le dash, la mort
-    const verrou = maintenant < joueur.verrouJusqua; // juste après un saut de mur, on ne dirige plus le robot
-    const gauche = libre && clavier.left.isDown;
-    const droite = libre && clavier.right.isDown;
+// Marcher à gauche ou à droite, et sauter depuis le sol (ou juste après avoir quitté le bord d'une plateforme : saut « coyote »).
+function marcherEtSauter(joueur, etat) {
+    if (!etat.libre) return;
+    const { maintenant, auSol, verrou, gauche, droite } = etat;
     const vitesse = VITESSE * (1 + BONUS_VITESSE_BOOST * (joueur.boostNiveau ?? 0)); // vitesse de marche, un peu plus grande quand le robot est boosté
-    if (libre) {
-        if (verrou) {
-            // on laisse la vitesse du saut de mur telle quelle
-        } else if (gauche) {
-            joueur.setVelocityX(-vitesse);
-            if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = true; // pendant un tir visé, le robot reste tourné vers l'ennemi
-        } else if (droite) {
-            joueur.setVelocityX(vitesse);
-            if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = false; // pendant un tir visé, le robot reste tourné vers l'ennemi
-        } else {
-            joueur.setVelocityX(0);
-        }
-        const peutSauter = auSol || maintenant - joueur.instantSol < DELAI_COYOTE; // au sol, ou il vient juste de quitter le bord d'une plateforme (saut « coyote »)
-        if (joueur.touches.saut.isDown && peutSauter) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
-            joueur.instantSol = -1e9; // un décollage = un saut : sans ça, on resauterait à chaque image pendant le délai
-            joueur.setVelocityY(-SAUT);
-            jouerSon(joueur.scene, "saut"); // bruit du réacteur au décollage
-        }
+    if (verrou) {
+        // on laisse la vitesse du saut de mur telle quelle
+    } else if (gauche) {
+        joueur.setVelocityX(-vitesse);
+        if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = true; // pendant un tir visé, le robot reste tourné vers l'ennemi
+    } else if (droite) {
+        joueur.setVelocityX(vitesse);
+        if (maintenant >= (joueur.regardJusqua ?? 0)) joueur.regardeGauche = false; // pendant un tir visé, le robot reste tourné vers l'ennemi
+    } else {
+        joueur.setVelocityX(0);
     }
+    const peutSauter = auSol || maintenant - joueur.instantSol < DELAI_COYOTE; // au sol, ou il vient juste de quitter le bord d'une plateforme (saut « coyote »)
+    if (joueur.touches.saut.isDown && peutSauter) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
+        joueur.instantSol = -1e9; // un décollage = un saut : sans ça, on resauterait à chaque image pendant le délai
+        joueur.setVelocityY(-SAUT);
+        jouerSon(joueur.scene, "saut"); // bruit du réacteur au décollage
+    }
+}
 
-    // Glisse et saut de mur. Le robot touche un mur (bord du monde ou côté d'une plateforme) quand Phaser
-    // signale un contact à gauche ou à droite : il faut donc pousser vers le mur pour rester collé.
+// Glisse et saut de mur. Le robot touche un mur (bord du monde ou côté d'une plateforme) quand Phaser
+// signale un contact à gauche ou à droite : il faut donc pousser vers le mur pour rester collé.
+function glisserEtSauterDuMur(joueur, etat) {
+    const { maintenant, auSol, libre, verrou, gauche, droite } = etat;
     const veutSaut = Phaser.Input.Keyboard.JustDown(joueur.touches.saut); // appui neuf : garder le bouton enfoncé ne rechaîne pas les sauts de mur
     const bords = joueur.scene.physics.world.bounds; // identifie si le joueur se trouve contre un bord de la map
     const auBordGauche = joueur.body.left <= bords.left + 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
     const auBordDroit = joueur.body.right >= bords.right - 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
-    const contactGauche = (joueur.body.blocked.left || joueur.body.touching.left) && !auBordGauche; // si le joueur est en contact avec un mur et qu'il n'est pas collé au bord de la map
-    // alors il peut sauter
-    const contactDroite = (joueur.body.blocked.right || joueur.body.touching.right) && !auBordDroit;// si le joueur est en contact avec un mur et qu'il n'est pas collé au bord de la map
-    // alors il peut sauter
+    const contactGauche = (joueur.body.blocked.left || joueur.body.touching.left) && !auBordGauche; // en contact avec un mur qui n'est pas le bord de la map : on peut s'y accrocher
+    const contactDroite = (joueur.body.blocked.right || joueur.body.touching.right) && !auBordDroit;
     if (!auSol && (contactGauche || contactDroite)) {
         joueur.sensMur = contactDroite ? 1 : -1;
         joueur.instantMur = maintenant;
@@ -295,7 +317,11 @@ export function majPersonnage(joueur, clavier) {
         joueur.surMur = false;
     }
     if (auSol || joueur.surMur) joueur.reculDispo = true; // le recul est de nouveau possible
+}
 
+// Le dash (bouton L) et le tir (bouton K). Un seul des deux par image : le dash est prioritaire.
+function dasherOuTirer(joueur, clavier, etat) {
+    const { maintenant, auSol, libre } = etat;
     // lus à chaque image, même quand ils sont inutilisables, pour ne pas garder un appui "en attente"
     const veutDash = Phaser.Input.Keyboard.JustDown(joueur.touches.dash);
     const veutTir = Phaser.Input.Keyboard.JustDown(joueur.touches.tir);
@@ -311,9 +337,12 @@ export function majPersonnage(joueur, clavier) {
         joueur.cibleTirPrete = true;
         jouerAction(joueur, cible ? animationVersCible(joueur, cible) : animationDeTir(clavier, auSol));
     }
+}
 
+// L'animation de fond : sur un mur, en saut, en marche ou au repos (sauf si une action ponctuelle est en cours).
+function choisirAnimation(joueur, etat) {
     if (!joueur.action) {
-        jouer(joueur, joueur.surMur ? "mur" : joueur.enSaut ? "saut" : gauche || droite ? "marche" : "repos", true);
+        jouer(joueur, joueur.surMur ? "mur" : joueur.enSaut ? "saut" : etat.gauche || etat.droite ? "marche" : "repos", true);
     } else {
         orienter(joueur);
     }
@@ -370,7 +399,7 @@ export function jouerAction(joueur, nom) {
 // vrai si aucun mur ne se trouve sur la ligne droite entre (x1, y1) et (x2, y2) : la balle ne traverse pas les murs, donc la visée auto non plus
 function ligneDegagee(scene, x1, y1, x2, y2) {
     const calque = scene.groupe_plateformes; // le calque Gameplay de la map Tiled
-    if (!calque || !calque.getTileAtWorldXY) return true; // ce n'est pas une map Tiled (niveaux 2 et 3) : on ne teste pas
+    if (!calque) return true; // pas de calque de collisions : rien ne cache la cible
     const longueur = Math.hypot(x2 - x1, y2 - y1) || 1;
     const nx = -(y2 - y1) / longueur; // un vecteur perpendiculaire à la ligne : la balle a une largeur (environ 12 px), pas seulement un point,
     const ny = (x2 - x1) / longueur; // donc on teste aussi deux lignes parallèles, de chaque côté, sinon elle accroche le coin d'un bloc
@@ -398,7 +427,7 @@ function pointDegage(scene, x, y, cible) {
 // vrai si la case sous ce point est un mur
 function dansUnMur(scene, x, y) {
     const calque = scene.groupe_plateformes;
-    if (!calque || !calque.getTileAtWorldXY) return false;
+    if (!calque) return false;
     const tuile = calque.getTileAtWorldXY(x, y);
     return Boolean(tuile && tuile.collides);
 }
