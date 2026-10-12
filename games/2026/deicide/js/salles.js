@@ -150,7 +150,7 @@ function ouvrirSalle(scene, salle) { // le dernier ennemi est mort : la sortie s
 function reprendreCamera(scene, salle) {
     const camera = scene.cameras.main;
     const horizontale = salle.type === "horizontale";
-    const zone = { l: 520, h: horizontale ? 720 : 440 }; // taille de la zone morte, en px (toute la hauteur pour une salle horizontale : seule la largeur compte)
+    const zone = { l: 520, h: horizontale ? 720 : 560 }; // taille de la zone morte, en px (toute la hauteur pour une salle horizontale : seule la largeur compte)
     const { scrollX, scrollY } = camera; // startFollow (et setDeadzone quand la caméra suit déjà) place la caméra d'un coup sur le robot : c'était le saut brutal. On retient où elle est...
     const milieuX = camera.midPoint.x;
     const milieuY = camera.midPoint.y;
@@ -169,7 +169,13 @@ function reprendreCamera(scene, salle) {
         if (zone.l < 6) { // la zone est presque nulle : on la retire, le suivi du niveau reprend (le robot est déjà au centre)
             scene.events.off(Phaser.Scenes.Events.UPDATE, majCamera);
             camera.setDeadzone();
-            camera.setLerp(1, 1);
+            const rampe = () => { // le suivi redevient « collé » au robot petit à petit (lerp de 0,1 à 1) : passer d'un coup à 1 faisait un petit à-coup
+                const lerp = Math.min(1, camera.lerp.x + 0.08);
+                camera.setLerp(lerp, lerp);
+                if (lerp >= 1) scene.events.off(Phaser.Scenes.Events.UPDATE, rampe);
+            };
+            scene.events.on(Phaser.Scenes.Events.UPDATE, rampe);
+            scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, rampe));
         } else if (camera.deadzone) { // on change la taille directement : setDeadzone re-sauterait sur le robot
             camera.deadzone.width = zone.l;
             camera.deadzone.height = zone.h;
