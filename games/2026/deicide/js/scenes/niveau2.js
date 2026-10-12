@@ -4,10 +4,10 @@
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
 // Arriver au bout de la map mène à l'arène du dernier combat (niveau3.js).
 import niveau1, { CONFIG_NIVEAU1, objetsDe } from "./niveau1.js";
-import { VOLUME_MUSIQUE_BOSS } from "./sons.js";
-import { preparerVide, majVide } from "./vide.js";
-import { preparerFaisceaux, majFaisceaux } from "./faisceaux.js";
-import { preparerPoursuite, majPoursuite, finirPoursuite } from "./poursuite.js";
+import { VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
+import { preparerVide, majVide } from "../mecanismes/vide.js";
+import { preparerFaisceaux, majFaisceaux } from "../mecanismes/faisceaux.js";
+import { preparerPoursuite, majPoursuite, finirPoursuite } from "../ennemis/poursuite.js";
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
   preparerVide(scene);

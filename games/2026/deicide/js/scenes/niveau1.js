@@ -1,19 +1,19 @@
-import * as fct from "./fonctions.js";
-import { chargerPersonnage, creerAnimationsPersonnage, creerPersonnage, majPersonnage, jouerAction } from "./Personnage/personnage.js";
-import { chargerHud, creerHud } from "./Personnage/hud.js";
-import * as ennemis from "./ennemis.js";
-import * as lumiere from "./lumiere.js";
-import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages et musique
-import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
-import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
-import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
-import { chargerBoss } from "./boss.js"; // les feuilles du boss
-import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
-import { preparerSalles, verifierSalles, SALLES_NIVEAU1 } from "./salles.js"; // salles de combat fermées au-dessus de certains sols
+import * as fct from "../systemes/fonctions.js";
+import { chargerPersonnage, creerAnimationsPersonnage, creerPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
+import { chargerHud, creerHud } from "../personnage/hud.js";
+import * as ennemis from "../ennemis/ennemis.js";
+import * as lumiere from "../mecanismes/lumiere.js";
+import { chargerSons, jouerSon, musiqueDeScene } from "../systemes/sons.js"; // bruitages et musique
+import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
+import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
+import * as arene from "../mecanismes/arene.js"; // verrouillage de l'arène du boss en haut du niveau
+import { chargerBoss } from "../ennemis/boss.js"; // les feuilles du boss
+import { finirPartie } from "../systemes/points.js"; // fin de partie : arrête le chrono et ouvre le classement
+import { preparerSalles, verifierSalles, SALLES_NIVEAU1 } from "../mecanismes/salles.js"; // salles de combat fermées au-dessus de certains sols
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
-import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
-import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
-import { preparerLanternesVivantes } from "./lanterneVivante.js"; // les lanternes ailées qui donnent le boost
+import { preparerBonus } from "../mecanismes/bonus.js"; // les PV que lâchent les ennemis
+import { preparerBoost } from "../mecanismes/boost.js"; // le boost du robot (rafale, vitesse, reflet)
+import { preparerLanternesVivantes } from "../ennemis/lanterneVivante.js"; // les lanternes ailées qui donnent le boost
 
 // charge tous les assets du jeu (le cache est partagé entre les scènes). Le menu l'appelle dans son preload, avec une barre de
 // chargement : quand on clique sur Jouer tout est déjà chargé. Le preload du niveau 1 le rappelle, mais il n'a plus rien à charger.

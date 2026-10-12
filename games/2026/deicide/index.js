@@ -1,13 +1,13 @@
 // chargement des librairies
-import { compteurImages, regulerCadence } from "./js/optimisation.js";
-import menu from "./js/menu.js";
-import niveau1 from "./js/niveau1.js";
-import niveau2 from "./js/niveau2.js";
-import niveau3 from "./js/niveau3.js";
-import versus from "./js/versus.js"; // le mode 1 contre 1
-import pause from "./js/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
-import { activerReset } from "./js/reset.js"; // maintenir deux boutons de la borne = retour à l'écran d'accueil
-import classement from "./js/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
+import { compteurImages, regulerCadence } from "./js/systemes/optimisation.js";
+import menu from "./js/scenes/menu.js";
+import niveau1 from "./js/scenes/niveau1.js";
+import niveau2 from "./js/scenes/niveau2.js";
+import niveau3 from "./js/scenes/niveau3.js";
+import versus from "./js/scenes/versus.js"; // le mode 1 contre 1
+import pause from "./js/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
+import { activerReset } from "./js/systemes/reset.js"; // maintenir deux boutons de la borne = retour à l'écran d'accueil
+import classement from "./js/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
 // Un écran de 60 Hz affiche 60 images par seconde. Quand le chiffre ci-dessus divise 60 (60, 30, 20), le jeu saute simplement

@@ -3,9 +3,9 @@
 // ramasser en passant dessus pour regagner 1 PV (la barre de PV du HUD s'allume d'une cellule).
 // Si la barre est déjà pleine, la croix est ramassée quand même (le texte affiche « PV MAX » et rien n'est regagné).
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
-import { volumeEffets } from "./sons.js"; // le bip suit le réglage des bruitages
-import { textePoints } from "./effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
-import { PV_MAX_BARRE } from "./Personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
+import { volumeEffets } from "../systemes/sons.js"; // le bip suit le réglage des bruitages
+import { textePoints } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
+import { PV_MAX_BARRE } from "../personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
 
 const CHANCE_PV = 0.3; // 30 % de chances qu'un ennemi tué laisse un PV
 const ECHELLE = 4; // la croix fait 9 x 9 pixels : 36 px à l'écran

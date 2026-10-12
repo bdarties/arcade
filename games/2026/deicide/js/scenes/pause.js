@@ -2,9 +2,9 @@
 // C'est une scène posée PAR-DESSUS le niveau : le niveau est mis en pause (plus de mouvement, d'ennemis ni de chrono) mais reste affiché
 // derrière, ce qui permet de voir la luminosité changer en direct. On l'ouvre avec Échap ou X (le bouton start de la borne) :
 // voir preparerPause, appelée dans le create du niveau.
-import { reglages, changerReglage, VOLUME_MAX, LUMINOSITE_MAX } from "./reglages.js"; // les réglages du joueur
-import { jouerSon, majVolumeMusique } from "./sons.js"; // bruitages et volume de la musique
-import { appliquerLuminosite } from "./lumiere.js"; // change le gris du voile d'ombre
+import { reglages, changerReglage, VOLUME_MAX, LUMINOSITE_MAX } from "../systemes/reglages.js"; // les réglages du joueur
+import { jouerSon, majVolumeMusique } from "../systemes/sons.js"; // bruitages et volume de la musique
+import { appliquerLuminosite } from "../mecanismes/lumiere.js"; // change le gris du voile d'ombre
 
 const TOUCHES_PAUSE = ["ESC", "X"]; // ouvrent la pause (et la ferment, voir TOUCHES_RETOUR)
 const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // valident le choix

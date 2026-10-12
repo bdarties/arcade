@@ -5,7 +5,7 @@
 //   - tire une balle de plus à chaque tir : une rafale  (personnage.js, DELAI_RAFALE)
 // Tant que le boost dure, un reflet blanc balaie le robot toutes les 0,9 s, et il laisse de petites images fantômes dorées quand il court.
 // Le niveau est dans joueur.boostNiveau (0 = pas de boost) ; personnage.js le lit.
-import { textePoints, flash } from "./effets.js"; // le texte « BOOST 2 » et l'éclair blanc sur le robot
+import { textePoints, flash } from "../systemes/effets.js"; // le texte « BOOST 2 » et l'éclair blanc sur le robot
 
 const DUREE_BOOST = 8000; // ms de boost après la dernière lanterne abattue
 const NIVEAU_MAX = 3;

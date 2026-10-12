@@ -1,7 +1,7 @@
-import { jouerSon } from "./sons.js"; // permet de jouer les bruitages
-import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
-import { gagnerPoints } from "./points.js"; // ajoute les points au score
-import { tenterDropPV } from "./bonus.js"; // un ennemi tué peut laisser un PV à ramasser
+import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
+import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
+import { gagnerPoints } from "../systemes/points.js"; // ajoute les points au score
+import { tenterDropPV } from "../mecanismes/bonus.js"; // un ennemi tué peut laisser un PV à ramasser
 const PORTEE_COUP = 90; // distance (px) à partir de laquelle l'orc donne son coup de faux (la faux porte jusqu'à environ 130 px)
 const VITESSE_ORC = 90; // vitesse de marche de l'orc (px/s)
 export function chargerEnnemis(scene) {

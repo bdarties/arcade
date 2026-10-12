@@ -5,8 +5,8 @@
 // Le boss est le même que celui de l'arène (boss.js : mêmes feuilles d'images, mêmes orbes), mais ses attaques sont posées par rapport au robot et à
 // l'écran, pas à une arène fixe.
 import { creerOrbe, creerAnimations } from "./boss.js";
-import * as effets from "./effets.js";
-import { jouerSonSurLeTemps, surLeTemps, quantifier } from "./sons.js";
+import * as effets from "../systemes/effets.js";
+import { jouerSonSurLeTemps, surLeTemps, quantifier } from "../systemes/sons.js";
 
 const VITESSE_MUR_DEBUT = 232; // px/s au départ : la marche du robot est à 260...
 const VITESSE_MUR_FIN = 264; // ...et à la fin de la fuite le mur va un peu plus vite que la marche : il faut dasher pour ne pas être rattrapé

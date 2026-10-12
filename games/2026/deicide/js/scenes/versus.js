@@ -2,11 +2,11 @@
 // Deux robots, la visée automatique de chacun vise l'autre (voir chercherCible dans personnage.js). 3 PV chacun par manche, au meilleur des 3 manches :
 // le premier à gagner 2 manches gagne la partie. Chaque manche relance la scène (this.scene.restart) : tout repart propre, seuls les points des manches passent.
 // Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : W A S D, R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne (voir gpio2keys.py).
-import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "./Personnage/personnage.js";
-import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "./sons.js";
-import * as effets from "./effets.js";
+import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
+import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
+import * as effets from "../systemes/effets.js";
 import { objetsDe } from "./niveau1.js";
-import { creerTextureHalo } from "./lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
+import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
 
 const PV_PAR_MANCHE = 3;
 const MANCHES_POUR_GAGNER = 2;

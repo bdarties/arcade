@@ -1,5 +1,5 @@
-import { jouerSon } from "../sons.js"; // permet de jouer les bruitages
-import { traineeDash } from "../effets.js"; // copies fantômes derrière le robot pendant le dash
+import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
+import { traineeDash } from "../systemes/effets.js"; // copies fantômes derrière le robot pendant le dash
 
 // Personnage principal : le robot "Bot Wheel"
 //

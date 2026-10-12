@@ -5,8 +5,8 @@
 // L'image est fixe, alors le menu l'anime avec quelques petits effets posés par-dessus (voir animer) : le robot tire,
 // il cligne de l'œil, le titre "glitche" de temps en temps et de la poussière flotte dans l'air.
 import { chargerJeu } from "./niveau1.js"; // charge tous les assets du jeu pendant que le menu s'affiche
-import { creerAnimationsPersonnage } from "./Personnage/personnage.js"; // crée la texture de la balle du robot
-import { jouerSon } from "./sons.js"; // bruitages
+import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
+import { jouerSon } from "../systemes/sons.js"; // bruitages
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];

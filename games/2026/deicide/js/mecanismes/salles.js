@@ -4,9 +4,9 @@
 // bouchée : elle ne s'ouvre que quand tous les ennemis de la salle sont morts. Le temps compte (chrono du classement), donc plus vite on
 // les tue, mieux c'est.
 // Pour ajouter une salle : copier une ligne de SALLES (les numéros de ligne sont ceux de la map dans Tiled, tuiles de 32 px).
-import * as effets from "./effets.js"; // éclats à l'apparition des ennemis
-import * as ennemis from "./ennemis.js"; // création des archers, mages et orcs
-import { jouerSon } from "./sons.js"; // bruitages
+import * as effets from "../systemes/effets.js"; // éclats à l'apparition des ennemis
+import * as ennemis from "../ennemis/ennemis.js"; // création des archers, mages et orcs
+import { jouerSon } from "../systemes/sons.js"; // bruitages
 
 const TUILE = 32; // taille d'une tuile de la map, en px
 const POLICE = "monospace"; // la police du menu et du HUD

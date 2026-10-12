@@ -11,8 +11,8 @@
 // L'API de la borne classe du plus GRAND score au plus petit (voir app/db.py). Pour classer du plus RAPIDE au plus lent,
 // on envoie donc "SCORE_BASE - temps net" : plus le temps est court, plus ce nombre est grand. On refait le calcul à l'envers
 // pour afficher.
-import { jouerSon } from "./sons.js";
-import { creerTextureHalo } from "./lumiere.js"; // le halo doux, pour la lueur du fond
+import { jouerSon } from "../systemes/sons.js";
+import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
 
 export const SCORE_BASE = 10000000; // 10 millions de ms = presque 3 h : aucun temps réel ne peut le dépasser
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)

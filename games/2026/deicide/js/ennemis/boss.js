@@ -19,12 +19,12 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 //   - piqué     : il plonge sur l'endroit où le robot se tenait, puis remonte
 // Les tirs du robot le blessent. À 0 PV il s'enrage, brise le mur de l'arène (arene.js) et le robot fuit vers le niveau 2 (poursuite.js).
-import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "./sons.js";
-import * as effets from "./effets.js";
-import { gagnerPoints, bossTue } from "./points.js";
+import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "../systemes/sons.js";
+import * as effets from "../systemes/effets.js";
+import { gagnerPoints, bossTue } from "../systemes/points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
-import { lacherPV } from "./bonus.js";
-import { briserMurDroit } from "./arene.js"; // le mur de droite de l'arène du Soldat
+import { lacherPV } from "../mecanismes/bonus.js";
+import { briserMurDroit } from "../mecanismes/arene.js"; // le mur de droite de l'arène du Soldat
 
 
 const LARGEUR_IMAGE = 152; // une image des feuilles

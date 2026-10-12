@@ -1,6 +1,6 @@
-import { jouerSon } from "./sons.js"; // permet de jouer les bruitages
-import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
-import { reglages } from "./reglages.js"; // luminosité choisie dans le menu pause
+import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
+import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
+import { reglages } from "../systemes/reglages.js"; // luminosité choisie dans le menu pause
 export function creerTextureHalo(scene) {
     if (scene.textures.exists("halo")) return; // si le halo existe deja il est réutilisé ici
     const tex = scene.textures.createCanvas("halo", 256, 256); // permet de créer la zone de dessin

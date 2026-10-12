@@ -4,11 +4,11 @@
 // Au contact du robot, elle lui retire 1 PV et se brise. Un tir l'abat : gerbe d'éclats dorés, et le robot gagne un niveau de boost (voir boost.js :
 // un peu plus de vitesse, une balle de plus à chaque tir, un reflet blanc). La visée auto la prend pour cible (voir personnage.js).
 // Utilisation : preparerLanternesVivantes(this) dans create() de niveau1, après la création du joueur et du groupe tirsJoueur.
-import { MOTIF_LANTERNE } from "./lumiere.js"; // le dessin de la lanterne (le même que les lanternes accrochées)
-import { VITESSE_JOUEUR } from "./Personnage/personnage.js"; // la vitesse du robot
-import { lanterneVivanteMorte } from "./effets.js"; // éclats, éclair
-import { donnerBoost } from "./boost.js"; // le boost donné au robot
-import { jouerSon } from "./sons.js"; // bruit du verre qui casse
+import { MOTIF_LANTERNE } from "../mecanismes/lumiere.js"; // le dessin de la lanterne (le même que les lanternes accrochées)
+import { VITESSE_JOUEUR } from "../personnage/personnage.js"; // la vitesse du robot
+import { lanterneVivanteMorte } from "../systemes/effets.js"; // éclats, éclair
+import { donnerBoost } from "../mecanismes/boost.js"; // le boost donné au robot
+import { jouerSon } from "../systemes/sons.js"; // bruit du verre qui casse
 
 const DELAI_APPARITION = 15000; // ms entre deux lanternes vivantes
 const MAX_VIVANTES = 3; // pas plus de 3 en même temps
