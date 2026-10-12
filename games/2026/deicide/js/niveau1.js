@@ -9,7 +9,6 @@ import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor de
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 import { chargerBoss } from "./boss.js"; // le sprite du Dieu de la Lumière
 import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
-import { preparerSalles, verifierSalles } from "./salles.js"; // salles de combat fermées au-dessus de certains sols
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
 import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
@@ -128,7 +127,6 @@ export default class niveau1 extends Phaser.Scene {
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée) ; remis à zéro quand le niveau recommence après une mort
-    preparerSalles(this); // les salles de combat fermées (voir salles.js)
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
     this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup)
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
@@ -143,7 +141,6 @@ export default class niveau1 extends Phaser.Scene {
     lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);
-    verifierSalles(this); // ferme une salle de combat quand le joueur y entre, l'ouvre quand tous les ennemis sont morts
     arene.verifierArene(this); // si le joueur arrive en haut, on ferme l'arène
     lumiere.majVoile(this);
   }

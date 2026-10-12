@@ -136,7 +136,6 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
     });
 }
 function repere(scene, ennemi) { // permet d'implémenter le fait que l'ennemi ne vois le joueur que quand il est dans la lumière
-    if (ennemi.toujoursVoit) return true; // les ennemis des salles fermées (salles.js) repèrent toujours le joueur
     const portee = scene.joueurEclaire ? 400 : 120; // si le joueur est éclairé la portée de l'arché est de 400 sinon 120
     return Phaser.Math.Distance.Between(ennemi.body.center.x, ennemi.body.center.y, scene.player.body.center.x, scene.player.body.center.y) < portee; // calcule la distance entre le centre du corps de l'ennemi et celui du joueur (l'image de l'orc est décalée par rapport à son corps)
 }
