@@ -119,7 +119,7 @@ const ECHELLE_VOILE = 0.25;
 // s'éclaircit jusqu'à 100 % (écran inchangé). Le résultat à l'écran est le même, mais le voile se redessine en 2 passes pour
 // la carte graphique au lieu de 4 : (1) fond gris + lumières dessinées par-dessus avec le mode "écran" (SCREEN), qui éclaircit,
 // (2) copie dans le voile. Plus besoin de vider puis de repeindre le voile avant d'y percer les trous.
-const GRIS_OMBRE = 0x666666; // 40 % de gris : l'ombre (écran assombri de 60 %)
+const GRIS_OMBRE = 0x999999; // 60 % de gris : l'ombre (écran assombri de 40 %). C'était 0x808080 (50 %) puis 0x666666 (40 %) : le jeu était trop sombre
 export function creerVoile(scene) { // permet de creer le voile de lumière
     creerTextureHalo(scene);
     const voile = scene.add.renderTexture(0, 0, scene.scale.width * ECHELLE_VOILE, scene.scale.height * ECHELLE_VOILE); // crée une image en premiere plan que l'on peut ensuite modifier (demi-taille)
@@ -174,7 +174,7 @@ export function majVoile(scene) { // met à jour le voile
     etat.camX = camera.scrollX; etat.camY = camera.scrollY; etat.joueurX = joueur.x; etat.joueurY = joueur.y; etat.nbZones = nbZones;
     scene.voile.texture.beginDraw(); // ouvre un lot : le fond et toutes les lumières seront dessinés en une seule passe, au lieu d'une passe de rendu par lumière
     scene.voile.texture.batchDraw(scene.fondVoile); // d'abord le fond gris : il remplace tout, donc efface les lumières de l'image précédente
-    percerVoile(scene, joueur.x, joueur.y, 130, 1); // lumière autour du joueur, le voile y est complètement éclairci
+    percerVoile(scene, joueur.x, joueur.y, 170, 1); // lumière autour du joueur, le voile y est complètement éclairci
     if (scene.zonesLumiere) { // une lumière pour chaque zone de lumiere visible à l'écran
         const zones = scene.zonesLumiere.getChildren();
         for (let i = 0; i < zones.length; i++) percerVoile(scene, zones[i].x, zones[i].y, zones[i].body.radius * 1.2, 0.6); // autour des lumières on n'éclaircit le voile qu'en partie

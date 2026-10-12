@@ -44,6 +44,12 @@ export function tenterDropPV(scene, x, y) {
     creerBonusPV(scene, x, y);
 }
 
+// laisse tomber un PV à coup sûr (le boss en lâche un à chaque changement de phase)
+export function lacherPV(scene, x, y) {
+    if (typeof scene.pv !== "number") return;
+    creerBonusPV(scene, x, y);
+}
+
 // à appeler dans create() d'un niveau (une fois le joueur et les plateformes créés) : prépare le groupe des croix à ramasser
 export function preparerBonus(scene) {
     groupeBonus(scene);

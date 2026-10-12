@@ -65,7 +65,7 @@ export default class menu extends Phaser.Scene {
   animer() { // les effets qui font vivre l'image fixe du menu
     // 1. le robot tire : la flamme apparaît au bout de son canon et une balle traverse l'écran
     this.textures.get("menu_flamme_tir").setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.anims.create({ key: "menu_flamme_tir", frames: this.anims.generateFrameNumbers("menu_flamme_tir", { start: 0, end: 3 }), frameRate: 10, repeat: 0 });
+    if (!this.anims.exists("menu_flamme_tir")) this.anims.create({ key: "menu_flamme_tir", frames: this.anims.generateFrameNumbers("menu_flamme_tir", { start: 0, end: 3 }), frameRate: 10, repeat: 0 }); // une seule fois : le menu se rouvre après chaque partie
     const flamme = this.add.sprite(CENTRE_FLAMME.x - 42.5 * PIXEL, CENTRE_FLAMME.y - 10 * PIXEL, "menu_flamme_tir").setOrigin(0, 0).setScale(PIXEL).setVisible(false);
     flamme.on("animationcomplete", () => flamme.setVisible(false));
     const tirer = () => {
@@ -112,6 +112,10 @@ export default class menu extends Phaser.Scene {
   lancer() { // un bouton a été pressé : le bouton s'enfonce, l'écran s'éteint, puis le niveau 1 commence
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
+    this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
+    this.registry.set("score", 0); // le score aussi
+    this.registry.set("vies", 3); // et les 3 vies (la valeur de VIES_DEPART dans hud.js)
+    this.registry.set("chronoActif", true); // le chrono peut tourner (il a pu être arrêté par la partie précédente)
     this.bouton.play("bouton_jouer_clic");
     jouerSon(this, "porte"); // bruit de porte, comme quand on entre dans un niveau
     this.time.delayedCall(180, () => this.cameras.main.fadeOut(350, 0, 0, 0));

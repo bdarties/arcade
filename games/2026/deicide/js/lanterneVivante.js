@@ -1,7 +1,7 @@
 // lanterneVivante.js : les lanternes vivantes (une lanterne avec de petites ailes)
 // Toutes les 15 secondes, une lanterne vivante apparaît juste au-dessus de l'écran, à un endroit au hasard où il n'y a pas de mur,
 // et vole vers le robot à la moitié de sa vitesse. Elle ne traverse pas les murs : elle les contourne en glissant dessus.
-// Elle ne fait pas de dégâts. Un tir l'abat : gerbe d'éclats dorés, et le robot gagne un niveau de boost (voir boost.js :
+// Au contact du robot, elle lui retire 1 PV et se brise. Un tir l'abat : gerbe d'éclats dorés, et le robot gagne un niveau de boost (voir boost.js :
 // un peu plus de vitesse, une balle de plus à chaque tir, un reflet blanc). La visée auto la prend pour cible (voir personnage.js).
 // Utilisation : preparerLanternesVivantes(this) dans create() de niveau1, après la création du joueur et du groupe tirsJoueur.
 import { MOTIF_LANTERNE } from "./lumiere.js"; // le dessin de la lanterne (le même que les lanternes accrochées)
@@ -13,7 +13,7 @@ import { jouerSon } from "./sons.js"; // bruit du verre qui casse
 const DELAI_APPARITION = 15000; // ms entre deux lanternes vivantes
 const MAX_VIVANTES = 3; // pas plus de 3 en même temps
 const VITESSE = VITESSE_JOUEUR / 2; // la moitié de la vitesse du robot (130 px/s)
-const DISTANCE_ARRET = 80; // px : elle s'arrête à cette distance du robot et flotte, pour qu'on puisse la viser
+const DISTANCE_ARRET = 0; // px : elle fonce jusqu'au robot sans s'arrêter (avant : 80, pour qu'on puisse la viser) ; au contact elle le blesse (voir toucherJoueur)
 const DUREE_VIE = 40000; // ms : une lanterne que personne n'abat finit par s'éteindre et disparaître
 const ECHELLE = 3; // comme les lanternes accrochées
 const ESSAIS = 40; // nombre de places essayées pour l'apparition
@@ -56,6 +56,7 @@ export function preparerLanternesVivantes(scene) {
     scene.lanternesVivantes = groupe; // (personnage.js s'en sert pour la visée auto)
     if (scene.groupe_plateformes) scene.physics.add.collider(groupe, scene.groupe_plateformes); // elle ne traverse pas les murs
     if (scene.tirsJoueur) scene.physics.add.overlap(scene.tirsJoueur, groupe, (tir, lanterne) => abattre(scene, lanterne, tir)); // un tir l'abat
+    scene.physics.add.overlap(scene.player, groupe, (joueur, lanterne) => toucherJoueur(scene, lanterne)); // elle touche le robot : elle lui fait mal
     const diriger = () => groupe.getChildren().forEach(lanterne => dirigerLanterne(scene, lanterne));
     scene.events.on(Phaser.Scenes.Events.UPDATE, diriger);
     const minuterie = scene.time.addEvent({ delay: DELAI_APPARITION, loop: true, callback: () => faireApparaitre(scene) });
@@ -153,6 +154,17 @@ function dirigerLanterne(scene, lanterne) {
     lanterne.body.setVelocity(vx, vy);
     if (Math.abs(dx) > 8) lanterne.setFlipX(dx < 0); // elle regarde vers le robot
     if (lanterne.halo) lanterne.halo.setPosition(lanterne.x, lanterne.y);
+}
+
+// une lanterne vivante touche le robot : il perd 1 PV et la lanterne se brise (sans boost)
+function toucherJoueur(scene, lanterne) {
+    if (!lanterne.active) return;
+    const x = lanterne.x;
+    const y = lanterne.y;
+    lanterne.destroy(); // détruite au contact : elle ne peut pas blesser à chaque image
+    jouerSon(scene, "lanterne"); // le verre qui casse
+    lanterneVivanteMorte(scene, x, y); // éclats dorés et blancs
+    scene.blesserJoueur(1, "Percuté par une lanterne vivante");
 }
 
 // un tir touche une lanterne vivante

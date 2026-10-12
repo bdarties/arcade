@@ -379,6 +379,7 @@ function chercherCible(joueur, x, y) {
     if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); }); // les ennemis (sauf ceux qui sont en train de mourir)
     if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
     if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); }); // les lanternes vivantes (voir lanterneVivante.js)
+    if (scene.boss && scene.boss.active && (scene.boss.etat === "combat" || scene.boss.etat === "attaque")) essayer(scene.boss); // le boss (voir boss.js)
     return cible; // renvoie la cible trouvée, ou null si aucune ne convient
 }
 // choisit la cible de la visée auto au moment où on appuie sur tir : l'ennemi ou la lanterne la plus proche, des deux côtés du robot.
