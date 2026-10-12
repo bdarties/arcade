@@ -622,6 +622,13 @@ export default class niveau1 extends Phaser.Scene {
     fct.majBarre(j.barre_stamina, j.stamina, STAMINA_MAX);
   }
 
+  // abandon de la partie depuis le menu pause : les sons de la partie s'arrêtent (la prochaine partie relancera la musique)
+  quitterPartie() {
+    musique_de_fond.stop();
+    son_echelle.stop();
+    musique_en_cours = false;
+  }
+
   update(time, delta) {
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
@@ -647,6 +654,14 @@ export default class niveau1 extends Phaser.Scene {
           this.scene.start("gameover", { niveau: this.niveau, pierres: pierres.nombrePierres(this) });
         });
       }
+      return;
+    }
+
+    // Start d'un joueur : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
+    if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
+      this.sound.pauseAll();
+      this.scene.pause();
+      this.scene.launch("pause");
       return;
     }
 
