@@ -129,9 +129,10 @@ export default class clicker extends Phaser.Scene {
         this.texteTemps = creerTexteTemps(this, this.tempsRestant);
 
         // Le Maestro (à droite en solo, au milieu en duo)
-        this.maestro = this.add.image(this.nombreJoueurs === 1 ? 1050 : 640, 450, "maestro");
+        this.maestro = this.add.image(this.nombreJoueurs === 1 ? 1050 : 640, 450, "maestro")
+            .setDepth(-1);   // derrière tous les textes et boutons (qui sont à 0), devant le fond (-10)
         hauteurFixe(this.maestro, 700);
-        this.echelleMaestro = this.maestro.scaleX;   // on mémorise sa taille normale
+        this.echelleMaestro = this.maestro.scaleX;
 
         // Mode 1 joueur ou 2 joueurs
         if (this.nombreJoueurs === 1) {
@@ -286,7 +287,7 @@ export default class clicker extends Phaser.Scene {
             .setStrokeStyle(6, COULEURS.DORE)
             .setInteractive({ useHandCursor: true });
 
-        this.texteBoutonJ1 = this.add.text(400, 470, "CLIQUE !", style(TAILLE.ENORME)).setOrigin(0.5);
+        this.texteBoutonJ1 = this.add.text(400, 470, "APPUYEZ !", style(TAILLE.ENORME)).setOrigin(0.5);
 
         // Touches : en solo, les boutons des DEUX côtés de la borne fonctionnent
         this.touchesJ1 = creerTouches(this, BORNE.j1.boutons.concat(BORNE.j2.boutons));
