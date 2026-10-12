@@ -73,6 +73,7 @@ export default class chargement extends Phaser.Scene {
 
     // ---- Écrans plein format ----
     this.load.image("img_accueil", "./assets/accueil.jpg");
+    this.load.image("img_synopsis", "./assets/synopsis.png");
     this.load.image("img_gameover", "./assets/gameover.jpg");
     this.load.image("img_victoire", "./assets/victoire.jpg");
     this.load.image("img_fond_niveau1", "./assets/fond_niveau1.jpg");
