@@ -41,6 +41,7 @@ export function objetsDe(carte, nom) {
   return calque ? calque.objects : [];
 }
 
+const DUREE_GRACE = 2500; // ms d'invincibilité quand le niveau (re)commence : réapparaître ne doit pas coûter un PV tout de suite
 const DUREE_INVINCIBLE = 1000; // ms d'invincibilité du robot après un coup
 
 // Ce qui change d'un niveau à l'autre. Le niveau 2 (niveau2.js) est une classe qui hérite de celle-ci avec sa propre config :
@@ -153,7 +154,8 @@ export default class niveau1 extends Phaser.Scene {
     this.boss = null; // le boss n'existe pas encore (arene.js le crée) ; remis à zéro quand le niveau recommence après une mort
     preparerSalles(this, this.cfg.salles); // les salles de combat fermées (voir salles.js)
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
-    this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup)
+    this.invincibleJusqua = 0; // (le répit de réapparition est posé à la première image, voir update : l'horloge n'est pas encore à jour dans create) instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup ; au début du niveau, on laisse un répit pour ne pas se faire toucher en réapparaissant)
+    this.graceAPoser = true;
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
     this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(this.cfg.teleportBoss.x, this.cfg.teleportBoss.y); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
@@ -163,6 +165,11 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   update() {
+    if (this.graceAPoser) { // première image du niveau : répit de réapparition (invincible et clignotant) pour ne pas se faire toucher en arrivant
+      this.graceAPoser = false;
+      this.invincibleJusqua = this.time.now + DUREE_GRACE;
+      this.tweens.add({ targets: this.player, alpha: 0.35, duration: 90, yoyo: true, repeat: Math.round(DUREE_GRACE / 180) - 1, onComplete: () => this.player.setAlpha(1) });
+    }
     lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
     ennemis.majEnnemis(this);

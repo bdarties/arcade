@@ -45,8 +45,8 @@ const PROFILS = {
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
     dieu: {
-        pv: 200, seuils: [140, 70], echelle: 3.5, teinte: 0xffe9a0, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 3000,
-        pauses: [2100, 1600, 1150],
+        pv: 170, seuils: [120, 60], echelle: 3.5, teinte: 0xffe9a0, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 3000,
+        pauses: [2400, 1850, 1450],
         attaques: [
             ["orbes", "colonne", "pluie", "lanternes", "rayonLarge"],
             ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "rayonLarge"],
@@ -64,7 +64,7 @@ const ATTAQUES = {
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
     pique: { charge: 720, apres: 1250 },
-    rayonLarge: { charge: 950, apres: 600 } // Dieu seulement : un rayon qui couvre la moitié de l'arène, annoncé moins d'une seconde avant : il faut dasher pour changer de côté
+    rayonLarge: { charge: 1150, apres: 600 } // Dieu seulement : un rayon qui couvre la moitié de l'arène, annoncé moins d'une seconde avant : il faut dasher pour changer de côté
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
@@ -439,11 +439,11 @@ function enrager(scene, boss) {
     scene.time.delayedCall(1500, () => { if (boss.active) briserMurDroit(scene, boss); }); // le mur est détruit en trois temps visibles
     // pendant la fuite, il tire des orbes sur le robot
     scene.time.delayedCall(4200, () => {
-        const tir = scene.time.addEvent({ delay: 1900, loop: true, callback: () => {
+        const tir = scene.time.addEvent({ delay: 2600, loop: true, callback: () => {
             if (!boss.active || scene.partieFinie || scene.mort) { tir.remove(); return; }
             const base = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y);
             jouerSon(scene, "orbe");
-            for (let i = -1; i <= 1; i++) creerOrbe(scene, boss.x + 120, boss.y, Math.cos(base + i * 0.22) * 300, Math.sin(base + i * 0.22) * 300);
+            for (let i = -1; i <= 1; i++) creerOrbe(scene, boss.x + 120, boss.y, Math.cos(base + i * 0.25) * 260, Math.sin(base + i * 0.25) * 260);
         } });
     });
 }

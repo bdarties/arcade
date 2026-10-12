@@ -8,12 +8,12 @@ import { creerOrbe, creerAnimations } from "./boss.js";
 import * as effets from "./effets.js";
 import { jouerSon } from "./sons.js";
 
-const VITESSE_MUR = 232; // px/s : la marche du robot est à 260
+const VITESSE_MUR = 215; // px/s : la marche du robot est à 260
 const LARGEUR_MUR = 110; // px
 const AVANCE_DEPART = 700; // px : de combien le mur est derrière le robot au départ (il est hors de l'écran, qui montre 640 px de chaque côté)
 const RECUL_APRES_COUP = 520; // px : après avoir touché le robot, le mur se remet à cette distance derrière lui
-const PAUSE_ATTAQUES = 2300; // ms entre deux attaques du boss
-const PREMIERE_ATTAQUE = 3500; // ms avant la première
+const PAUSE_ATTAQUES = 2900; // ms entre deux attaques du boss
+const PREMIERE_ATTAQUE = 5000; // ms avant la première
 const COULEUR_ENRAGE = 0xff6a5a; // la teinte rouge du boss (la même que dans boss.js)
 const ATTAQUES = ["orbes", "pluie", "colonne"];
 
@@ -23,7 +23,7 @@ export function preparerPoursuite(scene) { // à appeler dans le create() du niv
     const x = scene.depart.x - AVANCE_DEPART;
     const mur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR, hauteur + 200, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     const lueur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR * 3, hauteur + 200, 0xffb890, 0.18).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); // une lueur plus large autour
-    const boss = scene.add.sprite(x + 400, scene.depart.y - 150, "boss_idle", 0).setScale(3.8).setDepth(51); // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
+    const boss = scene.add.sprite(scene.depart.x - 1300, scene.depart.y - 150, "boss_idle", 0).setScale(3.8).setDepth(51); // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
     boss.setTint(COULEUR_ENRAGE);
     boss.teinteBase = COULEUR_ENRAGE;
     boss.play("boss_idle");
@@ -39,7 +39,7 @@ export function majPoursuite(scene) { // à appeler dans update()
     p.lueur.x = p.mur.x;
 
     // le boss vole derrière le robot, toujours devant le mur, un peu au-dessus, et flotte doucement
-    const cibleX = Math.max(p.mur.x + LARGEUR_MUR / 2 + 260, joueur.x - 520);
+    const cibleX = Math.min(Math.max(p.mur.x + LARGEUR_MUR / 2 + 260, joueur.x - 520), joueur.x - 340); // jamais plus près que 340 px du robot : il ne doit pas le recouvrir
     const cibleY = joueur.y - 170 + Math.sin(scene.time.now / 450) * 18;
     p.boss.x += (cibleX - p.boss.x) * 0.08;
     p.boss.y += (cibleY - p.boss.y) * 0.08;
@@ -77,21 +77,21 @@ function tirerOrbes(scene, p) { // une salve en éventail vers le robot
     const base = Phaser.Math.Angle.Between(boss.x, boss.y + 20, scene.player.x, scene.player.body.center.y);
     jouerSon(scene, "orbe");
     effets.eclats(scene, boss.x, boss.y + 20, 0xffd45c, 10, 300);
-    for (let i = 0; i < 5; i++) {
-        const angle = base + Phaser.Math.DegToRad((i - 2) * 14);
-        creerOrbe(scene, boss.x, boss.y + 20, Math.cos(angle) * 330, Math.sin(angle) * 330);
+    for (let i = 0; i < 3; i++) { // 3 orbes (5 avant : trop dur)
+        const angle = base + Phaser.Math.DegToRad((i - 1) * 16);
+        creerOrbe(scene, boss.x, boss.y + 20, Math.cos(angle) * 290, Math.sin(angle) * 290);
     }
 }
 
 function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, devant le robot, puis des orbes qui tombent à ces endroits
     const haut = scene.cameras.main.worldView.y + 14;
-    const xs = [170, 340, 510, 680].map((d) => Math.round(scene.player.x + d + Phaser.Math.Between(-30, 30)));
+    const xs = [220, 440, 660].map((d) => Math.round(scene.player.x + d + Phaser.Math.Between(-30, 30)));
     const reperes = xs.map((x) => {
         const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
         scene.tweens.add({ targets: r, alpha: 0.15, duration: 100, yoyo: true, repeat: -1 });
         return r;
     });
-    scene.time.delayedCall(700, () => {
+    scene.time.delayedCall(900, () => {
         jouerSon(scene, "orbe");
         xs.forEach((x, i) => { reperes[i].destroy(); creerOrbe(scene, x, haut, 0, 400); });
     });
@@ -102,7 +102,7 @@ function annoncerColonne(scene, p) { // un trait clignotant sur toute la hauteur
     const x = Math.round(scene.player.x + 300);
     const trait = scene.add.rectangle(x, hauteur / 2, 8, hauteur, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     scene.tweens.add({ targets: trait, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 });
-    p.colonnes.push({ x, trait, etat: "annonce", fin: 0, rayon: null, touche: false, allumage: scene.time.now + 900 });
+    p.colonnes.push({ x, trait, etat: "annonce", fin: 0, rayon: null, touche: false, allumage: scene.time.now + 1100 });
 }
 
 function majColonne(scene, c) {
