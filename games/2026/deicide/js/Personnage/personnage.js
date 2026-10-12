@@ -45,6 +45,8 @@ const SEUIL_SAUT = 150; // vitesse verticale (px/s) à partir de laquelle on con
 const VITESSE_GLISSE = 90; // vitesse de chute maximale (px/s) quand le robot glisse contre un mur
 const VITESSE_SAUT_MUR = 220; // vitesse horizontale donnée par un saut de mur, dans le sens opposé au mur
 const DUREE_VERROU = 220; // ms pendant lesquelles on ne peut pas diriger le robot après un saut de mur (sinon il se recolle au mur)
+const MARGE_BALLE = 6; // px : la moitié de la largeur de la balle, pour vérifier qu'elle passe sans accrocher un coin de mur
+const DELAI_COYOTE = 150; // ms pendant lesquelles on peut encore sauter après avoir quitté le bord d'une plateforme (le jeu pardonne un saut un peu tardif)
 const DELAI_MUR = 120; // ms pendant lesquelles on peut encore sauter après avoir quitté le mur (le jeu pardonne un appui un peu tardif)
 const DELAI_TIR = 300; // ms minimum entre deux tirs
 const DELAI_DASH = 600; // ms minimum entre deux dashs
@@ -207,6 +209,7 @@ export function creerPersonnage(scene, x, y) {
     joueur.touches = scene.input.keyboard.addKeys({ saut: "I", tir: "K", dash: "L", porte: "O" }, false); // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
+    joueur.instantSol = -1e9; // dernier instant où il était au sol (pour le saut « coyote »)
     joueur.reculDispo = true; // le recul d'un tir vers le bas ne marche qu'une fois par saut : il revient au sol ou contre un mur
     // une action non figée est terminée quand son animation est finie : on rend la main aux animations automatiques
     joueur.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation) => {
@@ -229,6 +232,7 @@ export function majPersonnage(joueur, clavier) {
     } else {
         joueur.body.setGravityY(700); // quand il monte : 300 + 700 = 1000, il monte vite et s'arrête net
     }
+    if (auSol) joueur.instantSol = maintenant; // le dernier instant où le robot avait les pieds sur un sol
     if (auSol) joueur.enSaut = false;
     else if (Math.abs(joueur.body.velocity.y) > SEUIL_SAUT) joueur.enSaut = true;
 
@@ -249,7 +253,9 @@ export function majPersonnage(joueur, clavier) {
         } else {
             joueur.setVelocityX(0);
         }
-        if (joueur.touches.saut.isDown && auSol) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
+        const peutSauter = auSol || maintenant - joueur.instantSol < DELAI_COYOTE; // au sol, ou il vient juste de quitter le bord d'une plateforme (saut « coyote »)
+        if (joueur.touches.saut.isDown && peutSauter) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
+            joueur.instantSol = -1e9; // un décollage = un saut : sans ça, on resauterait à chaque image pendant le délai
             joueur.setVelocityY(-SAUT);
             jouerSon(joueur.scene, "saut"); // bruit du réacteur au décollage
         }
@@ -363,12 +369,36 @@ export function jouerAction(joueur, nom) {
 function ligneDegagee(scene, x1, y1, x2, y2) {
     const calque = scene.groupe_plateformes; // le calque Gameplay de la map Tiled
     if (!calque || !calque.getTileAtWorldXY) return true; // ce n'est pas une map Tiled (niveaux 2 et 3) : on ne teste pas
-    const pas = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 12); // un point tous les 12 px environ (les tuiles font 32 px : aucune ne peut être sautée)
+    const longueur = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const nx = -(y2 - y1) / longueur; // un vecteur perpendiculaire à la ligne : la balle a une largeur (environ 12 px), pas seulement un point,
+    const ny = (x2 - x1) / longueur; // donc on teste aussi deux lignes parallèles, de chaque côté, sinon elle accroche le coin d'un bloc
+    const pas = Math.ceil(longueur / 12); // un point tous les 12 px environ (les tuiles font 32 px : aucune ne peut être sautée)
     for (let i = 1; i < pas; i++) { // on parcourt la ligne du robot vers l'objet (sans les deux bouts)
-        const tuile = calque.getTileAtWorldXY(x1 + (x2 - x1) * i / pas, y1 + (y2 - y1) * i / pas); // la tuile sous ce point
-        if (tuile && tuile.collides) return false; // une tuile solide : le mur bloque la vue
+        const px = x1 + (x2 - x1) * i / pas;
+        const py = y1 + (y2 - y1) * i / pas;
+        for (const decalage of [0, -MARGE_BALLE, MARGE_BALLE]) {
+            const tuile = calque.getTileAtWorldXY(px + nx * decalage, py + ny * decalage); // la tuile sous ce point
+            if (tuile && tuile.collides) return false; // une tuile solide : le mur bloque la vue
+        }
     }
     return true;
+}
+// Les points du corps d'une cible qu'on peut viser : le centre d'abord, puis le haut, le bas et les côtés. Un mage perché sur un bloc peut être caché
+// en son centre par le coin du bloc mais atteignable plus haut : la balle touche l'ennemi dès qu'elle atteint n'importe quelle partie de son corps.
+function pointsVisables(cible) {
+    const c = cible.body;
+    return [{ x: c.center.x, y: c.center.y }, { x: c.center.x, y: c.top + 6 }, { x: c.center.x, y: c.bottom - 6 }, { x: c.left + 4, y: c.center.y }, { x: c.right - 4, y: c.center.y }];
+}
+// le premier point de la cible qu'on voit en ligne droite depuis (x, y), ou null si un mur cache toute la cible
+function pointDegage(scene, x, y, cible) {
+    return pointsVisables(cible).find((point) => ligneDegagee(scene, x, y, point.x, point.y)) ?? null;
+}
+// vrai si la case sous ce point est un mur
+function dansUnMur(scene, x, y) {
+    const calque = scene.groupe_plateformes;
+    if (!calque || !calque.getTileAtWorldXY) return false;
+    const tuile = calque.getTileAtWorldXY(x, y);
+    return Boolean(tuile && tuile.collides);
 }
 // cherche la cible la plus proche à gauche ou à droite du robot : un ennemi ou une lanterne encore allumée. Renvoie null s'il n'y en a pas.
 function chercherCible(joueur, x, y) {
@@ -381,7 +411,7 @@ function chercherCible(joueur, x, y) {
         const dy = objet.body.center.y - y; // écart vertical entre le robot et l'objet
         const angle = Phaser.Math.RadToDeg(Math.atan2(Math.abs(dy), dx)); // angle entre la ligne droite du tir et l'objet, en degrés
         if (angle > ANGLE_AUTO) return; // trop haut ou trop bas : on l'ignore
-        if (!ligneDegagee(scene, x, y, objet.body.center.x, objet.body.center.y)) return; // un mur est entre le robot et l'objet : on ne le vise pas à travers
+        if (!pointDegage(scene, x, y, objet)) return; // un mur cache tout l'objet : on ne le vise pas à travers
         const distance = Math.hypot(dx, dy); // distance réelle entre le robot et l'objet
         if (distance < meilleureDistance) { // il est plus proche que le meilleur trouvé jusqu'ici
             cible = objet; // il devient la cible
@@ -441,15 +471,17 @@ function lancerBalle(joueur, anim, cible) {
     if (scene.groupe_plateformes && !tirs.collisionPlateformes) { // une seule fois par groupe : les balles disparaissent contre les plateformes
         tirs.collisionPlateformes = scene.physics.add.collider(tirs, scene.groupe_plateformes, (balle) => balle.destroy());
     }
-    const x = joueur.x + sens * (bouche.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
-    const y = joueur.y + (bouche.y - PIED_Y - (anim.haut ?? 0)) * ECHELLE;
+    let x = joueur.x + sens * (bouche.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
+    let y = joueur.y + (bouche.y - PIED_Y - (anim.haut ?? 0)) * ECHELLE;
+    if (dansUnMur(scene, x, y)) { x = joueur.body.center.x; y = joueur.body.center.y; } // le canon dépasse dans un mur (robot collé à un bloc) : la balle partirait déjà dans le mur et disparaîtrait, on la fait partir du centre du robot
     const balle = tirs.create(x, y, PREFIXE + "balle");
     jouerSon(scene, "tir"); // bruit du tir
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
     const cibleEncoreLa = cible && cible.active && cible.body && cible.etat !== "mort"; // (pour une balle de la rafale : la cible a pu mourir entre-temps)
     if (cibleEncoreLa) { // un ennemi est à portée
-        const angle = Phaser.Math.Angle.Between(x, y, cible.body.center.x, cible.body.center.y); // angle entre le canon et le centre de l'ennemi
+        const point = pointDegage(scene, x, y, cible) ?? cible.body.center; // le point de l'ennemi qu'on voit depuis le canon (le centre si possible)
+        const angle = Phaser.Math.Angle.Between(x, y, point.x, point.y); // angle entre le canon et ce point
         scene.physics.velocityFromRotation(angle, VITESSE_BALLE, balle.body.velocity); // envoie la balle dans cette direction, à la vitesse normale
     } else { // aucun ennemi à portée
         balle.setVelocity(sens * visee.x * VITESSE_BALLE, visee.y * VITESSE_BALLE); // tir normal, dans la direction de la visée
