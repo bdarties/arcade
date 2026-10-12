@@ -1,13 +1,15 @@
 // boss.js : le Dieu de la Lumière, le boss final, dans l'arène en haut du niveau 1
-// Son dessin est une feuille de 8 images de 274 x 202 px (assets/images/boss/boss_idle.png) : il plane, ses ailes battent.
+// Son dessin est une feuille de 8 images de 137 x 106 px (assets/images/boss/boss_idle.png) : il plane, ses ailes battent.
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss) et flotte en haut de la salle.
 // Pour l'instant : apparition, animation et flottement. Les attaques, les PV et la mort viennent après.
 
-const ECHELLE = 2; // le sprite est agrandi x2 : 548 x 404 px à l'écran (l'arène fait 1280 px de large)
+const LARGEUR_IMAGE = 137; // une image de la feuille
+const HAUTEUR_IMAGE = 106;
+const ECHELLE = 4; // le sprite est agrandi x4 : 548 x 424 px à l'écran, avec de gros pixels francs comme le HUD (l'arène fait 1280 px de large)
 const NB_IMAGES = 8;
 
 export function chargerBoss(scene) { // à appeler dans chargerJeu (preload)
-    scene.load.spritesheet("boss_idle", "./assets/images/boss/boss_idle.png", { frameWidth: 274, frameHeight: 202 });
+    scene.load.spritesheet("boss_idle", "./assets/images/boss/boss_idle.png", { frameWidth: LARGEUR_IMAGE, frameHeight: HAUTEUR_IMAGE });
 }
 
 export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss en (x, y) : le centre de son sprite
@@ -18,7 +20,7 @@ export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss e
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur plus tard
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
-    boss.body.setSize(60, 150).setOffset(107, 40); // la hitbox est le corps de l'ange, sans les ailes
+    boss.body.setSize(30, 75).setOffset(53, 20); // la hitbox est le corps de l'ange, sans les ailes
     boss.setScale(ECHELLE).setDepth(51).setAlpha(0); // au-dessus du voile d'ombre (50) : c'est lui la lumière
     boss.play("boss_idle");
     boss.pv = 30; // PV du boss (une trentaine de tirs)
