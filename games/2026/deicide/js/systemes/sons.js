@@ -42,7 +42,7 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
 //    sur la même grille (surLeTemps) : elles partent en rythme.
 const CROCHE = 150; // ms : une croche de la musique du boss
 const ACCORD = { orbe: 400, mage_incante: -200, dash: -141, lanterne: 57, ennemi_touche: 14, ennemi_mort: 240, joueur_mort: -121, tir: 168 }; // centièmes de ton, pour tomber sur une note de ré mineur
-export function musiqueDeBossEnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss")); }
+function musiqueDeBossEnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss")); }
 export const quantifier = (ms) => Math.max(CROCHE, Math.round(ms / CROCHE) * CROCHE); // arrondit une durée à un nombre entier de croches
 
 export function surLeTemps(scene, ms) { // le délai (proche de ms) qui fait tomber l'instant visé sur une croche de la musique ; ms sans changement s'il n'y a pas de musique de boss

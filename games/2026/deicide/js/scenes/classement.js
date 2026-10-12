@@ -14,7 +14,7 @@
 import { jouerSon } from "../systemes/sons.js";
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
 
-export const SCORE_BASE = 10000000; // 10 millions de ms = presque 3 h : aucun temps réel ne peut le dépasser
+const SCORE_BASE = 10000000; // 10 millions de ms = presque 3 h : aucun temps réel ne peut le dépasser
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)
 
 const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -22,7 +22,7 @@ const NB_LETTRES = 3; // le nom fait 3 lettres, comme sur une vraie borne
 const TOUCHES_VALIDER = ["KeyI", "Enter", "Space"]; // I = le bouton de saut de la borne
 const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de jeu, on ignore les appuis au début
 
-// les couleurs du HUD (voir PAL dans Personnage/hud.js) et de la lanterne (or)
+// les couleurs du HUD (voir PAL dans personnage/hud.js) et de la lanterne (or)
 const PAL = { K: "#211924", a: "#251d2a", b: "#2f2535", c: "#372b3e", d: "#3f3249", m: "#5f4f6e", n: "#8a779b", L: "#ac98b6", W: "#e7e0e9", G: "#f5f0f8" };
 const OR = 0xffd45c;
 const OR_SOMBRE = 0xc99a2e;
@@ -31,13 +31,13 @@ const CLAIR = 0xf5f0f8;
 const LAVANDE = 0xac98b6;
 const GRIS_VIOLET = 0x8a779b;
 
-export function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes)
+function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes)
     const total = Math.floor(Math.min(Math.max(0, ms), TEMPS_MAX_MS) / 10); // en centièmes de seconde
     const deux = (n) => String(n).padStart(2, "0");
     return deux(Math.floor(total / 6000)) + ":" + deux(Math.floor(total / 100) % 60) + "." + deux(total % 100);
 }
-export function tempsVersScore(tempsNetMs) { return SCORE_BASE - Math.round(tempsNetMs); } // ce qu'on envoie à l'API (entier)
-export function scoreVersTemps(score) { return SCORE_BASE - score; } // ce qu'on affiche
+function tempsVersScore(tempsNetMs) { return SCORE_BASE - Math.round(tempsNetMs); } // ce qu'on envoie à l'API (entier)
+function scoreVersTemps(score) { return SCORE_BASE - score; } // ce qu'on affiche
 
 // le module de score de la borne n'existe que quand le jeu tourne dans la borne : on le charge au moment d'en avoir besoin,
 // et s'il manque (jeu ouvert à part, pendant les tests) on continue sans classement au lieu de planter

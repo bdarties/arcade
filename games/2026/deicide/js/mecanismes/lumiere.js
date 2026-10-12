@@ -1,3 +1,9 @@
+// lumiere.js : la lumière, au cœur du jeu : tout est dans l'ombre sauf autour du robot et des lumières, et la lumière BRÛLE.
+//   - les zones de lumière (creerZoneRonde) : un halo qui brûle le robot s'il y reste 3 secondes (majLumiere) ;
+//   - les lanternes (creerLanterne) : une zone de lumière avec une lanterne qu'un tir éteint (eteindreLanterne) ;
+//   - le voile d'obscurité (creerVoile / majVoile) : une image grise qui assombrit l'écran, éclaircie autour du robot et des lumières ;
+//   - la luminosité réglable dans le menu pause (appliquerLuminosite).
+// Utilisé par : niveau.js (les crée à chaque niveau), pause.js (la luminosité), classement.js et versus.js (le halo).
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 import { reglages } from "../systemes/reglages.js"; // luminosité choisie dans le menu pause

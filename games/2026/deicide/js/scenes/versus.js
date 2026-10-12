@@ -5,7 +5,7 @@
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
 import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
-import { objetsDe } from "./niveau1.js";
+import { objetsDe } from "../systemes/chargement.js";
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
 
 const PV_PAR_MANCHE = 3;

@@ -1,4 +1,7 @@
-// chargement des librairies
+// index.js : le point de départ du jeu (chargé par index.html). Il règle Phaser (taille, physique, cadence d'images, rendu pour la borne),
+// donne la liste des scènes (les écrans du jeu, dans js/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
+
+// les scènes du jeu et les outils
 import { compteurImages, regulerCadence } from "./js/systemes/optimisation.js";
 import menu from "./js/scenes/menu.js";
 import niveau1 from "./js/scenes/niveau1.js";
@@ -6,7 +9,7 @@ import niveau2 from "./js/scenes/niveau2.js";
 import niveau3 from "./js/scenes/niveau3.js";
 import versus from "./js/scenes/versus.js"; // le mode 1 contre 1
 import pause from "./js/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
-import { activerReset } from "./js/systemes/reset.js"; // maintenir deux boutons de la borne = retour à l'écran d'accueil
+import { activerRaccourcis } from "./js/systemes/raccourcis.js"; // reset de la borne (Z + X maintenus) et touches de test (F8, F9, C + F)
 import classement from "./js/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
@@ -16,7 +19,7 @@ const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par s
 const SUIT_L_ECRAN = 60 % IMAGES_PAR_SECONDE === 0;
 
 // configuration générale du jeu
-var config = {
+const config = {
   width: 1280, // largeur en pixels
   height: 720, // hauteur en pixels
   type: Phaser.AUTO,
@@ -70,14 +73,5 @@ if (contexte) {
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
 game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
-activerReset(game); // P + ; maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
-compteurImages(game);
-// TEMPORAIRE (test) : F9 lance directement le niveau 2, pour tester la map sans refaire le niveau 1. À retirer avant la borne.
-window.addEventListener("keydown", (evenement) => {
-  if (evenement.key !== "F9") return;
-  evenement.preventDefault();
-  game.sound.stopAll();
-  game.scene.getScenes(true).forEach((scene) => game.scene.stop(scene.scene.key));
-  game.registry.set("chrono", 0); game.registry.set("score", 0); game.registry.set("vies", 3); game.registry.set("chronoActif", true);
-  game.scene.start("niveau2");
-}); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)
+activerRaccourcis(game); // Z + X maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
+compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

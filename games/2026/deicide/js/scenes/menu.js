@@ -1,10 +1,10 @@
-// menu.js : l'écran d'accueil du jeu, avec le bouton Jouer
+// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 2 JOUEURS (1 contre 1, voir versus.js)
 // C'est la première scène : elle charge tous les assets du jeu (avec une barre de chargement), puis attend qu'on appuie
 // sur un bouton. Le fond est l'image du menu (assets/images/menu/fond_menu.png, 1280 x 720). Le bouton Jouer est dans
 // assets/images/menu/bouton_jouer.png (15 images de 104 x 44 empilées : 0 = normal, 1 à 12 = survol animé, 13 et 14 = clic).
 // L'image est fixe, alors le menu l'anime avec quelques petits effets posés par-dessus (voir animer) : le robot tire,
 // il cligne de l'œil, le titre "glitche" de temps en temps et de la poussière flotte dans l'air.
-import { chargerJeu } from "./niveau1.js"; // charge tous les assets du jeu pendant que le menu s'affiche
+import { chargerJeu } from "../systemes/chargement.js"; // charge tous les assets du jeu pendant que le menu s'affiche
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
 

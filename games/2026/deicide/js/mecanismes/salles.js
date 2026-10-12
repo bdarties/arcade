@@ -31,15 +31,6 @@ export const SALLES_NIVEAU1 = [
         ennemis: [["orc", 150, 2848], ["orc", 480, 2848], ["orc", 700, 2848], ["archer", 300, 2848], ["archer", 950, 2848], ["mage", 480, 2464], ["mage", 830, 2464]] // les mages sont sur les plateformes
     }
 ];
-// Salle HORIZONTALE (niveau 2) : type "horizontale", colonnes = [première, dernière] de la salle (40 colonnes = un écran), lignes = [haut, bas] des murs de
-// lumière posés à gauche (derrière le joueur, définitif) et à droite (la sortie, jusqu'à la mort du dernier ennemi).
-export const SALLES_NIVEAU2 = [
-    {
-        nom: "salle_n2", type: "horizontale",
-        colonnes: [232, 271], lignes: [0, 19], tuilesEntree: [625], tuilesSortie: [625],
-        ennemis: [["orc", 7700, 640], ["orc", 8080, 640], ["orc", 8400, 640], ["archer", 7850, 640], ["archer", 8560, 640], ["mage", 7790, 512], ["mage", 8300, 512]] // les mages sont sur les plateformes
-    }
-];
 const DECALAGE_PIEDS = { orc: 60, archer: 40, mage: 50 }; // de combien on pose chaque ennemi au-dessus de ses pieds (les créateurs d'ennemis placent leur centre)
 const CREER = { orc: ennemis.creerOrc, archer: ennemis.creerArcher, mage: ennemis.creerMage };
 
@@ -62,23 +53,14 @@ export function verifierSalles(scene) { // à appeler dans update()
 }
 
 function joueurDansLaSalle(joueur, salle) { // vrai quand le joueur est entré dans la salle
-    if (salle.type === "horizontale") { // il a passé le mur de gauche de quelques tuiles, et n'est pas déjà sorti à droite
-        return joueur.center.x > (salle.colonnes[0] + 3) * TUILE && joueur.center.x < salle.colonnes[1] * TUILE;
-    }
     const sousLePlafond = joueur.bottom > salle.ligneSortie * TUILE; // le joueur est bien dans la salle, pas au-dessus
     return joueur.bottom <= salle.ligneSol * TUILE && sousLePlafond; // ses pieds sont passés au-dessus du sol
 }
 
-function cellulesEntree(salle) { // les cases de tuiles qui ferment l'entrée : [colonne, ligne]
-    if (salle.type === "horizontale") return colonneDeMur(salle.colonnes[0], salle.lignes);
-    return plage(salle.entree, salle.ligneSol);
-}
-function cellulesSortie(salle) { // les cases qui bouchent la sortie
-    if (salle.type === "horizontale") return colonneDeMur(salle.colonnes[1], salle.lignes);
-    return salle.sortie.flatMap((tranche) => plage(tranche, salle.ligneSortie));
-}
+// Les cases de tuiles [colonne, ligne] qui ferment l'entrée (l'ouverture du sol) et qui bouchent la sortie (l'ouverture du sol du dessus).
+function cellulesEntree(salle) { return plage(salle.entree, salle.ligneSol); }
+function cellulesSortie(salle) { return salle.sortie.flatMap((tranche) => plage(tranche, salle.ligneSortie)); }
 function plage([debut, fin], ligne) { return Array.from({ length: fin - debut + 1 }, (_, i) => [debut + i, ligne]); } // des cases côte à côte sur une ligne
-function colonneDeMur(colonne, [haut, bas]) { return Array.from({ length: bas - haut + 1 }, (_, i) => [colonne, haut + i]); } // des cases l'une sur l'autre dans une colonne
 
 function compterRestants(scene, salle) { // le nombre d'ennemis de la salle encore vivants
     return scene.ennemis.getChildren().filter((ennemi) => ennemi.salle === salle && ennemi.etat !== "mort").length;
@@ -88,9 +70,9 @@ function poserTuiles(scene, salle, nom, cellules, tuiles) { // pose des tuiles d
     const visible = scene.carte.createBlankLayer("mur_" + salle.nom + "_" + nom, scene.tilesets); // calque qui montre les nouvelles tuiles (le calque Gameplay n'est plus dessiné, voir figerCalques)
     visible.setDepth(1); // au-dessus du décor mais SOUS le voile (50) : le sol ajouté est assombri comme le reste
     const cases = [];
-    cellules.forEach(([colonne, ligne], i) => {
+    cellules.forEach(([colonne, ligne]) => {
         if (scene.groupe_plateformes.getTileAt(colonne, ligne)) return; // il y a déjà une tuile (pilier, plateforme) : on n'y touche pas
-        const index = tuiles[(salle.type === "horizontale" ? i : colonne) % tuiles.length]; // les tuiles alternent d'une case à l'autre
+        const index = tuiles[colonne % tuiles.length]; // les tuiles alternent d'une colonne à l'autre, comme le sol à côté
         visible.putTileAt(index, colonne, ligne);
         const solide = scene.groupe_plateformes.putTileAt(index, colonne, ligne); // la même tuile dans le calque Gameplay : le joueur, les tirs et les orcs la sentent comme du sol
         solide.setCollision(true, true, true, true);
@@ -107,9 +89,8 @@ function fermerSalle(scene, salle) {
     scene.salleActive = salle; // une seule salle à la fois
     const camera = scene.cameras.main;
     camera.stopFollow(); // la caméra arrête de suivre le joueur...
-    const centreX = salle.type === "horizontale" ? (salle.colonnes[0] + salle.colonnes[1] + 1) / 2 * TUILE : 640; // le milieu de la salle
-    const centreY = salle.type === "horizontale" ? scene.carte.heightInPixels / 2 : (salle.ligneSortie + 1 + salle.ligneSol) / 2 * TUILE; // (en hauteur : entre le sol du dessus et celui du dessous)
-    camera.pan(centreX, centreY, 800, "Sine.easeInOut"); // ...et glisse en 0,8 s pour cadrer toute la salle
+    const centreY = (salle.ligneSortie + 1 + salle.ligneSol) / 2 * TUILE; // le milieu de la salle en hauteur : entre le sol du dessus et celui du dessous
+    camera.pan(640, centreY, 800, "Sine.easeInOut"); // ...et glisse en 0,8 s pour cadrer toute la salle
     salle.entreeMur = poserTuiles(scene, salle, "entree", cellulesEntree(salle), salle.tuilesEntree); // l'entrée se referme derrière le joueur (elle reste fermée)
     salle.sortieMur = poserTuiles(scene, salle, "sortie", cellulesSortie(salle), salle.tuilesSortie); // et la sortie se bouche, jusqu'à la mort du dernier ennemi
     camera.shake(300, 0.01); // tremblement : on sent que la salle se referme
@@ -141,16 +122,15 @@ function ouvrirSalle(scene, salle) { // le dernier ennemi est mort : la sortie s
     scene.tweens.add({ targets: salle.sortieMur.visible, alpha: 0, duration: 400, onComplete: () => salle.sortieMur.visible.destroy() }); // et s'effacent en 0,4 s
     salle.compteur.setText("SORTIE OUVERTE");
     scene.tweens.add({ targets: salle.compteur, alpha: 0, delay: 1500, duration: 500, onComplete: () => salle.compteur.destroy() }); // le message disparaît après 1,5 s
-    reprendreCamera(scene, salle);
+    reprendreCamera(scene);
 }
 
 // La caméra était figée au milieu de la salle ; le robot, lui, est souvent loin de ce milieu (au sol en bas de la salle, par exemple). Si la caméra se recentrait
 // d'un coup sur lui (startFollow le fait sans transition), elle descendrait puis remonterait quand il va vers la sortie. On lui laisse donc une « zone morte » autour du milieu de la salle (la caméra
 // ne bouge que si le robot en sort), puis on la rétrécit en douceur : la caméra revient se centrer sur le robot sans à-coup.
-function reprendreCamera(scene, salle) {
+function reprendreCamera(scene) {
     const camera = scene.cameras.main;
-    const horizontale = salle.type === "horizontale";
-    const zone = { l: 520, h: horizontale ? 720 : 560 }; // taille de la zone morte, en px (toute la hauteur pour une salle horizontale : seule la largeur compte)
+    const zone = { l: 520, h: 560 }; // taille de la zone morte, en px
     const { scrollX, scrollY } = camera; // startFollow (et setDeadzone quand la caméra suit déjà) place la caméra d'un coup sur le robot : c'était le saut brutal. On retient où elle est...
     const milieuX = camera.midPoint.x;
     const milieuY = camera.midPoint.y;
@@ -158,13 +138,12 @@ function reprendreCamera(scene, salle) {
     camera.startFollow(scene.player, false, 0.1, 0.1);
     camera.midPoint.set(milieuX, milieuY);
     camera.setScroll(scrollX, scrollY); // ...et on la remet là : elle rejoindra le robot en douceur
-    // La zone morte se rétrécit quand le robot se rapproche du milieu de l'écran (salle verticale : il est monté vers la sortie) ou après 0,7 s (salle horizontale),
-    // et au pire après 5 s. Elle rétrécit petit à petit : la caméra se recentre sans à-coup, puis le suivi redevient normal.
+    // La zone morte se rétrécit quand le robot se rapproche du milieu de l'écran (il est monté vers la sortie), et au pire après 5 s. Elle rétrécit petit à petit : la caméra se recentre sans à-coup, puis le suivi redevient normal.
     const debut = scene.time.now;
     let retrait = false;
     const majCamera = () => {
         const proche = Math.abs(scene.player.y - camera.midPoint.y) < 90;
-        if (!retrait && ((horizontale ? scene.time.now - debut > 700 : proche) || scene.time.now - debut > 5000)) retrait = true;
+        if (!retrait && (proche || scene.time.now - debut > 5000)) retrait = true;
         if (retrait) { zone.l *= 0.92; zone.h *= 0.92; }
         if (zone.l < 6) { // la zone est presque nulle : on la retire, le suivi du niveau reprend (le robot est déjà au centre)
             scene.events.off(Phaser.Scenes.Events.UPDATE, majCamera);

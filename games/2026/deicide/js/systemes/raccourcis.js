@@ -1,8 +1,15 @@
-// reset.js : les raccourcis de la borne, qui se font en MAINTENANT deux boutons en même temps pendant 1,5 s (une barre en bas de l'écran se remplit)
-//   - Z + X (select + start)  : remettre le jeu à zéro, retour à l'écran d'accueil, sans relancer la borne (utile pour la borne : la partie du joueur suivant)
-//   - C + F (P + ; au clavier) : aller directement au boss (TEMPORAIRE, pour tester : à retirer avant la borne)
+// raccourcis.js : les raccourcis clavier et borne : le reset (qui reste dans le jeu fini) et les raccourcis de test (à retirer avant la borne).
+// Appelé une fois par index.js (activerRaccourcis).
+//
+// DEUX BOUTONS MAINTENUS 1,5 s (une barre en bas de l'écran se remplit) :
+//   - Z + X (select + start)   : remettre le jeu à zéro, retour à l'écran d'accueil, sans relancer la borne (le joueur suivant)
+//   - C + F (P + ; au clavier) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
 // Les boutons de la borne sont nommés A à F ; ils envoient I, O, P, K, L et ; (voir gpio2keys.py) : C = P et F = ;. Z (select) et X (start) sont les
 // deux boutons du centre. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite un appui par accident.
+//
+// TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
+//   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
+//   - F9 : lance directement le niveau 2
 const COMBOS = [
     { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
     { nom: "boss", touches: [80, 186], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // P et ;
@@ -49,7 +56,27 @@ function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Soldat ; ensuite (ou 
     });
 }
 
-export function activerReset(jeu) {
+// ---- touches de test F8 et F9 (TEMPORAIRES) ----
+function teleporterRobot(jeu) { // F8 : chaque niveau indique où dans sa config (teleportBoss)
+    jeu.scene.getScenes(true).forEach((scene) => { // (seulement les scènes qui tournent : pas un niveau en pause)
+        if (!scene.cfg || !scene.cfg.teleportBoss) return;
+        scene.player.setPosition(scene.cfg.teleportBoss.x, scene.cfg.teleportBoss.y);
+        scene.player.body.setVelocity(0, 0);
+    });
+}
+
+function lancerNiveau2(jeu) { // F9 : une partie qui commence directement au niveau 2
+    arreterToutesLesScenes(jeu); // (coupe aussi la musique)
+    nouvellePartie(jeu);
+    jeu.scene.start("niveau2");
+}
+
+export function activerRaccourcis(jeu) {
+    window.addEventListener("keydown", (evenement) => { // les touches de test
+        if (evenement.key === "F8") teleporterRobot(jeu);
+        if (evenement.key === "F9") { evenement.preventDefault(); lancerNiveau2(jeu); }
+    });
+
     const enfoncees = new Set(); // les touches de combo actuellement maintenues
     let combo = null; // le combo dont les deux touches sont enfoncées
     let debut = 0; // l'instant où elles ont été enfoncées ensemble

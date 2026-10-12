@@ -1,3 +1,7 @@
+// ennemis.js : les trois ennemis normaux du jeu : l'archer (tire des flèches), le mage (lance des orbes) et l'orc (frappe de sa faux).
+// Chacun est créé par creerArcher / creerMage / creerOrc (niveau.js les pose sur les points de la carte Tiled, salles.js dans les salles de combat).
+// majEnnemis (appelée à chaque image) leur donne leur comportement : ils ne repèrent le robot qu'à 120 px, ou 400 px s'il est dans la lumière.
+// toucherEnnemi est appelée quand un tir du robot les touche : points, éclats, animation de mort, et parfois un PV à ramasser.
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 import { gagnerPoints } from "../systemes/points.js"; // ajoute les points au score
@@ -228,7 +232,6 @@ function majOrc(scene, orc) { // permet de choisir ce que fait l'orc a chaque fr
 }
 function videDevant(scene, orc, sens) { // renvoie vrai s'il n'y a pas de sol juste devant les pieds de l'orc
     const calque = scene.groupe_plateformes; // le calque Gameplay de la map Tiled
-    if (!calque.getTileAtWorldXY) return false; // ce n'est pas une map Tiled (niveaux 2 et 3) : on ne teste pas
     const x = orc.body.center.x + sens * (orc.body.halfWidth + 6); // un point juste devant son pied
     const tuile = calque.getTileAtWorldXY(x, orc.body.bottom + 4); // la tuile juste sous ce point
     return !tuile || !tuile.collides; // pas de tuile, ou une tuile pas solide : c'est un trou

@@ -48,7 +48,7 @@ export function flash(objet, couleur, duree) { // colore entièrement un sprite 
     objet.scene.time.delayedCall(duree, () => { if (!objet.active) return; if (objet.teinteBase) objet.setTint(objet.teinteBase); else objet.clearTint(); }); // puis lui rend ses vraies couleurs (ou sa teinte de départ, comme le Dieu doré)
 }
 
-export function arretSurImage(scene, duree) { // fige toute la physique un très court instant : chaque coup donne l'impression de « peser »
+function arretSurImage(scene, duree) { // fige toute la physique un très court instant : chaque coup donne l'impression de « peser »
     scene.physics.world.pause(); // tout s'arrête : joueur, ennemis, tirs
     scene.time.delayedCall(duree, () => scene.physics.world.resume()); // et repart après quelques millisecondes
 }

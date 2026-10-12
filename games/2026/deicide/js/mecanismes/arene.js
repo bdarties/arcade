@@ -1,8 +1,11 @@
-// arene.js : l'arène du boss, tout en haut du niveau 1
-// quand le joueur arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène et un mur de lumière ferme la sortie
+// arene.js : l'arène du Soldat de la Lumière, tout en haut du niveau 1 (appelée à chaque image par niveau1.js : verifierArene)
+//  1. Quand le robot arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène, l'ouverture du sol se referme et le Soldat apparaît.
+//  2. Un mur de pierre ferme aussi le côté droit de l'arène (poserMurDroit).
+//  3. Quand le Soldat est vaincu (boss.js, enrager), il brise ce mur (briserMurDroit) : « FUIS >>> » s'affiche ; le robot qui passe par l'ouverture
+//     arrive au niveau 2 (sortirParLaDroite).
 import { faireApparaitreBoss } from "../ennemis/boss.js";
 import * as effets from "../systemes/effets.js"; // éclats
-import { jouerSon } from "../systemes/sons.js"; // bruitages // le Soldat de la Lumière apparaît quand l'arène se ferme
+import { jouerSon } from "../systemes/sons.js"; // bruitages
 
 const HAUT_DU_SOL = 25 * 32; // y du haut du sol de l'arène (ligne 25 de la map Tiled, tuiles de 32 px)
 

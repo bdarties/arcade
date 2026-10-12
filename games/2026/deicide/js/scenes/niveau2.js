@@ -1,9 +1,10 @@
 // niveau2.js : le niveau 2, horizontal : une fuite. Le Soldat de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
-// C'est le même niveau que le niveau 1 (voir niveau1.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
+// C'est le même niveau que le niveau 1 (voir niveau.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
 // (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
 // Arriver au bout de la map mène à l'arène du dernier combat (niveau3.js).
-import niveau1, { CONFIG_NIVEAU1, objetsDe } from "./niveau1.js";
+import niveau from "./niveau.js";
+import { objetsDe } from "../systemes/chargement.js";
 import { VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import { preparerVide, majVide } from "../mecanismes/vide.js";
 import { preparerFaisceaux, majFaisceaux } from "../mecanismes/faisceaux.js";
@@ -30,7 +31,6 @@ function majNiveau2(scene) { // appelée à chaque image
 }
 
 const CONFIG_NIVEAU2 = {
-  ...CONFIG_NIVEAU1,
   carte: "carte_niveau2",
   depart: { x: 96, y: 19 * 32 }, // utilisé seulement si la map n'a pas de calque "depart"
   fondVide: 0x0c0c0c, // le vide des trous est presque noir
@@ -42,7 +42,7 @@ const CONFIG_NIVEAU2 = {
   teleportBoss: { x: 8500, y: 600 } // touche F8 (test) : téléporte le robot loin dans le niveau
 };
 
-export default class niveau2 extends niveau1 {
+export default class niveau2 extends niveau {
   constructor() {
     super("niveau2", CONFIG_NIVEAU2);
   }

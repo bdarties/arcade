@@ -35,7 +35,7 @@ const CREDITS = [
 
 // Ouvre le menu pause quand on appuie sur Échap ou X. À appeler dans le create() d'un niveau.
 export function preparerPause(niveau) {
-    const toucheZ = niveau.input.keyboard.addKey("Z", false); // Z + X = reset (reset.js) : dans ce cas X n'ouvre pas la pause
+    const toucheZ = niveau.input.keyboard.addKey("Z", false); // Z + X = reset (raccourcis.js) : dans ce cas X n'ouvre pas la pause
     TOUCHES_PAUSE.forEach((touche) => niveau.input.keyboard.on("keydown-" + touche, (evenement) => {
         if (evenement.repeat) return; // touche maintenue : le navigateur répète l'appui, on ne rouvre pas la pause en boucle
         if (toucheZ.isDown) return; // Z est maintenu : c'est le combo de reset, pas une demande de pause

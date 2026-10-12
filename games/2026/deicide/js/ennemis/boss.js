@@ -1,5 +1,5 @@
-// boss.js : le Soldat de la Lumière : mini-boss de fin du niveau 1 (il s'enrage à 0 PV) et boss final (version 2, plus forte, dans l'arène de niveau3.js)
-// Le moteur (phases, attaques, barre de vie) est réglé par un profil (PROFILS) : deux profils : soldat (niveau 1) et soldat2 (dernier combat). À 0 PV il ne meurt pas : il s'enrage (voir enrager).
+// boss.js : le Soldat de la Lumière : mini-boss de fin du niveau 1 (profil « soldat » : à 0 PV il ne meurt pas, il s'enrage) et boss final
+// (profil « soldat2 » : plus fort, dans l'arène de niveau3.js). Le moteur (phases, attaques, barre de vie) est le même, réglé par le profil (PROFILS).
 // Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
 //   boss_idle (8 images, il plane), boss_charge (6, il prépare une attaque), boss_attaque (4, il la lance), boss_mort (8, il se dissout).
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss), flotte en haut de la salle et attaque.
