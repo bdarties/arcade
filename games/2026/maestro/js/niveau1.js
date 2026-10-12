@@ -515,7 +515,7 @@ export default class niveau1 extends Phaser.Scene {
     // Barre de vie en haut à gauche : l'image de la barre est rouge partout, et un rectangle
     // de la couleur du fond de la barre cache la partie "vide" (il grandit quand on perd des vies)
     fixe(this.add.image(10, 8, "img_barre_vie").setOrigin(0, 0));
-    this.videBarre = fixe(this.add.rectangle(10 + 196, 8 + 35, 0, 8, 0x041e48).setOrigin(1, 0));
+    this.videBarre = fixe(this.add.rectangle(10 + 231, 8 + 35, 0, 8, 0x041e48).setOrigin(1, 0));
 
     // Note choisie par la Cantatrice
     this.texteNote = fixe(
@@ -1233,9 +1233,9 @@ export default class niveau1 extends Phaser.Scene {
   //  Interface
   // --------------------------------------------------------------------------
   majCoeurs() {
-    // la partie rouge va de x = 68 à x = 196 dans l'image (128 px) : on cache la fraction perdue
+    // la partie rouge va de x = 68 à x = 231 dans l'image (163 px) : on cache la fraction perdue
     const perdu = 1 - Math.max(this.vies, 0) / this.viesMax;
-    this.videBarre.setSize(128 * perdu, 8); // setSize (et pas .width) pour que le dessin change vraiment
+    this.videBarre.setSize(163 * perdu, 8); // setSize (et pas .width) pour que le dessin change vraiment
   }
 
   majNote() {

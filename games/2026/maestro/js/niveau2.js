@@ -250,8 +250,9 @@ export default class niveau2 extends niveau1 {
   // Devant la porte : si elle est fermée on explique pourquoi, sinon le niveau est gagné
   franchirPorte() {
     if (this.porteOuverte == false) {
-      if (this.time.now > this.messageJusqua) {
+      if (this.time.now > (this.prochaineAlertePorte || 0)) {
         this.afficherMessage("Il te faut " + LAMPES_REQUISES + " lampes pour ouvrir la porte !", 2000);
+        this.prochaineAlertePorte = this.time.now + 2500; // on ne répète pas le message à chaque image
       }
       return;
     }
