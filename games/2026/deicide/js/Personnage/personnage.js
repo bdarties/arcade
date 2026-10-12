@@ -193,8 +193,10 @@ function creerTextureBalle(scene) {
 }
 
 // crée le joueur en (x, y). y correspond aux pieds du robot.
-export function creerPersonnage(scene, x, y) {
+// options (pour le mode 1 contre 1, voir versus.js) : touches = { saut, tir, dash, porte } (noms de touches, celles du joueur 1 par défaut), teinte = couleur du robot
+export function creerPersonnage(scene, x, y, options = {}) {
     const joueur = scene.physics.add.sprite(x, y, PREFIXE + "repos");
+    if (options.teinte) { joueur.setTint(options.teinte); joueur.teinteBase = options.teinte; } // (effets.flash rend cette teinte après chaque flash)
     joueur.setScale(ECHELLE);
     joueur.setBounce(0.2);
     joueur.setCollideWorldBounds(true);
@@ -206,7 +208,7 @@ export function creerPersonnage(scene, x, y) {
     joueur.sensMur = 0; // dernier mur touché en l'air : -1 = à gauche, 1 = à droite
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
-    joueur.touches = scene.input.keyboard.addKeys({ saut: "I", tir: "K", dash: "L", porte: "O" }, false); // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
+    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L", porte: "O" }, false); // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.instantSol = -1e9; // dernier instant où il était au sol (pour le saut « coyote »)
@@ -418,6 +420,7 @@ function chercherCible(joueur, x, y) {
             meilleureDistance = distance; // et sa distance devient celle à battre
         }
     };
+    if (joueur.adversaire && joueur.adversaire.active && !joueur.adversaire.mortVersus) essayer(joueur.adversaire); // en 1 contre 1, l'autre robot est la cible (voir versus.js)
     if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); }); // les ennemis (sauf ceux qui sont en train de mourir)
     if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
     if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); }); // les lanternes vivantes (voir lanterneVivante.js)
@@ -464,10 +467,10 @@ function lancerBalle(joueur, anim, cible) {
     const sens = joueur.regardeGauche ? -1 : 1; // sens du tir, calculé après le demi-tour éventuel
     const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
     const bouche = anim.bouche ?? BOUCHE;
-    if (!scene.tirsJoueur || !scene.tirsJoueur.scene) { // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
+    if (!joueur.tirs && (!scene.tirsJoueur || !scene.tirsJoueur.scene)) { // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
         scene.tirsJoueur = scene.physics.add.group({ allowGravity: false });
     }
-    const tirs = scene.tirsJoueur;
+    const tirs = joueur.tirs ?? scene.tirsJoueur; // en 1 contre 1 chaque robot a son groupe de balles (joueur.tirs) : on sait qui a tiré
     if (scene.groupe_plateformes && !tirs.collisionPlateformes) { // une seule fois par groupe : les balles disparaissent contre les plateformes
         tirs.collisionPlateformes = scene.physics.add.collider(tirs, scene.groupe_plateformes, (balle) => balle.destroy());
     }

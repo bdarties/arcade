@@ -26,6 +26,13 @@
 - **Plus de bruit avant une attaque du boss** : le son de préparation (incantation du mage, puis grondement, puis laser grave) n'a convaincu personne, il est retiré. Les attaques gardent seulement leurs bruits d'impact (orbes, rayon), accordés et calés sur les croches. Un bruit de préparation pourra être ajouté plus tard (`jouerSonSurLeTemps` sait déjà caler un son sur la musique).
 - Le robot lui-même (tir, saut) reste instantané : on ne retarde jamais une action du joueur.
 
+## Le mode 1 contre 1 (`versus.js`)
+- **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
+- **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) découpées par `outils/generer_niveaux.py` : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
+- **Règles** : 3 PV par manche, au meilleur des 3 manches (le premier à 2 manches gagne). Chaque manche relance la scène (`scene.restart`) avec le score en paramètre : tout repart propre sans avoir à tout remettre à zéro à la main. 0,6 s d'invincibilité après un coup, pour qu'une rafale ne tue pas d'un coup.
+- **Réutilisation de `personnage.js`** : le code du robot visait un seul joueur. Trois petits changements : `creerPersonnage` accepte les touches et une teinte, chaque robot a son groupe de balles (`joueur.tirs`, pour savoir qui a tiré), et la visée automatique prend l'adversaire pour cible (`joueur.adversaire`) avec la même vérification de mur que pour les ennemis.
+- **Commandes** : J1 flèches + I (saut), K (tir), L (dash) ; J2 W A S D + R (saut), F (tir), G (dash) : les boutons de la borne (`gpio2keys.py`).
+
 ## Un seul code pour les niveaux
 - `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.

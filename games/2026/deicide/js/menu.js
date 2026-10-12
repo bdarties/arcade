@@ -10,6 +10,8 @@ import { jouerSon } from "./sons.js"; // bruitages
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];
+// les boutons du joueur 2 (R T Y F G H, et son start N) lancent directement le 1 contre 1
+const TOUCHES_JOUEUR2 = ["R", "T", "Y", "F", "G", "H", "N"];
 
 // Le robot de l'image est un Bot Wheel dessiné avec des pixels de 10,4 px (mesuré sur l'image). Pour que la flamme du tir
 // tombe pile au bout de son canon, on pose les images de "shoot FX.png" avec la même taille de pixel.
@@ -55,11 +57,46 @@ export default class menu extends Phaser.Scene {
     this.bouton.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true }); // seule la dalle réagit, pas les flammes
     this.bouton.on("pointerdown", () => this.lancer());
 
+    // le bouton « 2 JOUEURS » : dessiné en code, dans le style de la dalle « JOUER ». Haut / bas change de mode, un bouton valide celui qui est choisi.
+    this.mode = 1; // 1 = solo, 2 = 1 contre 1
+    this.boutonDeux = this.creerBoutonDeux(640, 548);
+    this.indication = this.add.text(640, 604, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
+    this.majMode();
+    ["UP", "W"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
+    ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
+    this.boutonDeux.fond.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.mode = 2; this.lancer(); });
+
     const aide = this.add.text(640, 650, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 }); // il clignote doucement
 
     TOUCHES_JOUER.forEach((nom) => this.input.keyboard.addKey(nom).on("down", () => this.lancer()));
+    TOUCHES_JOUEUR2.forEach((nom) => this.input.keyboard.addKey(nom).on("down", () => { this.mode = 2; this.lancer(); })); // un bouton du joueur 2 : directement le 1 contre 1
     this.lance = false;
+  }
+
+  creerBoutonDeux(x, y) { // une dalle de métal avec le texte « 2 JOUEURS » ; majMode la met en valeur quand elle est choisie
+    const fond = this.add.rectangle(x, y, 384, 72, 0x2a2a2d).setStrokeStyle(4, 0x8a8a8a);
+    const interieur = this.add.rectangle(x, y, 336, 44, 0x0a0a0a).setStrokeStyle(3, 0x8a8a8a);
+    const texte = this.add.text(x + 14, y, "2 JOUEURS", { fontFamily: "monospace", fontSize: "34px", fontStyle: "bold", color: "#8a8a8a" }).setOrigin(0.5);
+    const fleche = this.add.triangle(x - 124, y, 0, 0, 0, 24, 20, 12, 0xf4b6c2).setOrigin(0.5);
+    this.tweens.add({ targets: fleche, x: x - 118, duration: 380, yoyo: true, repeat: -1 }); // elle bouge doucement
+    return { fond, interieur, texte, fleche };
+  }
+
+  changerMode(mode) { // haut : solo, bas : 1 contre 1
+    if (this.lance || this.mode === mode) return;
+    this.mode = mode;
+    this.majMode();
+  }
+
+  majMode() { // le mode choisi est en couleur, l'autre est atténué
+    const deux = this.mode === 2;
+    this.bouton.setAlpha(deux ? 0.4 : 1);
+    const { fond, interieur, texte, fleche } = this.boutonDeux;
+    fond.setStrokeStyle(4, deux ? 0xf4b6c2 : 0x8a8a8a);
+    interieur.setStrokeStyle(3, deux ? 0xffffff : 0x8a8a8a);
+    texte.setColor(deux ? "#ffffff" : "#8a8a8a");
+    fleche.setVisible(deux);
   }
 
   animer() { // les effets qui font vivre l'image fixe du menu
@@ -112,6 +149,12 @@ export default class menu extends Phaser.Scene {
   lancer() { // un bouton a été pressé : le bouton s'enfonce, l'écran s'éteint, puis le niveau 1 commence
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
+    if (this.mode === 2) { // 1 contre 1 : pas de chrono ni de vies, on file dans l'arène
+      jouerSon(this, "porte");
+      this.cameras.main.fadeOut(350, 0, 0, 0);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start("versus"));
+      return;
+    }
     this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
     this.registry.set("score", 0); // le score aussi
     this.registry.set("vies", 3); // et les 3 vies (la valeur de VIES_DEPART dans hud.js)
