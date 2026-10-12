@@ -9,6 +9,7 @@ import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor de
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
 import { chargerBoss } from "./boss.js"; // le sprite du Dieu de la Lumière
 import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
+import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
 import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
 import { preparerLanternesVivantes } from "./lanterneVivante.js"; // les lanternes ailées qui donnent le boost
@@ -132,6 +133,7 @@ export default class niveau1 extends Phaser.Scene {
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
     this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
     this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(300, 760); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
+    preparerPause(this); // Échap ou X ouvre le menu pause
     effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
   }
 

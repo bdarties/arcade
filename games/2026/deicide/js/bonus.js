@@ -3,6 +3,7 @@
 // ramasser en passant dessus pour regagner 1 PV (la barre de PV du HUD s'allume d'une cellule).
 // Si la barre est déjà pleine, la croix est ramassée quand même (le texte affiche « PV MAX » et rien n'est regagné).
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
+import { volumeEffets } from "./sons.js"; // le bip suit le réglage des bruitages
 import { textePoints } from "./effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
 import { PV_MAX_BARRE } from "./Personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
 
@@ -113,7 +114,7 @@ function bipPV(scene) {
     const volume = contexte.createGain();
     oscillateur.type = "square";
     [523, 784, 1046].forEach((note, i) => oscillateur.frequency.setValueAtTime(note, t + i * 0.08)); // do, sol, do aigu
-    volume.gain.setValueAtTime(0.1, t);
+    volume.gain.setValueAtTime(0.1 * Math.max(volumeEffets(), 0.001), t); // suit le réglage des bruitages (jamais 0 : la rampe exponentielle ne le supporte pas)
     volume.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
     oscillateur.connect(volume);
     volume.connect(scene.sound.destination || contexte.destination);

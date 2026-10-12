@@ -1,5 +1,6 @@
 // sons.js : chargement et lecture de tous les sons du jeu
 // tous les sons sont libres de droit (CC0), la liste des sources est dans assets/sons/LICENCES.md
+import { reglages, VOLUME_MAX } from "./reglages.js"; // volumes choisis par le joueur dans le menu pause
 
 const DOSSIER = "./assets/sons/"; // dossier où sont rangés les fichiers audio
 const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 et 1
@@ -19,7 +20,10 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     porte: 0.5, // le joueur passe une porte
     orc_coup: 0.5 // coup de faux de l'orc
 };
+const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
 let musique = null; // la musique en cours, une seule à la fois pour tout le jeu
+export function volumeEffets() { return reglages.effets / VOLUME_MAX; } // réglage des bruitages, entre 0 et 1 (sert aussi au bip de bonus.js)
+export function majVolumeMusique() { if (musique) musique.setVolume(VOLUME_MUSIQUE * reglages.musique / VOLUME_MAX); } // applique tout de suite le réglage à la musique qui joue
 
 export function chargerSons(scene) { // à appeler dans le preload du niveau 1, avec les autres chargements
     Object.keys(SONS).forEach(nom => scene.load.audio(nom, DOSSIER + nom + ".mp3")); // charge chaque son de la liste
@@ -28,13 +32,13 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
 
 export function jouerSon(scene, nom) { // joue un son une fois
     const variation = Phaser.Math.Between(-100, 100); // petite variation de hauteur au hasard
-    scene.sound.play(nom, { volume: SONS[nom], detune: variation }); // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
+    scene.sound.play(nom, { volume: SONS[nom] * volumeEffets(), detune: variation }); // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
 }
 
 function lancerMusique(scene, nom) { // lance une musique en boucle, à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
     if (musique) musique.stop(); // coupe l'ancienne musique
-    musique = scene.sound.add(nom, { loop: true, volume: 0.3 }); // crée la musique, en boucle et pas trop forte pour laisser entendre les bruitages
+    musique = scene.sound.add(nom, { loop: true, volume: VOLUME_MUSIQUE * reglages.musique / VOLUME_MAX }); // crée la musique, en boucle, au volume choisi dans le menu pause
     musique.play(); // et la lance
 }
 
