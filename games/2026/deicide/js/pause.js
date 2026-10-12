@@ -28,7 +28,8 @@ const CREDITS = [
     ["", "Ennemis : packs Huntress 2, Bringer of Death et Wizard"],
     ["BRUITAGES", "Kenney (Sci-fi, RPG Audio, Impact Sounds), rubberduck,"],
     ["", "jaggedstone  (licence CC0)"],
-    ["MUSIQUE", "« Dark Shrine Loop » par qubodup et yd, OpenGameArt (CC0)"],
+    ["MUSIQUE", "« Dark Shrine Loop » par qubodup et yd (niveau)"],
+    ["", "« Boss Battle #8 Metal » par nene (boss), OpenGameArt, CC0"],
     ["MOTEUR", "Phaser 3.60"]
 ];
 

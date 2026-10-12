@@ -18,7 +18,7 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 //   - piqué     : il plonge sur l'endroit où le robot se tenait, puis remonte
 // Les tirs du robot le blessent. À 0 PV il se dissout, puis bossTue (points.js) arrête le chrono et ouvre le classement.
-import { jouerSon } from "./sons.js";
+import { jouerSon, musiqueBoss, musiqueNiveau } from "./sons.js";
 import * as effets from "./effets.js";
 import { gagnerPoints, bossTue } from "./points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
@@ -73,6 +73,7 @@ function creerAnimations(scene) { // crée une seule fois les 4 animations
 
 export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss en (x, y) : le centre de son sprite
     creerAnimations(scene);
+    musiqueBoss(scene); // la musique metal du combat démarre avec l'apparition du boss
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
@@ -396,6 +397,7 @@ function changerDePhase(scene, boss, phase) {
 function mourir(scene, boss) {
     nettoyerCombat(scene, boss);
     boss.etat = "mort";
+    musiqueNiveau(scene); // le metal s'arrête : la musique du niveau revient pour l'écran de fin
     boss.body.enable = false;
     if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true); // ses lanternes s'éteignent avec lui
     jouerSon(scene, "ennemi_mort");

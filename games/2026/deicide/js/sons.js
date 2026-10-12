@@ -21,13 +21,17 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     orc_coup: 0.5 // coup de faux de l'orc
 };
 const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
+const VOLUME_MUSIQUE_BOSS = 0.2; // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
 let musique = null; // la musique en cours, une seule à la fois pour tout le jeu
+let volumeBase = VOLUME_MUSIQUE; // le volume de base de la musique en cours (avant le réglage du joueur)
 export function volumeEffets() { return reglages.effets / VOLUME_MAX; } // réglage des bruitages, entre 0 et 1 (sert aussi au bip de bonus.js)
-export function majVolumeMusique() { if (musique) musique.setVolume(VOLUME_MUSIQUE * reglages.musique / VOLUME_MAX); } // applique tout de suite le réglage à la musique qui joue
+export function majVolumeMusique() { if (musique) musique.setVolume(volumeBase * reglages.musique / VOLUME_MAX); } // applique tout de suite le réglage à la musique qui joue
 
 export function chargerSons(scene) { // à appeler dans le preload du niveau 1, avec les autres chargements
     Object.keys(SONS).forEach(nom => scene.load.audio(nom, DOSSIER + nom + ".mp3")); // charge chaque son de la liste
     scene.load.audio("musique_niveau", [DOSSIER + "musique_niveau.ogg", DOSSIER + "musique_niveau.mp3"]); // l'ogg boucle sans blanc, le mp3 sert si le navigateur ne lit pas l'ogg
+    scene.load.audio("musique_boss_intro", [DOSSIER + "musique_boss_intro.ogg", DOSSIER + "musique_boss_intro.mp3"]); // musique metal du boss : l'introduction (jouée une fois)...
+    scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]); // ...puis la boucle
 }
 
 export function jouerSon(scene, nom) { // joue un son une fois
@@ -35,11 +39,23 @@ export function jouerSon(scene, nom) { // joue un son une fois
     scene.sound.play(nom, { volume: SONS[nom] * volumeEffets(), detune: variation }); // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
 }
 
-function lancerMusique(scene, nom) { // lance une musique en boucle, à la place de celle qui joue
+function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
     if (musique) musique.stop(); // coupe l'ancienne musique
-    musique = scene.sound.add(nom, { loop: true, volume: VOLUME_MUSIQUE * reglages.musique / VOLUME_MAX }); // crée la musique, en boucle, au volume choisi dans le menu pause
+    volumeBase = base; // on retient son volume de base : majVolumeMusique en a besoin quand le joueur règle le volume
+    musique = scene.sound.add(nom, { loop: boucle, volume: base * reglages.musique / VOLUME_MAX }); // crée la musique, au volume choisi dans le menu pause
     musique.play(); // et la lance
+    return musique;
+}
+
+export function musiqueBoss(scene) { // la musique metal du combat de boss : une introduction, puis la boucle
+    const intro = lancerMusique(scene, "musique_boss_intro", VOLUME_MUSIQUE_BOSS, false); // l'introduction, une seule fois
+    if (!intro) return;
+    intro.once("complete", () => { if (musique === intro) lancerMusique(scene, "musique_boss_boucle", VOLUME_MUSIQUE_BOSS); }); // quand elle finit, la boucle prend le relais (sauf si une autre musique l'a déjà remplacée)
+}
+
+export function musiqueNiveau(scene) { // remet la musique du niveau (à la mort du boss, pour l'écran de fin)
+    lancerMusique(scene, "musique_niveau");
 }
 
 export function musiqueDeScene(scene, nom) { // à appeler dans le create d'une scène : sa musique joue à chaque fois qu'on y arrive
