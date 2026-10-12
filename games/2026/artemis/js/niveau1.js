@@ -201,6 +201,8 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     lumiere.creerObscurite(this); // le noir qui couvre l'écran (cf. lumiere.js)
     this.calque_murs = calque_murs; // les rayons de lumière s'arrêtent sur ce calque
+    lumiere.eclairerCalques(this, [calque_sol, calque_murs]);
+    lumiere.eclairerObjets(this);
 
     /****************************
      *  HUD                     *
