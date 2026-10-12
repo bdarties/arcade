@@ -21,7 +21,7 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     orc_coup: 0.5 // coup de faux de l'orc
 };
 const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
-export const VOLUME_MUSIQUE_BOSS = 0.2; // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
+export const VOLUME_MUSIQUE_BOSS = 0.42; // la musique des combats de boss est franchement plus forte que celle du niveau (0,3 avec un morceau plus doux) // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
 let musique = null; // la musique en cours, une seule à la fois pour tout le jeu
 let volumeBase = VOLUME_MUSIQUE; // le volume de base de la musique en cours (avant le réglage du joueur)
 export function volumeEffets() { return reglages.effets / VOLUME_MAX; } // réglage des bruitages, entre 0 et 1 (sert aussi au bip de bonus.js)
@@ -34,9 +34,34 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
     scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]); // ...puis la boucle
 }
 
-export function jouerSon(scene, nom) { // joue un son une fois
-    const variation = Phaser.Math.Between(-100, 100); // petite variation de hauteur au hasard
-    scene.sound.play(nom, { volume: SONS[nom] * volumeEffets(), detune: variation }); // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
+// --- Les sons de combat accordés avec la musique du boss -----------------------------------------------------------------------
+// La musique metal du boss (Boss Battle #8) est à 200 battements par minute (un battement = 300 ms, une croche = 150 ms), en ré. Pendant ces combats :
+//  - chaque bruitage est transposé sur une note de la gamme de ré mineur (ré mi fa sol la sib do) au lieu d'une hauteur au hasard : ACCORD donne,
+//    pour chaque son, de combien de centièmes de ton le décaler (mesuré sur le son : voir DEVLOG.md) ;
+//  - les sons d'attaque du boss sont joués sur la croche la plus proche de la musique (jouerSonSurLeTemps), et les attaques elles-mêmes sont calées
+//    sur la même grille (surLeTemps) : elles partent en rythme.
+const CROCHE = 150; // ms : une croche de la musique du boss
+const ACCORD = { orbe: 400, mage_incante: -200, dash: -141, lanterne: 57, ennemi_touche: 14, ennemi_mort: 240, joueur_mort: -121, tir: 168 }; // centièmes de ton, pour tomber sur une note de ré mineur
+export function musiqueDeBossEnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss")); }
+export const quantifier = (ms) => Math.max(CROCHE, Math.round(ms / CROCHE) * CROCHE); // arrondit une durée à un nombre entier de croches
+
+export function surLeTemps(scene, ms) { // le délai (proche de ms) qui fait tomber l'instant visé sur une croche de la musique ; ms sans changement s'il n'y a pas de musique de boss
+    if (!musiqueDeBossEnCours()) return ms;
+    const position = (musique.seek || 0) * 1000; // où en est la musique, en ms
+    const cible = Math.ceil((position + ms) / CROCHE) * CROCHE; // la prochaine croche à partir de là
+    return Math.max(0, cible - position);
+}
+
+export function jouerSon(scene, nom, volumeEnPlus = 1) { // joue un son une fois
+    const accorde = musiqueDeBossEnCours() && nom in ACCORD; // pendant un combat de boss : sur une note de la gamme
+    const variation = accorde ? ACCORD[nom] : Phaser.Math.Between(-100, 100); // sinon, petite variation de hauteur au hasard
+    scene.sound.play(nom, { volume: Math.min(1, SONS[nom] * volumeEffets() * volumeEnPlus), detune: variation }); // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
+}
+
+export function jouerSonSurLeTemps(scene, nom) { // un son d'attaque du boss : joué sur la prochaine croche, et un peu plus fort que d'habitude (la musique est forte)
+    const delai = surLeTemps(scene, 0);
+    if (delai < 20) jouerSon(scene, nom, 1.4);
+    else scene.time.delayedCall(delai, () => jouerSon(scene, nom, 1.4));
 }
 
 function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue

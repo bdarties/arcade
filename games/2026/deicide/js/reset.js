@@ -1,14 +1,58 @@
-// reset.js : remettre le jeu à zéro depuis la borne, sans relancer le navigateur
-// Il faut MAINTENIR deux boutons en même temps pendant 1,5 s : BTN3 (P) et BTN6 (;) du joueur 1. Ces deux boutons ne servent à rien en jeu
-// (le robot utilise I, K, L et O), donc on ne peut pas déclencher le reset par erreur en jouant ; la durée évite aussi un appui par accident.
-// Le reset ramène à l'écran d'accueil : le chrono, le score et les vies repartent de zéro quand on relance une partie (voir menu.js).
-const TOUCHES_RESET = [80, 186]; // codes des touches P et ; (les mêmes que Phaser.Input.Keyboard.KeyCodes.P et SEMICOLON)
-const DUREE_RESET = 1500; // ms à maintenir les deux boutons
+// reset.js : les raccourcis de la borne, qui se font en MAINTENANT deux boutons en même temps pendant 1,5 s (une barre en bas de l'écran se remplit)
+//   - Z + X (select + start)  : remettre le jeu à zéro, retour à l'écran d'accueil, sans relancer la borne (utile pour la borne : la partie du joueur suivant)
+//   - C + F (P + ; au clavier) : aller directement au boss (TEMPORAIRE, pour tester : à retirer avant la borne)
+// Les boutons de la borne sont nommés A à F ; ils envoient I, O, P, K, L et ; (voir gpio2keys.py) : C = P et F = ;. Z (select) et X (start) sont les
+// deux boutons du centre. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite un appui par accident.
+const COMBOS = [
+    { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
+    { nom: "boss", touches: [80, 186], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // P et ;
+];
+const DUREE = 1500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 300; // ms avant d'afficher la barre (un appui très court ne montre rien)
+const CODES = COMBOS.flatMap((combo) => combo.touches);
+
+function arreterToutesLesScenes(jeu) {
+    jeu.sound.stopAll(); // coupe la musique
+    jeu.scene.getScenes(false).forEach((scene) => jeu.scene.stop(scene.scene.key)); // arrête toutes les scènes (niveau, pause, classement...)
+}
+
+function reinitialiser(jeu) { // revient à l'écran d'accueil : le chrono, le score et les vies repartent de zéro quand on relance une partie (voir menu.js)
+    arreterToutesLesScenes(jeu);
+    jeu.scene.start("menu");
+}
+
+function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
+    jeu.registry.set("chrono", 0);
+    jeu.registry.set("score", 0);
+    jeu.registry.set("vies", 3);
+    jeu.registry.set("chronoActif", true);
+}
+
+function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Soldat ; ensuite (ou depuis le niveau 2) : dans l'arène du dernier combat
+    const actives = jeu.scene.getScenes(true).map((scene) => scene.scene.key);
+    const courante = actives.find((cle) => ["niveau1", "niveau2", "niveau3"].includes(cle));
+    if (courante === "niveau3") return; // déjà dans le dernier combat
+    if (courante === "niveau1" && !jeu.scene.getScene("niveau1").areneLancee) { // le niveau 1 en cours : on téléporte le robot dans l'arène
+        if (actives.includes("pause")) { jeu.scene.stop("pause"); jeu.scene.resume("niveau1"); } // on ferme la pause d'abord
+        const niveau = jeu.scene.getScene("niveau1");
+        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
+        niveau.player.body.setVelocity(0, 0);
+        return;
+    }
+    arreterToutesLesScenes(jeu);
+    if (courante) { jeu.scene.start("niveau3"); return; } // arène du Soldat déjà faite, ou niveau 2 : on passe au dernier combat
+    nouvellePartie(jeu); // depuis l'accueil ou le classement : nouvelle partie directement dans l'arène du Soldat
+    jeu.scene.start("niveau1");
+    jeu.scene.getScene("niveau1").events.once(Phaser.Scenes.Events.CREATE, () => {
+        const niveau = jeu.scene.getScene("niveau1");
+        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
+    });
+}
 
 export function activerReset(jeu) {
-    const enfoncees = new Set(); // les touches de reset actuellement maintenues
-    let debut = null; // l'instant où les deux touches ont été enfoncées ensemble
+    const enfoncees = new Set(); // les touches de combo actuellement maintenues
+    let combo = null; // le combo dont les deux touches sont enfoncées
+    let debut = 0; // l'instant où elles ont été enfoncées ensemble
 
     const boite = document.createElement("div"); // la barre de progression, en bas de l'écran
     boite.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:8px 16px;background:rgba(21,17,26,.92);border:2px solid #5f4f6e;color:#e7e0e9;font:16px monospace;z-index:20;pointer-events:none;display:none;text-align:center";
@@ -21,35 +65,34 @@ export function activerReset(jeu) {
     boite.append(texte, fond);
     document.body.appendChild(boite);
 
-    function reinitialiser() { // revient à l'écran d'accueil
-        debut = null;
-        boite.style.display = "none";
-        enfoncees.clear();
-        jeu.sound.stopAll(); // coupe la musique
-        jeu.scene.getScenes(false).forEach((scene) => jeu.scene.stop(scene.scene.key)); // arrête toutes les scènes (niveau, pause, classement...)
-        jeu.scene.start("menu");
-    }
+    function annuler() { combo = null; boite.style.display = "none"; }
 
     window.addEventListener("keydown", (evenement) => {
-        if (!TOUCHES_RESET.includes(evenement.keyCode)) return;
+        if (!CODES.includes(evenement.keyCode)) return;
         enfoncees.add(evenement.keyCode);
-        if (enfoncees.size === TOUCHES_RESET.length && debut === null) debut = performance.now(); // les deux sont enfoncées ensemble
+        const trouve = COMBOS.find((c) => c.touches.every((code) => enfoncees.has(code))); // les deux touches d'un combo sont enfoncées ensemble
+        if (trouve && combo === null) { combo = trouve; debut = performance.now(); }
     });
     window.addEventListener("keyup", (evenement) => {
-        if (!TOUCHES_RESET.includes(evenement.keyCode)) return;
+        if (!CODES.includes(evenement.keyCode)) return;
         enfoncees.delete(evenement.keyCode);
-        debut = null; // un des deux boutons est relâché : on annule
-        boite.style.display = "none";
+        if (combo && !combo.touches.every((code) => enfoncees.has(code))) annuler(); // un des deux boutons est relâché : on annule
     });
-    window.addEventListener("blur", () => { enfoncees.clear(); debut = null; boite.style.display = "none"; }); // la page perd le focus : on oublie les touches
+    window.addEventListener("blur", () => { enfoncees.clear(); annuler(); }); // la page perd le focus : on oublie les touches
 
     setInterval(() => { // vérifie la durée et met la barre à jour
-        if (debut === null) return;
+        if (combo === null) return;
         const maintenu = performance.now() - debut;
-        if (maintenu >= DUREE_RESET) { reinitialiser(); return; }
+        if (maintenu >= DUREE) {
+            const action = combo.action;
+            enfoncees.clear();
+            annuler();
+            action(jeu);
+            return;
+        }
         if (maintenu < DEBUT_AFFICHAGE) return;
         boite.style.display = "block";
-        texte.textContent = "MAINTIENS POUR RECOMMENCER";
-        barre.style.width = Math.round(100 * maintenu / DUREE_RESET) + "%";
+        texte.textContent = combo.texte;
+        barre.style.width = Math.round(100 * maintenu / DUREE) + "%";
     }, 50);
 }

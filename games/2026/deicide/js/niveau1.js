@@ -147,6 +147,9 @@ export default class niveau1 extends Phaser.Scene {
     objetsDe(carte, "mage").forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
     objetsDe(carte, "orc").forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
+    this.fuiteOuverte = false; // la scène est réutilisée à chaque nouvelle partie : sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
+    this.murDroit = null; // le mur de droite de l'arène du Soldat (pas encore posé)
+    this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     preparerBonus(this); // le groupe des PV que lâchent les ennemis (30 % de chances à chaque ennemi tué)
     preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot

@@ -6,7 +6,7 @@
 // l'écran, pas à une arène fixe.
 import { creerOrbe, creerAnimations } from "./boss.js";
 import * as effets from "./effets.js";
-import { jouerSon } from "./sons.js";
+import { jouerSonSurLeTemps, surLeTemps, quantifier } from "./sons.js";
 
 const VITESSE_MUR_DEBUT = 232; // px/s au départ : la marche du robot est à 260...
 const VITESSE_MUR_FIN = 264; // ...et à la fin de la fuite le mur va un peu plus vite que la marche : il faut dasher pour ne pas être rattrapé
@@ -66,10 +66,9 @@ function attaquer(scene, p) {
     const possibles = ATTAQUES.filter((nom) => nom !== p.derniere);
     const nom = Phaser.Utils.Array.GetRandom(possibles);
     p.derniere = nom;
-    p.prochaineAttaque = scene.time.now + Phaser.Math.Linear(PAUSE_ATTAQUES_DEBUT, PAUSE_ATTAQUES_FIN, Phaser.Math.Clamp((scene.player.x - scene.depart.x) / Math.max(1, scene.xFin - scene.depart.x), 0, 1));
+    p.prochaineAttaque = scene.time.now + surLeTemps(scene, quantifier(Phaser.Math.Linear(PAUSE_ATTAQUES_DEBUT, PAUSE_ATTAQUES_FIN, Phaser.Math.Clamp((scene.player.x - scene.depart.x) / Math.max(1, scene.xFin - scene.depart.x), 0, 1))));
     p.boss.play("boss_charge");
     p.boss.once("animationcomplete-boss_charge", () => p.boss.play("boss_idle"));
-    jouerSon(scene, "mage_incante");
     if (nom === "orbes") scene.time.delayedCall(450, () => tirerOrbes(scene, p));
     else if (nom === "pluie") annoncerPluie(scene, p);
     else annoncerColonne(scene, p);
@@ -78,7 +77,7 @@ function attaquer(scene, p) {
 function tirerOrbes(scene, p) { // une salve en éventail vers le robot
     const boss = p.boss;
     const base = Phaser.Math.Angle.Between(boss.x, boss.y + 20, scene.player.x, scene.player.body.center.y);
-    jouerSon(scene, "orbe");
+    jouerSonSurLeTemps(scene, "orbe");
     effets.eclats(scene, boss.x, boss.y + 20, 0xffd45c, 10, 300);
     for (let i = 0; i < 5; i++) {
         const angle = base + Phaser.Math.DegToRad((i - 2) * 14);
@@ -94,8 +93,8 @@ function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, deva
         scene.tweens.add({ targets: r, alpha: 0.15, duration: 100, yoyo: true, repeat: -1 });
         return r;
     });
-    scene.time.delayedCall(700, () => {
-        jouerSon(scene, "orbe");
+    scene.time.delayedCall(750, () => {
+        jouerSonSurLeTemps(scene, "orbe");
         xs.forEach((x, i) => { reperes[i].destroy(); creerOrbe(scene, x, haut, 0, 400); });
     });
 }
@@ -116,7 +115,7 @@ function majColonne(scene, c) {
         const hauteur = scene.carte.heightInPixels;
         c.rayon = scene.add.rectangle(c.x, hauteur / 2, 72, hauteur, 0xfff2c0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
         scene.tweens.add({ targets: c.rayon, alpha: 0, scaleX: 0.5, duration: 450, ease: "Quad.In" });
-        jouerSon(scene, "dash");
+        jouerSonSurLeTemps(scene, "dash");
         scene.cameras.main.shake(180, 0.006);
     } else if (c.etat === "rayon") {
         const b = scene.player.body;
