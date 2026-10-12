@@ -33,5 +33,5 @@ Un calque peut être vide, mais garde son nom. Les ennemis fonctionnent comme au
 - **Pas de salle fermée** dans ce niveau : on ne peut pas s'arrêter pendant la fuite.
 
 ## Tester
-- Lance le jeu et appuie sur **F2** : le niveau 2 démarre tout de suite (touche de test, à retirer avant la borne).
+- Lance le jeu et appuie sur **F9** : le niveau 2 démarre tout de suite (touche de test, à retirer avant la borne).
 - **F8** téléporte le robot loin dans la map.

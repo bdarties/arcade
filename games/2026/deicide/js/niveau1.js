@@ -156,7 +156,6 @@ export default class niveau1 extends Phaser.Scene {
     this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup)
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
-    this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
     this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(this.cfg.teleportBoss.x, this.cfg.teleportBoss.y); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
     if (this.cfg.creer) this.cfg.creer(this); // ce qui est propre à ce niveau (vide, faisceaux...)
     preparerPause(this); // Échap ou X ouvre le menu pause

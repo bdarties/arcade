@@ -71,9 +71,9 @@ game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 activerReset(game); // P + ; maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
 compteurImages(game);
-// TEMPORAIRE (test) : F2 lance directement le niveau 2, pour tester la map sans refaire le niveau 1. À retirer avant la borne.
+// TEMPORAIRE (test) : F9 lance directement le niveau 2, pour tester la map sans refaire le niveau 1. À retirer avant la borne.
 window.addEventListener("keydown", (evenement) => {
-  if (evenement.key !== "F2") return;
+  if (evenement.key !== "F9") return;
   evenement.preventDefault();
   game.sound.stopAll();
   game.scene.getScenes(true).forEach((scene) => game.scene.stop(scene.scene.key));
