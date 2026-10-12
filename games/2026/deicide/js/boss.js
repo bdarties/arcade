@@ -44,9 +44,9 @@ const PROFILS = {
         pv: 200, seuils: [140, 70], echelle: 3.5, teinte: 0xffe9a0, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 3000,
         pauses: [2100, 1600, 1150],
         attaques: [
-            ["orbes", "colonne", "pluie", "lanternes"],
-            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"],
-            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique"]
+            ["orbes", "colonne", "pluie", "lanternes", "rayonLarge"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "rayonLarge"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique", "rayonLarge"]
         ]
     }
 };
@@ -59,7 +59,8 @@ const ATTAQUES = {
     lanternes: { charge: 520, apres: 0 },
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
-    pique: { charge: 720, apres: 1250 }
+    pique: { charge: 720, apres: 1250 },
+    rayonLarge: { charge: 950, apres: 600 } // Dieu seulement : un rayon qui couvre la moitié de l'arène, annoncé moins d'une seconde avant : il faut dasher pour changer de côté
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
@@ -211,6 +212,12 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         decalages.forEach((d) => { const x = Phaser.Math.Clamp(joueur.x + d, 80, 1200); zones.push(zone(scene, { x, y: (boss.y + 40 + sol) / 2, w: 64, h: sol - boss.y - 40, trait: { w: 8, h: sol - boss.y - 40 } })); });
         return { zones };
     }
+    if (nom === "rayonLarge") { // un rayon de 600 px sur la moitié de l'arène où se trouve le robot : le trait clignote sur toute la hauteur
+        const gauche = joueur.x < scene.areneCentreX; // le robot est dans la moitié gauche ?
+        const x = scene.areneCentreX + (gauche ? -300 : 300); // le milieu de la moitié concernée
+        const haut = boss.y + 40;
+        return { zones: [zone(scene, { x, y: (haut + sol) / 2, w: 600, h: sol - haut, trait: { w: 600, h: sol - haut } })] };
+    }
     if (nom === "balayage") return { zones: [zone(scene, { x: 640, y: sol - 28, w: 1400, h: 56, trait: { w: 1400, h: 6 } })] }; // une ligne sur toute la largeur, à hauteur des pieds
     if (nom === "pluie") { // de petits traits en haut de l'écran : là où les orbes vont tomber
         const haut = scene.cameras.main.worldView.y + 14;
@@ -231,7 +238,7 @@ function nettoyerAnnonce(annonce) { // l'attaque est annulée : on enlève ses t
 
 function executer(scene, boss, nom, annonce, valide) {
     if (nom === "orbes") tirerOrbes(scene, boss);
-    else if (nom === "colonne" || nom === "balayage") annonce.zones.forEach((z) => declencher(scene, z));
+    else if (nom === "colonne" || nom === "balayage" || nom === "rayonLarge") annonce.zones.forEach((z) => declencher(scene, z));
     else if (nom === "pluie") faireTomberPluie(scene, boss, annonce, valide);
     else if (nom === "lanternes") invoquerLanternes(scene, boss, valide);
     else if (nom === "nova") lancerNova(scene, boss, valide);
@@ -318,8 +325,9 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
 // ---------------------------------------------------------------------------------------------
 
 function zone(scene, { x, y, w, h, trait, suit = false, degats = true }) {
-    const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: t, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
+    const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, trait.w > 400 && trait.h > 200 ? 0.14 : 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+    const grand = trait.w > 400 && trait.h > 200; // un grand rectangle de lumière doit rester plus discret qu'un trait fin
+    scene.tweens.add({ targets: t, alpha: grand ? { from: 0.05, to: 0.22 } : { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
     const z = { x, y, w, h, trait: t, suit, degats, etat: "annonce", verrouJusqua: scene.time.now + 500, touche: false, fin: 0, rayon: null };
     scene.zonesBoss.push(z);
     return z;
@@ -330,7 +338,7 @@ function declencher(scene, z) { // le rayon tombe
     z.etat = "rayon";
     z.fin = scene.time.now + 450; // le rayon reste 0,45 s
     z.rayon = scene.add.rectangle(z.x, z.y, z.w, z.h, 0xfff2c0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: z.rayon, alpha: 0, scaleY: z.w > 400 ? 0.4 : 1, scaleX: z.w > 400 ? 1 : 0.5, duration: 450, ease: "Quad.In" });
+    scene.tweens.add({ targets: z.rayon, alpha: 0, scaleY: z.w > 400 && z.h < 200 ? 0.4 : 1, scaleX: z.w > 400 ? (z.h < 200 ? 1 : 0.7) : 0.5, duration: 450, ease: "Quad.In" });
     jouerSon(scene, "dash");
     effets.eclats(scene, z.x > 0 && z.w < 400 ? z.x : 640, scene.areneSolY, ECLATS_BLANC[0], 16, ECLATS_BLANC[1]);
     scene.cameras.main.shake(200, 0.006);
