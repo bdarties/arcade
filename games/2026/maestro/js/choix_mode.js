@@ -12,7 +12,7 @@ import { creerClavierMenu } from "./controles.js";
 import { REGLAGES } from "./reglages.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
-const SCENE_SUIVANTE = "lobby"; // on apparaît dans le lobby, d'où l'on lance le niveau 1
+const SCENE_SUIVANTE = "synopsis"; // le synopsis précède l'arrivée dans le lobby
 
 // Les deux choix proposés
 const MODES = [
@@ -153,7 +153,7 @@ export default class choix_mode extends Phaser.Scene {
     }
   }
 
-  // On mémorise le mode choisi, puis on lance le niveau 1
+  // On mémorise le mode choisi, puis on affiche le synopsis
   valider() {
     this.enTransition = true;
     this.registry.set("mode", MODES[this.choix].mode);

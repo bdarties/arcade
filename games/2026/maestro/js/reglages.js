@@ -28,9 +28,13 @@ export const REGLAGES = {
     rayonProche: 70, // petit cercle toujours éclairé autour du Détective (px)
     vitesseVisee: 90, // vitesse d'orientation de la lampe, haut / bas du joystick (degrés par seconde)
     angleMax: 75, // inclinaison maximale de la lampe, vers le haut ou le bas (degrés)
-    persistanceMs: 1200, // une plateforme révélée reste solide ce temps après avoir quitté la lumière (ms)
-    batterieSec: 30, // durée d'une batterie pleine allumée en continu (s)
-    rechargeParAppui: 10, // % de batterie gagnés à chaque appui sur le bouton C
+    // true = une passerelle fantôme éclairée une fois RESTE en place pour toujours (niveau plus accessible :
+    // le Détective la révèle, puis l'autre personnage peut la traverser sans qu'il ait à rester là).
+    // false = elle disparaît quand la lumière la quitte (et reste solide persistanceMs après).
+    passerellesFixes: true,
+    persistanceMs: 1200, // (si passerellesFixes = false) elle reste solide ce temps après avoir quitté la lumière (ms)
+    batterieSec: 45, // durée d'une batterie pleine allumée en continu (s)
+    rechargeParAppui: 15, // % de batterie gagnés à chaque appui sur le bouton C
     seuilClignote: 20 // sous ce % la lumière clignote
   },
 
@@ -49,14 +53,15 @@ export const REGLAGES = {
   // ---- Ennemis ----
   tuba: {
     vitesse: 60, // vitesse de patrouille (px/s)
-    ondeToutesMs: 3000, // il lance une onde toutes les 3 s
+    ondeToutesMs: 4000, // il lance une onde toutes les 4 s
     porteeOnde: 200, // distance parcourue par son onde (px)
     vitesseOnde: 160 // vitesse de son onde (px/s)
   },
   cristal: {
-    vitesse: 80, // vitesse à laquelle il avance vers le joueur (px/s)
-    pv: 2, // nombre d'ondes pour le détruire
-    detectionPx: 520, // il se réveille quand un joueur est plus proche que ça
+    vitesse: 70, // vitesse à laquelle il avance vers le joueur (px/s)
+    pv: 1, // nombre d'ondes de la BONNE note pour le détruire (chaque cristal a une couleur = une note)
+    etourdissementMauvaiseNoteMs: 600, // une onde d'une autre note ne fait que l'étourdir un instant (ms)
+    detectionPx: 450, // il se réveille quand un joueur est plus proche que ça
     // Pour plus tard (niveau 3) : le cristal apparaîtra toutes les 4 à 7 secondes
     apparitionMinMs: 4000,
     apparitionMaxMs: 7000

@@ -1,6 +1,7 @@
 // chargement des librairies
 import chargement from "./js/chargement.js";
 import accueil from "./js/accueil.js";
+import synopsis from "./js/synopsis.js";
 import choix_mode from "./js/choix_mode.js";
 import lobby from "./js/lobby.js";
 import selection from "./js/selection.js";
@@ -33,7 +34,7 @@ var config = {
     }
   },
   // la PREMIÈRE scène de la liste est celle qui démarre : "chargement", puis "accueil"
-  scene: [chargement, accueil, choix_mode, lobby, selection, niveau1, niveau2, niveau3, niveau_termine, gameover],
+  scene: [chargement, accueil, choix_mode, synopsis, lobby, selection, niveau1, niveau2, niveau3, niveau_termine, gameover],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
