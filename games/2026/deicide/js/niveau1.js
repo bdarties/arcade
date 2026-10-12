@@ -35,6 +35,12 @@ export function chargerJeu(scene) {
     chargerSons(scene); // bruitages et musique
 }
 
+// les points posés dans Tiled sur un calque d'objets (liste vide si le calque n'existe pas : une map peut ne pas avoir tous les calques)
+export function objetsDe(carte, nom) {
+  const calque = carte.getObjectLayer(nom);
+  return calque ? calque.objects : [];
+}
+
 const DUREE_INVINCIBLE = 1000; // ms d'invincibilité du robot après un coup
 
 // Ce qui change d'un niveau à l'autre. Le niveau 2 (niveau2.js) est une classe qui hérite de celle-ci avec sa propre config :
@@ -98,7 +104,9 @@ export default class niveau1 extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.SLEEP, fondNoir);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, fondNoir);
 
-    this.player = creerPersonnage(this, this.cfg.depart.x, this.cfg.depart.y);
+    const pointDepart = objetsDe(carte, "depart")[0]; // le point de départ posé dans Tiled (calque "depart"), sinon celui de la config
+    this.depart = pointDepart ? { x: pointDepart.x, y: pointDepart.y } : this.cfg.depart; // (pour un point Tiled : x = milieu du robot, y = ses pieds)
+    this.player = creerPersonnage(this, this.depart.x, this.depart.y);
     this.player.refreshBody();
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
@@ -114,7 +122,7 @@ export default class niveau1 extends Phaser.Scene {
     this.ennemis = this.physics.add.group();
     this.physics.add.collider(this.ennemis, this.groupe_plateformes);
     // un archer sur chaque point du calque d'objets "archer" de Tiled (le point = ses pieds, on le pose un peu au-dessus et il tombe sur le sol)
-    carte.getObjectLayer("archer").objects.forEach(point => ennemis.creerArcher(this, point.x, point.y - 40));
+    objetsDe(carte, "archer").forEach(point => ennemis.creerArcher(this, point.x, point.y - 40));
     this.physics.add.overlap(this.tirsJoueur, this.ennemis, (tir, ennemi) => ennemis.toucherEnnemi(this, tir, ennemi));
     this.tirsEnnemis = this.physics.add.group({ allowGravity: false });
     this.physics.add.overlap(this.player, this.tirsEnnemis, (joueur, fleche) => {
@@ -129,14 +137,14 @@ export default class niveau1 extends Phaser.Scene {
     this.zonesLumiere = this.physics.add.staticGroup(); // groupe des zones de lumière (dégâts)
     this.prochainDegatLumiere = 0; // instant à partir duquel la lumière peut de nouveau blesser le joueur
     lumiere.creerTextureHalo(this); // dessine la texture du halo avant de poser les lumières
-    carte.getObjectLayer("lumière").objects.forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100)); // une zone de lumière sur chaque point du calque "lumière" de Tiled
+    objetsDe(carte, "lumière").forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100)); // une zone de lumière sur chaque point du calque "lumière" de Tiled
     this.lanternes = this.physics.add.staticGroup(); // groupe des lanternes
-    carte.getObjectLayer("lanterne").objects.forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
+    objetsDe(carte, "lanterne").forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
     this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne)); // un tir éteint la lanterne
     lumiere.creerVoile(this);
-    musiqueDeScene(this, this.cfg.musique); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
-    carte.getObjectLayer("mage").objects.forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
-    carte.getObjectLayer("orc").objects.forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
+    musiqueDeScene(this, this.cfg.musique, this.cfg.volumeMusique); // lance la musique du niveau, et la relance quand on revient dans le niveau // voile d'obscurité, créé en dernier
+    objetsDe(carte, "mage").forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
+    objetsDe(carte, "orc").forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
     preparerBonus(this); // le groupe des PV que lâchent les ennemis (30 % de chances à chaque ennemi tué)
     preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)

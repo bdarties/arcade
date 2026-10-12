@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Génère les maps du niveau 2 (horizontal, centré sur le dash) et de l'arène du Dieu de la Lumière.
+"""Génère une map d'EXEMPLE pour le niveau 2 (horizontal, centré sur le dash) et la map de l'arène du Dieu de la Lumière.
+Le niveau 2 « pour de vrai » est dessiné dans Tiled (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : ce script écrit niveau2_genere.json
+et ne touche jamais niveau2.json.
 
 Pourquoi un script : on dessine le niveau avec du texte (colonnes, lignes, longueurs de trous) au lieu de poser des tuiles à la main.
 Le script VÉRIFIE que chaque trou se franchit (voir verifier_trou) : si un trou est trop grand, il s'arrête avec une erreur.
@@ -39,7 +41,7 @@ class Niveau:
         self.fond = [[0] * largeur for _ in range(hauteur)]
         self.fond2 = [[0] * largeur for _ in range(hauteur)]
         self.jeu = [[0] * largeur for _ in range(hauteur)]
-        self.objets = {"orc": [], "lumière": [], "archer": [], "mage": [], "lanterne": []}
+        self.objets = {"orc": [], "lumière": [], "archer": [], "mage": [], "lanterne": [], "depart": [], "fin": [], "faisceau": []}
         self.prochain_id = 1
 
     def remplir_fond(self, ligne_min=0, ligne_max=None):
@@ -70,15 +72,15 @@ class Niveau:
         for nom, grille in (("Background and background", self.fond2), ("Background", self.fond), ("Gameplay", self.jeu)):
             calques.append({"id": ids[nom], "name": nom, "type": "tilelayer", "width": self.l, "height": self.h, "x": 0, "y": 0, "opacity": 1, "visible": True,
                             "data": [t for ligne in grille for t in ligne]})
-        ids_objets = {"orc": 7, "lumière": 10, "archer": 8, "mage": 9, "lanterne": 6}
-        for nom in ("orc", "lumière", "archer", "mage", "lanterne"):
+        ids_objets = {"orc": 7, "lumière": 10, "archer": 8, "mage": 9, "lanterne": 6, "depart": 11, "fin": 12, "faisceau": 13}
+        for nom in ("orc", "lumière", "archer", "mage", "lanterne", "depart", "fin", "faisceau"):
             objets = []
             for (x, y) in self.objets[nom]:
                 objets.append({"id": self.prochain_id, "name": "", "type": "", "x": float(x), "y": float(y), "width": 0.0, "height": 0.0, "rotation": 0, "visible": True, "point": True, "properties": []})
                 self.prochain_id += 1
             calques.append({"id": ids_objets[nom], "name": nom, "type": "objectgroup", "draworder": "topdown", "x": 0, "y": 0, "opacity": 1, "visible": True, "objects": objets})
         carte = {k: modele[k] for k in ("compressionlevel", "infinite", "orientation", "renderorder", "tiledversion", "version", "tileheight", "tilewidth", "type", "tilesets")}
-        carte.update({"width": self.l, "height": self.h, "layers": calques, "nextlayerid": 11, "nextobjectid": self.prochain_id})
+        carte.update({"width": self.l, "height": self.h, "layers": calques, "nextlayerid": 14, "nextobjectid": self.prochain_id})
         return carte
 
 
@@ -88,7 +90,6 @@ class Niveau:
 LARGEUR_N2, HAUTEUR_N2 = 280, 24
 SOL_LIGNE = 20  # le sol principal (le haut du sol est à y = 640 px)
 FAISCEAUX_NIVEAU2 = [196, 202, 208, 214, 220, 226]  # les colonnes des faisceaux de lumière (lues par faisceaux.js)
-SALLE_NIVEAU2 = (232, 271)  # la salle de combat : première et dernière colonne (40 colonnes = un écran, lues par salles.js)
 
 
 def niveau2(modele):
@@ -147,11 +148,11 @@ def niveau2(modele):
     assert all(189 < c < 230 for c in FAISCEAUX_NIVEAU2)
     # (les faisceaux eux-mêmes sont dessinés par faisceaux.js)
 
-    # 5. LA SALLE DE COMBAT (colonnes 232-271) : deux plateformes pour les mages ; les murs de lumière sont posés par salles.js -----
-    assert SALLE_NIVEAU2[1] - SALLE_NIVEAU2[0] + 1 == 40
-    n.plateforme(240, 246, SOL_LIGNE - 4)
-    n.plateforme(256, 262, SOL_LIGNE - 4)
-    n.objet("lanterne", 251, SOL_LIGNE - 1)
+    # 5. LE DÉPART, LA FIN ET LES FAISCEAUX (points lus par le jeu : calques "depart", "fin" et "faisceau")
+    n.objet("depart", 3, SOL_LIGNE - 1)  # (la case où le robot a les pieds)
+    n.objet("fin", 277, SOL_LIGNE - 1)
+    for colonne in FAISCEAUX_NIVEAU2:
+        n.objet("faisceau", colonne, SOL_LIGNE - 1)
     return n
 
 
@@ -170,7 +171,7 @@ def arene_dieu(modele):
 if __name__ == "__main__":
     with open(os.path.join(DOSSIER, "niveau1.json"), encoding="utf-8") as f:
         modele = json.load(f)
-    for nom, fabrique in (("niveau2.json", niveau2), ("arene_dieu.json", arene_dieu)):
+    for nom, fabrique in (("niveau2_genere.json", niveau2), ("arene_dieu.json", arene_dieu)):
         carte = fabrique(modele).en_json(modele)
         with open(os.path.join(DOSSIER, nom), "w", encoding="utf-8") as f:
             json.dump(carte, f, ensure_ascii=False, separators=(",", ":"))

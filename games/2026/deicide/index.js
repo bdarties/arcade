@@ -70,4 +70,13 @@ export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton 
 game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 activerReset(game); // P + ; maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
-compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)
+compteurImages(game);
+// TEMPORAIRE (test) : F2 lance directement le niveau 2, pour tester la map sans refaire le niveau 1. À retirer avant la borne.
+window.addEventListener("keydown", (evenement) => {
+  if (evenement.key !== "F2") return;
+  evenement.preventDefault();
+  game.sound.stopAll();
+  game.scene.getScenes(true).forEach((scene) => game.scene.stop(scene.scene.key));
+  game.registry.set("chrono", 0); game.registry.set("score", 0); game.registry.set("vies", 3); game.registry.set("chronoActif", true);
+  game.scene.start("niveau2");
+}); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

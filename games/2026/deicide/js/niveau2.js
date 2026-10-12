@@ -1,34 +1,45 @@
-// niveau2.js : le niveau 2, horizontal : on traverse la tour de gauche à droite, et le dash devient indispensable
-// C'est le même niveau que le niveau 1 (voir niveau1.js : robot, ennemis, lumière, pause, mort) avec une autre config : map plus large que haute,
-// trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment (faisceaux.js), une salle de combat fermée (salles.js).
+// niveau2.js : le niveau 2, horizontal : une fuite. Le Soldat de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
+// C'est le même niveau que le niveau 1 (voir niveau1.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
+// (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
+// (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
 // À la fin de la map on arrive dans l'arène du Dieu de la Lumière (niveau3.js).
-import niveau1, { CONFIG_NIVEAU1 } from "./niveau1.js";
-import { SALLES_NIVEAU2 } from "./salles.js";
+import niveau1, { CONFIG_NIVEAU1, objetsDe } from "./niveau1.js";
+import { VOLUME_MUSIQUE_BOSS } from "./sons.js";
 import { preparerVide, majVide } from "./vide.js";
 import { preparerFaisceaux, majFaisceaux } from "./faisceaux.js";
+import { preparerPoursuite, majPoursuite, finirPoursuite } from "./poursuite.js";
 
-const COLONNES_FAISCEAUX = [196, 202, 208, 214, 220, 226]; // les mêmes que FAISCEAUX_NIVEAU2 dans outils/generer_niveaux.py
-const COLONNE_FIN = 277; // en arrivant à cette colonne on passe à l'arène du Dieu
+function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
+  preparerVide(scene);
+  preparerFaisceaux(scene, objetsDe(scene.carte, "faisceau").map((point) => point.x).sort((a, b) => a - b)); // un faisceau par point du calque "faisceau" de Tiled
+  const fin = objetsDe(scene.carte, "fin")[0]; // le point d'arrivée posé dans Tiled ; sinon, 100 px avant le bord droit de la map
+  scene.xFin = fin ? fin.x : scene.carte.widthInPixels - 100;
+  preparerPoursuite(scene);
+}
 
 function majNiveau2(scene) { // appelée à chaque image
-    majVide(scene);
-    majFaisceaux(scene);
-    if (!scene.partieFinie && scene.player.x > COLONNE_FIN * 32) { // le robot a atteint la sortie
-        scene.partieFinie = true; // plus de pause ni de dégâts pendant le fondu
-        scene.cameras.main.fadeOut(600, 0, 0, 0);
-        scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start("niveau3"));
-    }
+  majVide(scene);
+  majFaisceaux(scene);
+  majPoursuite(scene);
+  if (!scene.partieFinie && scene.player.x > scene.xFin) { // le robot a atteint la sortie
+    scene.partieFinie = true; // plus de pause ni de dégâts pendant le fondu
+    finirPoursuite(scene);
+    scene.cameras.main.fadeOut(600, 0, 0, 0);
+    scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start("niveau3"));
+  }
 }
 
 const CONFIG_NIVEAU2 = {
-  ...CONFIG_NIVEAU1, // la musique et le reste sont ceux du niveau 1
+  ...CONFIG_NIVEAU1,
   carte: "carte_niveau2",
+  depart: { x: 96, y: 19 * 32 }, // utilisé seulement si la map n'a pas de calque "depart"
   fondVide: 0x0c0c0c, // le vide des trous est presque noir
-  depart: { x: 96, y: 19 * 32 }, // le robot apparaît sur le sol de gauche
-  salles: SALLES_NIVEAU2,
-  creer: (scene) => { preparerVide(scene); preparerFaisceaux(scene, COLONNES_FAISCEAUX); },
+  musique: "musique_boss_boucle", // le metal continue pendant la fuite
+  volumeMusique: VOLUME_MUSIQUE_BOSS,
+  salles: [], // pas de salle fermée : on ne peut pas s'arrêter pendant la poursuite
+  creer: creerNiveau2,
   arene: majNiveau2,
-  teleportBoss: { x: 8500, y: 600 } // touche F8 (test) : téléporte le robot à la fin du niveau
+  teleportBoss: { x: 8500, y: 600 } // touche F8 (test) : téléporte le robot loin dans le niveau
 };
 
 export default class niveau2 extends niveau1 {

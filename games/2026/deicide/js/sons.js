@@ -21,7 +21,7 @@ const SONS = { // nom du son (= nom du fichier .mp3) : volume de base, entre 0 e
     orc_coup: 0.5 // coup de faux de l'orc
 };
 const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour laisser entendre les bruitages)
-const VOLUME_MUSIQUE_BOSS = 0.2; // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
+export const VOLUME_MUSIQUE_BOSS = 0.2; // la musique metal du boss est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
 let musique = null; // la musique en cours, une seule à la fois pour tout le jeu
 let volumeBase = VOLUME_MUSIQUE; // le volume de base de la musique en cours (avant le réglage du joueur)
 export function volumeEffets() { return reglages.effets / VOLUME_MAX; } // réglage des bruitages, entre 0 et 1 (sert aussi au bip de bonus.js)
@@ -58,7 +58,7 @@ export function musiqueNiveau(scene) { // remet la musique du niveau (à la mort
     lancerMusique(scene, "musique_niveau");
 }
 
-export function musiqueDeScene(scene, nom) { // à appeler dans le create d'une scène : sa musique joue à chaque fois qu'on y arrive
-    lancerMusique(scene, nom); // lance la musique tout de suite
-    scene.events.on("wake", () => lancerMusique(scene, nom)); // scene.switch endort et réveille les scènes sans refaire create : on relance la musique au réveil
+export function musiqueDeScene(scene, nom, base = VOLUME_MUSIQUE) { // à appeler dans le create d'une scène : sa musique joue à chaque fois qu'on y arrive
+    lancerMusique(scene, nom, base); // lance la musique tout de suite
+    scene.events.on("wake", () => lancerMusique(scene, nom, base)); // scene.switch endort et réveille les scènes sans refaire create : on relance la musique au réveil
 }
