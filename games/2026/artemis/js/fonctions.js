@@ -31,7 +31,8 @@ export const TOUCHES_J1 = {
     sprint: "L",
     changer_equipement: "M",
     interagir: "I", // interagir en face (échelle)
-    objet: "O" // interagir avec un objet (offrande à la statue)
+    objet: "O", // interagir avec un objet (offrande à la statue)
+    pause: "X" // bouton Start du joueur 1 (cf. gpio2keys.py) : menu pause
 };
 
 // joueur 2 : joystick = ZQSD ; boutons R T Y (haut) et F G H (bas)
@@ -45,7 +46,8 @@ export const TOUCHES_J2 = {
     sprint: "G",
     changer_equipement: "H",
     interagir: "R",
-    objet: "T"
+    objet: "T",
+    pause: "N" // bouton Start du joueur 2 (cf. gpio2keys.py) : menu pause
 };
 
 // crée les objets Phaser.Key à partir d'une table de touches : { haut: Key, bas: Key, ... }
