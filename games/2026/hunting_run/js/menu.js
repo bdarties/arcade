@@ -1,4 +1,5 @@
-import { JOUEUR } from "./maps.js";
+import { JOUEUR, ETATS_PARTIE } from "./maps.js";
+import { jouer } from "./sons.js";
 
 // Écran de choix du mode : 1 joueur / 2 joueurs (+ bouton Exit pour revenir à l'accueil)
 export default class menu extends Phaser.Scene {
@@ -97,6 +98,7 @@ export default class menu extends Phaser.Scene {
   }
 
   selectionner(i) {
+    if (i !== this.choix && this.contours) jouer(this, "clic"); // petit clic quand le choix change
     this.choix = i;
     if (i < 2) this.derniereCarte = i;
     this.ombres.forEach((o, k) => o.setVisible(i !== k));
@@ -108,6 +110,7 @@ export default class menu extends Phaser.Scene {
   retour() {
     if (this.parti) return;
     this.parti = true;
+    jouer(this, "retour");
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("accueil"));
   }
@@ -115,9 +118,9 @@ export default class menu extends Phaser.Scene {
   lancer(nbJoueurs) {
     if (this.parti) return;
     this.parti = true;
+    jouer(this, "valider");
     this.registry.set("nbJoueurs", nbJoueurs);
-    this.registry.remove("finPartie"); // le timer repart à zéro
-    this.registry.remove("cle"); // on repart sans la clé
+    ETATS_PARTIE.forEach((k) => this.registry.remove(k)); // timer, clé et énigmes repartent de zéro
     this.registry.set("pv_1", JOUEUR.pvMax); // vie pleine pour les deux joueurs
     this.registry.set("pv_2", JOUEUR.pvMax);
     this.cameras.main.fadeOut(250, 0, 0, 0);

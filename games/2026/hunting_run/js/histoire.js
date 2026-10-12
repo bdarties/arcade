@@ -1,4 +1,5 @@
 import { ECRANS } from "./maps.js";
+import { jouer } from "./sons.js";
 
 // Écran d'histoire : une ou plusieurs images racontent le début de l'aventure,
 // puis le jeu démarre. Les images se règlent dans maps.js (ECRANS.histoire).
@@ -62,6 +63,7 @@ export default class histoire extends Phaser.Scene {
   // page suivante, ou début du jeu après la dernière page
   suivant() {
     if (!this.pret || this.parti) return;
+    jouer(this, "page");
     this.numero++;
     if (this.numero < this.pages.length) {
       this.image.setTexture(this.pages[this.numero]);
