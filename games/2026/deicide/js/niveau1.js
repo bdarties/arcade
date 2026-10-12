@@ -7,6 +7,7 @@ import { chargerSons, jouerSon, musiqueDeScene } from "./sons.js"; // bruitages 
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
 import { figerCalques, endormirLesLoins } from "./optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import * as arene from "./arene.js"; // verrouillage de l'arène du boss en haut du niveau
+import { chargerBoss } from "./boss.js"; // le sprite du Dieu de la Lumière
 import { finirPartie } from "./points.js"; // fin de partie : arrête le chrono et ouvre le classement
 import { preparerBonus } from "./bonus.js"; // les PV que lâchent les ennemis
 import { preparerBoost } from "./boost.js"; // le boost du robot (rafale, vitesse, reflet)
@@ -26,6 +27,7 @@ export function chargerJeu(scene) {
     scene.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal de la map
     scene.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche de la map
     ennemis.chargerEnnemis(scene); // images des ennemis
+    chargerBoss(scene); // feuille du boss final
     chargerSons(scene); // bruitages et musique
 }
 
