@@ -10,6 +10,7 @@ export default class histoire extends Phaser.Scene {
     this.load.image('illustration_un', 'src/bg/illustration_un.png');
     this.load.image('illustration_deux', 'src/bg/illustration_deux.png');
     this.load.image('illustration_lettre', 'src/bg/illustration_lettre.png');
+    this.load.image('illustration_lettre_brise', 'src/bg/illustration_lettre_brise.png');
   }
 
   create() {
@@ -25,7 +26,7 @@ export default class histoire extends Phaser.Scene {
       },
       {
         texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
-        imageKey: null // Aucune image pour ce texte
+        imageKey: 'illustration_lettre_brise'
       },
       {
         texte: " « Une pierre, deux coups : je suis le Maestro ! Et à présent, vous allez faire partie de ma troupe de marionettes. » ",
@@ -35,6 +36,10 @@ export default class histoire extends Phaser.Scene {
         texte: " « Si vous réussissez à exceller dans les jeux que je vous ai préparés, Je vous laisserai à nouveau votre liberté. » ",
         imageKey: 'illustration_deux'
       }
+      //{
+      //  texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
+      //  imageKey: null // Aucune image pour ce texte
+      //},
     ];
 
     this.indexDialogue = 0;
