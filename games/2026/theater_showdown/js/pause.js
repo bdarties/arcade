@@ -5,7 +5,7 @@ import { creerTouchesDeuxJoueurs } from "./controles.js";
 /** MENU PAUSE
 /** Lancé PAR-DESSUS la scène de combat (scene.launch), qui est mise
 /** en pause : physique, timers, tweens et animations sont figés.
-/** Ouverture / fermeture : touche Échap ou bouton F de n'importe quel joueur.
+/** Ouverture / fermeture : bouton Start de n'importe quel joueur (ou Échap).
 /***********************************************************************/
 
 export default class pause extends Phaser.Scene {
@@ -31,7 +31,7 @@ export default class pause extends Phaser.Scene {
       { texte: "Menu principal", action: "menu" }
     ], 640, 285, 64, 34);
 
-    this.add.text(640, 655, "A : valider     B / F / Échap : reprendre", fct.style(22, "#e8d8c0")).setOrigin(0.5);
+    this.add.text(640, 655, "A : valider     B / Start : reprendre", fct.style(22, "#e8d8c0")).setOrigin(0.5);
 
     this.touches = creerTouchesDeuxJoueurs(this);
     this.toucheEchap = this.input.keyboard.addKey("ESC");
@@ -45,9 +45,9 @@ export default class pause extends Phaser.Scene {
   update() {
     if (this.enTransition) return;
 
-    // F ou Échap referment la pause (à lire avant lireMenu qui "consomme" les appuis)
+    // Start ou Échap referment la pause (à lire avant lireMenu qui "consomme" les appuis)
     const fermer = Phaser.Input.Keyboard.JustDown(this.toucheEchap) ||
-      this.touches.some((touches) => Phaser.Input.Keyboard.JustDown(touches.F));
+      this.touches.some((touches) => Phaser.Input.Keyboard.JustDown(touches.start));
     if (fermer) {
       this.reprendre();
       return;

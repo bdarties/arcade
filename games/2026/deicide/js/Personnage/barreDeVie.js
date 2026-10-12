@@ -8,10 +8,10 @@
 //
 // Quand les PV baissent, la barre encaisse le coup : elle est secouée et clignote en blanc, chaque cellule
 // perdue s'éclaire puis se brise en éclats, et le robot plisse les yeux ("> <").
-// Rien de tout ça quand les PV montent.
+// Quand les PV montent (un PV ramassé), la barre flashe en blanc et la cellule gagnée s'éclaire.
 //
 // Utilisation :
-//   preload() de "selection"  : chargerBarreDeVie(this)
+//   preload() de "niveau1"    : chargerBarreDeVie(this)
 //   create()  d'un niveau     : this.barrePV = creerBarreDeVie(this, 20, 20, this.pv)
 //   quand les PV changent     : majBarreDeVie(this.barrePV, this.pv)
 
@@ -20,7 +20,9 @@ const CLE_YEUX = "barre_pv_yeux"; // calque des yeux plissés, fabriqué en code
 const FICHIER = "./assets/Spritesheet/hud/barre_pv.png";
 const LARGEUR = 112; // taille d'une image de la bande
 const HAUTEUR = 20;
-const ECHELLE = 2; // même agrandissement que le robot, pour que les pixels aient la même taille
+export const HAUTEUR_BARRE = HAUTEUR; // (hud.js s'en sert pour poser les plaques sous la barre)
+export const ECHELLE_HUD = 3; // agrandissement de tout le HUD (barre, vies, jauge, score, chrono) : le robot, lui, reste à x2
+const ECHELLE = ECHELLE_HUD;
 export const PV_MAX_BARRE = 5; // nombre de cellules de la barre
 const IMAGE_FAIBLE = 6; // "1 PV" atténué
 const DELAI_CLIGNOTEMENT = 400; // ms entre deux images quand il ne reste qu'1 PV
@@ -83,6 +85,7 @@ export function majBarreDeVie(barre, pv) {
     barre.attenuee = false; // on repart de l'image normale
     barre.setFrame(barre.pvAffiches);
     if (barre.pvAffiches < ancien) animerDegats(barre, ancien, barre.pvAffiches);
+    else if (barre.pvAffiches > ancien) animerSoin(barre, ancien, barre.pvAffiches); // un PV ramassé (voir bonus.js)
 }
 
 // les PV peuvent être négatifs ou décimaux : on les ramène à une image de la bande (0 à 5)
@@ -170,6 +173,32 @@ function celluleQuiSeBrise(barre, i, rang) {
             duration: Phaser.Math.Between(350, 600),
             onUpdate: () => { eclat.x = Math.round(eclat.x / ECHELLE) * ECHELLE; eclat.y = Math.round(eclat.y / ECHELLE) * ECHELLE; }, // reste calé sur la grille de pixels
             onComplete: () => eclat.destroy()
+        });
+    }
+}
+
+// quand on gagne des PV : un flash blanc sur la barre, et chaque cellule gagnée s'éclaire en blanc puis s'estompe
+function animerSoin(barre, ancien, nouveau) {
+    const scene = barre.scene;
+    barre.setTintFill(0xffffff);
+    scene.time.delayedCall(DUREE_FLASH, () => { if (barre.active) barre.clearTint(); });
+    for (let i = ancien; i < nouveau; i++) {
+        const blanc = scene.add.graphics();
+        blanc.setScrollFactor(0);
+        blanc.setDepth(102);
+        blanc.fillStyle(0xe7e0e9, 1);
+        casesDeLaCellule(i).forEach(({ x, y }) => blanc.fillRect(x * ECHELLE, y * ECHELLE, ECHELLE, ECHELLE));
+        blanc.setPosition(barre.x, barre.y);
+        barre.calques.push(blanc);
+        scene.tweens.add({
+            targets: blanc,
+            alpha: 0,
+            duration: 400,
+            onComplete: () => {
+                const place = barre.calques.indexOf(blanc);
+                if (place >= 0) barre.calques.splice(place, 1);
+                blanc.destroy();
+            }
         });
     }
 }
