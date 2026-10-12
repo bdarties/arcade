@@ -11,8 +11,8 @@ const DELAI_RETOUR_PAUSE = 250; // ms
 
 // actions de la borne, dans l'ordre des deux rangées de boutons (cf. TOUCHES_J1 / TOUCHES_J2 dans fonctions.js)
 const ACTIONS = [
-  ["interagir", "Interagir en face (échelle)"],
-  ["objet", "Interagir avec un objet (statue)"],
+  ["pause", "Pause"],
+  ["interagir", "Interagir (échelle, statue)"],
   ["torche", "Allumer / éteindre la lampe"],
   ["frapper_tirer", "Frapper / tirer"],
   ["sprint", "Sprint"],

@@ -657,7 +657,7 @@ export default class niveau1 extends Phaser.Scene {
       return;
     }
 
-    // Start d'un joueur : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
+    // bouton Pause d'un joueur (I / R) : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
     if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
       this.sound.pauseAll();
       this.scene.pause();

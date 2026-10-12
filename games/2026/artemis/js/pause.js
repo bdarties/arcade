@@ -3,7 +3,7 @@ import { BOUTONS_VALIDER } from "./menu.js";
 
 /***********************************************************************/
 /** MENU PAUSE : reprendre, commandes, classement, retour au menu
-/** lancé par-dessus niveau1 (qui est gelé) quand un joueur appuie sur Start ; cf. niveau1.js
+/** lancé par-dessus niveau1 (qui est gelé) quand un joueur appuie sur son bouton Pause (I ou R) ; cf. niveau1.js
 /***********************************************************************/
 
 // les boutons, de haut en bas (images chargées dans selection.js)
@@ -20,10 +20,10 @@ const Y_PREMIER_BOUTON = 200; // px
 const ECART_BOUTONS = 105; // px
 const ECHELLE_SELECTION = 1.08; // le bouton choisi est un peu plus grand...
 const OPACITE_AUTRES = 0.55; // ... et les autres sont assombris
-const DELAI_OUVERTURE = 250; // ms : le Start qui ouvre la pause est encore enfoncé, on ignore les touches un instant
+const DELAI_OUVERTURE = 250; // ms : le bouton qui ouvre la pause est encore enfoncé, on ignore les touches un instant
 
 // scene du menu pause : navigation au joystick, validation avec un bouton d'action (comme menu.js)
-// Start (n'importe quel joueur) reprend la partie directement
+// le bouton Pause (n'importe quel joueur) reprend la partie directement
 export default class pause extends Phaser.Scene {
   constructor() {
     super({ key: "pause" });
@@ -48,7 +48,7 @@ export default class pause extends Phaser.Scene {
     this.choix = 0;
     this.majSelection();
 
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton : valider      Start : reprendre", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton : valider      Pause : reprendre", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     // les touches des deux joueurs (cf. fonctions.js)
