@@ -1,11 +1,11 @@
 // boss.js : le Dieu de la Lumière, le boss final, dans l'arène en haut du niveau 1
-// Son dessin est une feuille de 8 images de 137 x 106 px (assets/images/boss/boss_idle.png) : il plane, ses ailes battent.
+// Son dessin est une feuille de 8 images de 152 x 116 px (assets/images/boss/boss_idle.png) : il plane, ses ailes battent.
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss) et flotte en haut de la salle.
 // Pour l'instant : apparition, animation et flottement. Les attaques, les PV et la mort viennent après.
 
-const LARGEUR_IMAGE = 137; // une image de la feuille
-const HAUTEUR_IMAGE = 106;
-const ECHELLE = 4; // le sprite est agrandi x4 : 548 x 424 px à l'écran, avec de gros pixels francs comme le HUD (l'arène fait 1280 px de large)
+const LARGEUR_IMAGE = 152; // une image de la feuille
+const HAUTEUR_IMAGE = 116;
+const ECHELLE = 3; // le sprite est agrandi x3 : 456 x 348 px à l'écran, avec des pixels francs de 3 px comme le HUD (l'arène fait 1280 px de large)
 const NB_IMAGES = 8;
 
 export function chargerBoss(scene) { // à appeler dans chargerJeu (preload)
@@ -20,7 +20,7 @@ export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss e
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur plus tard
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
-    boss.body.setSize(30, 75).setOffset(53, 20); // la hitbox est le corps de l'ange, sans les ailes
+    boss.body.setSize(34, 90).setOffset(59, 22); // la hitbox est le corps de l'ange, sans les ailes
     boss.setScale(ECHELLE).setDepth(51).setAlpha(0); // au-dessus du voile d'ombre (50) : c'est lui la lumière
     boss.play("boss_idle");
     boss.pv = 30; // PV du boss (une trentaine de tirs)
@@ -33,7 +33,7 @@ export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss e
         boss.halo = halo;
         boss.once("destroy", () => halo.destroy());
     }
-    scene.tweens.add({ targets: [boss, boss.halo].filter(Boolean), alpha: { value: (cible) => (cible === boss ? 1 : 0.7) }, duration: 1500, onComplete: () => { boss.etat = "combat"; } }); // apparition en fondu
+    scene.tweens.add({ targets: [boss, boss.halo].filter(Boolean), alpha: { value: (cible) => (cible === boss ? 1 : 0.35) }, duration: 1500, onComplete: () => { boss.etat = "combat"; } }); // apparition en fondu
 
     scene.boss = boss;
     const suivre = (temps) => majBoss(scene, boss, temps);
