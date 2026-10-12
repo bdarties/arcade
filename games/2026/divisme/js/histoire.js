@@ -9,6 +9,7 @@ export default class histoire extends Phaser.Scene {
     // Préchargement des images d'illustration
     this.load.image('illustration_un', 'src/bg/illustration_un.png');
     this.load.image('illustration_deux', 'src/bg/illustration_deux.png');
+    this.load.image('illustration_lettre', 'src/bg/illustration_lettre.png');
   }
 
   create() {
@@ -20,7 +21,7 @@ export default class histoire extends Phaser.Scene {
       },
       {
         texte: "Et il semblerait que vous aussi, grâce à une invitation mystérieuse, avez obtenu la chance de faire partie de ces spectateurs privilégiés...",
-        imageKey: null // Aucune image pour ce texte
+        imageKey: 'illustration_lettre'
       },
       {
         texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
