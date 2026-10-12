@@ -31,6 +31,8 @@ export function chargerJeu(scene) {
     chargerSons(scene); // bruitages et musique
 }
 
+const DUREE_INVINCIBLE = 1000; // ms d'invincibilité du robot après un coup
+
 export default class niveau1 extends Phaser.Scene {
   // constructeur de la classe
   constructor() {
@@ -124,7 +126,8 @@ export default class niveau1 extends Phaser.Scene {
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée) ; remis à zéro quand le niveau recommence après une mort
-    this.colonne = null; // la colonne de lumière du boss (voir boss.js)
+    this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
+    this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (1 s après un coup)
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
     this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
@@ -142,12 +145,15 @@ export default class niveau1 extends Phaser.Scene {
 
   blesserJoueur(degats, cause) {
     if (this.mort || this.partieFinie) return; // un robot qui meurt ne prend plus de coups (et la partie finie, plus rien ne blesse)
+    if (this.time.now < this.invincibleJusqua) return; // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
+    this.invincibleJusqua = this.time.now + DUREE_INVINCIBLE;
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour
     jouerSon(this, this.pv <= 0 ? "joueur_mort" : "joueur_touche"); // bruit de mort si plus de PV, sinon bruit d'impact
     effets.joueurTouche(this); // tremblement, écran rouge et robot qui clignote
     console.log(cause);
     if (this.pv <= 0) this.mourir();
+    else this.tweens.add({ targets: this.player, alpha: 0.35, duration: 90, yoyo: true, repeat: 5, onComplete: () => this.player.setAlpha(1) }); // il clignote pendant l'invincibilité
   }
 
   mourir() { // 0 PV : le robot meurt, puis le niveau recommence depuis le bas. Le chrono continue (la mort coûte du temps) et le score repart de zéro
