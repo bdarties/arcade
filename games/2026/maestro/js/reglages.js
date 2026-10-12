@@ -17,7 +17,7 @@ export const REGLAGES = {
     vitesse: 400, // vitesse de l'onde (px/s)
     portee: 300, // distance max parcourue avant de disparaître (px)
     cadenceMs: 500, // délai minimum entre deux ondes (ms)
-    etourdissementMs: 2000 // durée pendant laquelle un ennemi touché est étourdi (ms)
+    etourdissementMs: 1000 // durée pendant laquelle un ennemi touché est étourdi (ms)
   },
 
   // ---- Détective : la lampe torche ----
@@ -41,8 +41,8 @@ export const REGLAGES = {
 
   // ---- Points de vie (cœurs) ----
   vies: {
-    solo: 3,
-    duo: 5, // cœurs partagés entre les deux joueurs
+    solo: 5,
+    duo: 8, // cœurs partagés entre les deux joueurs
     invincibiliteMs: 1500 // temps sans dégâts après avoir été touché (ms)
   },
 

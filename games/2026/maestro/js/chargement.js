@@ -73,7 +73,6 @@ export default class chargement extends Phaser.Scene {
 
     // ---- Écrans plein format ----
     this.load.image("img_accueil", "./assets/accueil.jpg");
-    this.load.image("img_synopsis", "./assets/synopsis.png");
     this.load.image("img_gameover", "./assets/gameover.jpg");
     this.load.image("img_victoire", "./assets/victoire.jpg");
     this.load.image("img_fond_niveau1", "./assets/fond_niveau1.jpg");
@@ -92,7 +91,7 @@ export default class chargement extends Phaser.Scene {
     // ---- Onde de la Cantatrice : 6 colonnes (animation) x 3 lignes (Do rouge, Mi bleu, Sol doré) ----
     this.load.spritesheet("onde", "./assets/onde_projectile_do_mi_sol.png", {
       frameWidth: 32,
-      frameHeight: 24
+      frameHeight: 32 // 96 px de haut / 3 lignes : avec 24 les images étaient coupées
     });
 
     // ---- Divers ----

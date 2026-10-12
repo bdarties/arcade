@@ -27,6 +27,9 @@ const HAUTEUR_MONDE = 736;
 const COULEUR_FOND = 0x090d17; // couleur de fond de la carte (réglée dans Tiled)
 const OPACITE_FOND = 0.42; // opacité de l'image de fond (propriété fond_opacite de la carte)
 const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner plus que ça (pour rester à l'écran)
+// Mur de lumière : empêche d'atteindre le parchemin en sautant depuis la plateforme de droite
+// (sol_14). Sans lui, on pourrait se passer des passerelles fantômes, donc du Détective.
+const MUR_LUMIERE = { x: 1664, y: 100, largeur: 16, hauteur: 246 };
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
@@ -151,6 +154,9 @@ export default class niveau1 extends Phaser.Scene {
     // Plateformes solides (calque "collisions")
     objetsDe("collisions").forEach((objet) => this.ajouterPlateforme(objet));
 
+    // Le mur de lumière (invisible pour la physique, un faisceau doré pour le joueur)
+    this.creerMurDeLumiere();
+
     // Échelles : on garde le point où le personnage se tient en haut et en bas (= dessus des plateformes)
     this.echelles = deType("echelle").map((objet) => {
       if (this.avecTuilesComplements == false) {
@@ -247,6 +253,18 @@ export default class niveau1 extends Phaser.Scene {
       // décor de secours : on dessine la plateforme en bois
       this.add.tileSprite(zone.x, zone.y, objet.width, objet.height, "tex_bois").setDepth(2);
     }
+  }
+
+  // Un mur qui ne laisse passer personne : on le dessine comme un faisceau de projecteur
+  creerMurDeLumiere() {
+    const m = MUR_LUMIERE;
+    this.groupe_murs = this.physics.add.staticGroup();
+    this.groupe_murs.add(this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur));
+    const faisceau = this.add
+      .rectangle(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur, 0xffe9a0, 0.22)
+      .setDepth(6)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   // Une passerelle fantôme : solide seulement quand la lampe l'éclaire
@@ -396,6 +414,7 @@ export default class niveau1 extends Phaser.Scene {
       return perso.enEchelle != true;
     });
     this.physics.add.collider(this.groupe_tubas, this.groupe_plateformes);
+    this.physics.add.collider(this.persos, this.groupe_murs);
 
     // Les passerelles fantômes ne sont solides que si elles sont éclairées
     this.physics.add.collider(this.persos, this.groupe_fantomes, null, function (perso, plateforme) {
@@ -439,20 +458,19 @@ export default class niveau1 extends Phaser.Scene {
   creerInterface() {
     const fixe = (objet) => objet.setScrollFactor(0).setDepth(100);
 
-    // Cœurs en haut à gauche
-    this.coeurs = [];
-    for (let i = 0; i < this.viesMax; i++) {
-      this.coeurs.push(fixe(this.add.image(32 + i * 36, 30, "tex_coeur")));
-    }
+    // Barre de vie en haut à gauche : l'image de la barre est rouge partout, et un rectangle
+    // de la couleur du fond de la barre cache la partie "vide" (il grandit quand on perd des vies)
+    fixe(this.add.image(10, 8, "img_barre_vie").setOrigin(0, 0));
+    this.videBarre = fixe(this.add.rectangle(10 + 196, 8 + 35, 0, 8, 0x041e48).setOrigin(1, 0));
 
     // Note choisie par la Cantatrice
     this.texteNote = fixe(
-      this.add.text(18, 56, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 66, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
     );
 
     // Batterie de la lampe du Détective
     this.texteLampe = fixe(
-      this.add.text(18, 86, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
     );
     this.barreBatterie = fixe(this.add.graphics());
 
@@ -1008,27 +1026,43 @@ export default class niveau1 extends Phaser.Scene {
   // Un personnage passe sous la ligne de chute de la carte
   verifierChutes() {
     this.persos.forEach((perso) => {
+      this.memoriserPositionSure(perso);
       if (this.fini == false && perso.body.bottom > this.yChute) {
         this.tomber(perso);
       }
     });
   }
 
-  // Tombé dans le vide : -1 cœur, et on réapparaît près de son partenaire
+  // On retient le dernier endroit où le personnage s'est tenu sur une plateforme SOLIDE
+  // (pas une passerelle fantôme, qui peut disparaître) : c'est là qu'il réapparaîtra s'il tombe.
+  memoriserPositionSure(perso) {
+    const aTerre = perso.body.blocked.down || perso.body.touching.down;
+    if (aTerre == false || perso.enEchelle == true) {
+      return;
+    }
+    const corps = perso.body;
+    const sol = this.groupe_plateformes.getChildren().find((plateforme) => {
+      const p = plateforme.body;
+      return Math.abs(p.top - corps.bottom) < 3 && corps.center.x > p.left && corps.center.x < p.right;
+    });
+    if (sol === undefined) {
+      return; // il se tient sur une passerelle fantôme : on garde l'ancienne position
+    }
+    // on reste à 24 px du bord de la plateforme pour ne pas retomber tout de suite
+    const x = Phaser.Math.Clamp(corps.center.x, sol.body.left + 24, sol.body.right - 24);
+    perso.positionSure = { x: x, y: perso.y };
+  }
+
+  // Tombé dans le vide : -1 cœur, et on réapparaît à SA dernière position sûre
+  // (jamais à l'emplacement de l'autre personnage, qui peut être en l'air ou près d'un danger)
   tomber(perso) {
     if (this.perdreUnCoeur() == false) {
       return;
     }
-    const partenaire = perso == this.cantatrice ? this.detective : this.cantatrice;
-    let x = partenaire.x;
-    let y = partenaire.y - 20;
-    if (partenaire.body.bottom > this.yChute - 40) {
-      // le partenaire est lui aussi en train de tomber : retour au départ
-      x = this.departs.j1.x;
-      y = this.departs.j1.y - 40;
-    }
+    const depart = perso == this.cantatrice ? this.departs.j1 : this.departs.j2;
+    const sure = perso.positionSure !== undefined ? perso.positionSure : { x: depart.x, y: depart.y - 40 };
     this.lacherEchelle(perso);
-    perso.setPosition(x, y);
+    perso.setPosition(sure.x, sure.y);
     perso.setVelocity(0, 0);
     perso.invincibleJusqua = this.time.now + REGLAGES.vies.invincibiliteMs;
     this.faireClignoter(perso);
@@ -1113,13 +1147,21 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
+  // Duo : la caméra vise le milieu des deux joueurs.
+  // Solo : elle vise le personnage actif, mais tant que l'autre personnage reste à l'écran elle
+  // le cadre aussi (utile pour voir la lumière du Détective pendant que la Cantatrice saute).
+  // Quand ils s'éloignent, la caméra glisse doucement vers le personnage actif seul.
   mettreAJourCamera() {
-    let x;
+    const milieu = (this.cantatrice.x + this.detective.x) / 2;
+    let x = milieu;
     if (this.mode == "solo") {
-      x = this.actif.x;
-    } else {
-      x = (this.cantatrice.x + this.detective.x) / 2;
+      const autre = this.actif == this.cantatrice ? this.detective : this.cantatrice;
+      const ecart = Math.abs(this.actif.x - autre.x);
+      // poids 0 = on cadre les deux ; poids 1 = on ne suit que le personnage actif
+      const poids = Phaser.Math.Clamp((ecart - 700) / (ECART_MAX_DUO - 700), 0, 1);
+      x = Phaser.Math.Linear(milieu, this.actif.x, poids);
     }
+    // la hauteur du niveau tient presque dans l'écran : la caméra ne bouge qu'à l'horizontale
     this.cible_camera.setPosition(x, HAUTEUR_MONDE / 2);
   }
 
@@ -1127,9 +1169,9 @@ export default class niveau1 extends Phaser.Scene {
   //  Interface
   // --------------------------------------------------------------------------
   majCoeurs() {
-    this.coeurs.forEach((coeur, i) => {
-      coeur.setTexture(i < this.vies ? "tex_coeur" : "tex_coeur_vide");
-    });
+    // la partie rouge va de x = 68 à x = 196 dans l'image (128 px) : on cache la fraction perdue
+    const perdu = 1 - Math.max(this.vies, 0) / this.viesMax;
+    this.videBarre.setSize(128 * perdu, 8); // setSize (et pas .width) pour que le dessin change vraiment
   }
 
   majNote() {
@@ -1141,9 +1183,9 @@ export default class niveau1 extends Phaser.Scene {
     // Barre de batterie : jaune, puis rouge quand elle est faible
     const faible = this.lampe.batterie <= REGLAGES.lampe.seuilClignote;
     this.barreBatterie.clear();
-    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 88, 154, 18);
-    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 90, 150 * (this.lampe.batterie / 100), 14);
-    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 88, 154, 18);
+    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18);
+    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14);
+    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18);
 
     // Solo : on met en avant les informations du personnage actif
     if (this.mode == "solo") {
