@@ -32,7 +32,7 @@ const SEUILS_PHASE = [100, 50]; // sous 100 PV : phase 2 ; sous 50 PV : phase 3
 const DUREE_TRANSITION = 2000; // ms d'invulnérabilité à chaque changement de phase (plus que la plus longue préparation d'attaque)
 const POINTS_PAR_TIR = 10; // points gagnés à chaque tir qui touche le boss (le bonus de 3000 est donné à sa mort, voir points.js)
 const LARGEUR_BARRE = 520; // barre de vie du boss, en haut de l'écran
-const PAUSES = [2600, 2000, 1500]; // ms entre la fin d'une attaque et le début de la suivante, par phase
+const PAUSES = [2100, 1600, 1150]; // ms entre la fin d'une attaque et le début de la suivante, par phase
 
 // les attaques disponibles à chaque phase
 const ATTAQUES_PAR_PHASE = [
@@ -42,17 +42,17 @@ const ATTAQUES_PAR_PHASE = [
 ];
 // charge : ms de préparation avant le départ de l'attaque ; apres : ms que dure encore l'effet avant que la pause commence
 const ATTAQUES = {
-    orbes: { charge: 650, apres: 0 },
-    colonne: { charge: 1100, apres: 600 },
-    pluie: { charge: 900, apres: 1300 },
-    lanternes: { charge: 650, apres: 0 },
-    balayage: { charge: 1100, apres: 700 },
-    nova: { charge: 700, apres: 1100 },
-    pique: { charge: 900, apres: 1500 }
+    orbes: { charge: 520, apres: 0 },
+    colonne: { charge: 900, apres: 500 },
+    pluie: { charge: 720, apres: 1100 },
+    lanternes: { charge: 520, apres: 0 },
+    balayage: { charge: 900, apres: 600 },
+    nova: { charge: 560, apres: 900 },
+    pique: { charge: 720, apres: 1250 }
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
-const ANIMATIONS = [["boss_idle", 8, 8, -1], ["boss_charge", 6, 10, 0], ["boss_attaque", 4, 14, 0], ["boss_mort", 8, 7, 0]];
+const ANIMATIONS = [["boss_idle", 8, 8, -1], ["boss_charge", 6, 12, 0], ["boss_attaque", 4, 16, 0], ["boss_mort", 8, 7, 0]];
 const ECLATS_OR = [0xffd45c, 300]; // mêmes réglages que les éclats de lanterne vivante (effets.js) : l'émetteur est déjà fabriqué
 const ECLATS_BLANC = [0xffffff, 190];
 
@@ -140,7 +140,7 @@ function majBarre(scene, boss) { // la barre rétrécit en douceur, avec un écl
 function majBoss(scene, boss, temps) {
     if (!boss.active) return;
     if (boss.etat !== "mort" && !boss.pique) { // il flotte doucement de haut en bas et de gauche à droite ; il rejoint sa place en douceur après un piqué
-        const cibleX = scene.areneCentreX + Math.sin(temps / 1700) * (160 + 40 * boss.phase);
+        const cibleX = scene.areneCentreX + Math.sin(temps / 1450) * (160 + 40 * boss.phase);
         const cibleY = boss.departY + Math.sin(temps / 900) * 14;
         boss.x += (cibleX - boss.x) * 0.15;
         boss.y += (cibleY - boss.y) * 0.15;
@@ -231,14 +231,14 @@ function creerOrbe(scene, x, y, vx, vy) {
     orbe.body.setCircle(40, 88, 88); // hitbox ronde de 40 px de rayon, centrée dans l'image
     orbe.setTint(0xfff2c0).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setPipeline("SinglePipeline");
     orbe.body.setVelocity(vx, vy);
-    scene.time.delayedCall(6000, () => { if (orbe.active) orbe.destroy(); }); // elle disparaît au bout de 6 s si elle n'a rien touché
+    scene.time.delayedCall(6000, () => { if (orbe.active) orbe.destroy(); }); // elle disparaît au bout de 5 s si elle n'a rien touché
     return orbe;
 }
 
 function tirerOrbes(scene, boss) { // une salve en éventail, centrée sur le robot
     const nombre = [3, 5, 7][boss.phase];
     const ouverture = [36, 60, 84][boss.phase]; // degrés entre la première et la dernière orbe
-    const vitesse = [250, 280, 310][boss.phase];
+    const vitesse = [290, 325, 360][boss.phase];
     const base = Phaser.Math.Angle.Between(boss.x, boss.y + 20, scene.player.x, scene.player.body.center.y);
     jouerSon(scene, "orbe");
     effets.eclats(scene, boss.x, boss.y + 20, ECLATS_OR[0], 10, ECLATS_OR[1]);
@@ -250,10 +250,10 @@ function tirerOrbes(scene, boss) { // une salve en éventail, centrée sur le ro
 
 function faireTomberPluie(scene, boss, annonce, valide) { // les orbes tombent aux endroits annoncés, l'une après l'autre
     jouerSon(scene, "orbe");
-    annonce.xs.forEach((x, i) => scene.time.delayedCall(i * 90, () => {
+    annonce.xs.forEach((x, i) => scene.time.delayedCall(i * 70, () => {
         if (annonce.reperes[i]) annonce.reperes[i].destroy();
         if (!valide()) return;
-        creerOrbe(scene, x, annonce.haut, 0, 330);
+        creerOrbe(scene, x, annonce.haut, 0, 390);
     }));
 }
 
@@ -266,14 +266,14 @@ function invoquerLanternes(scene, boss, valide) {
 function lancerNova(scene, boss, valide) { // des anneaux d'orbes qui s'écartent : chaque anneau est décalé du précédent, ce qui laisse des trous
     const nombre = [12, 14, 16][boss.phase];
     const anneaux = boss.phase === 2 ? 3 : 2;
-    for (let a = 0; a < anneaux; a++) scene.time.delayedCall(a * 450, () => {
+    for (let a = 0; a < anneaux; a++) scene.time.delayedCall(a * 380, () => {
         if (!valide()) return;
         jouerSon(scene, "orbe");
         effets.eclats(scene, boss.x, boss.y, ECLATS_OR[0], 10, ECLATS_OR[1]);
         const decalage = (a % 2) * (Math.PI / nombre) + a * 0.15; // l'anneau suivant est tourné d'un demi-intervalle
         for (let i = 0; i < nombre; i++) {
             const angle = decalage + (i / nombre) * Math.PI * 2;
-            creerOrbe(scene, boss.x, boss.y + 10, Math.cos(angle) * 200, Math.sin(angle) * 200);
+            creerOrbe(scene, boss.x, boss.y + 10, Math.cos(angle) * 230, Math.sin(angle) * 230);
         }
     });
 }
@@ -286,14 +286,14 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
     boss.piqueTouche = false;
     const idPique = boss.jeton;
     boss.tweenPique = scene.tweens.add({
-        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: 420, ease: "Quad.In",
+        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: 340, ease: "Quad.In",
         onComplete: () => {
             scene.cameras.main.shake(180, 0.008);
             effets.eclats(scene, boss.x, scene.areneSolY, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);
             jouerSon(scene, "dash");
-            scene.time.delayedCall(250, () => { // il reste en bas un instant : c'est le moment de lui tirer dessus
+            scene.time.delayedCall(220, () => { // il reste en bas un instant : c'est le moment de lui tirer dessus
                 if (!boss.active || boss.jeton !== idPique) return;
-                boss.tweenPique = scene.tweens.add({ targets: boss, x: scene.areneCentreX, y: boss.departY, duration: 750, ease: "Sine.InOut", onComplete: () => { boss.pique = false; } });
+                boss.tweenPique = scene.tweens.add({ targets: boss, x: scene.areneCentreX, y: boss.departY, duration: 600, ease: "Sine.InOut", onComplete: () => { boss.pique = false; } });
             });
         }
     });
@@ -306,7 +306,7 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
 function zone(scene, { x, y, w, h, trait, suit = false, degats = true }) {
     const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     scene.tweens.add({ targets: t, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
-    const z = { x, y, w, h, trait: t, suit, degats, etat: "annonce", verrouJusqua: scene.time.now + 600, touche: false, fin: 0, rayon: null };
+    const z = { x, y, w, h, trait: t, suit, degats, etat: "annonce", verrouJusqua: scene.time.now + 500, touche: false, fin: 0, rayon: null };
     scene.zonesBoss.push(z);
     return z;
 }
