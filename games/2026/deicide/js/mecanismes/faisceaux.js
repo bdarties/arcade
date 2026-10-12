@@ -12,7 +12,8 @@ const LARGEUR = 56; // largeur du faisceau en px
 export function preparerFaisceaux(scene, xs) { // à appeler dans le create() du niveau ; xs = la position x (en px) de chaque faisceau
     const hauteur = scene.carte.heightInPixels;
     scene.faisceaux = xs.map((x, i) => {
-        const rayon = scene.add.rectangle(x, hauteur / 2, LARGEUR, hauteur, 0xfff2c0, 1).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0); // le rayon, invisible au départ
+        // le rayon, invisible au départ
+        const rayon = scene.add.rectangle(x, hauteur / 2, LARGEUR, hauteur, 0xfff2c0, 1).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0);
         return { x, rayon, decalage: i * DECALAGE, allume: false, touche: false };
     });
 }
@@ -27,7 +28,8 @@ export function majFaisceaux(scene) { // à appeler dans update()
         if (phase >= debutAllume) { // allumé
             faisceau.rayon.setAlpha(0.9);
             const dedans = corps.center.x + corps.halfWidth * 0.6 > faisceau.x - LARGEUR / 2 && corps.center.x - corps.halfWidth * 0.6 < faisceau.x + LARGEUR / 2;
-            if (dedans && !scene.mort && !scene.partieFinie) scene.blesserJoueur(1, "Brûlé par un faisceau"); // l'invincibilité d'une seconde de blesserJoueur évite les coups en rafale
+            // l'invincibilité d'une seconde de blesserJoueur évite les coups en rafale
+            if (dedans && !scene.mort && !scene.partieFinie) scene.blesserJoueur(1, "Brûlé par un faisceau");
         } else if (phase >= debutAvertissement) { // avertissement : il clignote
             faisceau.rayon.setAlpha(Math.floor(maintenant / 70) % 2 === 0 ? 0.28 : 0.1);
         } else {

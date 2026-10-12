@@ -45,7 +45,8 @@ export function eclats(scene, x, y, couleur, nombre, vitesse) { // fait jaillir 
 
 export function flash(objet, couleur, duree) { // colore entièrement un sprite pendant un court instant
     objet.setTintFill(couleur); // remplit le sprite d'une seule couleur (la forme reste, les détails disparaissent)
-    objet.scene.time.delayedCall(duree, () => { if (!objet.active) return; if (objet.teinteBase) objet.setTint(objet.teinteBase); else objet.clearTint(); }); // puis lui rend ses vraies couleurs (ou sa teinte de départ, comme le Dieu doré)
+    // puis lui rend ses vraies couleurs (ou sa teinte de départ, comme le Dieu doré)
+    objet.scene.time.delayedCall(duree, () => { if (!objet.active) return; if (objet.teinteBase) objet.setTint(objet.teinteBase); else objet.clearTint(); });
 }
 
 function arretSurImage(scene, duree) { // fige toute la physique un très court instant : chaque coup donne l'impression de « peser »
@@ -111,9 +112,11 @@ export function traineeDash(joueur) { // laisse des copies fantômes du robot de
 // un à-coup d'une ou deux images au moment où l'ennemi te repère ou meurt. On garde donc les textes déjà fabriqués dans une
 // réserve : quand une alerte ou des points disparaissent, leur texte retourne dans la réserve au lieu d'être détruit, et le
 // suivant le reprend. preparerEffets() en fabrique quelques-uns d'avance, au début du niveau.
-const STYLE_ALERTE = { fontFamily: "monospace", fontSize: "28px", fontStyle: "bold", stroke: "#000000", strokeThickness: 5 }; // gros caractère gras, contour noir pour rester lisible sur la lumière comme dans le noir
+// gros caractère gras, contour noir pour rester lisible sur la lumière comme dans le noir
+const STYLE_ALERTE = { fontFamily: "monospace", fontSize: "28px", fontStyle: "bold", stroke: "#000000", strokeThickness: 5 };
 const COULEUR_ALERTE = { "!": "#ffffff", "?": "#9a9aa8" }; // « ! » en blanc qui claque, « ? » en gris plus discret
-const STYLE_POINTS = { fontFamily: "monospace", fontSize: "22px", fontStyle: "bold", color: "#ffd45c", stroke: "#000000", strokeThickness: 4 }; // jaune doré, la couleur des points, avec un contour noir pour rester lisible partout
+// jaune doré, la couleur des points, avec un contour noir pour rester lisible partout
+const STYLE_POINTS = { fontFamily: "monospace", fontSize: "22px", fontStyle: "bold", color: "#ffd45c", stroke: "#000000", strokeThickness: 4 };
 
 function prendreTexte(scene, x, y, contenu, style) { // un texte tout prêt (pris dans la réserve s'il y en a un, sinon fabriqué)
     const cle = contenu + style.color; // un « ! » blanc et un « ? » gris ne se ressemblent pas : chaque texte a sa propre pile
@@ -136,7 +139,8 @@ function rendreTexte(scene, texte) { // le texte n'est plus affiché : il retour
     scene.reserveTextes[texte.cleReserve].push(texte);
 }
 
-export function preparerEffets(scene) { // à appeler au début d'un niveau : fabrique d'avance les textes et les émetteurs d'éclats pour ne pas le faire en pleine action
+// à appeler au début d'un niveau : fabrique d'avance les textes et les émetteurs d'éclats pour ne pas le faire en pleine action
+export function preparerEffets(scene) {
     scene.reserveTextes = {}; // réserve vide : les textes d'une partie précédente ont été détruits avec elle
     scene.emetteursEclats = {}; // pareil pour les émetteurs d'éclats
     for (const [couleur, vitesse] of [ECLATS_ENNEMI_TOUCHE, ECLATS_ENNEMI_MORT, ECLATS_LANTERNE, ECLATS_VIVANTE_OR, ECLATS_VIVANTE_BLANC]) emetteurEclats(scene, couleur, vitesse);
@@ -149,17 +153,21 @@ export function preparerEffets(scene) { // à appeler au début d'un niveau : fa
     for (const points of [100, 200, 400]) fabriquer("+" + points, STYLE_POINTS, 3);
     fabriquer("+1 PV", STYLE_POINTS, 2); // le texte quand on ramasse un PV (voir bonus.js)
     fabriquer("PV MAX", STYLE_POINTS, 1); // ...ou quand la barre est déjà pleine
-    for (const niveau of [1, 2, 3]) fabriquer("BOOST " + niveau, STYLE_POINTS, 1); // le texte quand une lanterne vivante donne un boost (voir boost.js)
+    // le texte quand une lanterne vivante donne un boost (voir boost.js)
+    for (const niveau of [1, 2, 3]) fabriquer("BOOST " + niveau, STYLE_POINTS, 1);
 }
 
 export function alerte(scene, ennemi, symbole) { // affiche « ! » (il t'a vu) ou « ? » (il t'a perdu) au-dessus d'un ennemi
-    const texte = prendreTexte(scene, ennemi.body.center.x, ennemi.body.top - 10, symbole, { ...STYLE_ALERTE, color: COULEUR_ALERTE[symbole] }); // texte posé au-dessus de la tête de l'ennemi
+    // texte posé au-dessus de la tête de l'ennemi
+    const texte = prendreTexte(scene, ennemi.body.center.x, ennemi.body.top - 10, symbole, { ...STYLE_ALERTE, color: COULEUR_ALERTE[symbole] });
     texte.setScale(0.3); // commence tout petit...
     scene.tweens.add({ targets: texte, scale: 1, duration: 120, ease: "Back.Out" }); // ...et grossit d'un coup avec un petit rebond
-    scene.tweens.add({ targets: texte, y: texte.y - 18, alpha: 0, delay: 450, duration: 300, onComplete: () => rendreTexte(scene, texte) }); // puis monte en s'effaçant
+    // puis monte en s'effaçant
+    scene.tweens.add({ targets: texte, y: texte.y - 18, alpha: 0, delay: 450, duration: 300, onComplete: () => rendreTexte(scene, texte) });
 }
 
 export function textePoints(scene, x, y, texte) { // affiche les points gagnés (« +100 ») qui montent et s'effacent
     const affichage = prendreTexte(scene, x, y, texte, STYLE_POINTS); // texte posé à l'endroit du gain
-    scene.tweens.add({ targets: affichage, y: y - 50, alpha: 0, duration: 900, ease: "Cubic.Out", onComplete: () => rendreTexte(scene, affichage) }); // monte de 50 px en s'effaçant, puis retourne dans la réserve
+    // monte de 50 px en s'effaçant, puis retourne dans la réserve
+    scene.tweens.add({ targets: affichage, y: y - 50, alpha: 0, duration: 900, ease: "Cubic.Out", onComplete: () => rendreTexte(scene, affichage) });
 }

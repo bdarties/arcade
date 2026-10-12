@@ -1,5 +1,6 @@
 // poursuite.js : la poursuite du niveau 2 : le Soldat de la Lumière enragé court après le robot
-// Deux dangers : (1) un MUR DE LUMIÈRE qui avance de gauche à droite à vitesse constante : un peu moins vite que la course du robot (260 px/s), mais il
+// Deux dangers : (1) un MUR DE LUMIÈRE qui avance de gauche à droite à vitesse constante : un peu moins vite que la course du robot (260
+// px/s), mais il
 // rattrape celui qui s'arrête ou rate un saut ; le dash sert à reprendre de l'avance. S'il touche le robot : -1 PV et le mur recule un peu.
 // (2) le BOSS lui-même, qui vole derrière le robot et lance des orbes, des pluies d'orbes et des colonnes de lumière devant lui.
 // Le boss est le même que celui de l'arène (boss.js : mêmes feuilles d'images, mêmes orbes), mais ses attaques sont posées par rapport au robot et à
@@ -24,8 +25,10 @@ export function preparerPoursuite(scene) { // à appeler dans le create() du niv
     const hauteur = scene.carte.heightInPixels;
     const x = scene.depart.x - AVANCE_DEPART;
     const mur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR, hauteur + 200, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    const lueur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR * 3, hauteur + 200, 0xffb890, 0.18).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); // une lueur plus large autour
-    const boss = scene.add.sprite(scene.depart.x - 1300, scene.depart.y - 150, "boss_idle", 0).setScale(3.8).setDepth(51); // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
+    // une lueur plus large autour
+    const lueur = scene.add.rectangle(x, hauteur / 2, LARGEUR_MUR * 3, hauteur + 200, 0xffb890, 0.18).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+    // un peu plus petit que dans l'arène : il ne doit pas cacher la moitié de l'écran
+    const boss = scene.add.sprite(scene.depart.x - 1300, scene.depart.y - 150, "boss_idle", 0).setScale(3.8).setDepth(51);
     boss.setTint(COULEUR_ENRAGE);
     boss.teinteBase = COULEUR_ENRAGE;
     boss.play("boss_idle");
@@ -35,14 +38,17 @@ export function preparerPoursuite(scene) { // à appeler dans le create() du niv
 export function majPoursuite(scene) { // à appeler dans update()
     const p = scene.poursuite;
     if (!p || scene.partieFinie) return;
-    const delta = Math.min(scene.game.loop.delta, 50) / 1000; // secondes depuis l'image précédente (plafonnées : une image très longue, au chargement, ne doit pas faire sauter le mur)
+    // secondes depuis l'image précédente (plafonnées : une image très longue, au chargement, ne doit pas faire sauter le mur)
+    const delta = Math.min(scene.game.loop.delta, 50) / 1000;
     const joueur = scene.player;
-    const progres = Phaser.Math.Clamp((joueur.x - scene.depart.x) / Math.max(1, scene.xFin - scene.depart.x), 0, 1); // 0 au départ, 1 à l'arrivée : la fuite devient plus dure en avançant
+    // 0 au départ, 1 à l'arrivée : la fuite devient plus dure en avançant
+    const progres = Phaser.Math.Clamp((joueur.x - scene.depart.x) / Math.max(1, scene.xFin - scene.depart.x), 0, 1);
     p.mur.x += Phaser.Math.Linear(VITESSE_MUR_DEBUT, VITESSE_MUR_FIN, progres) * delta;
     p.lueur.x = p.mur.x;
 
     // le boss vole derrière le robot, toujours devant le mur, un peu au-dessus, et flotte doucement
-    const cibleX = Math.min(Math.max(p.mur.x + LARGEUR_MUR / 2 + 260, joueur.x - 520), joueur.x - 340); // jamais plus près que 340 px du robot : il ne doit pas le recouvrir
+    // jamais plus près que 340 px du robot : il ne doit pas le recouvrir
+    const cibleX = Math.min(Math.max(p.mur.x + LARGEUR_MUR / 2 + 260, joueur.x - 520), joueur.x - 340);
     const cibleY = joueur.y - 170 + Math.sin(scene.time.now / 450) * 18;
     p.boss.x += (cibleX - p.boss.x) * 0.08;
     p.boss.y += (cibleY - p.boss.y) * 0.08;

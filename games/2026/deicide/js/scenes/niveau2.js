@@ -12,7 +12,8 @@ import { preparerPoursuite, majPoursuite, finirPoursuite } from "../ennemis/pour
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
   preparerVide(scene);
-  preparerFaisceaux(scene, objetsDe(scene.carte, "faisceau").map((point) => point.x).sort((a, b) => a - b)); // un faisceau par point du calque "faisceau" de Tiled
+  // un faisceau par point du calque "faisceau" de Tiled
+  preparerFaisceaux(scene, objetsDe(scene.carte, "faisceau").map((point) => point.x).sort((a, b) => a - b));
   const fin = objetsDe(scene.carte, "fin")[0]; // le point d'arrivée posé dans Tiled ; sinon, 100 px avant le bord droit de la map
   scene.xFin = fin ? fin.x : scene.carte.widthInPixels - 100;
   preparerPoursuite(scene);

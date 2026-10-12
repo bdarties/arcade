@@ -58,12 +58,14 @@ export function preparerBonus(scene) {
 
 // le groupe qui contient toutes les croix à ramasser de la scène (créé par preparerBonus, ou au premier drop sinon)
 function groupeBonus(scene) {
-    if (scene.bonusPV && scene.bonusPV.scene) return scene.bonusPV; // déjà créé (s'il vient d'une ancienne partie, il n'a plus de scène : on en refait un)
+    // déjà créé (s'il vient d'une ancienne partie, il n'a plus de scène : on en refait un)
+    if (scene.bonusPV && scene.bonusPV.scene) return scene.bonusPV;
     creerTextureCroix(scene);
     const groupe = scene.physics.add.group({ collideWorldBounds: true, bounceY: 0.35 }); // elles rebondissent un peu en tombant
     if (scene.groupe_plateformes) scene.physics.add.collider(groupe, scene.groupe_plateformes); // elles se posent sur les plateformes
     scene.physics.add.overlap(scene.player, groupe, (joueur, bonus) => ramasserPV(scene, bonus)); // le joueur les ramasse en les touchant
-    const suivre = () => groupe.getChildren().forEach(bonus => { if (bonus.halo) bonus.halo.setPosition(bonus.x, bonus.y); }); // la lueur suit la croix
+    // la lueur suit la croix
+    const suivre = () => groupe.getChildren().forEach(bonus => { if (bonus.halo) bonus.halo.setPosition(bonus.x, bonus.y); });
     scene.events.on(Phaser.Scenes.Events.UPDATE, suivre);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, suivre));
     scene.bonusPV = groupe;
@@ -114,7 +116,8 @@ function bipPV(scene) {
     const volume = contexte.createGain();
     oscillateur.type = "square";
     [523, 784, 1046].forEach((note, i) => oscillateur.frequency.setValueAtTime(note, t + i * 0.08)); // do, sol, do aigu
-    volume.gain.setValueAtTime(0.1 * Math.max(volumeEffets(), 0.001), t); // suit le réglage des bruitages (jamais 0 : la rampe exponentielle ne le supporte pas)
+    // suit le réglage des bruitages (jamais 0 : la rampe exponentielle ne le supporte pas)
+    volume.gain.setValueAtTime(0.1 * Math.max(volumeEffets(), 0.001), t);
     volume.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
     oscillateur.connect(volume);
     volume.connect(scene.sound.destination || contexte.destination);

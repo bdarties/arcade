@@ -9,37 +9,59 @@ import { tenterDropPV } from "../mecanismes/bonus.js"; // un ennemi tué peut la
 const PORTEE_COUP = 90; // distance (px) à partir de laquelle l'orc donne son coup de faux (la faux porte jusqu'à environ 130 px)
 const VITESSE_ORC = 90; // vitesse de marche de l'orc (px/s)
 export function chargerEnnemis(scene) {
-    scene.load.spritesheet("archer_idle", "./assets/images/ennemis/archer_idle.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation idle archer
-    scene.load.spritesheet("archer_attaque", "./assets/images/ennemis/archer_attaque.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation attaque archer
-    scene.load.spritesheet("archer_touche", "./assets/images/ennemis/archer_touche.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation touche archer
-    scene.load.spritesheet("archer_mort", "./assets/images/ennemis/archer_mort.png", { frameWidth: 100, frameHeight: 100 }); // chargement animation mort archer
+    // chargement animation idle archer
+    scene.load.spritesheet("archer_idle", "./assets/images/ennemis/archer_idle.png", { frameWidth: 100, frameHeight: 100 });
+    // chargement animation attaque archer
+    scene.load.spritesheet("archer_attaque", "./assets/images/ennemis/archer_attaque.png", { frameWidth: 100, frameHeight: 100 });
+    // chargement animation touche archer
+    scene.load.spritesheet("archer_touche", "./assets/images/ennemis/archer_touche.png", { frameWidth: 100, frameHeight: 100 });
+    // chargement animation mort archer
+    scene.load.spritesheet("archer_mort", "./assets/images/ennemis/archer_mort.png", { frameWidth: 100, frameHeight: 100 });
     scene.load.spritesheet("fleche", "./assets/images/ennemis/fleche.png", { frameWidth: 24, frameHeight: 5 }); // chargement animation fleche archer
-    scene.load.spritesheet("mage_idle", "./assets/images/ennemis/mage_idle.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation idle mage
-    scene.load.spritesheet("mage_attaque", "./assets/images/ennemis/mage_attaque.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation attaque mage
-    scene.load.spritesheet("mage_touche", "./assets/images/ennemis/mage_touche.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation touche mage
-    scene.load.spritesheet("mage_mort", "./assets/images/ennemis/mage_mort.png", { frameWidth: 231, frameHeight: 190 }); // chargement animation mort mage
+    // chargement animation idle mage
+    scene.load.spritesheet("mage_idle", "./assets/images/ennemis/mage_idle.png", { frameWidth: 231, frameHeight: 190 });
+    // chargement animation attaque mage
+    scene.load.spritesheet("mage_attaque", "./assets/images/ennemis/mage_attaque.png", { frameWidth: 231, frameHeight: 190 });
+    // chargement animation touche mage
+    scene.load.spritesheet("mage_touche", "./assets/images/ennemis/mage_touche.png", { frameWidth: 231, frameHeight: 190 });
+    // chargement animation mort mage
+    scene.load.spritesheet("mage_mort", "./assets/images/ennemis/mage_mort.png", { frameWidth: 231, frameHeight: 190 });
     scene.load.spritesheet("orc_idle", "./assets/images/ennemis/orc_idle.png", { frameWidth: 140, frameHeight: 93 }); // chargement animation idle orc
-    scene.load.spritesheet("orc_marche", "./assets/images/ennemis/orc_marche.png", { frameWidth: 140, frameHeight: 93 }); // chargement animation marche orc
-    scene.load.spritesheet("orc_attaque", "./assets/images/ennemis/orc_attaque.png", { frameWidth: 140, frameHeight: 93 }); // chargement animation attaque orc (coup de faux)
-    scene.load.spritesheet("orc_touche", "./assets/images/ennemis/orc_touche.png", { frameWidth: 140, frameHeight: 93 }); // chargement animation touche orc
+    // chargement animation marche orc
+    scene.load.spritesheet("orc_marche", "./assets/images/ennemis/orc_marche.png", { frameWidth: 140, frameHeight: 93 });
+    // chargement animation attaque orc (coup de faux)
+    scene.load.spritesheet("orc_attaque", "./assets/images/ennemis/orc_attaque.png", { frameWidth: 140, frameHeight: 93 });
+    // chargement animation touche orc
+    scene.load.spritesheet("orc_touche", "./assets/images/ennemis/orc_touche.png", { frameWidth: 140, frameHeight: 93 });
     scene.load.spritesheet("orc_mort", "./assets/images/ennemis/orc_mort.png", { frameWidth: 140, frameHeight: 93 }); // chargement animation mort orc
 }
 export function creerAnimationsEnnemis(scene) { // permet de creer les animations des ennemis
     if (scene.anims.exists("archer_idle")) return; // permet de savoir si l'animation archer_idle existe deja, si c est le cas on passe
-    scene.anims.create({ key: "archer_idle", frames: scene.anims.generateFrameNumbers("archer_idle"), frameRate: 10, repeat: -1 }); // permet de creer l'animation d'idle
-    scene.anims.create({ key: "archer_attaque", frames: scene.anims.generateFrameNumbers("archer_attaque"), frameRate: 12, repeat: 0 }); // permet de creer l'animation d'attaque
+    // permet de creer l'animation d'idle
+    scene.anims.create({ key: "archer_idle", frames: scene.anims.generateFrameNumbers("archer_idle"), frameRate: 10, repeat: -1 });
+    // permet de creer l'animation d'attaque
+    scene.anims.create({ key: "archer_attaque", frames: scene.anims.generateFrameNumbers("archer_attaque"), frameRate: 12, repeat: 0 });
     scene.anims.create({ key: "archer_touche", frames: scene.anims.generateFrameNumbers("archer_touche"), frameRate: 12, repeat: 0 });// permet de creer l'animation de touche
     scene.anims.create({ key: "archer_mort", frames: scene.anims.generateFrameNumbers("archer_mort"), frameRate: 12, repeat: 0 });// permet de creer l'animation de mort
     scene.anims.create({ key: "fleche", frames: scene.anims.generateFrameNumbers("fleche"), frameRate: 10, repeat: -1 });// permet de creer l'animation fleche
-    scene.anims.create({ key: "mage_idle", frames: scene.anims.generateFrameNumbers("mage_idle"), frameRate: 8, repeat: -1 }); // permet de creer l'animation d'idle du mage, en boucle
-    scene.anims.create({ key: "mage_attaque", frames: scene.anims.generateFrameNumbers("mage_attaque"), frameRate: 12, repeat: 0 }); // permet de creer l'animation d'attaque du mage, jouée une fois
-    scene.anims.create({ key: "mage_touche", frames: scene.anims.generateFrameNumbers("mage_touche"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de touche du mage
-    scene.anims.create({ key: "mage_mort", frames: scene.anims.generateFrameNumbers("mage_mort"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de mort du mage
-    scene.anims.create({ key: "orc_idle", frames: scene.anims.generateFrameNumbers("orc_idle"), frameRate: 8, repeat: -1 }); // permet de creer l'animation d'idle de l'orc, en boucle
-    scene.anims.create({ key: "orc_marche", frames: scene.anims.generateFrameNumbers("orc_marche"), frameRate: 10, repeat: -1 }); // permet de creer l'animation de marche de l'orc, en boucle
-    scene.anims.create({ key: "orc_attaque", frames: scene.anims.generateFrameNumbers("orc_attaque"), frameRate: 12, repeat: 0 }); // permet de creer l'animation d'attaque de l'orc, jouée une fois
-    scene.anims.create({ key: "orc_touche", frames: scene.anims.generateFrameNumbers("orc_touche"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de touche de l'orc
-    scene.anims.create({ key: "orc_mort", frames: scene.anims.generateFrameNumbers("orc_mort"), frameRate: 10, repeat: 0 }); // permet de creer l'animation de mort de l'orc
+    // permet de creer l'animation d'idle du mage, en boucle
+    scene.anims.create({ key: "mage_idle", frames: scene.anims.generateFrameNumbers("mage_idle"), frameRate: 8, repeat: -1 });
+    // permet de creer l'animation d'attaque du mage, jouée une fois
+    scene.anims.create({ key: "mage_attaque", frames: scene.anims.generateFrameNumbers("mage_attaque"), frameRate: 12, repeat: 0 });
+    // permet de creer l'animation de touche du mage
+    scene.anims.create({ key: "mage_touche", frames: scene.anims.generateFrameNumbers("mage_touche"), frameRate: 10, repeat: 0 });
+    // permet de creer l'animation de mort du mage
+    scene.anims.create({ key: "mage_mort", frames: scene.anims.generateFrameNumbers("mage_mort"), frameRate: 10, repeat: 0 });
+    // permet de creer l'animation d'idle de l'orc, en boucle
+    scene.anims.create({ key: "orc_idle", frames: scene.anims.generateFrameNumbers("orc_idle"), frameRate: 8, repeat: -1 });
+    // permet de creer l'animation de marche de l'orc, en boucle
+    scene.anims.create({ key: "orc_marche", frames: scene.anims.generateFrameNumbers("orc_marche"), frameRate: 10, repeat: -1 });
+    // permet de creer l'animation d'attaque de l'orc, jouée une fois
+    scene.anims.create({ key: "orc_attaque", frames: scene.anims.generateFrameNumbers("orc_attaque"), frameRate: 12, repeat: 0 });
+    // permet de creer l'animation de touche de l'orc
+    scene.anims.create({ key: "orc_touche", frames: scene.anims.generateFrameNumbers("orc_touche"), frameRate: 10, repeat: 0 });
+    // permet de creer l'animation de mort de l'orc
+    scene.anims.create({ key: "orc_mort", frames: scene.anims.generateFrameNumbers("orc_mort"), frameRate: 10, repeat: 0 });
 }
 export function creerArcher(scene, x, y) { // fonction qui permet de creer un archer
     const archer = scene.ennemis.create(x, y, "archer_idle");
@@ -86,7 +108,8 @@ function orienterOrc(orc, versDroite) { // tourne l'orc et recale sa hitbox sur 
     if (orc.body.offset.y === 38 && orc.flipX === versDroite) return; // déjà tourné dans le bon sens (et hitbox déjà réglée) : rien à faire
     const ancienX = orc.body.x; // position du corps avant de se retourner
     orc.setFlipX(versDroite); // l'image regarde à gauche : on la retourne quand l'orc doit regarder à droite
-    orc.body.setOffset(versDroite ? 20 : 90, 38); // dans l'image le corps est à droite (x 90 à 120) ; une fois retournée il passe à gauche (x 20 à 50)
+    // dans l'image le corps est à droite (x 90 à 120) ; une fois retournée il passe à gauche (x 20 à 50)
+    orc.body.setOffset(versDroite ? 20 : 90, 38);
     orc.body.updateFromGameObject(); // recalcule la position du corps avec le nouveau décalage
     orc.x += ancienX - orc.body.x; // décale l'image d'autant : le corps ne bouge pas quand l'orc se retourne, seule l'image change de sens
     orc.body.updateFromGameObject(); // et remet le corps à sa place
@@ -125,9 +148,11 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
         tenterDropPV(scene, ennemi.body.center.x, ennemi.body.center.y); // 30 % de chances qu'il laisse un PV à ramasser (voir bonus.js)
         ennemi.etat = "mort"; // si il a 0 pv on passe son état à mort
         ennemi.body.enable = false; // on fait disparaitre le corp physique de l'ennemi
-        scene.tweens.add({ targets: ennemi.halo, alpha: 0, duration: 500, onComplete: () => ennemi.halo.destroy() }); // le halo s'éteint en 0,5 s puis il est supprimé
+        // le halo s'éteint en 0,5 s puis il est supprimé
+        scene.tweens.add({ targets: ennemi.halo, alpha: 0, duration: 500, onComplete: () => ennemi.halo.destroy() });
         ennemi.play(ennemi.type + "_mort"); // il joue alors son animation de mort
-        ennemi.once("animationcomplete-" + ennemi.type + "_mort", () => ennemi.destroy()); // quand l'animation de mort est fini on fait disparaitre l'archer
+        // quand l'animation de mort est fini on fait disparaitre l'archer
+        ennemi.once("animationcomplete-" + ennemi.type + "_mort", () => ennemi.destroy());
         return;
     }
     jouerSon(scene, "ennemi_touche"); // bruit d'impact sur l'ennemi
@@ -142,17 +167,22 @@ export function toucherEnnemi(scene, tir, ennemi) { // fonction qui permet de tu
 function repere(scene, ennemi) { // permet d'implémenter le fait que l'ennemi ne vois le joueur que quand il est dans la lumière
     if (ennemi.toujoursVoit) return true; // les ennemis des salles fermées (salles.js) repèrent toujours le joueur
     const portee = scene.joueurEclaire ? 400 : 120; // si le joueur est éclairé la portée de l'arché est de 400 sinon 120
-    return Phaser.Math.Distance.Between(ennemi.body.center.x, ennemi.body.center.y, scene.player.body.center.x, scene.player.body.center.y) < portee; // calcule la distance entre le centre du corps de l'ennemi et celui du joueur (l'image de l'orc est décalée par rapport à son corps)
+    // calcule la distance entre le centre du corps de l'ennemi et celui du joueur (l'image de l'orc est décalée par rapport à son corps)
+    return Phaser.Math.Distance.Between(ennemi.body.center.x, ennemi.body.center.y, scene.player.body.center.x, scene.player.body.center.y) < portee;
 }
 export function majEnnemis(scene) { // fonction qui sera appelé presque chaque seconde pour vérifier les informations liées à l'ennemi
-    scene.ennemis.getChildren().forEach(ennemi => { // renvoie un tableau avec la liste de tous les ennemis du groupe, exectute le code dans les accolades pour chaque éléments
-        if (ennemi.endormi) return; // OPTIMISATION (borne) : un ennemi loin du joueur dort, il ne fait rien (voir endormirLesLoins dans optimisation.js)
+    // renvoie un tableau avec la liste de tous les ennemis du groupe, exectute le code dans les accolades pour chaque éléments
+    scene.ennemis.getChildren().forEach(ennemi => {
+        // OPTIMISATION (borne) : un ennemi loin du joueur dort, il ne fait rien (voir endormirLesLoins dans optimisation.js)
+        if (ennemi.endormi) return;
         if (ennemi.halo) ennemi.halo.setPosition(ennemi.body.center.x, ennemi.body.center.y); // le halo suit le centre de l'ennemi à chaque image
         if (ennemi.etat !== "mort") { // un ennemi en train de mourir ne repère plus personne
             const voit = repere(scene, ennemi); // est ce que l'ennemi voit le joueur à cette image
-            if (voit !== Boolean(ennemi.voitJoueur) && scene.time.now >= (ennemi.prochaineAlerte ?? 0)) { // il vient de le repérer ou de le perdre, et il n'a pas affiché d'alerte récemment
+            // il vient de le repérer ou de le perdre, et il n'a pas affiché d'alerte récemment
+            if (voit !== Boolean(ennemi.voitJoueur) && scene.time.now >= (ennemi.prochaineAlerte ?? 0)) {
                 effets.alerte(scene, ennemi, voit ? "!" : "?"); // « ! » : il t'a vu, « ? » : tu as disparu dans l'ombre
-                ennemi.prochaineAlerte = scene.time.now + 1500; // pas plus d'une alerte toutes les 1,5 s, sinon elles clignotent à la limite de la portée
+                // pas plus d'une alerte toutes les 1,5 s, sinon elles clignotent à la limite de la portée
+                ennemi.prochaineAlerte = scene.time.now + 1500;
             }
             ennemi.voitJoueur = voit; // on retient s'il voit le joueur pour comparer à l'image suivante
         }
@@ -175,7 +205,8 @@ function majArcher(scene, archer) { // permet de choisir ce que fait l'archer a 
     }
 }
 function majMage(scene, mage) { // permet de choisir ce que fait le mage a chaque frame
-    if (mage.etat === "touche" || mage.etat === "mort" || mage.etat === "attaque") return; // pendant qu'il encaisse, meurt ou incante, on ne change rien
+    // pendant qu'il encaisse, meurt ou incante, on ne change rien
+    if (mage.etat === "touche" || mage.etat === "mort" || mage.etat === "attaque") return;
     if (!repere(scene, mage)) { // appelle repere qui determine si le joueur est à portée du mage
         mage.etat = "attente"; // le joueur est trop loin : le mage attend
         return; // on s'arrête là
@@ -249,13 +280,16 @@ function frapper(scene, orc) { // l'orc donne un coup de faux devant lui
     scene.time.delayedCall(350, () => { // la faux touche à la 5e image de l'animation (4 images à 12 par seconde = 0,35 s)
         if (orc.etat !== "attaque") return; // l'orc a été touché ou tué entre temps : le coup est annulé
         jouerSon(scene, "orc_coup"); // bruit de la faux
-        const devant = (scene.player.body.center.x - orc.body.center.x) * (orc.flipX ? 1 : -1); // distance du joueur devant l'orc, négative s'il est derrière
+        // distance du joueur devant l'orc, négative s'il est derrière
+        const devant = (scene.player.body.center.x - orc.body.center.x) * (orc.flipX ? 1 : -1);
         const hauteur = Math.abs(scene.player.body.center.y - orc.body.center.y); // écart de hauteur entre les deux
-        if (devant > -20 && devant < 130 && hauteur < 60) scene.blesserJoueur(1, "Fauché par un orc"); // le joueur est dans la zone de la faux : il perd un pv
+        // le joueur est dans la zone de la faux : il perd un pv
+        if (devant > -20 && devant < 130 && hauteur < 60) scene.blesserJoueur(1, "Fauché par un orc");
     });
 }
 function lancerOrbe(scene, mage) { // fait apparaitre l'orbe de lumière et l'envoie vers le joueur
-    const orbe = scene.tirsEnnemis.create(mage.body.center.x, mage.body.center.y - 10, "halo"); // crée l'orbe au niveau des mains du mage, dans le groupe des tirs ennemis
+    // crée l'orbe au niveau des mains du mage, dans le groupe des tirs ennemis
+    const orbe = scene.tirsEnnemis.create(mage.body.center.x, mage.body.center.y - 10, "halo");
     orbe.setScale(0.25); // l'image fait 256 px : à 0.25 l'orbe fait 64 px de large
     orbe.body.setCircle(40, 88, 88); // hitbox ronde de 40 px de rayon, centrée dans l'image
     orbe.setTint(0xfff2c0); // teinte doré pâle, la couleur de la lumière divine
@@ -268,7 +302,8 @@ function lancerOrbe(scene, mage) { // fait apparaitre l'orbe de lumière et l'en
 }
 function tirerFleche(scene, archer) { // permet de faire apparaitre la fleche de l'archer
     const sens = archer.flipX ? -1 : 1; // permet de gérer l'orientation de l'archer
-    const fleche = scene.tirsEnnemis.create(archer.x + sens * 20, archer.y - 5, "fleche"); // permet de creer la fleche et de la stocker dans le groupe tirennemis
+    // permet de creer la fleche et de la stocker dans le groupe tirennemis
+    const fleche = scene.tirsEnnemis.create(archer.x + sens * 20, archer.y - 5, "fleche");
     fleche.setScale(1.5); // gère la taille de la fleche
     fleche.setFlipX(sens === -1); // gere l'orientation de la fleche
     fleche.play("fleche"); // joue l'animation de la fleche

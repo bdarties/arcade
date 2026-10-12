@@ -56,7 +56,8 @@ function rattraperHorloge(niveau, duree) {
         const miseAJour = horloge.update; // la mise à jour d'origine de Phaser
         horloge.decalagePause = 0; // total des pauses déjà retranchées
         evenements.off(Phaser.Scenes.Events.UPDATE, horloge.update, horloge); // Phaser l'a branchée telle quelle : on la débranche...
-        horloge.update = function (temps, delta) { return miseAJour.call(this, temps - this.decalagePause, delta); }; // ...pour mettre la nôtre, qui retranche le décalage...
+        // ...pour mettre la nôtre, qui retranche le décalage...
+        horloge.update = function (temps, delta) { return miseAJour.call(this, temps - this.decalagePause, delta); };
         evenements.on(Phaser.Scenes.Events.UPDATE, horloge.update, horloge); // ...et on la rebranche
     }
     horloge.decalagePause += duree;
@@ -134,7 +135,8 @@ export default class pause extends Phaser.Scene {
                 this.dessin.fillStyle(c < valeur ? PLEIN : VIDE, 1);
                 this.dessin.fillRect(600 + c * (largeur + 4), y - 11, largeur, 22);
             }
-            const etiquette = volume ? (valeur === 0 ? "OFF" : valeur * 10 + "%") : valeur + "/" + LUMINOSITE_MAX; // 0 donne « OFF », sinon le pourcentage
+            // 0 donne « OFF », sinon le pourcentage
+            const etiquette = volume ? (valeur === 0 ? "OFF" : valeur * 10 + "%") : valeur + "/" + LUMINOSITE_MAX;
             this.lignes.push(this.add.text(600 + nbCases * (largeur + 4) + 14, y, etiquette, { fontFamily: POLICE, fontSize: "20px", color: ATTENUE }).setOrigin(0, 0.5));
         });
     }
@@ -189,7 +191,8 @@ export default class pause extends Phaser.Scene {
     reprendre() {
         const niveau = this.scene.get(this.origine);
         rattraperHorloge(niveau, this.game.loop.time - this.debutPause); // le niveau ne doit pas « sentir » la pause
-        niveau.input.keyboard.resetKeys(); // les touches relâchées pendant la pause n'ont pas été vues par le niveau : sans ça le robot continuerait d'avancer
+        // les touches relâchées pendant la pause n'ont pas été vues par le niveau : sans ça le robot continuerait d'avancer
+        niveau.input.keyboard.resetKeys();
         this.scene.resume(this.origine);
         this.scene.stop(); // ferme le menu
     }

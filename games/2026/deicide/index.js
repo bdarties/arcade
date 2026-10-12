@@ -38,20 +38,30 @@ const config = {
         y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
       },
       debug: false, // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
-      tileBias: 48, // la profondeur (en px) jusqu'à laquelle un corps qui s'enfonce dans une tuile est remis dessus. Par défaut 16 : à 900 px/s en chute libre, le robot avance de 22 px par image (25 ms) et traversait les plateformes ou s'enfonçait dans le sol. 48 couvre une image jusqu'à 53 ms.
-      fixedStep: false // la physique avance du temps réellement écoulé à chaque image (au lieu de pas fixes de 1/60 s) : quand la borne tombe sous 60 images par seconde, le robot et la caméra avancent régulièrement au lieu de saccader (une image sur trois faisait deux pas d'un coup)
+      // la profondeur (en px) jusqu'à laquelle un corps qui s'enfonce dans une tuile est remis dessus. Par défaut 16 : à 900 px/s en chute
+      // libre, le robot avance de 22 px par image (25 ms) et traversait les plateformes ou s'enfonçait dans le sol. 48 couvre une image
+      // jusqu'à 53 ms.
+      tileBias: 48,
+      // la physique avance du temps réellement écoulé à chaque image (au lieu de pas fixes de 1/60 s) : quand la borne tombe sous 60 images
+      // par seconde, le robot et la caméra avancent régulièrement au lieu de saccader (une image sur trois faisait deux pas d'un coup)
+      fixedStep: false
     }
   },
   fps: {
     target: IMAGES_PAR_SECONDE, // durée visée d'une image (33 ms pour 30)
-    limit: SUIT_L_ECRAN ? Math.round(IMAGES_PAR_SECONDE * 1.07) : 0, // suit l'écran : une image du jeu dès que le temps écoulé atteint la durée voulue (7 % de marge, sinon une image d'écran un peu courte ferait sauter une image de trop)
+    // suit l'écran : une image du jeu dès que le temps écoulé atteint la durée voulue (7 % de marge, sinon une image d'écran un peu courte
+    // ferait sauter une image de trop)
+    limit: SUIT_L_ECRAN ? Math.round(IMAGES_PAR_SECONDE * 1.07) : 0,
     forceSetTimeOut: !SUIT_L_ECRAN, // sinon, cadencé par une minuterie plutôt que par l'écran
     min: 25 // en dessous de 25 images par seconde le jeu ralentit au lieu de faire des pas trop grands (un tir ou le robot ne traverse pas un mur)
   },
   render: { // réglages du rendu pour la borne (Raspberry Pi 3)
-    antialiasGL: false, // pas de lissage MSAA du canvas : lourd pour la carte graphique d'un Pi 3, et sans effet visible ici (tout est aligné sur les pixels)
+    // pas de lissage MSAA du canvas : lourd pour la carte graphique d'un Pi 3, et sans effet visible ici (tout est aligné sur les pixels)
+    antialiasGL: false,
     powerPreference: "high-performance", // demande au navigateur la carte graphique la plus rapide
-    maxTextures: 4 // le shader de Phaser choisit, pour chaque pixel, parmi 16 images possibles : sur un Pi 3 c'est lourd. Avec 4 il est bien plus court (voir optimisation.js)
+    // le shader de Phaser choisit, pour chaque pixel, parmi 16 images possibles : sur un Pi 3 c'est lourd. Avec 4 il est bien plus court
+    // (voir optimisation.js)
+    maxTextures: 4
   },
   scene: [menu, niveau1, niveau2, niveau3, versus, classement, pause], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
@@ -71,7 +81,8 @@ if (contexte) {
 
 // création et lancement du jeu
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
-game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
+// identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
+game.config.idGame = "deicide";
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 activerRaccourcis(game); // Z + X maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
 compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

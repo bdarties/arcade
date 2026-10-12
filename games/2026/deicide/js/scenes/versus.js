@@ -1,7 +1,10 @@
 // versus.js : le mode 1 contre 1, dans l'arène du début de la map 1 (assets/maps/arene_versus.json, générée par outils/generer_niveaux.py)
-// Deux robots, la visée automatique de chacun vise l'autre (voir chercherCible dans personnage.js). 3 PV chacun par manche, au meilleur des 3 manches :
-// le premier à gagner 2 manches gagne la partie. Chaque manche relance la scène (this.scene.restart) : tout repart propre, seuls les points des manches passent.
-// Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : W A S D, R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne (voir gpio2keys.py).
+// Deux robots, la visée automatique de chacun vise l'autre (voir chercherCible dans personnage.js). 3 PV chacun par manche, au meilleur des
+// 3 manches :
+// le premier à gagner 2 manches gagne la partie. Chaque manche relance la scène (this.scene.restart) : tout repart propre, seuls les points
+// des manches passent.
+// Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : W A S D, R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne
+// (voir gpio2keys.py).
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
 import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";

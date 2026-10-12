@@ -10,7 +10,8 @@ export function majVide(scene) { // à appeler dans update()
     const joueur = scene.player;
     const corps = joueur.body;
     if (scene.mort || scene.partieFinie) return;
-    if (corps.blocked.down) { // il a les pieds sur un sol : on retient l'endroit, s'il est sûr (du sol sous les deux côtés du robot, donc pas au bord d'un trou)
+    // il a les pieds sur un sol : on retient l'endroit, s'il est sûr (du sol sous les deux côtés du robot, donc pas au bord d'un trou)
+    if (corps.blocked.down) {
         const calque = scene.groupe_plateformes;
         const dessous = corps.bottom + 4;
         const gauche = calque.getTileAtWorldXY(corps.center.x - corps.halfWidth - 6, dessous);

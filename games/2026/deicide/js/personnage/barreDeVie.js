@@ -171,7 +171,8 @@ function celluleQuiSeBrise(barre, i, rang) {
             alpha: { value: 0, ease: "Quad.easeIn" },
             delay: rang * 70,
             duration: Phaser.Math.Between(350, 600),
-            onUpdate: () => { eclat.x = Math.round(eclat.x / ECHELLE) * ECHELLE; eclat.y = Math.round(eclat.y / ECHELLE) * ECHELLE; }, // reste calé sur la grille de pixels
+            // reste calé sur la grille de pixels
+            onUpdate: () => { eclat.x = Math.round(eclat.x / ECHELLE) * ECHELLE; eclat.y = Math.round(eclat.y / ECHELLE) * ECHELLE; },
             onComplete: () => eclat.destroy()
         });
     }

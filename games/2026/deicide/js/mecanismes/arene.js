@@ -1,5 +1,6 @@
 // arene.js : l'arène du Soldat de la Lumière, tout en haut du niveau 1 (appelée à chaque image par niveau1.js : verifierArene)
-//  1. Quand le robot arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène, l'ouverture du sol se referme et le Soldat apparaît.
+//  1. Quand le robot arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène, l'ouverture du sol se referme et le
+//    Soldat apparaît.
 //  2. Un mur de pierre ferme aussi le côté droit de l'arène (poserMurDroit).
 //  3. Quand le Soldat est vaincu (boss.js, enrager), il brise ce mur (briserMurDroit) : « FUIS >>> » s'affiche ; le robot qui passe par l'ouverture
 //     arrive au niveau 2 (sortirParLaDroite).
@@ -34,7 +35,8 @@ export function verifierArene(scene) { // à appeler dans update() : lance l'ar�
     poserMurDroit(scene); // le mur de droite, qui se brisera quand le Soldat s'enragera
     scene.areneSolY = HAUT_DU_SOL; // le sol de l'arène : la colonne de lumière du boss tombe jusque-là
     scene.areneCentreX = 640; // le milieu de l'arène : le boss flotte autour
-    scene.time.delayedCall(1000, () => faireApparaitreBoss(scene, 640, HAUT_DU_SOL - 360 + 32 - 80)); // le boss apparaît en fondu une fois la caméra en place, en haut de la salle
+    // le boss apparaît en fondu une fois la caméra en place, en haut de la salle
+    scene.time.delayedCall(1000, () => faireApparaitreBoss(scene, 640, HAUT_DU_SOL - 360 + 32 - 80));
 }
 // ---------------------------------------------------------------------------------------------
 // Le mur de droite : posé quand l'arène se ferme, brisé quand le Soldat s'enrage (boss.js, enrager)
@@ -70,12 +72,14 @@ function poserMurDroit(scene) {
         const solide = scene.groupe_plateformes.putTileAt(633, colonne, ligne);
         solide.setCollision(true, true, true, true);
     }
-    const mur = scene.add.image(COLONNES_MUR[0] * 32, 0, "mur_arene").setOrigin(0, 0).setDepth(51).setAlpha(0); // au-dessus du voile d'ombre (50) : on voit le mur même dans le noir
+    // au-dessus du voile d'ombre (50) : on voit le mur même dans le noir
+    const mur = scene.add.image(COLONNES_MUR[0] * 32, 0, "mur_arene").setOrigin(0, 0).setDepth(51).setAlpha(0);
     scene.tweens.add({ targets: mur, alpha: 1, duration: 300 });
     scene.murDroit = mur;
 }
 
-// Le Soldat enragé détruit le mur, en plusieurs temps bien visibles : il charge une boule d'énergie, tire un rayon sur le mur, le mur s'embrase puis éclate.
+// Le Soldat enragé détruit le mur, en plusieurs temps bien visibles : il charge une boule d'énergie, tire un rayon sur le mur, le mur
+// s'embrase puis éclate.
 // `boss` : le sprite du Soldat. Le robot peut bouger pendant ce temps ; la sortie ne s'ouvre qu'à l'explosion.
 export function briserMurDroit(scene, boss) {
     if (!scene.murDroit) return;
@@ -122,12 +126,14 @@ function casserMurDroit(scene) { // le mur éclate : gros éclats de pierre, fla
             onComplete: () => morceau.destroy() });
         scene.tweens.add({ targets: morceau, y: Math.min(hauteur - taille / 2, morceau.y + vy + 380), duration: 900, delay: 450, ease: "Quad.In" });
     }
-    for (let i = 0; i < 8; i++) effets.eclats(scene, xMur + 32, 80 + i * (hauteur - 100) / 7, 0xd8d0e0, 14, 380); // de la poussière tout le long du mur
+    // de la poussière tout le long du mur
+    for (let i = 0; i < 8; i++) effets.eclats(scene, xMur + 32, 80 + i * (hauteur - 100) / 7, 0xd8d0e0, 14, 380);
     // la lumière qui entre par l'ouverture, et les flèches vers la droite
     const lumiere = scene.add.rectangle(xMur + 40, hauteur / 2, 130, hauteur, 0xffe6b0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(52);
     scene.tweens.add({ targets: lumiere, alpha: { from: 0.18, to: 0.5 }, duration: 380, yoyo: true, repeat: -1 });
     const fleches = [0, 1, 2].map((i) => scene.add.text(1050 + i * 62, hauteur - 130, ">", { fontFamily: "monospace", fontSize: "88px", color: "#ffd9a0", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setDepth(100));
-    fleches.forEach((f, i) => scene.tweens.add({ targets: f, alpha: { from: 0.15, to: 1 }, duration: 260, delay: i * 130, yoyo: true, repeat: -1, repeatDelay: 260 })); // elles clignotent l'une après l'autre : ça « court » vers la droite
+    // elles clignotent l'une après l'autre : ça « court » vers la droite
+    fleches.forEach((f, i) => scene.tweens.add({ targets: f, alpha: { from: 0.15, to: 1 }, duration: 260, delay: i * 130, yoyo: true, repeat: -1, repeatDelay: 260 }));
     const texte = scene.add.text(640, 90, "FUIS  >>>", { fontFamily: "monospace", fontSize: "48px", color: "#ffb4a8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     scene.tweens.add({ targets: texte, scale: { from: 1, to: 1.12 }, duration: 320, yoyo: true, repeat: -1 });
     scene.elementsFuite = [lumiere, texte, ...fleches]; // supprimés quand on quitte l'arène
@@ -137,7 +143,8 @@ function casserMurDroit(scene) { // le mur éclate : gros éclats de pierre, fla
 function sortirParLaDroite(scene) { // le robot passe là où était le mur : fondu, puis le niveau 2 (la poursuite continue là-bas)
     if (scene.partieFinie || scene.player.x < 1250) return;
     scene.partieFinie = true; // plus de pause ni de dégâts pendant le fondu
-    (scene.elementsFuite || []).forEach((e) => scene.tweens.add({ targets: e, alpha: 0, duration: 300 })); // la lumière, les flèches et le texte s'effacent
+    // la lumière, les flèches et le texte s'effacent
+    (scene.elementsFuite || []).forEach((e) => scene.tweens.add({ targets: e, alpha: 0, duration: 300 }));
     scene.cameras.main.fadeOut(500, 0, 0, 0);
     scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start("niveau2"));
 }

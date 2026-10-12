@@ -1,6 +1,7 @@
 // niveau.js : la classe de base de tous les niveaux (niveau 1, niveau 2, arène du dernier combat).
 // Elle crée la carte Tiled, le robot, les ennemis, la lumière, l'interface, la musique ; elle gère les dégâts du robot et sa mort.
-// Chaque niveau (niveau1.js, niveau2.js, niveau3.js) hérite de cette classe et lui donne une CONFIG, c'est-à-dire ce qui change d'un niveau à l'autre :
+// Chaque niveau (niveau1.js, niveau2.js, niveau3.js) hérite de cette classe et lui donne une CONFIG, c'est-à-dire ce qui change d'un niveau
+// à l'autre :
 //   carte          : la clé de la map Tiled (chargée dans chargement.js)
 //   depart         : { x, y } où apparaît le robot (utilisé seulement si la map n'a pas de calque d'objets "depart")
 //   musique        : la musique du niveau ; volumeMusique : son volume de base (facultatif)
@@ -15,7 +16,8 @@ import * as ennemis from "../ennemis/ennemis.js";
 import * as lumiere from "../mecanismes/lumiere.js";
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js"; // bruitages et musique
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
-import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js"; // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
+// décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
+import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js";
 import { chargerJeu, objetsDe } from "../systemes/chargement.js";
 import { preparerSalles, verifierSalles } from "../mecanismes/salles.js"; // salles de combat fermées
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
@@ -46,8 +48,10 @@ export default class niveau extends Phaser.Scene {
     this.creerEnnemisEtTirs(carte); // les archers, et les tirs du robot et des ennemis
     this.creerLumieres(carte); // les zones de lumière qui brûlent, les lanternes, le voile d'obscurité
     musiqueDeScene(this, this.cfg.musique, this.cfg.volumeMusique); // lance la musique du niveau, et la relance quand on revient dans le niveau
-    objetsDe(carte, "mage").forEach(point => ennemis.creerMage(this, point.x, point.y - 50)); // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
-    objetsDe(carte, "orc").forEach(point => ennemis.creerOrc(this, point.x, point.y - 60)); // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
+    // crée un mage sur chaque point du calque "mage" de Tiled, un peu au-dessus
+    objetsDe(carte, "mage").forEach(point => ennemis.creerMage(this, point.x, point.y - 50));
+    // crée un orc sur chaque point du calque "orc" de Tiled, un peu au-dessus
+    objetsDe(carte, "orc").forEach(point => ennemis.creerOrc(this, point.x, point.y - 60));
     this.remettreAZero(); // la scène est réutilisée à chaque nouvelle partie ou après une mort : on remet son état à zéro
     preparerBonus(this); // le groupe des PV que lâchent les ennemis (30 % de chances à chaque ennemi tué)
     preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)
@@ -56,10 +60,12 @@ export default class niveau extends Phaser.Scene {
     preparerSalles(this, this.cfg.salles); // les salles de combat fermées (voir salles.js)
     if (this.cfg.creer) this.cfg.creer(this); // ce qui est propre à ce niveau (vide, faisceaux, poursuite...)
     preparerPause(this); // Échap ou X ouvre le menu pause
-    effets.preparerEffets(this); // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
+    // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
+    effets.preparerEffets(this);
   }
 
-  // La carte : les calques de tuiles, les collisions, la taille du monde et de la caméra. Renvoie la carte (les points d'apparition en sont lus plus bas).
+  // La carte : les calques de tuiles, les collisions, la taille du monde et de la caméra. Renvoie la carte (les points d'apparition en sont
+  // lus plus bas).
   creerCarte() {
     const carte = this.make.tilemap({ key: this.cfg.carte });
     // le 1er nom est celui du tileset dans Tiled, le 2e la clé de l'image chargée dans chargement.js
@@ -76,12 +82,14 @@ export default class niveau extends Phaser.Scene {
     // personnage.js arrête les balles sur groupe_plateformes : ici c'est le calque Gameplay
     this.groupe_plateformes = calqueGameplay;
     // optimisation pour la borne : le décor est dessiné une seule fois dans des images au lieu de 1 200 tuiles à chaque image (voir optimisation.js)
-    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels, this.cfg.fondVide ?? 0x3a3a3a); // le gris qu'on voit là où la map est vide (noir dans le niveau 2 : c'est le vide des trous)
+    // le gris qu'on voit là où la map est vide (noir dans le niveau 2 : c'est le vide des trous)
+    this.bandesDecor = figerCalques(this, [calqueFond, calqueDecor, calqueGameplay], carte.widthInPixels, carte.heightInPixels, this.cfg.fondVide ?? 0x3a3a3a);
 
     // le monde et la caméra prennent la taille de la map (sinon le joueur reste bloqué dans le 1er écran)
     this.physics.world.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
     this.cameras.main.setBounds(0, 0, carte.widthInPixels, carte.heightInPixels);
-    // le gris de fond est peint dans les bandes du décor (voir figerCalques), la caméra n'a donc plus à repeindre un rectangle de la taille de l'écran
+    // le gris de fond est peint dans les bandes du décor (voir figerCalques), la caméra n'a donc plus à repeindre un rectangle de la taille
+    // de l'écran
     // à chaque image. Il reste la couleur d'effacement de l'écran, la même, pour ce que le tremblement découvre au bord de la map.
     const effacement = this.sys.game.renderer.config.backgroundColor;
     const gris = this.cfg.fondVide ?? 0x3a3a3a; // la couleur de la map vide, même réglage que figerCalques
@@ -97,7 +105,8 @@ export default class niveau extends Phaser.Scene {
   // Le robot : il apparaît au point "depart" de la carte (sinon à la position de la config), la caméra le suit, l'interface s'affiche.
   creerRobot(carte) {
     const pointDepart = objetsDe(carte, "depart")[0]; // le point de départ posé dans Tiled (calque "depart"), sinon celui de la config
-    this.depart = pointDepart ? { x: pointDepart.x, y: pointDepart.y } : this.cfg.depart; // (pour un point Tiled : x = milieu du robot, y = ses pieds)
+    // (pour un point Tiled : x = milieu du robot, y = ses pieds)
+    this.depart = pointDepart ? { x: pointDepart.x, y: pointDepart.y } : this.cfg.depart;
     this.player = creerPersonnage(this, this.depart.x, this.depart.y);
     this.player.refreshBody();
     this.player.setBounce(0.2);
@@ -129,27 +138,34 @@ export default class niveau extends Phaser.Scene {
     });
   }
 
-  // La lumière : des zones qui brûlent le robot, des lanternes qu'on éteint en tirant dessus, et le voile d'obscurité (créé en dernier : il passe au-dessus).
+  // La lumière : des zones qui brûlent le robot, des lanternes qu'on éteint en tirant dessus, et le voile d'obscurité (créé en dernier : il
+  // passe au-dessus).
   creerLumieres(carte) {
     this.zonesLumiere = this.physics.add.staticGroup(); // groupe des zones de lumière (dégâts)
     this.prochainDegatLumiere = 0; // instant à partir duquel la lumière peut de nouveau blesser le joueur
     lumiere.creerTextureHalo(this); // dessine la texture du halo avant de poser les lumières
-    objetsDe(carte, "lumière").forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100)); // une zone de lumière sur chaque point du calque "lumière" de Tiled
+    // une zone de lumière sur chaque point du calque "lumière" de Tiled
+    objetsDe(carte, "lumière").forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100));
     this.lanternes = this.physics.add.staticGroup(); // groupe des lanternes
-    objetsDe(carte, "lanterne").forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90)); // une lanterne sur chaque point du calque "lanterne" de Tiled
-    this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne)); // un tir éteint la lanterne
+    // une lanterne sur chaque point du calque "lanterne" de Tiled
+    objetsDe(carte, "lanterne").forEach(point => lumiere.creerLanterne(this, point.x, point.y, 90));
+    // un tir éteint la lanterne
+    this.physics.add.overlap(this.tirsJoueur, this.lanternes, (tir, lanterne) => lumiere.eteindreLanterne(this, tir, lanterne));
     lumiere.creerVoile(this);
   }
 
   // L'état de départ du niveau. Phaser réutilise la même scène quand on rejoue : tout ce qui change pendant la partie doit être remis ici.
   remettreAZero() {
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
-    this.fuiteOuverte = false; // sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
+    // sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
+    this.fuiteOuverte = false;
     this.murDroit = null; // le mur de droite de l'arène du Soldat (pas encore posé)
     this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée)
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
-    this.invincibleJusqua = 0; // instant jusqu'auquel le robot ne peut pas être blessé (le répit de réapparition est posé à la première image, voir update : l'horloge n'est pas encore à jour dans create)
+    // instant jusqu'auquel le robot ne peut pas être blessé (le répit de réapparition est posé à la première image, voir update : l'horloge
+    // n'est pas encore à jour dans create)
+    this.invincibleJusqua = 0;
     this.graceAPoser = true;
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
@@ -171,7 +187,8 @@ export default class niveau extends Phaser.Scene {
 
   blesserJoueur(degats, cause) {
     if (this.mort || this.partieFinie) return; // un robot qui meurt ne prend plus de coups (et la partie finie, plus rien ne blesse)
-    if (this.time.now < this.invincibleJusqua) return; // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
+    // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
+    if (this.time.now < this.invincibleJusqua) return;
     this.invincibleJusqua = this.time.now + DUREE_INVINCIBLE;
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour

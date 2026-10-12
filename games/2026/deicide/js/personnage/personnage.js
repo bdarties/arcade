@@ -41,12 +41,14 @@ export const VITESSE_JOUEUR = VITESSE; // (lanterneVivante.js s'en sert : une la
 const BONUS_VITESSE_BOOST = 0.1; // +10 % de vitesse de marche par niveau de boost (le boost vient des lanternes vivantes, voir boost.js)
 const DELAI_RAFALE = 70; // ms entre deux balles d'une rafale (chaque niveau de boost ajoute une balle à chaque tir)
 const SAUT = 600; // vitesse de décollage : avec 1000 de gravité à la montée, il monte d'environ 180 px comme avant, mais en 0,6 s au lieu de 1,1 s
-const SEUIL_SAUT = 150; // vitesse verticale (px/s) à partir de laquelle on considère que le robot saute ou tombe (le petit rebond à l'atterrissage reste en dessous)
+// vitesse verticale (px/s) à partir de laquelle on considère que le robot saute ou tombe (le petit rebond à l'atterrissage reste en dessous)
+const SEUIL_SAUT = 150;
 const VITESSE_GLISSE = 90; // vitesse de chute maximale (px/s) quand le robot glisse contre un mur
 const VITESSE_SAUT_MUR = 220; // vitesse horizontale donnée par un saut de mur, dans le sens opposé au mur
 const DUREE_VERROU = 220; // ms pendant lesquelles on ne peut pas diriger le robot après un saut de mur (sinon il se recolle au mur)
 const MARGE_BALLE = 6; // px : la moitié de la largeur de la balle, pour vérifier qu'elle passe sans accrocher un coin de mur
-const DELAI_COYOTE = 150; // ms pendant lesquelles on peut encore sauter après avoir quitté le bord d'une plateforme (le jeu pardonne un saut un peu tardif)
+// ms pendant lesquelles on peut encore sauter après avoir quitté le bord d'une plateforme (le jeu pardonne un saut un peu tardif)
+const DELAI_COYOTE = 150;
 const DELAI_MUR = 120; // ms pendant lesquelles on peut encore sauter après avoir quitté le mur (le jeu pardonne un appui un peu tardif)
 const DELAI_TIR = 300; // ms minimum entre deux tirs
 const DELAI_DASH = 600; // ms minimum entre deux dashs
@@ -103,8 +105,11 @@ const VISEE = { hauteur: HAUTEUR_VISEE, haut: MARGE_HAUT_VISEE, repeat: 0, corps
 const ANIMATIONS = {
     repos: { fichier: "static idle.png", images: [0], repeat: -1, corps: CORPS_REPOS },
     marche: { fichier: "move with FX.png", images: serie(8), repeat: -1, corps: CORPS_DEBOUT },
-    saut: { fichier: "move without FX.png", images: [3], repeat: -1, corps: CORPS_DEBOUT }, // pas d'anim de saut dans la feuille : on fige une image de la marche, sans la poussière
-    mur: { bande: "saut", images: serie(8), repeat: -1, fps: 20, corps: CORPS_DEBOUT }, // PAS d'animation de mur dans les feuilles : en attendant, la roue qui tourne (bande "saut") joue en accéléré. Pour une vraie pose, remplacer bande par fichier et images.
+    // pas d'anim de saut dans la feuille : on fige une image de la marche, sans la poussière
+    saut: { fichier: "move without FX.png", images: [3], repeat: -1, corps: CORPS_DEBOUT },
+    // PAS d'animation de mur dans les feuilles : en attendant, la roue qui tourne (bande "saut") joue en accéléré. Pour une vraie pose,
+    // remplacer bande par fichier et images.
+    mur: { bande: "saut", images: serie(8), repeat: -1, fps: 20, corps: CORPS_DEBOUT },
     reveil: { fichier: "wake.png", images: serie(5), repeat: 0, corps: CORPS_DEBOUT, bloquant: true },
     charge: { fichier: "charge.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT },
     tir: { fichier: "shoot with FX.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT, debut: tirer },
@@ -114,7 +119,8 @@ const ANIMATIONS = {
     tir_haut: { ...VISEE, bande: "tir_haut_diag", images: [4, 5, 6, 7], visee: { x: 0, y: -1 }, bouche: { x: 27, y: 10 } },
     tir_bas_diag: { ...VISEE, bande: "tir_haut_diag", images: [8, 9, 10, 11], visee: { x: DIAGONALE, y: DIAGONALE }, bouche: { x: 40, y: 42 }, recul: RECUL_BAS_DIAG },
     tir_bas: { ...VISEE, bande: "tir_haut_diag", images: [12, 13, 14, 15], visee: { x: 0, y: 1 }, bouche: { x: 29, y: 48 }, recul: RECUL_BAS },
-    dash: { fichier: null, images: serie(IMAGES_DASH), repeat: 0, fps: 20, corps: CORPS_DEBOUT, centre: TORSE_DASH - DECALAGE_DASH, bloquant: true, elan: 500, sansGravite: true }, // pas de bande à charger : la texture est assemblée par creerTextureDash ; à 20 fps il dure 350 ms, soit environ 175 px
+    // pas de bande à charger : la texture est assemblée par creerTextureDash ; à 20 fps il dure 350 ms, soit environ 175 px
+    dash: { fichier: null, images: serie(IMAGES_DASH), repeat: 0, fps: 20, corps: CORPS_DEBOUT, centre: TORSE_DASH - DECALAGE_DASH, bloquant: true, elan: 500, sansGravite: true },
     degats: { fichier: "damaged.png", images: serie(2), repeat: 0, corps: CORPS_DEBOUT },
     mort: { fichier: "death.png", images: serie(6), repeat: 0, corps: CORPS_MORT, bloquant: true, figee: true }
 };
@@ -193,7 +199,8 @@ function creerTextureBalle(scene) {
 }
 
 // crée le joueur en (x, y). y correspond aux pieds du robot.
-// options (pour le mode 1 contre 1, voir versus.js) : touches = { saut, tir, dash, porte } (noms de touches, celles du joueur 1 par défaut), teinte = couleur du robot
+// options (pour le mode 1 contre 1, voir versus.js) : touches = { saut, tir, dash, porte } (noms de touches, celles du joueur 1 par
+// défaut), teinte = couleur du robot
 export function creerPersonnage(scene, x, y, options = {}) {
     const joueur = scene.physics.add.sprite(x, y, PREFIXE + "repos");
     if (options.teinte) { joueur.setTint(options.teinte); joueur.teinteBase = options.teinte; } // (effets.flash rend cette teinte après chaque flash)
@@ -208,7 +215,8 @@ export function creerPersonnage(scene, x, y, options = {}) {
     joueur.sensMur = 0; // dernier mur touché en l'air : -1 = à gauche, 1 = à droite
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
-    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L", porte: "O" }, false); // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
+    // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
+    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L", porte: "O" }, false);
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.instantSol = -1e9; // dernier instant où il était au sol (pour le saut « coyote »)
@@ -265,7 +273,8 @@ function appliquerGravite(joueur, etat) {
 function marcherEtSauter(joueur, etat) {
     if (!etat.libre) return;
     const { maintenant, auSol, verrou, gauche, droite } = etat;
-    const vitesse = VITESSE * (1 + BONUS_VITESSE_BOOST * (joueur.boostNiveau ?? 0)); // vitesse de marche, un peu plus grande quand le robot est boosté
+    // vitesse de marche, un peu plus grande quand le robot est boosté
+    const vitesse = VITESSE * (1 + BONUS_VITESSE_BOOST * (joueur.boostNiveau ?? 0));
     if (verrou) {
         // on laisse la vitesse du saut de mur telle quelle
     } else if (gauche) {
@@ -277,7 +286,8 @@ function marcherEtSauter(joueur, etat) {
     } else {
         joueur.setVelocityX(0);
     }
-    const peutSauter = auSol || maintenant - joueur.instantSol < DELAI_COYOTE; // au sol, ou il vient juste de quitter le bord d'une plateforme (saut « coyote »)
+    // au sol, ou il vient juste de quitter le bord d'une plateforme (saut « coyote »)
+    const peutSauter = auSol || maintenant - joueur.instantSol < DELAI_COYOTE;
     if (joueur.touches.saut.isDown && peutSauter) { // le saut est sur le bouton I ; la flèche du haut sert seulement à viser
         joueur.instantSol = -1e9; // un décollage = un saut : sans ça, on resauterait à chaque image pendant le délai
         joueur.setVelocityY(-SAUT);
@@ -293,7 +303,8 @@ function glisserEtSauterDuMur(joueur, etat) {
     const bords = joueur.scene.physics.world.bounds; // identifie si le joueur se trouve contre un bord de la map
     const auBordGauche = joueur.body.left <= bords.left + 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
     const auBordDroit = joueur.body.right >= bords.right - 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
-    const contactGauche = (joueur.body.blocked.left || joueur.body.touching.left) && !auBordGauche; // en contact avec un mur qui n'est pas le bord de la map : on peut s'y accrocher
+    // en contact avec un mur qui n'est pas le bord de la map : on peut s'y accrocher
+    const contactGauche = (joueur.body.blocked.left || joueur.body.touching.left) && !auBordGauche;
     const contactDroite = (joueur.body.blocked.right || joueur.body.touching.right) && !auBordDroit;
     if (!auSol && (contactGauche || contactDroite)) {
         joueur.sensMur = contactDroite ? 1 : -1;
@@ -449,20 +460,27 @@ function chercherCible(joueur, x, y) {
             meilleureDistance = distance; // et sa distance devient celle à battre
         }
     };
-    if (joueur.adversaire && joueur.adversaire.active && !joueur.adversaire.mortVersus) essayer(joueur.adversaire); // en 1 contre 1, l'autre robot est la cible (voir versus.js)
-    if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); }); // les ennemis (sauf ceux qui sont en train de mourir)
-    if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); }); // les lanternes qui ne sont pas encore éteintes
-    if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); }); // les lanternes vivantes (voir lanterneVivante.js)
-    if (scene.boss && scene.boss.active && (scene.boss.etat === "combat" || scene.boss.etat === "attaque")) essayer(scene.boss); // le boss (voir boss.js)
+    // en 1 contre 1, l'autre robot est la cible (voir versus.js)
+    if (joueur.adversaire && joueur.adversaire.active && !joueur.adversaire.mortVersus) essayer(joueur.adversaire);
+    // les ennemis (sauf ceux qui sont en train de mourir)
+    if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); });
+    // les lanternes qui ne sont pas encore éteintes
+    if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); });
+    // les lanternes vivantes (voir lanterneVivante.js)
+    if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); });
+    // le boss (voir boss.js)
+    if (scene.boss && scene.boss.active && (scene.boss.etat === "combat" || scene.boss.etat === "attaque")) essayer(scene.boss);
     return cible; // renvoie la cible trouvée, ou null si aucune ne convient
 }
 // choisit la cible de la visée auto au moment où on appuie sur tir : l'ennemi ou la lanterne la plus proche, des deux côtés du robot.
 // Le robot se tourne tout de suite vers elle. Renvoie null s'il n'y en a pas (ou si elle est du côté du mur sur lequel le robot glisse).
 function choisirCibleTir(joueur) {
     const scene = joueur.scene;
-    let cible = chercherCible(joueur, joueur.body.center.x, joueur.body.center.y); // cherche un ennemi à viser automatiquement, des deux côtés du robot
+    // cherche un ennemi à viser automatiquement, des deux côtés du robot
+    let cible = chercherCible(joueur, joueur.body.center.x, joueur.body.center.y);
     const cibleAGauche = cible && cible.body.center.x < joueur.body.center.x; // vrai si l'ennemi trouvé est à gauche du robot
-    if (cible && joueur.surMur && cibleAGauche !== joueur.regardeGauche) cible = null; // contre un mur, un ennemi derrière est côté mur : on tirerait dans le mur, donc pas de visée auto
+    // contre un mur, un ennemi derrière est côté mur : on tirerait dans le mur, donc pas de visée auto
+    if (cible && joueur.surMur && cibleAGauche !== joueur.regardeGauche) cible = null;
     if (cible && !joueur.surMur) { // un ennemi est à portée et le robot n'est pas collé à un mur
         joueur.regardeGauche = cibleAGauche; // le robot se tourne vers l'ennemi
         joueur.regardJusqua = scene.time.now + DUREE_REGARD_TIR; // et reste tourné vers lui le temps du tir
@@ -496,7 +514,8 @@ function lancerBalle(joueur, anim, cible) {
     const sens = joueur.regardeGauche ? -1 : 1; // sens du tir, calculé après le demi-tour éventuel
     const visee = anim.visee ?? { x: 1, y: 0 }; // x est inversé quand le robot regarde à gauche
     const bouche = anim.bouche ?? BOUCHE;
-    if (!joueur.tirs && (!scene.tirsJoueur || !scene.tirsJoueur.scene)) { // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
+    // le niveau 2 crée déjà ce groupe ; les autres scènes l'auront au premier tir
+    if (!joueur.tirs && (!scene.tirsJoueur || !scene.tirsJoueur.scene)) {
         scene.tirsJoueur = scene.physics.add.group({ allowGravity: false });
     }
     const tirs = joueur.tirs ?? scene.tirsJoueur; // en 1 contre 1 chaque robot a son groupe de balles (joueur.tirs) : on sait qui a tiré
@@ -505,12 +524,15 @@ function lancerBalle(joueur, anim, cible) {
     }
     let x = joueur.x + sens * (bouche.x - CENTRE_X) * ECHELLE; // même repère que l'ancrage du sprite : x = torse, y = pieds
     let y = joueur.y + (bouche.y - PIED_Y - (anim.haut ?? 0)) * ECHELLE;
-    if (dansUnMur(scene, x, y)) { x = joueur.body.center.x; y = joueur.body.center.y; } // le canon dépasse dans un mur (robot collé à un bloc) : la balle partirait déjà dans le mur et disparaîtrait, on la fait partir du centre du robot
+    // le canon dépasse dans un mur (robot collé à un bloc) : la balle partirait déjà dans le mur et disparaîtrait, on la fait partir du
+    // centre du robot
+    if (dansUnMur(scene, x, y)) { x = joueur.body.center.x; y = joueur.body.center.y; }
     const balle = tirs.create(x, y, PREFIXE + "balle");
     jouerSon(scene, "tir"); // bruit du tir
     balle.setScale(ECHELLE);
     balle.body.setAllowGravity(false);
-    const cibleEncoreLa = cible && cible.active && cible.body && cible.etat !== "mort"; // (pour une balle de la rafale : la cible a pu mourir entre-temps)
+    // (pour une balle de la rafale : la cible a pu mourir entre-temps)
+    const cibleEncoreLa = cible && cible.active && cible.body && cible.etat !== "mort";
     if (cibleEncoreLa) { // un ennemi est à portée
         const point = pointDegage(scene, x, y, cible) ?? cible.body.center; // le point de l'ennemi qu'on voit depuis le canon (le centre si possible)
         const angle = Phaser.Math.Angle.Between(x, y, point.x, point.y); // angle entre le canon et ce point
@@ -526,7 +548,8 @@ function lancerBalle(joueur, anim, cible) {
 // Un recul ne ralentit jamais une montée déjà plus rapide (un saut à 600 px/s n'est pas freiné par un recul à 420).
 function reculer(joueur, vitesse) {
     if (!joueur.reculDispo) return;
-    if (joueur.body.blocked.down || joueur.body.touching.down) return; // au sol (un ennemi plus bas, visé automatiquement) : pas de recul, ce serait un saut gratuit
+    // au sol (un ennemi plus bas, visé automatiquement) : pas de recul, ce serait un saut gratuit
+    if (joueur.body.blocked.down || joueur.body.touching.down) return;
     joueur.reculDispo = false;
     joueur.setVelocityY(Math.min(joueur.body.velocity.y, -vitesse));
 }

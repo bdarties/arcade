@@ -66,7 +66,8 @@ function majBoost(scene, joueur, etat) {
     const miroir = joueur.flipX; // le robot regarde à gauche
     const origineX = miroir ? 1 - joueur.originX : joueur.originX; // ancrage dans l'image d'origine (non retournée)
     const centre = origineX * image.width; // colonne du torse dans l'image d'origine
-    const progression = miroir ? 1 - phase : phase; // dans l'image d'origine la bande va dans l'autre sens, mais à l'écran elle va toujours de gauche à droite
+    // dans l'image d'origine la bande va dans l'autre sens, mais à l'écran elle va toujours de gauche à droite
+    const progression = miroir ? 1 - phase : phase;
     const gauche = centre - AMPLITUDE_REFLET + progression * 2 * AMPLITUDE_REFLET - LARGEUR_REFLET / 2; // position de la bande dans l'image d'origine
     const bordGauche = Math.max(0, gauche);
     const bordDroit = Math.min(image.width, gauche + LARGEUR_REFLET);

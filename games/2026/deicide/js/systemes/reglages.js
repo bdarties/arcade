@@ -1,5 +1,6 @@
 // reglages.js : les réglages du joueur (volume de la musique, volume des bruitages, luminosité), modifiés dans le menu pause (pause.js)
-// Ils sont gardés dans le navigateur (localStorage) : ils se retrouvent à la partie suivante. Si le navigateur refuse (mode privé...), ils tiennent juste jusqu'à la fermeture.
+// Ils sont gardés dans le navigateur (localStorage) : ils se retrouvent à la partie suivante. Si le navigateur refuse (mode privé...), ils
+// tiennent juste jusqu'à la fermeture.
 
 const CLE = "deicide_reglages"; // nom sous lequel les réglages sont rangés dans le navigateur
 export const VOLUME_MAX = 10; // les volumes vont de 0 à 10 : 10 = le volume prévu à l'origine (on ne peut pas faire plus fort)
@@ -9,7 +10,8 @@ const PAR_DEFAUT = { musique: VOLUME_MAX, effets: VOLUME_MAX, luminosite: 3 }; /
 export const reglages = { ...PAR_DEFAUT }; // l'objet partagé par tout le jeu : sons.js et lumiere.js le lisent à chaque fois
 try {
     const sauve = JSON.parse(localStorage.getItem(CLE) || "{}"); // ce qui a été rangé à la dernière partie
-    Object.keys(PAR_DEFAUT).forEach((nom) => { if (Number.isInteger(sauve[nom])) reglages[nom] = sauve[nom]; }); // on ne reprend que les réglages valides
+    // on ne reprend que les réglages valides
+    Object.keys(PAR_DEFAUT).forEach((nom) => { if (Number.isInteger(sauve[nom])) reglages[nom] = sauve[nom]; });
     reglages.musique = Math.min(Math.max(reglages.musique, 0), VOLUME_MAX); // et on les remet dans leurs limites au cas où le fichier ait été modifié
     reglages.effets = Math.min(Math.max(reglages.effets, 0), VOLUME_MAX);
     reglages.luminosite = Math.min(Math.max(reglages.luminosite, 1), LUMINOSITE_MAX);

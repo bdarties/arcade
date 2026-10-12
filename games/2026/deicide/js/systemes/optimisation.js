@@ -39,10 +39,12 @@ export function figerCalques(scene, calques, largeur, hauteur, couleurFond) {
     const pas = horizontal ? LARGEUR_BANDE : HAUTEUR_BANDE; // la taille d'une bande
     for (let debut = 0; debut < longueur; debut += pas) {
         const taille = Math.min(pas, longueur - debut); // la dernière bande peut être plus courte
-        const bande = horizontal ? scene.add.renderTexture(debut, 0, taille, hauteur) : scene.add.renderTexture(0, debut, largeur, taille); // une zone de dessin de la taille de la bande
+        // une zone de dessin de la taille de la bande
+        const bande = horizontal ? scene.add.renderTexture(debut, 0, taille, hauteur) : scene.add.renderTexture(0, debut, largeur, taille);
         bande.setOrigin(0, 0);
         bande.fill(couleurFond); // le fond d'abord, les tuiles par-dessus
-        bande.draw(calques, horizontal ? -debut : 0, horizontal ? 0 : -debut); // dessine tous les calques dedans, décalés pour que la bonne tranche de la map tombe dans la bande
+        // dessine tous les calques dedans, décalés pour que la bonne tranche de la map tombe dans la bande
+        bande.draw(calques, horizontal ? -debut : 0, horizontal ? 0 : -debut);
         bande.setPipeline("SinglePipeline"); // shader simple : une bande = une seule image (voir plus haut)
         bandes.push(bande);
     }
@@ -79,7 +81,8 @@ export function regulerCadence(jeu, imagesParSeconde) {
         images++;
         if (maintenant - debut < 1000) return;
         const periode = (maintenant - debut) / images; // durée moyenne réelle d'une image pendant cette seconde
-        if (periode < but * 3) boucle.raf.delay = Phaser.Math.Clamp(boucle.raf.delay + (but - periode) * 0.6, 1, but); // (si c'est bien plus long, la page était cachée : on ne règle rien)
+        // (si c'est bien plus long, la page était cachée : on ne règle rien)
+        if (periode < but * 3) boucle.raf.delay = Phaser.Math.Clamp(boucle.raf.delay + (but - periode) * 0.6, 1, but);
         debut = maintenant;
         images = 0;
     });

@@ -13,14 +13,17 @@ import { jouerSon } from "../systemes/sons.js"; // bruit du verre qui casse
 const DELAI_APPARITION = 15000; // ms entre deux lanternes vivantes
 const MAX_VIVANTES = 3; // pas plus de 3 en même temps
 const VITESSE = VITESSE_JOUEUR / 2; // la moitié de la vitesse du robot (130 px/s)
-const DISTANCE_ARRET = 0; // px : elle fonce jusqu'au robot sans s'arrêter (avant : 80, pour qu'on puisse la viser) ; au contact elle le blesse (voir toucherJoueur)
+// px : elle fonce jusqu'au robot sans s'arrêter (avant : 80, pour qu'on puisse la viser) ; au contact elle le blesse (voir toucherJoueur)
+const DISTANCE_ARRET = 0;
 const DUREE_VIE = 40000; // ms : une lanterne que personne n'abat finit par s'éteindre et disparaître
 const ECHELLE = 3; // comme les lanternes accrochées
 const ESSAIS = 40; // nombre de places essayées pour l'apparition
 
 // Les deux images des ailes (8 lignes, 9 colonnes ; la colonne 0 touche la lanterne). W = blanc, L = contour lavande
-const AILE_HAUT = [".....LLL.", "...LLWWWL", "..LWWWWWL", ".LWWWWWL.", "LWWWWWL..", "LWWWWL...", ".LWWL....", "..LL....."]; // ailes levées : attachées en bas à gauche
-const AILE_BAS = ["..LL.....", ".LWWL....", "LWWWWL...", "LWWWWWL..", ".LWWWWWL.", "..LWWWWWL", "...LLWWWL", ".....LLL."]; // ailes baissées : attachées en haut à gauche
+// ailes levées : attachées en bas à gauche
+const AILE_HAUT = [".....LLL.", "...LLWWWL", "..LWWWWWL", ".LWWWWWL.", "LWWWWWL..", "LWWWWL...", ".LWWL....", "..LL....."];
+// ailes baissées : attachées en haut à gauche
+const AILE_BAS = ["..LL.....", ".LWWL....", "LWWWWL...", "LWWWWWL..", ".LWWWWWL.", "..LWWWWWL", "...LLWWWL", ".....LLL."];
 const COULEURS_LANTERNE = { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" }; // la lanterne allumée
 const COULEURS_AILE = { W: "#ffffff", L: "#8a779b" };
 const LARGEUR_IMAGE = 28; // une image de la lanterne ailée : 28 x 16 (la lanterne fait 10 x 14, les ailes dépassent de 9 de chaque côté)
@@ -50,7 +53,8 @@ function creerTexture(scene) {
 export function preparerLanternesVivantes(scene) {
     creerTexture(scene);
     if (!scene.anims.exists("lanterne_vivante_vol")) {
-        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 }); // les ailes battent
+        // les ailes battent
+        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 });
     }
     const groupe = scene.physics.add.group({ allowGravity: false });
     scene.lanternesVivantes = groupe; // (personnage.js s'en sert pour la visée auto)
@@ -79,7 +83,8 @@ function placeApparition(scene) {
     const haut = scene.cameras.main.worldView.y; // le haut de l'écran
     for (let essai = 0; essai < ESSAIS; essai++) {
         const x = Phaser.Math.Between(monde.x + 40, monde.right - 40);
-        const y = Math.max(monde.y + 40, haut - 70 - Math.floor(essai / 8) * 40); // juste au-dessus de l'écran ; si c'est un mur, on essaie un peu plus haut
+        // juste au-dessus de l'écran ; si c'est un mur, on essaie un peu plus haut
+        const y = Math.max(monde.y + 40, haut - 70 - Math.floor(essai / 8) * 40);
         if (placeLibre(scene, x, y)) return { x, y };
     }
     return null;

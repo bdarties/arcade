@@ -5,7 +5,8 @@
 //   - Z + X (select + start)   : remettre le jeu à zéro, retour à l'écran d'accueil, sans relancer la borne (le joueur suivant)
 //   - C + F (P + ; au clavier) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
 // Les boutons de la borne sont nommés A à F ; ils envoient I, O, P, K, L et ; (voir gpio2keys.py) : C = P et F = ;. Z (select) et X (start) sont les
-// deux boutons du centre. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite un appui par accident.
+// deux boutons du centre. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
+// un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
@@ -23,7 +24,8 @@ function arreterToutesLesScenes(jeu) {
     jeu.scene.getScenes(false).forEach((scene) => jeu.scene.stop(scene.scene.key)); // arrête toutes les scènes (niveau, pause, classement...)
 }
 
-function reinitialiser(jeu) { // revient à l'écran d'accueil : le chrono, le score et les vies repartent de zéro quand on relance une partie (voir menu.js)
+// revient à l'écran d'accueil : le chrono, le score et les vies repartent de zéro quand on relance une partie (voir menu.js)
+function reinitialiser(jeu) {
     arreterToutesLesScenes(jeu);
     jeu.scene.start("menu");
 }

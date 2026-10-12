@@ -322,7 +322,8 @@ function eclats(scene, x, y, largeur, hauteur, nombre) {
             y: { value: ey + Phaser.Math.Between(8, 22) * ECHELLE, ease: "Quad.easeIn" }, // ils accélèrent en tombant
             alpha: { value: 0, ease: "Quad.easeIn" },
             duration: Phaser.Math.Between(350, 600),
-            onUpdate: () => { eclat.x = Math.round(eclat.x / ECHELLE) * ECHELLE; eclat.y = Math.round(eclat.y / ECHELLE) * ECHELLE; }, // reste calé sur la grille de pixels
+            // reste calé sur la grille de pixels
+            onUpdate: () => { eclat.x = Math.round(eclat.x / ECHELLE) * ECHELLE; eclat.y = Math.round(eclat.y / ECHELLE) * ECHELLE; },
             onComplete: () => eclat.destroy()
         });
     }

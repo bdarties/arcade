@@ -23,8 +23,11 @@ export function creerZoneRonde(scene, x, y, rayon) {
     halo.setScale(rayon / 128); // permet de creer la forme de rayon
     halo.setBlendMode(Phaser.BlendModes.ADD); // permet de gérer le mode du visuel donc c est additif, il recouvre le décor
     halo.setAlpha(0.45); // baisse l'intensité du halo pour que la lumière ne soit pas aveuglante
-    halo.setDepth(1); // OPTIMISATION (borne) : tous les halos au même niveau, juste au-dessus des lanternes, des ennemis et du robot (niveau 0) : la carte graphique les dessine d'un seul coup au lieu d'alterner halo, lanterne, halo...
-    halo.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : un halo n'a qu'une seule image, on évite le shader qui doit choisir entre plusieurs images (voir optimisation.js)
+    // OPTIMISATION (borne) : tous les halos au même niveau, juste au-dessus des lanternes, des ennemis et du robot (niveau 0) : la carte
+    // graphique les dessine d'un seul coup au lieu d'alterner halo, lanterne, halo...
+    halo.setDepth(1);
+    // OPTIMISATION (borne) : un halo n'a qu'une seule image, on évite le shader qui doit choisir entre plusieurs images (voir optimisation.js)
+    halo.setPipeline("SinglePipeline");
     const zone = scene.add.zone(x, y, rayon * 2, rayon * 2); // la zone permet de détecter les choses qui se trouve à l'interieur
     scene.physics.add.existing(zone, true); // donne un corp physique à la zone, on met static à True
     zone.body.setCircle(rayon); // transforme la forme de base de la zone qui est un rectangle en cercle
@@ -34,9 +37,11 @@ export function creerZoneRonde(scene, x, y, rayon) {
 }
 export function majLumiere(scene) {
     const etaitEclaire = scene.joueurEclaire; // on garde en mémoire si le joueur était dans la lumière à l'image précédente
-    scene.joueurEclaire = scene.physics.overlap(scene.player, scene.zonesLumiere); // est ce que le joueur touche au moins une zone de lumière maintenant
+    // est ce que le joueur touche au moins une zone de lumière maintenant
+    scene.joueurEclaire = scene.physics.overlap(scene.player, scene.zonesLumiere);
     if (!scene.joueurEclaire) { // le joueur est dans l'ombre : pas de dégâts
-        if (etaitEclaire && scene.time.now >= (scene.player.flashJusqua ?? 0)) scene.player.clearTint(); // il vient d'en sortir : il arrête de clignoter
+        // il vient d'en sortir : il arrête de clignoter
+        if (etaitEclaire && scene.time.now >= (scene.player.flashJusqua ?? 0)) scene.player.clearTint();
         return; // on s'arrête là
     }
     if (!etaitEclaire) { // il vient d'entrer dans la lumière
@@ -54,7 +59,8 @@ export function majLumiere(scene) {
 function clignoterBrulure(scene) { // fait clignoter le robot en blanc doré, de plus en plus vite à mesure que la brûlure approche
     const joueur = scene.player; // le robot
     if (scene.time.now < (joueur.flashJusqua ?? 0)) return; // il clignote déjà en rouge parce qu'il vient d'être touché : on ne le dérange pas
-    const reste = Phaser.Math.Clamp((scene.prochainDegatLumiere - scene.time.now) / scene.delaiBrulure, 0, 1); // 1 = il vient d'entrer, 0 = le dégât tombe maintenant
+    // 1 = il vient d'entrer, 0 = le dégât tombe maintenant
+    const reste = Phaser.Math.Clamp((scene.prochainDegatLumiere - scene.time.now) / scene.delaiBrulure, 0, 1);
     const periode = 80 + reste * 320; // durée d'un clignotement : 400 ms au début, 80 ms juste avant le dégât
     if (Math.floor(scene.time.now / periode) % 2 === 0) joueur.setTintFill(0xfff2c0); // une période sur deux : le robot est rempli de lumière
     else joueur.clearTint(); // l'autre période : ses vraies couleurs
@@ -103,8 +109,10 @@ function dessinerLanterne(scene, cle, couleurs) { // dessine le motif dans une t
 }
 function creerTexturesLanterne(scene) { // crée la lanterne allumée et la lanterne éteinte, une seule fois
     if (scene.textures.exists("lanterne_allumee")) return; // déjà dessinées : on les réutilise
-    dessinerLanterne(scene, "lanterne_allumee", { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" }); // cadre en fer, verre doré lumineux, flamme
-    dessinerLanterne(scene, "lanterne_eteinte", { "#": "#3b3634", V: "#4a4a52", J: "#3a3a40", B: "#2e2e33" }); // même cadre, verre sombre et flamme morte
+    // cadre en fer, verre doré lumineux, flamme
+    dessinerLanterne(scene, "lanterne_allumee", { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" });
+    // même cadre, verre sombre et flamme morte
+    dessinerLanterne(scene, "lanterne_eteinte", { "#": "#3b3634", V: "#4a4a52", J: "#3a3a40", B: "#2e2e33" });
 }
 export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de creer les lanternes
     creerTexturesLanterne(scene); // dessine les textures de la lanterne si elles n'existent pas encore
@@ -126,8 +134,11 @@ const ECHELLE_VOILE = 0.25;
 // s'éclaircit jusqu'à 100 % (écran inchangé). Le résultat à l'écran est le même, mais le voile se redessine en 2 passes pour
 // la carte graphique au lieu de 4 : (1) fond gris + lumières dessinées par-dessus avec le mode "écran" (SCREEN), qui éclaircit,
 // (2) copie dans le voile. Plus besoin de vider puis de repeindre le voile avant d'y percer les trous.
-const GRIS_PAR_LUMINOSITE = [0, 0x66, 0x80, 0x99, 0xb3, 0xcc, 0xe6, 0xff]; // le gris de l'ombre pour chaque réglage de luminosité (1 à 7, le 7 = 0xff : plus aucune ombre) : 3 = 60 % de gris, l'écran assombri de 40 % (c'était 0x666666 puis 0x808080 : le jeu était trop sombre)
-function grisOmbre() { const g = GRIS_PAR_LUMINOSITE[reglages.luminosite]; return (g << 16) | (g << 8) | g; } // le gris du réglage, écrit en couleur (ex. 0x99 donne 0x999999)
+// le gris de l'ombre pour chaque réglage de luminosité (1 à 7, le 7 = 0xff : plus aucune ombre) : 3 = 60 % de gris, l'écran assombri de 40
+// % (c'était 0x666666 puis 0x808080 : le jeu était trop sombre)
+const GRIS_PAR_LUMINOSITE = [0, 0x66, 0x80, 0x99, 0xb3, 0xcc, 0xe6, 0xff];
+// le gris du réglage, écrit en couleur (ex. 0x99 donne 0x999999)
+function grisOmbre() { const g = GRIS_PAR_LUMINOSITE[reglages.luminosite]; return (g << 16) | (g << 8) | g; }
 export function appliquerLuminosite(scene) { // change le gris de l'ombre en direct (menu pause)
     scene.fondVoile.setTint(grisOmbre()); // le fond du voile prend le nouveau gris
     scene.voileEtat.nbZones = -1; // et on force le voile à se redessiner à la prochaine mise à jour
@@ -135,29 +146,38 @@ export function appliquerLuminosite(scene) { // change le gris de l'ombre en dir
 }
 export function creerVoile(scene) { // permet de creer le voile de lumière
     creerTextureHalo(scene);
-    const voile = scene.add.renderTexture(0, 0, scene.scale.width * ECHELLE_VOILE, scene.scale.height * ECHELLE_VOILE); // crée une image en premiere plan que l'on peut ensuite modifier (demi-taille)
+    // crée une image en premiere plan que l'on peut ensuite modifier (demi-taille)
+    const voile = scene.add.renderTexture(0, 0, scene.scale.width * ECHELLE_VOILE, scene.scale.height * ECHELLE_VOILE);
     voile.setOrigin(0, 0); // on place l'origine du voile en 0 0
     voile.setScale(1 / ECHELLE_VOILE); // et on l'agrandit pour qu'il recouvre tout l'écran
     voile.setScrollFactor(0); // on fait en sorte qu'il reste fixe
     voile.setDepth(50); // on met la profondeur au premier pan
-    voile.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : le voile couvre tout l'écran, c'est l'image la plus coûteuse à dessiner : on lui donne le shader le plus simple (voir optimisation.js)
+    // OPTIMISATION (borne) : le voile couvre tout l'écran, c'est l'image la plus coûteuse à dessiner : on lui donne le shader le plus
+    // simple (voir optimisation.js)
+    voile.setPipeline("SinglePipeline");
     voile.setBlendMode(Phaser.BlendModes.MULTIPLY); // le voile multiplie l'écran au lieu de se poser dessus
     voile.fill(grisOmbre(), 1); // tout est dans l'ombre au départ
-    scene.fondVoile = scene.make.image({ key: "__WHITE", add: false }).setOrigin(0, 0).setDisplaySize(voile.width, voile.height).setTint(grisOmbre()); // un rectangle gris de la taille du voile : le fond qu'on redessine avant les lumières
+    // un rectangle gris de la taille du voile : le fond qu'on redessine avant les lumières
+    scene.fondVoile = scene.make.image({ key: "__WHITE", add: false }).setOrigin(0, 0).setDisplaySize(voile.width, voile.height).setTint(grisOmbre());
     scene.pinceauLumiere = scene.make.image({ key: "halo", add: false }); // le pinceau qui éclaircit le voile autour du joueur et des lumières
-    scene.pinceauLumiere.setBlendMode(Phaser.BlendModes.SCREEN); // mode "écran" : éclaircit sans jamais dépasser 100 %, et plusieurs lumières qui se touchent se combinent exactement comme avant
+    // mode "écran" : éclaircit sans jamais dépasser 100 %, et plusieurs lumières qui se touchent se combinent exactement comme avant
+    scene.pinceauLumiere.setBlendMode(Phaser.BlendModes.SCREEN);
     scene.voile = voile; // on le met dans une variable
-    scene.voileEtat = { camX: NaN, camY: NaN, joueurX: NaN, joueurY: NaN, nbZones: -1, images: 0 }; // ce qui a servi à dessiner le voile la dernière fois (voir majVoile)
+    // ce qui a servi à dessiner le voile la dernière fois (voir majVoile)
+    scene.voileEtat = { camX: NaN, camY: NaN, joueurX: NaN, joueurY: NaN, nbZones: -1, images: 0 };
 }
 function percerVoile(scene, x, y, rayon, alpha) { // éclaircit le voile autour d'une lumière
     const camera = scene.cameras.main; // camera qui permet de cadrer la position
     const ecranX = x - camera.scrollX; // position de la lumière sur l'écran (x, y sont des positions dans la map)
     const ecranY = y - camera.scrollY;
-    if (ecranX < -rayon || ecranX > camera.width + rayon || ecranY < -rayon || ecranY > camera.height + rayon) return; // lumière hors de l'écran : inutile de la dessiner
+    // lumière hors de l'écran : inutile de la dessiner
+    if (ecranX < -rayon || ecranX > camera.width + rayon || ecranY < -rayon || ecranY > camera.height + rayon) return;
     const pinceau = scene.pinceauLumiere; // la gomme
-    pinceau.setScale(rayon / 128 * ECHELLE_VOILE); // L'image du halo fait 256 px, donc 128 px de rayon. On la met à l'échelle pour obtenir le rayon voulu (réduit comme le voile)
+    // L'image du halo fait 256 px, donc 128 px de rayon. On la met à l'échelle pour obtenir le rayon voulu (réduit comme le voile)
+    pinceau.setScale(rayon / 128 * ECHELLE_VOILE);
     pinceau.setAlpha(alpha); // force du pinceau : 1 = éclaircit au maximum, 0.6 = éclaircit en partie
-    pinceau.setPosition(ecranX * ECHELLE_VOILE, ecranY * ECHELLE_VOILE); // place le pinceau à l'endroit de la lumière sur l'écran (réduit comme le voile)
+    // place le pinceau à l'endroit de la lumière sur l'écran (réduit comme le voile)
+    pinceau.setPosition(ecranX * ECHELLE_VOILE, ecranY * ECHELLE_VOILE);
     scene.voile.texture.batchDraw(pinceau); // ajoute cette lumière au lot, sans la dessiner tout de suite
 }
 function halosVisibles(scene, tout) { // OPTIMISATION (borne) : ne dessine que les halos qui sont à l'écran
@@ -180,18 +200,23 @@ export function majVoile(scene) { // met à jour le voile
     const camera = scene.cameras.main;
     const etat = scene.voileEtat;
     etat.images++;
-    halosVisibles(scene, etat.images <= 2); // cache les halos hors écran (pendant les 2 premières images la caméra n'est pas encore à sa place : on les laisse tous)
+    // cache les halos hors écran (pendant les 2 premières images la caméra n'est pas encore à sa place : on les laisse tous)
+    halosVisibles(scene, etat.images <= 2);
     const joueur = scene.player.body.center;
     const nbZones = scene.zonesLumiere ? scene.zonesLumiere.getLength() : 0;
-    if (etat.camX === camera.scrollX && etat.camY === camera.scrollY && etat.joueurX === joueur.x && etat.joueurY === joueur.y && etat.nbZones === nbZones) return; // rien n'a bougé depuis la dernière fois (ni la caméra, ni le joueur, ni les lumières) : le voile est déjà bon, on ne le redessine pas
+    // rien n'a bougé depuis la dernière fois (ni la caméra, ni le joueur, ni les lumières) : le voile est déjà bon, on ne le redessine pas
+    if (etat.camX === camera.scrollX && etat.camY === camera.scrollY && etat.joueurX === joueur.x && etat.joueurY === joueur.y && etat.nbZones === nbZones) return;
     etat.camX = camera.scrollX; etat.camY = camera.scrollY; etat.joueurX = joueur.x; etat.joueurY = joueur.y; etat.nbZones = nbZones;
-    scene.voile.texture.beginDraw(); // ouvre un lot : le fond et toutes les lumières seront dessinés en une seule passe, au lieu d'une passe de rendu par lumière
+    // ouvre un lot : le fond et toutes les lumières seront dessinés en une seule passe, au lieu d'une passe de rendu par lumière
+    scene.voile.texture.beginDraw();
     scene.voile.texture.batchDraw(scene.fondVoile); // d'abord le fond gris : il remplace tout, donc efface les lumières de l'image précédente
     percerVoile(scene, joueur.x, joueur.y, 170, 1); // lumière autour du joueur, le voile y est complètement éclairci
     if (scene.zonesLumiere) { // une lumière pour chaque zone de lumiere visible à l'écran
         const zones = scene.zonesLumiere.getChildren();
-        for (let i = 0; i < zones.length; i++) percerVoile(scene, zones[i].x, zones[i].y, zones[i].body.radius * 1.2, 0.6); // autour des lumières on n'éclaircit le voile qu'en partie
+        // autour des lumières on n'éclaircit le voile qu'en partie
+        for (let i = 0; i < zones.length; i++) percerVoile(scene, zones[i].x, zones[i].y, zones[i].body.radius * 1.2, 0.6);
     }
-    scene.sys.renderer.setBlendMode(Phaser.BlendModes.NORMAL); // on repasse en mode normal : sinon la copie du lot dans le voile se ferait aussi en mode "écran" et éclaircirait tout
+    // on repasse en mode normal : sinon la copie du lot dans le voile se ferait aussi en mode "écran" et éclaircirait tout
+    scene.sys.renderer.setBlendMode(Phaser.BlendModes.NORMAL);
     scene.voile.texture.endDraw(); // ferme le lot : tout est dessiné et copié dans le voile
 }
