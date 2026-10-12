@@ -439,20 +439,19 @@ export default class niveau1 extends Phaser.Scene {
   creerInterface() {
     const fixe = (objet) => objet.setScrollFactor(0).setDepth(100);
 
-    // Cœurs en haut à gauche
-    this.coeurs = [];
-    for (let i = 0; i < this.viesMax; i++) {
-      this.coeurs.push(fixe(this.add.image(32 + i * 36, 30, "tex_coeur")));
-    }
+    // Barre de vie en haut à gauche : l'image de la barre est rouge partout, et un rectangle
+    // de la couleur du fond de la barre cache la partie "vide" (il grandit quand on perd des vies)
+    fixe(this.add.image(10, 8, "img_barre_vie").setOrigin(0, 0));
+    this.videBarre = fixe(this.add.rectangle(10 + 196, 8 + 33, 0, 13, 0x051f4c).setOrigin(1, 0));
 
     // Note choisie par la Cantatrice
     this.texteNote = fixe(
-      this.add.text(18, 56, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 66, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
     );
 
     // Batterie de la lampe du Détective
     this.texteLampe = fixe(
-      this.add.text(18, 86, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
     );
     this.barreBatterie = fixe(this.add.graphics());
 
@@ -1127,9 +1126,9 @@ export default class niveau1 extends Phaser.Scene {
   //  Interface
   // --------------------------------------------------------------------------
   majCoeurs() {
-    this.coeurs.forEach((coeur, i) => {
-      coeur.setTexture(i < this.vies ? "tex_coeur" : "tex_coeur_vide");
-    });
+    // la partie rouge va de x = 70 à x = 196 dans l'image (126 px) : on cache la fraction perdue
+    const perdu = 1 - Math.max(this.vies, 0) / this.viesMax;
+    this.videBarre.width = 126 * perdu;
   }
 
   majNote() {
@@ -1141,9 +1140,9 @@ export default class niveau1 extends Phaser.Scene {
     // Barre de batterie : jaune, puis rouge quand elle est faible
     const faible = this.lampe.batterie <= REGLAGES.lampe.seuilClignote;
     this.barreBatterie.clear();
-    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 88, 154, 18);
-    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 90, 150 * (this.lampe.batterie / 100), 14);
-    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 88, 154, 18);
+    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18);
+    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14);
+    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18);
 
     // Solo : on met en avant les informations du personnage actif
     if (this.mode == "solo") {
