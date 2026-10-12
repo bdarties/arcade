@@ -2,12 +2,13 @@
 // C'est le même niveau que le niveau 1 (voir niveau1.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
 // (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
-// À la fin de la map on arrive dans l'arène du Dieu de la Lumière (niveau3.js).
+// Arriver au bout de la map termine la partie : le chrono s'arrête et l'écran de classement s'ouvre.
 import niveau1, { CONFIG_NIVEAU1, objetsDe } from "./niveau1.js";
 import { VOLUME_MUSIQUE_BOSS } from "./sons.js";
 import { preparerVide, majVide } from "./vide.js";
 import { preparerFaisceaux, majFaisceaux } from "./faisceaux.js";
 import { preparerPoursuite, majPoursuite, finirPoursuite } from "./poursuite.js";
+import { finDeLaFuite } from "./points.js"; // fin de partie : arrête le chrono, bonus, classement
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
   preparerVide(scene);
@@ -21,11 +22,10 @@ function majNiveau2(scene) { // appelée à chaque image
   majVide(scene);
   majFaisceaux(scene);
   majPoursuite(scene);
-  if (!scene.partieFinie && scene.player.x > scene.xFin) { // le robot a atteint la sortie
-    scene.partieFinie = true; // plus de pause ni de dégâts pendant le fondu
-    finirPoursuite(scene);
-    scene.cameras.main.fadeOut(600, 0, 0, 0);
-    scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start("niveau3"));
+  if (!scene.partieFinie && scene.player.x > scene.xFin) { // le robot a atteint la sortie : il a réussi à fuir
+    finirPoursuite(scene); // le mur et le boss s'effacent
+    finDeLaFuite(scene, scene.player.x, scene.player.y - 80); // bonus, chrono arrêté, puis le classement (2 s plus tard)
+    scene.time.delayedCall(1400, () => scene.cameras.main.fadeOut(500, 0, 0, 0)); // fondu au noir avant l'écran de fin
   }
 }
 

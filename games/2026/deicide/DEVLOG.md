@@ -14,19 +14,18 @@
 - **Le boss de la fuite n'est pas le moteur de `boss.js`** : ses attaques étaient liées à une arène fixe de 1280 px (sol, colonnes à x précis). Pendant la fuite tout est posé par rapport au robot et à l'écran, d'où un petit fichier à part qui réutilise juste les orbes et les feuilles d'images du boss.
 
 ## Un seul code pour les niveaux
-- `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
+- `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` en hérite (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.
 - `endormirLesLoins` regarde aussi la distance horizontale (sinon tous les ennemis d'un niveau large dorment ou se réveillent d'un coup).
 
 ## Les maps sont générées
-- `outils/generer_niveaux.py` écrit `niveau2.json` et `arene_dieu.json` à partir de colonnes et de longueurs de trous. Les fichiers sont des maps Tiled normales : on peut les rouvrir dans Tiled pour les retoucher.
+- `outils/generer_niveaux.py` écrit `niveau2_genere.json` (une map d'exemple) à partir de colonnes et de longueurs de trous. Les fichiers sont des maps Tiled normales : on peut les rouvrir dans Tiled pour les retoucher.
 - Si on change un trou, on relance le script : il vérifie que le niveau reste faisable.
 
 ## Les boss
-- Un seul moteur (`boss.js`), deux profils : le **Soldat** (fin du niveau 1, 80 PV, 2 phases) et le **Dieu** (fin du niveau 2, 200 PV, 3 phases, plus grand).
-- Le Dieu a sa propre scène (`niveau3.js`, une salle de la taille de l'écran) : `boss.js` suppose une arène de 1280 px qui commence à x = 0, alors que le niveau 2 est large. Plutôt que de réécrire toutes les positions du boss, on le met dans une salle à part.
-- **Attaque du Dieu pour le dash** : le rayon large couvre la moitié de l'arène et prévient moins d'une seconde avant. À pied on fait environ 230 px dans ce temps, avec un dash environ 400 px : il faut dasher pour changer de côté.
-- Le sprite du Dieu est un **remplaçant** (l'ange du Soldat, agrandi et doré) en attendant une nouvelle image.
+- `boss.js` a un profil par boss : pour l'instant seulement le **Soldat** (fin du niveau 1, 80 PV, 2 phases). Le moteur reste réutilisable (autre boss = autre profil).
+- **Le combat contre le Dieu de la Lumière a été supprimé** : après la fuite, arriver au bout du niveau 2 termine la partie (bonus de 3 000 points = 30 s retirées). La partie reste courte, et c'est la fuite qui doit être dure.
+- **La fuite devient plus dure en avançant** (`poursuite.js`) : le mur passe de 232 à 264 px/s (le robot marche à 260, donc à la fin il faut dasher) et le boss attaque de plus en plus souvent (toutes les 2,3 s puis toutes les 1,5 s).
 
 ## Ce qui n'est pas mesuré
 - La durée réelle d'une partie (visée : environ 2 min 30 par niveau) : à chronométrer en jouant.

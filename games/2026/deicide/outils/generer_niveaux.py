@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère une map d'EXEMPLE pour le niveau 2 (horizontal, centré sur le dash) et la map de l'arène du Dieu de la Lumière.
+"""Génère une map d'EXEMPLE pour le niveau 2 (horizontal, centré sur le dash).
 Le niveau 2 « pour de vrai » est dessiné dans Tiled (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : ce script écrit niveau2_genere.json
 et ne touche jamais niveau2.json.
 
@@ -156,22 +156,10 @@ def niveau2(modele):
     return n
 
 
-# =====================================================================================================================
-# ARÈNE DU DIEU : 40 colonnes (un écran), 24 lignes. Le sol est sur la ligne 22.
-# =====================================================================================================================
-def arene_dieu(modele):
-    n = Niveau(40, 24)
-    n.remplir_fond(0, 23)
-    n.plateforme(0, 39, 22)
-    for (a, b) in ((6, 10), (18, 22), (30, 34)):  # trois plateformes à 4 lignes au-dessus du sol, comme l'arène du Soldat
-        n.plateforme(a, b, 18)
-    return n
-
-
 if __name__ == "__main__":
     with open(os.path.join(DOSSIER, "niveau1.json"), encoding="utf-8") as f:
         modele = json.load(f)
-    for nom, fabrique in (("niveau2_genere.json", niveau2), ("arene_dieu.json", arene_dieu)):
+    for nom, fabrique in (("niveau2_genere.json", niveau2),):
         carte = fabrique(modele).en_json(modele)
         with open(os.path.join(DOSSIER, nom), "w", encoding="utf-8") as f:
             json.dump(carte, f, ensure_ascii=False, separators=(",", ":"))

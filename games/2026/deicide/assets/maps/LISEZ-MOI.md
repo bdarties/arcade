@@ -17,7 +17,7 @@ Le jeu lit `assets/maps/niveau2.json`. Tant que tu n'as pas fait la tienne, c'es
 | Calque | Combien | Ce que c'est |
 |---|---|---|
 | `depart` | 1 | où le robot apparaît (le point = ses pieds, pose-le sur le sol) |
-| `fin` | 1 | à droite de ce point, le niveau se termine et l'arène du Dieu commence |
+| `fin` | 1 | à droite de ce point, la partie est gagnée (chrono arrêté, bonus, classement) |
 | `faisceau` | 0 à N | un faisceau de lumière par point (seule la position x compte) |
 | `orc`, `archer`, `mage` | 0 à N | un ennemi par point (le point = ses pieds, comme au niveau 1) |
 | `lanterne` | 0 à N | une lanterne (elle éclaire, brûle si on reste dedans, et s'éteint d'un tir) |

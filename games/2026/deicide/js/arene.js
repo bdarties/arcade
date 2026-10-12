@@ -2,7 +2,7 @@
 // quand le joueur arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène et un mur de lumière ferme la sortie
 import { faireApparaitreBoss } from "./boss.js";
 import * as effets from "./effets.js"; // éclats
-import { jouerSon } from "./sons.js"; // bruitages // le Dieu de la Lumière apparaît quand l'arène se ferme
+import { jouerSon } from "./sons.js"; // bruitages // le Soldat de la Lumière apparaît quand l'arène se ferme
 
 const HAUT_DU_SOL = 25 * 32; // y du haut du sol de l'arène (ligne 25 de la map Tiled, tuiles de 32 px)
 
