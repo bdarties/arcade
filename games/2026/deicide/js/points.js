@@ -3,7 +3,7 @@
 // Le classement se fait au TEMPS NET : le chrono, moins du temps pour les points gagnés. Plus petit = meilleur.
 import * as effets from "./effets.js"; // pour afficher les points gagnés à l'écran
 
-const BONUS_BOSS = 3000; // points pour avoir tué le boss final (= 30 s retirées)
+const DELAI_NIVEAU2 = 2000; // ms entre la mort du Soldat et le début du niveau 2
 const MS_RETIREES_PAR_POINT = 10; // 100 points = 1 seconde retirée du temps
 const DELAI_FIN = 2000; // ms entre la mort du boss et l'écran de fin : on voit le bonus s'afficher
 
@@ -17,9 +17,16 @@ export function tempsNet(tempsBrutMs, points) { // le temps qui sert au classeme
     return Math.max(0, tempsBrutMs - points * MS_RETIREES_PAR_POINT);
 }
 
-export function bossTue(scene, boss) { // à appeler dans boss.js quand le boss meurt : c'est la fin de la partie
-    gagnerPoints(scene, BONUS_BOSS, boss.x, boss.y); // bonus pour avoir tué le boss
-    finirPartie(scene); // arrête le chrono, puis ouvre l'écran de fin
+export function bossTue(scene, boss, profil) { // à appeler dans boss.js quand un boss meurt
+    gagnerPoints(scene, profil.points, boss.x, boss.y); // bonus pour avoir tué le boss (= 10 points par seconde retirée du temps net)
+    if (profil.suite) passerAuNiveauSuivant(scene, profil.suite); // le Soldat : le niveau suivant
+    else finirPartie(scene); // le Dieu : c'est la fin de la partie, arrête le chrono puis ouvre l'écran de fin
+}
+
+function passerAuNiveauSuivant(scene, cle) { // fondu au noir, puis le niveau suivant (le chrono, le score et les vies continuent : ils sont dans le registry)
+    scene.partieFinie = true; // plus rien ne blesse le robot ni n'ouvre la pause pendant la transition
+    scene.time.delayedCall(DELAI_NIVEAU2, () => scene.cameras.main.fadeOut(600, 0, 0, 0));
+    scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => scene.scene.start(cle));
 }
 
 export function finirPartie(scene) { // arrête le chrono et envoie le joueur à l'écran de classement

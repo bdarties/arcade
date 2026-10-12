@@ -1,4 +1,5 @@
-// boss.js : le Dieu de la Lumière, le boss final, dans l'arène en haut du niveau 1
+// boss.js : les deux boss du jeu : le Soldat de la Lumière (fin du niveau 1) et le Dieu de la Lumière (boss final, niveau 3 = son arène)
+// Les deux utilisent ce même moteur ; ce qui change (PV, phases, attaques, taille, nom, ce qui se passe à sa mort) est dans PROFILS.
 // Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
 //   boss_idle (8 images, il plane), boss_charge (6, il prépare une attaque), boss_attaque (4, il la lance), boss_mort (8, il se dissout).
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss), flotte en haut de la salle et attaque.
@@ -27,19 +28,29 @@ import { lacherPV } from "./bonus.js";
 const LARGEUR_IMAGE = 152; // une image des feuilles
 const HAUTEUR_IMAGE = 116;
 const ECHELLE = 3; // le sprite est agrandi x3 : 456 x 348 px à l'écran, avec des pixels francs de 3 px comme le HUD (l'arène fait 1280 px de large)
-const PV_MAX = 150; // PV du boss : à 300 ms entre deux tirs, et la moitié qui touche, ça fait environ une minute et demie
-const SEUILS_PHASE = [100, 50]; // sous 100 PV : phase 2 ; sous 50 PV : phase 3
 const DUREE_TRANSITION = 2000; // ms d'invulnérabilité à chaque changement de phase (plus que la plus longue préparation d'attaque)
 const POINTS_PAR_TIR = 10; // points gagnés à chaque tir qui touche le boss (le bonus de 3000 est donné à sa mort, voir points.js)
 const LARGEUR_BARRE = 520; // barre de vie du boss, en haut de l'écran
-const PAUSES = [2100, 1600, 1150]; // ms entre la fin d'une attaque et le début de la suivante, par phase
 
-// les attaques disponibles à chaque phase
-const ATTAQUES_PAR_PHASE = [
-    ["orbes", "colonne", "pluie", "lanternes"],
-    ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"],
-    ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique"]
-];
+// Un profil par boss. pv, seuils (PV sous lesquels on passe en phase 2 puis 3 ; -1 = cette phase n'existe pas), attaques (par phase), pauses (ms entre deux
+// attaques, par phase), echelle (taille du sprite), teinte (couleur du sprite, null = d'origine), nom (sur la barre de vie), cause (texte de mort), points (bonus à sa mort).
+const PROFILS = {
+    soldat: {
+        pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "SOLDAT DE LA LUMIÈRE", cause: "le Soldat de la Lumière", points: 1000, suite: "niveau2", // la suite : le niveau 2 (voir points.js) ; plus court que l'ancien boss final : 2 phases seulement
+        pauses: [2000, 1500, 1500],
+        attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
+    },
+    dieu: {
+        pv: 200, seuils: [140, 70], echelle: 3.5, teinte: 0xffe9a0, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 3000,
+        pauses: [2100, 1600, 1150],
+        attaques: [
+            ["orbes", "colonne", "pluie", "lanternes", "rayonLarge"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "rayonLarge"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique", "rayonLarge"]
+        ]
+    }
+};
+let profil = PROFILS.soldat; // le profil du boss en cours (un seul boss à la fois : choisi par faireApparaitreBoss)
 // charge : ms de préparation avant le départ de l'attaque ; apres : ms que dure encore l'effet avant que la pause commence
 const ATTAQUES = {
     orbes: { charge: 520, apres: 0 },
@@ -48,7 +59,8 @@ const ATTAQUES = {
     lanternes: { charge: 520, apres: 0 },
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
-    pique: { charge: 720, apres: 1250 }
+    pique: { charge: 720, apres: 1250 },
+    rayonLarge: { charge: 950, apres: 600 } // Dieu seulement : un rayon qui couvre la moitié de l'arène, annoncé moins d'une seconde avant : il faut dasher pour changer de côté
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
@@ -71,16 +83,18 @@ function creerAnimations(scene) { // crée une seule fois les 4 animations
 // Apparition
 // ---------------------------------------------------------------------------------------------
 
-export function faireApparaitreBoss(scene, x, y) { // fait apparaître le boss en (x, y) : le centre de son sprite
+export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait apparaître le boss en (x, y) : le centre de son sprite
+    profil = PROFILS[nomProfil]; // les réglages de ce boss
     creerAnimations(scene);
     musiqueBoss(scene); // la musique metal du combat démarre avec l'apparition du boss
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
     boss.body.setSize(34, 90).setOffset(59, 22); // la hitbox est le corps de l'ange, sans les ailes
-    boss.setScale(ECHELLE).setDepth(51).setAlpha(0); // au-dessus du voile d'ombre (50) : c'est lui la lumière
+    boss.setScale(profil.echelle).setDepth(51).setAlpha(0);
+    if (profil.teinte) { boss.setTint(profil.teinte); boss.teinteBase = profil.teinte; } // la teinte revient après chaque flash (voir effets.flash) // au-dessus du voile d'ombre (50) : c'est lui la lumière
     boss.play("boss_idle");
-    boss.pv = PV_MAX;
+    boss.pv = profil.pv;
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) -> mort
     boss.phase = 0; // 0, 1 ou 2
     boss.departY = y; // hauteur autour de laquelle il flotte
@@ -120,15 +134,15 @@ function creerBarre(scene) {
     const gauche = 640 - LARGEUR_BARRE / 2;
     const fond = scene.add.rectangle(640, y, LARGEUR_BARRE + 8, 22, 0x251d2a).setStrokeStyle(2, 0x5f4f6e).setScrollFactor(0).setDepth(101).setAlpha(0);
     const plein = scene.add.rectangle(gauche, y, LARGEUR_BARRE, 12, 0xe7e0e9).setOrigin(0, 0.5).setScrollFactor(0).setDepth(102).setAlpha(0);
-    const reperes = SEUILS_PHASE.map((seuil) => scene.add.rectangle(gauche + LARGEUR_BARRE * seuil / PV_MAX, y, 3, 18, 0x251d2a).setScrollFactor(0).setDepth(103).setAlpha(0)); // un trait à chaque changement de phase
-    const nom = scene.add.text(640, y + 20, "DIEU DE LA LUMIÈRE", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102).setAlpha(0);
+    const reperes = profil.seuils.filter((seuil) => seuil > 0).map((seuil) => scene.add.rectangle(gauche + LARGEUR_BARRE * seuil / profil.pv, y, 3, 18, 0x251d2a).setScrollFactor(0).setDepth(103).setAlpha(0)); // un trait à chaque changement de phase
+    const nom = scene.add.text(640, y + 20, profil.nom, { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102).setAlpha(0);
     return { fond, plein, reperes, nom };
 }
 
 function elementsBarre(boss) { return [boss.barre.fond, boss.barre.plein, boss.barre.nom, ...boss.barre.reperes]; }
 
 function majBarre(scene, boss) { // la barre rétrécit en douceur, avec un éclat blanc
-    const largeur = LARGEUR_BARRE * Math.max(0, boss.pv) / PV_MAX;
+    const largeur = LARGEUR_BARRE * Math.max(0, boss.pv) / profil.pv;
     scene.tweens.add({ targets: boss.barre.plein, width: largeur, duration: 160 });
     boss.barre.plein.setFillStyle(0xffffff);
     scene.time.delayedCall(80, () => { if (boss.barre.plein.active) boss.barre.plein.setFillStyle(0xe7e0e9); });
@@ -151,7 +165,7 @@ function majBoss(scene, boss, temps) {
     majZones(scene);
     if (boss.pique && !boss.piqueTouche && scene.physics.overlap(scene.player, boss)) { // le robot est sur la trajectoire du piqué
         boss.piqueTouche = true; // un seul coup par piqué
-        scene.blesserJoueur(1, "Percuté par le Dieu de la Lumière");
+        scene.blesserJoueur(1, "Percuté par " + profil.cause);
     }
 }
 
@@ -159,7 +173,7 @@ function choisirAttaque(scene, boss) {
     if (boss.forcer) return boss.forcer; // TEST : boss.forcer = "balayage" (dans la console) lance toujours cette attaque
     // jamais deux fois la même de suite ; pas de lanternes s'il y en a déjà deux en l'air
     const dejaLa = scene.lanternesVivantes ? scene.lanternesVivantes.countActive() : 0;
-    const possibles = ATTAQUES_PAR_PHASE[boss.phase].filter((nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2));
+    const possibles = profil.attaques[boss.phase].filter((nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2));
     return Phaser.Utils.Array.GetRandom(possibles);
 }
 
@@ -184,7 +198,7 @@ function lancerAttaque(scene, boss, nom) {
         scene.time.delayedCall(apres, () => { // l'effet est fini : la pause avant la prochaine attaque commence
             if (!valide()) return;
             boss.etat = "combat";
-            boss.prochaineAttaque = scene.time.now + PAUSES[boss.phase];
+            boss.prochaineAttaque = scene.time.now + profil.pauses[boss.phase];
         });
     });
 }
@@ -197,6 +211,12 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         const decalages = boss.phase === 0 ? [] : boss.phase === 1 ? [260] : [-260, 260];
         decalages.forEach((d) => { const x = Phaser.Math.Clamp(joueur.x + d, 80, 1200); zones.push(zone(scene, { x, y: (boss.y + 40 + sol) / 2, w: 64, h: sol - boss.y - 40, trait: { w: 8, h: sol - boss.y - 40 } })); });
         return { zones };
+    }
+    if (nom === "rayonLarge") { // un rayon de 600 px sur la moitié de l'arène où se trouve le robot : le trait clignote sur toute la hauteur
+        const gauche = joueur.x < scene.areneCentreX; // le robot est dans la moitié gauche ?
+        const x = scene.areneCentreX + (gauche ? -300 : 300); // le milieu de la moitié concernée
+        const haut = boss.y + 40;
+        return { zones: [zone(scene, { x, y: (haut + sol) / 2, w: 600, h: sol - haut, trait: { w: 600, h: sol - haut } })] };
     }
     if (nom === "balayage") return { zones: [zone(scene, { x: 640, y: sol - 28, w: 1400, h: 56, trait: { w: 1400, h: 6 } })] }; // une ligne sur toute la largeur, à hauteur des pieds
     if (nom === "pluie") { // de petits traits en haut de l'écran : là où les orbes vont tomber
@@ -218,7 +238,7 @@ function nettoyerAnnonce(annonce) { // l'attaque est annulée : on enlève ses t
 
 function executer(scene, boss, nom, annonce, valide) {
     if (nom === "orbes") tirerOrbes(scene, boss);
-    else if (nom === "colonne" || nom === "balayage") annonce.zones.forEach((z) => declencher(scene, z));
+    else if (nom === "colonne" || nom === "balayage" || nom === "rayonLarge") annonce.zones.forEach((z) => declencher(scene, z));
     else if (nom === "pluie") faireTomberPluie(scene, boss, annonce, valide);
     else if (nom === "lanternes") invoquerLanternes(scene, boss, valide);
     else if (nom === "nova") lancerNova(scene, boss, valide);
@@ -305,8 +325,9 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
 // ---------------------------------------------------------------------------------------------
 
 function zone(scene, { x, y, w, h, trait, suit = false, degats = true }) {
-    const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: t, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
+    const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, trait.w > 400 && trait.h > 200 ? 0.14 : 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+    const grand = trait.w > 400 && trait.h > 200; // un grand rectangle de lumière doit rester plus discret qu'un trait fin
+    scene.tweens.add({ targets: t, alpha: grand ? { from: 0.05, to: 0.22 } : { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
     const z = { x, y, w, h, trait: t, suit, degats, etat: "annonce", verrouJusqua: scene.time.now + 500, touche: false, fin: 0, rayon: null };
     scene.zonesBoss.push(z);
     return z;
@@ -317,7 +338,7 @@ function declencher(scene, z) { // le rayon tombe
     z.etat = "rayon";
     z.fin = scene.time.now + 450; // le rayon reste 0,45 s
     z.rayon = scene.add.rectangle(z.x, z.y, z.w, z.h, 0xfff2c0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: z.rayon, alpha: 0, scaleY: z.w > 400 ? 0.4 : 1, scaleX: z.w > 400 ? 1 : 0.5, duration: 450, ease: "Quad.In" });
+    scene.tweens.add({ targets: z.rayon, alpha: 0, scaleY: z.w > 400 && z.h < 200 ? 0.4 : 1, scaleX: z.w > 400 ? (z.h < 200 ? 1 : 0.7) : 0.5, duration: 450, ease: "Quad.In" });
     jouerSon(scene, "dash");
     effets.eclats(scene, z.x > 0 && z.w < 400 ? z.x : 640, scene.areneSolY, ECLATS_BLANC[0], 16, ECLATS_BLANC[1]);
     scene.cameras.main.shake(200, 0.006);
@@ -342,7 +363,7 @@ function majZones(scene) { // à chaque image
         const dedans = b.center.x + b.halfWidth * 0.6 > z.x - z.w / 2 && b.center.x - b.halfWidth * 0.6 < z.x + z.w / 2 && b.bottom > z.y - z.h / 2 && b.top < z.y + z.h / 2;
         if (!z.touche && z.degats && dedans) { // le robot est dans le rayon
             z.touche = true; // un seul coup par rayon
-            scene.blesserJoueur(1, "Foudroyé par le Dieu de la Lumière");
+            scene.blesserJoueur(1, "Foudroyé par " + profil.cause);
         }
     });
 }
@@ -361,7 +382,7 @@ function toucherBoss(scene, boss, tir) {
     gagnerPoints(scene, POINTS_PAR_TIR, boss.x, boss.y - 120);
     majBarre(scene, boss);
     if (boss.pv <= 0) { mourir(scene, boss); return; }
-    const phase = boss.pv <= SEUILS_PHASE[1] ? 2 : boss.pv <= SEUILS_PHASE[0] ? 1 : 0;
+    const phase = boss.pv <= profil.seuils[1] ? 2 : boss.pv <= profil.seuils[0] ? 1 : 0;
     if (phase > boss.phase) changerDePhase(scene, boss, phase);
 }
 
@@ -418,6 +439,6 @@ function mourir(scene, boss) {
         effets.eclats(scene, x, y, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);
         boss.destroy();
         elementsBarre(boss).forEach((e) => e.destroy());
-        bossTue(scene, { x, y }); // +3000 points, arrête le chrono et ouvre le classement
+        bossTue(scene, { x, y }, profil); // points du boss, puis : le Soldat ouvre le niveau 2, le Dieu arrête le chrono et ouvre le classement
     });
 }
