@@ -1,4 +1,5 @@
 
+const LARGEUR_CARTE = 2176;   // 68 tuiles x 32 px
 const HAUTEUR_CARTE = 736;    // 23 tuiles x 32 px
 const VITESSE_MARCHE = 160;
 const VITESSE_SAUT = -330;    // même saut que les autres niveaux du gabarit
@@ -26,7 +27,7 @@ export default class niveau2 extends Phaser.Scene {
     // comme dans selection.js : on indique où se trouvent les fichiers du jeu
     this.load.setBaseURL(this.sys.game.config.baseURL);
 
-    this.load.image("fond_theatre", "./assets/map2_sombre.png");      // fond (déjà assombri)
+    this.load.image("fond_theatre", "./assets/map2_sombre.jpg");      // fond (déjà assombri)
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");    // image du tileset
     this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json"); // la carte
   }
@@ -87,8 +88,7 @@ export default class niveau2 extends Phaser.Scene {
     );
     this.physics.add.existing(this.zone_sortie, true);
 
-    // porte de retour vers la sélection (comme dans les niveaux du gabarit), à côté du départ
-    this.porte_retour = this.physics.add.staticSprite(330, 620, "img_porte2");
+    // (la porte de retour du gabarit n'existe plus : on revient au lobby en gagnant)
 
     /*************************************
      *  LAMPES À RAMASSER                *
@@ -113,7 +113,8 @@ export default class niveau2 extends Phaser.Scene {
     /*************************************
      *  PERSONNAGE + CLAVIER             *
      *************************************/
-    this.player = this.physics.add.sprite(pointDepart.x + 20, pointDepart.y + 24, "img_perso");
+    this.player = this.physics.add.sprite(pointDepart.x + 20, pointDepart.y + 24, "cantatrice_idle");
+    this.player.body.setSize(24, 54).setOffset(20, 10); // hitbox plus fine que l'image 64 x 64
     this.player.setCollideWorldBounds(true);
     this.clavier = this.input.keyboard.createCursorKeys();
     this.physics.add.collider(this.player, this.calque_plateformes);
@@ -168,13 +169,15 @@ export default class niveau2 extends Phaser.Scene {
     // ---- Gauche / droite ----
     if (this.clavier.left.isDown) {
       this.player.setVelocityX(-VITESSE_MARCHE);
-      this.player.anims.play("anim_tourne_gauche", true);
+      this.player.setFlipX(true);
+      this.player.anims.play("cantatrice_walk", true);
     } else if (this.clavier.right.isDown) {
       this.player.setVelocityX(VITESSE_MARCHE);
-      this.player.anims.play("anim_tourne_droite", true);
+      this.player.setFlipX(false);
+      this.player.anims.play("cantatrice_walk", true);
     } else {
       this.player.setVelocityX(0);
-      this.player.anims.play("anim_face");
+      this.player.anims.play("cantatrice_idle", true);
     }
 
     // ---- Vertical : monter / descendre sur l'échelle, sinon sauter ----
@@ -199,9 +202,7 @@ export default class niveau2 extends Phaser.Scene {
 
     // ---- Touche Espace : porte de retour ou sortie du niveau ----
     if (Phaser.Input.Keyboard.JustDown(this.clavier.space) == true) {
-      if (this.physics.overlap(this.player, this.porte_retour)) {
-        this.scene.switch("selection");
-      } else if (this.physics.overlap(this.player, this.zone_sortie)) {
+      if (this.physics.overlap(this.player, this.zone_sortie)) {
         this.sortirDuNiveau();
       }
     }
@@ -245,7 +246,7 @@ export default class niveau2 extends Phaser.Scene {
     this.afficherMessage("Bravo, niveau terminé !", 2000);
     this.cameras.main.fadeOut(1200); // NOUVEAU : fondu au noir
     this.time.delayedCall(1200, () => {
-      this.scene.switch("selection");
+      this.scene.start("lobby"); // niveau gagné : retour au lobby
     });
   }
 
