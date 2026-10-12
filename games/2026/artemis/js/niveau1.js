@@ -23,6 +23,7 @@ const STAMINA_MAX = 100;
 const PV_PAR_PIERRE = 5;
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
+const ZOOM_CAMERA =1.5; // la caméra grossit le monde (pas le HUD, cf. creerCameraHud)
 const MARGE_ECRAN = 40; // px : en duo, la caméra suit le milieu des joueurs et aucun ne peut sortir de l'écran
 const ECART_DEPART_JOUEURS = 30; // px : distance minimale entre deux joueurs à leur arrivée
 const DISTANCE_MIN_ECHELLE = 200; // px : l'échelle n'est pas cachée juste à coté des joueurs
@@ -191,6 +192,7 @@ export default class niveau1 extends Phaser.Scene {
     // la caméra suit le milieu des joueurs (avec un seul joueur : le joueur lui-même)
     this.cible_camera = this.add.zone(0, 0, 1, 1);
     this.placerCible();
+    this.cameras.main.setZoom(ZOOM_CAMERA);
     this.cameras.main.startFollow(this.cible_camera);
     this.cameras.main.fadeIn(DUREE_FONDU);
 
@@ -211,6 +213,30 @@ export default class niveau1 extends Phaser.Scene {
       .setDepth(fct.PROFONDEUR.hud);
 
     lumiere.majLumieres(this); // sinon la première image s'affiche sans obscurité
+    this.creerCameraHud();
+  }
+
+  // fondu au noir de l'écran entier : le monde et le HUD ont chacun leur caméra
+  fondu() {
+    this.cameras.main.fadeOut(DUREE_FONDU);
+    this.camera_hud.fadeOut(DUREE_FONDU);
+  }
+
+  // le zoom grossit tout ce que filme la caméra principale, HUD compris : une 2e caméra, sans zoom, ne filme que le HUD
+  // - le HUD (objets collés à l'écran) : seulement la caméra du HUD
+  // - l'obscurité : seulement la caméra principale (elle grossit avec le monde, la lumière reste bien placée)
+  // - le monde (tout le reste, y compris ce qui sera créé plus tard) : seulement la caméra principale
+  creerCameraHud() {
+    const camera_hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.camera_hud = camera_hud;
+    camera_hud.fadeIn(DUREE_FONDU);
+    this.children.list.forEach((objet) => {
+      if (objet !== this.obscurite && objet.scrollFactorX === 0) this.cameras.main.ignore(objet);
+      else camera_hud.ignore(objet);
+    });
+    const ignorer = (objet) => camera_hud.ignore(objet);
+    this.events.on("addedtoscene", ignorer);
+    this.events.once("shutdown", () => this.events.off("addedtoscene", ignorer));
   }
 
   // crée un joueur : un objet qui regroupe tout ce qui lui est propre (sprite, touches, vie, outil, torche...)
@@ -530,7 +556,7 @@ export default class niveau1 extends Phaser.Scene {
     });
 
     // l'écran s'assombrit pendant la fin de l'animation
-    this.time.delayedCall(DUREE_ENTREE_ECHELLE + DUREE_ECHELLE - DUREE_FONDU, () => this.cameras.main.fadeOut(DUREE_FONDU));
+    this.time.delayedCall(DUREE_ENTREE_ECHELLE + DUREE_ECHELLE - DUREE_FONDU, () => this.fondu());
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.scene.restart({
         niveau: niveau,
@@ -606,6 +632,13 @@ export default class niveau1 extends Phaser.Scene {
   }
 
 
+  // abandon de la partie depuis le menu pause : les sons de la partie s'arrêtent (la prochaine partie relancera la musique)
+  quitterPartie() {
+    musique_de_fond.stop();
+    son_echelle.stop();
+    musique_en_cours = false;
+  }
+
   // trou (descente) et échelle (montée) : un joueur proche voit l'indication, et le bouton "interagir" change de niveau
   // il faut que tous les joueurs soient proches ; l'un d'eux appuie. Renvoie true si on change de niveau.
   majPassages() {
@@ -669,11 +702,19 @@ export default class niveau1 extends Phaser.Scene {
         this.game_over_lance = true;
         this.joueurs.forEach((j) => { j.sprite.setVelocity(0, 0).setTint(0x777788); j.sprite.anims.stop(); });
         this.ennemis.getChildren().forEach((e) => e.setVelocity(0, 0));
-        this.time.delayedCall(1200, () => this.cameras.main.fadeOut(DUREE_FONDU));
+        this.time.delayedCall(1200, () => this.fondu());
         this.cameras.main.once("camerafadeoutcomplete", () => {
           this.scene.start("gameover", { niveau: this.niveau, pierres: pierres.nombrePierres(this) });
         });
       }
+      return;
+    }
+
+    // bouton Pause d'un joueur (I / R) : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
+    if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
+      this.sound.pauseAll();
+      this.scene.pause();
+      this.scene.launch("pause");
       return;
     }
 
