@@ -22,6 +22,7 @@ export function verifierArene(scene) { // à appeler dans update() : lance l'ar�
     mur.setAlpha(0); // le mur est invisible au départ...
     scene.tweens.add({ targets: mur, alpha: 1, duration: 300 }); // ...et apparaît en 0,3 s
     camera.shake(300, 0.01); // tremblement : on sent que la salle se referme
+    scene.areneSolY = HAUT_DU_SOL; // le sol de l'arène : la colonne de lumière du boss tombe jusque-là
     scene.areneCentreX = 640; // le milieu de l'arène : le boss flotte autour
-    scene.time.delayedCall(1000, () => faireApparaitreBoss(scene, 640, HAUT_DU_SOL - 360 + 32 - 110)); // le boss apparaît en fondu une fois la caméra en place, en haut de la salle
+    scene.time.delayedCall(1000, () => faireApparaitreBoss(scene, 640, HAUT_DU_SOL - 360 + 32 - 80)); // le boss apparaît en fondu une fois la caméra en place, en haut de la salle
 }

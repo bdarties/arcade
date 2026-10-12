@@ -1,5 +1,5 @@
 import * as fct from "./fonctions.js";
-import { chargerPersonnage, creerAnimationsPersonnage, creerPersonnage, majPersonnage } from "./Personnage/personnage.js";
+import { chargerPersonnage, creerAnimationsPersonnage, creerPersonnage, majPersonnage, jouerAction } from "./Personnage/personnage.js";
 import { chargerHud, creerHud } from "./Personnage/hud.js";
 import * as ennemis from "./ennemis.js";
 import * as lumiere from "./lumiere.js";
@@ -123,6 +123,9 @@ export default class niveau1 extends Phaser.Scene {
     preparerBoost(this); // le boost du robot (donné quand il abat une lanterne vivante)
     preparerLanternesVivantes(this); // une lanterne vivante toutes les 15 secondes, qui vole vers le robot
     endormirLesLoins(this); // les ennemis loin du joueur s'endorment (optimisation pour la borne)
+    this.boss = null; // le boss n'existe pas encore (arene.js le crée) ; remis à zéro quand le niveau recommence après une mort
+    this.colonne = null; // la colonne de lumière du boss (voir boss.js)
+    this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
     this.input.keyboard.on("keydown-F9", () => finirPartie(this)); // TEMPORAIRE (test) : F9 termine la partie, en attendant le boss. À retirer avant la borne.
     this.input.keyboard.on("keydown-F8", () => { this.player.setPosition(300, 760); this.player.body.setVelocity(0, 0); }); // TEMPORAIRE (test) : F8 téléporte le robot dans l'arène du boss. À retirer avant la borne.
@@ -138,10 +141,22 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   blesserJoueur(degats, cause) {
+    if (this.mort || this.partieFinie) return; // un robot qui meurt ne prend plus de coups (et la partie finie, plus rien ne blesse)
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour
     jouerSon(this, this.pv <= 0 ? "joueur_mort" : "joueur_touche"); // bruit de mort si plus de PV, sinon bruit d'impact
     effets.joueurTouche(this); // tremblement, écran rouge et robot qui clignote
     console.log(cause);
+    if (this.pv <= 0) this.mourir();
+  }
+
+  mourir() { // 0 PV : le robot meurt, puis le niveau recommence depuis le bas. Le chrono continue (la mort coûte du temps) et le score repart de zéro
+    this.mort = true;
+    jouerAction(this.player, "mort"); // animation de mort du robot (il ne peut plus bouger)
+    this.time.delayedCall(1300, () => this.cameras.main.fadeOut(500, 0, 0, 0));
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.registry.set("score", 0); // sinon on referait le tour des ennemis pour gagner des points à chaque mort
+      this.scene.restart(); // tout le niveau est refait : les ennemis, les lanternes, l'arène et le boss
+    });
   }
 }
