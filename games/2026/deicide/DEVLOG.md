@@ -13,6 +13,11 @@
 - **La map du niveau 2 est dessinée dans Tiled** par Mathys. Le jeu lit des points dans des calques d'objets (`depart`, `fin`, `faisceau`, ennemis...) au lieu de colonnes écrites en dur dans le code : changer la map ne demande aucun changement de code (voir `assets/maps/LISEZ-MOI.md`).
 - **Le boss de la fuite n'est pas le moteur de `boss.js`** : ses attaques étaient liées à une arène fixe de 1280 px (sol, colonnes à x précis). Pendant la fuite tout est posé par rapport au robot et à l'écran, d'où un petit fichier à part qui réutilise juste les orbes et les feuilles d'images du boss.
 
+## Raccourcis de la borne (`reset.js`)
+- Les boutons physiques sont nommés A à F ; ils envoient I, O, P, K, L et ; : **C = P** et **F = ;**. Les deux boutons du centre sont select (Z) et start (X).
+- **Z + X maintenus 1,5 s** : retour à l'écran d'accueil (reset pour le joueur suivant). **C + F maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
+- Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X ouvre la pause, sauf si Z est déjà maintenu.
+
 ## Un seul code pour les niveaux
 - `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.
