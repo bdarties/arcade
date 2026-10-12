@@ -1,5 +1,6 @@
 import { jouerSon } from "./sons.js"; // permet de jouer les bruitages
 import * as effets from "./effets.js"; // tremblements, flashs, éclats et alertes
+import { reglages } from "./reglages.js"; // luminosité choisie dans le menu pause
 export function creerTextureHalo(scene) {
     if (scene.textures.exists("halo")) return; // si le halo existe deja il est réutilisé ici
     const tex = scene.textures.createCanvas("halo", 256, 256); // permet de créer la zone de dessin
@@ -119,7 +120,13 @@ const ECHELLE_VOILE = 0.25;
 // s'éclaircit jusqu'à 100 % (écran inchangé). Le résultat à l'écran est le même, mais le voile se redessine en 2 passes pour
 // la carte graphique au lieu de 4 : (1) fond gris + lumières dessinées par-dessus avec le mode "écran" (SCREEN), qui éclaircit,
 // (2) copie dans le voile. Plus besoin de vider puis de repeindre le voile avant d'y percer les trous.
-const GRIS_OMBRE = 0x999999; // 60 % de gris : l'ombre (écran assombri de 40 %). C'était 0x808080 (50 %) puis 0x666666 (40 %) : le jeu était trop sombre
+const GRIS_PAR_LUMINOSITE = [0, 0x66, 0x80, 0x99, 0xb3, 0xcc, 0xe6, 0xff]; // le gris de l'ombre pour chaque réglage de luminosité (1 à 7, le 7 = 0xff : plus aucune ombre) : 3 = 60 % de gris, l'écran assombri de 40 % (c'était 0x666666 puis 0x808080 : le jeu était trop sombre)
+function grisOmbre() { const g = GRIS_PAR_LUMINOSITE[reglages.luminosite]; return (g << 16) | (g << 8) | g; } // le gris du réglage, écrit en couleur (ex. 0x99 donne 0x999999)
+export function appliquerLuminosite(scene) { // change le gris de l'ombre en direct (menu pause)
+    scene.fondVoile.setTint(grisOmbre()); // le fond du voile prend le nouveau gris
+    scene.voileEtat.nbZones = -1; // et on force le voile à se redessiner à la prochaine mise à jour
+    majVoile(scene); // on le redessine tout de suite : le menu pause est ouvert, le niveau ne se met plus à jour
+}
 export function creerVoile(scene) { // permet de creer le voile de lumière
     creerTextureHalo(scene);
     const voile = scene.add.renderTexture(0, 0, scene.scale.width * ECHELLE_VOILE, scene.scale.height * ECHELLE_VOILE); // crée une image en premiere plan que l'on peut ensuite modifier (demi-taille)
@@ -129,8 +136,8 @@ export function creerVoile(scene) { // permet de creer le voile de lumière
     voile.setDepth(50); // on met la profondeur au premier pan
     voile.setPipeline("SinglePipeline"); // OPTIMISATION (borne) : le voile couvre tout l'écran, c'est l'image la plus coûteuse à dessiner : on lui donne le shader le plus simple (voir optimisation.js)
     voile.setBlendMode(Phaser.BlendModes.MULTIPLY); // le voile multiplie l'écran au lieu de se poser dessus
-    voile.fill(GRIS_OMBRE, 1); // tout est dans l'ombre au départ
-    scene.fondVoile = scene.make.image({ key: "__WHITE", add: false }).setOrigin(0, 0).setDisplaySize(voile.width, voile.height).setTint(GRIS_OMBRE); // un rectangle gris de la taille du voile : le fond qu'on redessine avant les lumières
+    voile.fill(grisOmbre(), 1); // tout est dans l'ombre au départ
+    scene.fondVoile = scene.make.image({ key: "__WHITE", add: false }).setOrigin(0, 0).setDisplaySize(voile.width, voile.height).setTint(grisOmbre()); // un rectangle gris de la taille du voile : le fond qu'on redessine avant les lumières
     scene.pinceauLumiere = scene.make.image({ key: "halo", add: false }); // le pinceau qui éclaircit le voile autour du joueur et des lumières
     scene.pinceauLumiere.setBlendMode(Phaser.BlendModes.SCREEN); // mode "écran" : éclaircit sans jamais dépasser 100 %, et plusieurs lumières qui se touchent se combinent exactement comme avant
     scene.voile = voile; // on le met dans une variable
