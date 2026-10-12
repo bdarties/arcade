@@ -1,7 +1,7 @@
 // faisceaux.js : les faisceaux de lumière du niveau 2 : de hautes colonnes de lumière qui s'allument à tour de rôle
 // Chaque faisceau suit le même cycle : éteint (on passe), il clignote (avertissement), puis il s'allume et blesse (1 PV) ; les faisceaux
 // sont décalés les uns des autres, il faut donc choisir son moment et souvent dasher pour traverser avant qu'ils ne s'allument.
-// Les colonnes sont celles de FAISCEAUX_NIVEAU2 dans outils/generer_niveaux.py (la map ne contient pas les faisceaux).
+// Les faisceaux sont des points du calque d'objets "faisceau" de la map Tiled (un point par faisceau : seul son x compte).
 
 const PERIODE = 3300; // ms d'un cycle complet
 const AVERTISSEMENT = 500; // ms de clignotement avant l'allumage
@@ -9,10 +9,9 @@ const ALLUME = 700; // ms où le faisceau blesse
 const DECALAGE = 1100; // ms de décalage entre un faisceau et le suivant
 const LARGEUR = 56; // largeur du faisceau en px
 
-export function preparerFaisceaux(scene, colonnes) { // à appeler dans le create() du niveau
+export function preparerFaisceaux(scene, xs) { // à appeler dans le create() du niveau ; xs = la position x (en px) de chaque faisceau
     const hauteur = scene.carte.heightInPixels;
-    scene.faisceaux = colonnes.map((colonne, i) => {
-        const x = colonne * 32 + 16;
+    scene.faisceaux = xs.map((x, i) => {
         const rayon = scene.add.rectangle(x, hauteur / 2, LARGEUR, hauteur, 0xfff2c0, 1).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0); // le rayon, invisible au départ
         return { x, rayon, decalage: i * DECALAGE, allume: false, touche: false };
     });

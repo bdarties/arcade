@@ -5,6 +5,7 @@ import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
 import pause from "./js/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
+import { activerReset } from "./js/reset.js"; // maintenir deux boutons de la borne = retour à l'écran d'accueil
 import classement from "./js/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
@@ -68,4 +69,14 @@ if (contexte) {
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
 game.config.idGame = "deicide"; // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
-compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)
+activerReset(game); // P + ; maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
+compteurImages(game);
+// TEMPORAIRE (test) : F9 lance directement le niveau 2, pour tester la map sans refaire le niveau 1. À retirer avant la borne.
+window.addEventListener("keydown", (evenement) => {
+  if (evenement.key !== "F9") return;
+  evenement.preventDefault();
+  game.sound.stopAll();
+  game.scene.getScenes(true).forEach((scene) => game.scene.stop(scene.scene.key));
+  game.registry.set("chrono", 0); game.registry.set("score", 0); game.registry.set("vies", 3); game.registry.set("chronoActif", true);
+  game.scene.start("niveau2");
+}); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

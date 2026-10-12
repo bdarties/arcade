@@ -1,5 +1,5 @@
-// boss.js : les deux boss du jeu : le Soldat de la Lumière (fin du niveau 1) et le Dieu de la Lumière (boss final, niveau 3 = son arène)
-// Les deux utilisent ce même moteur ; ce qui change (PV, phases, attaques, taille, nom, ce qui se passe à sa mort) est dans PROFILS.
+// boss.js : le Soldat de la Lumière : mini-boss de fin du niveau 1 (il s'enrage à 0 PV) et boss final (version 2, plus forte, dans l'arène de niveau3.js)
+// Le moteur (phases, attaques, barre de vie) est réglé par un profil (PROFILS) : deux profils : soldat (niveau 1) et soldat2 (dernier combat). À 0 PV il ne meurt pas : il s'enrage (voir enrager).
 // Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
 //   boss_idle (8 images, il plane), boss_charge (6, il prépare une attaque), boss_attaque (4, il la lance), boss_mort (8, il se dissout).
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss), flotte en haut de la salle et attaque.
@@ -18,15 +18,19 @@
 //   - balayage  : un rayon horizontal frôle le sol de toute l'arène : il faut sauter ou monter sur une plateforme
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 //   - piqué     : il plonge sur l'endroit où le robot se tenait, puis remonte
-// Les tirs du robot le blessent. À 0 PV il se dissout, puis bossTue (points.js) arrête le chrono et ouvre le classement.
+// Les tirs du robot le blessent. À 0 PV il s'enrage, brise le mur de l'arène (arene.js) et le robot fuit vers le niveau 2 (poursuite.js).
 import { jouerSon, musiqueBoss, musiqueNiveau } from "./sons.js";
 import * as effets from "./effets.js";
 import { gagnerPoints, bossTue } from "./points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
 import { lacherPV } from "./bonus.js";
+import { briserMurDroit } from "./arene.js"; // le mur de droite de l'arène du Soldat
+
 
 const LARGEUR_IMAGE = 152; // une image des feuilles
 const HAUTEUR_IMAGE = 116;
+const ECHELLE_ENRAGE = 1.7; // de combien le Soldat gonfle en s'enrageant (3 x 1,7 = 5,1 : environ 775 px de large)
+const COULEUR_ENRAGE = 0xff6a5a; // la teinte rouge du boss enragé (aussi dans poursuite.js)
 const ECHELLE = 3; // le sprite est agrandi x3 : 456 x 348 px à l'écran, avec des pixels francs de 3 px comme le HUD (l'arène fait 1280 px de large)
 const DUREE_TRANSITION = 2000; // ms d'invulnérabilité à chaque changement de phase (plus que la plus longue préparation d'attaque)
 const POINTS_PAR_TIR = 10; // points gagnés à chaque tir qui touche le boss (le bonus de 3000 est donné à sa mort, voir points.js)
@@ -36,17 +40,17 @@ const LARGEUR_BARRE = 520; // barre de vie du boss, en haut de l'écran
 // attaques, par phase), echelle (taille du sprite), teinte (couleur du sprite, null = d'origine), nom (sur la barre de vie), cause (texte de mort), points (bonus à sa mort).
 const PROFILS = {
     soldat: {
-        pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "SOLDAT DE LA LUMIÈRE", cause: "le Soldat de la Lumière", points: 1000, suite: "niveau2", // la suite : le niveau 2 (voir points.js) ; plus court que l'ancien boss final : 2 phases seulement
+        pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "SOLDAT DE LA LUMIÈRE", cause: "le Soldat de la Lumière", points: 1000, enrage: true, // à 0 PV il ne meurt pas : il s'enrage, le mur de l'arène se brise et on fuit vers le niveau 2 (voir arene.js et poursuite.js) ; plus court que l'ancien boss final : 2 phases seulement
         pauses: [2000, 1500, 1500],
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
-    dieu: {
-        pv: 200, seuils: [140, 70], echelle: 3.5, teinte: 0xffe9a0, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 3000,
-        pauses: [2100, 1600, 1150],
+    soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
+        pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "SOLDAT DE LA LUMIÈRE ENRAGÉ", cause: "le Soldat enragé", points: 3000,
+        pauses: [1750, 1300, 950], // des attaques beaucoup plus rapprochées
         attaques: [
-            ["orbes", "colonne", "pluie", "lanternes", "rayonLarge"],
-            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "rayonLarge"],
-            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique", "rayonLarge"]
+            ["orbes", "colonne", "pluie", "lanternes", "balayage"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"],
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique"]
         ]
     }
 };
@@ -59,8 +63,7 @@ const ATTAQUES = {
     lanternes: { charge: 520, apres: 0 },
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
-    pique: { charge: 720, apres: 1250 },
-    rayonLarge: { charge: 950, apres: 600 } // Dieu seulement : un rayon qui couvre la moitié de l'arène, annoncé moins d'une seconde avant : il faut dasher pour changer de côté
+    pique: { charge: 720, apres: 1250 }
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
@@ -72,7 +75,7 @@ export function chargerBoss(scene) { // à appeler dans chargerJeu (preload)
     ANIMATIONS.forEach(([cle]) => scene.load.spritesheet(cle, "./assets/images/boss/" + cle + ".png", { frameWidth: LARGEUR_IMAGE, frameHeight: HAUTEUR_IMAGE }));
 }
 
-function creerAnimations(scene) { // crée une seule fois les 4 animations
+export function creerAnimations(scene) { // crée une seule fois les 4 animations (exportée : poursuite.js dessine le même boss)
     ANIMATIONS.forEach(([cle, nb, vitesse, repeat]) => {
         scene.textures.get(cle).setFilter(Phaser.Textures.FilterMode.NEAREST); // pixel art : pas de flou quand on agrandit
         if (!scene.anims.exists(cle)) scene.anims.create({ key: cle, frames: scene.anims.generateFrameNumbers(cle, { start: 0, end: nb - 1 }), frameRate: vitesse, repeat });
@@ -154,7 +157,7 @@ function majBarre(scene, boss) { // la barre rétrécit en douceur, avec un écl
 
 function majBoss(scene, boss, temps) {
     if (!boss.active) return;
-    if (boss.etat !== "mort" && !boss.pique) { // il flotte doucement de haut en bas et de gauche à droite ; il rejoint sa place en douceur après un piqué
+    if (boss.etat !== "mort" && boss.etat !== "enrage" && !boss.pique) { // il flotte doucement de haut en bas et de gauche à droite ; il rejoint sa place en douceur après un piqué
         const cibleX = scene.areneCentreX + Math.sin(temps / 1450) * (160 + 40 * boss.phase);
         const cibleY = boss.departY + Math.sin(temps / 900) * 14;
         boss.x += (cibleX - boss.x) * 0.15;
@@ -212,12 +215,6 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         decalages.forEach((d) => { const x = Phaser.Math.Clamp(joueur.x + d, 80, 1200); zones.push(zone(scene, { x, y: (boss.y + 40 + sol) / 2, w: 64, h: sol - boss.y - 40, trait: { w: 8, h: sol - boss.y - 40 } })); });
         return { zones };
     }
-    if (nom === "rayonLarge") { // un rayon de 600 px sur la moitié de l'arène où se trouve le robot : le trait clignote sur toute la hauteur
-        const gauche = joueur.x < scene.areneCentreX; // le robot est dans la moitié gauche ?
-        const x = scene.areneCentreX + (gauche ? -300 : 300); // le milieu de la moitié concernée
-        const haut = boss.y + 40;
-        return { zones: [zone(scene, { x, y: (haut + sol) / 2, w: 600, h: sol - haut, trait: { w: 600, h: sol - haut } })] };
-    }
     if (nom === "balayage") return { zones: [zone(scene, { x: 640, y: sol - 28, w: 1400, h: 56, trait: { w: 1400, h: 6 } })] }; // une ligne sur toute la largeur, à hauteur des pieds
     if (nom === "pluie") { // de petits traits en haut de l'écran : là où les orbes vont tomber
         const haut = scene.cameras.main.worldView.y + 14;
@@ -238,7 +235,7 @@ function nettoyerAnnonce(annonce) { // l'attaque est annulée : on enlève ses t
 
 function executer(scene, boss, nom, annonce, valide) {
     if (nom === "orbes") tirerOrbes(scene, boss);
-    else if (nom === "colonne" || nom === "balayage" || nom === "rayonLarge") annonce.zones.forEach((z) => declencher(scene, z));
+    else if (nom === "colonne" || nom === "balayage") annonce.zones.forEach((z) => declencher(scene, z));
     else if (nom === "pluie") faireTomberPluie(scene, boss, annonce, valide);
     else if (nom === "lanternes") invoquerLanternes(scene, boss, valide);
     else if (nom === "nova") lancerNova(scene, boss, valide);
@@ -246,7 +243,7 @@ function executer(scene, boss, nom, annonce, valide) {
 }
 
 // une orbe de lumière : le même halo que l'orbe du mage (ennemis.js), doré
-function creerOrbe(scene, x, y, vx, vy) {
+export function creerOrbe(scene, x, y, vx, vy) { // (exportée : poursuite.js lance les mêmes orbes)
     const orbe = scene.tirsEnnemis.create(x, y, "halo");
     orbe.setScale(0.25);
     orbe.body.setCircle(40, 88, 88); // hitbox ronde de 40 px de rayon, centrée dans l'image
@@ -374,14 +371,14 @@ function majZones(scene) { // à chaque image
 
 function toucherBoss(scene, boss, tir) {
     tir.destroy();
-    if (boss.etat === "apparition" || boss.etat === "transition" || boss.etat === "mort") return; // intouchable en apparaissant, pendant un changement de phase, et mort
+    if (boss.etat === "apparition" || boss.etat === "transition" || boss.etat === "mort" || boss.etat === "enrage") return; // intouchable en apparaissant, pendant un changement de phase, et mort
     boss.pv -= 1;
     effets.flash(boss, 0xffffff, 60); // il devient blanc 60 ms
     effets.eclats(scene, tir.x, tir.y, ECLATS_BLANC[0], 6, ECLATS_BLANC[1]);
     jouerSon(scene, "ennemi_touche");
     gagnerPoints(scene, POINTS_PAR_TIR, boss.x, boss.y - 120);
     majBarre(scene, boss);
-    if (boss.pv <= 0) { mourir(scene, boss); return; }
+    if (boss.pv <= 0) { if (profil.enrage) enrager(scene, boss); else mourir(scene, boss); return; } // à 0 PV le Soldat du niveau 1 ne meurt pas : il s'enrage ; le dernier boss, lui, meurt
     const phase = boss.pv <= profil.seuils[1] ? 2 : boss.pv <= profil.seuils[0] ? 1 : 0;
     if (phase > boss.phase) changerDePhase(scene, boss, phase);
 }
@@ -415,7 +412,36 @@ function changerDePhase(scene, boss, phase) {
     });
 }
 
-function mourir(scene, boss) {
+// Le Soldat arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer au corps à corps ; il détruit le mur de droite de l'arène
+// (arene.js : briserMurDroit) puis le robot doit fuir. Pendant la fuite il lance des orbes.
+function enrager(scene, boss) {
+    nettoyerCombat(scene, boss);
+    boss.etat = "enrage";
+    gagnerPoints(scene, profil.points, boss.x, boss.y - 120); // le bonus de bataille est donné maintenant : la suite est une fuite
+    boss.body.enable = false; // plus de tirs qui le touchent
+    boss.play("boss_charge");
+    boss.setTint(COULEUR_ENRAGE);
+    boss.teinteBase = COULEUR_ENRAGE;
+    jouerSon(scene, "joueur_mort"); // un grondement (le même son grave que la mort du robot)
+    scene.cameras.main.flash(500, 255, 90, 60);
+    scene.cameras.main.shake(1100, 0.012);
+    effets.eclats(scene, boss.x, boss.y, 0xff5a3c, 30, 320);
+    scene.tweens.add({ targets: boss, scaleX: profil.echelle * ECHELLE_ENRAGE, scaleY: profil.echelle * ECHELLE_ENRAGE, duration: 900, ease: "Back.Out" }); // il gonfle : bien plus grand qu'avant
+    scene.tweens.add({ targets: elementsBarre(boss), alpha: 0, duration: 600 }); // la barre de vie disparaît
+    scene.tweens.add({ targets: boss, x: 330, y: boss.departY + 40, duration: 900, ease: "Sine.InOut" }); // il se place à gauche, face au mur
+    scene.time.delayedCall(1500, () => { if (boss.active) briserMurDroit(scene, boss); }); // le mur est détruit en trois temps visibles
+    // pendant la fuite, il tire des orbes sur le robot
+    scene.time.delayedCall(4200, () => {
+        const tir = scene.time.addEvent({ delay: 1900, loop: true, callback: () => {
+            if (!boss.active || scene.partieFinie || scene.mort) { tir.remove(); return; }
+            const base = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y);
+            jouerSon(scene, "orbe");
+            for (let i = -1; i <= 1; i++) creerOrbe(scene, boss.x + 120, boss.y, Math.cos(base + i * 0.25) * 300, Math.sin(base + i * 0.25) * 300);
+        } });
+    });
+}
+
+function mourir(scene, boss) { // le dernier boss meurt pour de bon : il se dissout, puis c'est la fin de la partie
     nettoyerCombat(scene, boss);
     boss.etat = "mort";
     musiqueNiveau(scene); // le metal s'arrête : la musique du niveau revient pour l'écran de fin
@@ -439,6 +465,6 @@ function mourir(scene, boss) {
         effets.eclats(scene, x, y, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);
         boss.destroy();
         elementsBarre(boss).forEach((e) => e.destroy());
-        bossTue(scene, { x, y }, profil); // points du boss, puis : le Soldat ouvre le niveau 2, le Dieu arrête le chrono et ouvre le classement
+        bossTue(scene, { x, y }, profil); // points du boss, chrono arrêté, classement
     });
 }
