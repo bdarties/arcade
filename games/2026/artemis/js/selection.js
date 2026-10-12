@@ -71,6 +71,11 @@ export default class selection extends Phaser.Scene {
       this.load.image("img_bouton_" + nom, "./assets/ui/bouton_" + nom + ".png");
     });
 
+    // synopsis (cf. synopsis.js) : une image par page, texte compris
+    ["1", "2"].forEach((numero) => {
+      this.load.image("img_synopsis_" + numero, "./assets/ui/page_synopsis" + numero + ".png");
+    });
+
     // menu pause (cf. pause.js)
     ["reprendre", "controles", "classement", "retour_menu"].forEach((nom) => {
       this.load.image("img_pause_" + nom, "./assets/ui/pause/" + nom + ".png");

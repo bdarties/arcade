@@ -7,6 +7,7 @@ import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
 import pause from "./js/pause.js";
+import synopsis from "./js/synopsis.js";
 
 // configuration générale du jeu
 var config = {
@@ -32,7 +33,7 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause],
+  scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause, synopsis],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
