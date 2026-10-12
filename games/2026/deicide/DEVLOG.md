@@ -18,6 +18,13 @@
 - **Z + X maintenus 1,5 s** : retour à l'écran d'accueil (reset pour le joueur suivant). **C + F maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
 - Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X ouvre la pause, sauf si Z est déjà maintenu.
 
+## Le son des combats de boss
+- **Musique plus forte** : le metal passe de 0,2 à 0,42 de volume de base (le niveau est à 0,3 avec un morceau plus doux) ; le réglage « Musique » du menu pause la baisse toujours.
+- **Mesure de la musique** (Boss Battle #8, analysée avec un script) : 200 battements par minute, donc un battement = 300 ms. L'introduction dure exactement 8 mesures (9,6 s) et la boucle 170 battements (51 s), donc la boucle repart bien sur un temps. La tonalité est en ré (mineur : le sib est présent).
+- **Les bruitages sont accordés** : au lieu d'une hauteur au hasard (±1 demi-ton), chaque son prend, pendant un combat de boss, la note de la gamme de ré mineur la plus proche. J'ai mesuré la hauteur de chaque son (analyse de son spectre) pour calculer de combien le décaler (tableau `ACCORD` dans `sons.js`).
+- **Les attaques sont en rythme** : leurs durées sont arrondies à des croches (150 ms), elles démarrent sur une croche (position de la musique lue avec `seek`), et les sons d'attaque (incantation, orbes, rayon) sont joués sur la croche la plus proche. Mesuré : en moyenne 14 ms d'écart à la croche, 33 ms au maximum (une image à 30 images par seconde).
+- Le robot lui-même (tir, saut) reste instantané : on ne retarde jamais une action du joueur.
+
 ## Un seul code pour les niveaux
 - `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.
