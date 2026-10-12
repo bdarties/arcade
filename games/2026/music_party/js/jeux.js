@@ -40,11 +40,11 @@ export const JEUX = [
   },
   {
     cle: "piano_time",
-    titre: "piano_time",
-    slogan: "Joue la mélodie sur le piano_time géant !",
-    description: "Joue la mélodie\nen rythme sur\nle piano_time géant !",
+    titre: "PIANO TIME",
+    slogan: "Joue la mélodie sur le PIANO TIME géant !",
+    description: "Joue la mélodie\nen rythme sur\nle PIANO TIME géant !",
     regles:
-      "Les notes descendent vers la zone dorée de ton piano_time.\n" +
+      "Les notes descendent vers la zone dorée de ton PIANO TIME.\n" +
       "Appuie sur A, B ou C quand une note est dans la zone :\n" +
       "chaque réussite accélère le tempo, le combo multiplie tes points.\n" +
       "3 notes ratées ou fausses notes : c'est fini !",
