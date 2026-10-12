@@ -67,7 +67,7 @@ export default class niveau1 extends Phaser.Scene {
     this.listeCristaux = CRISTAUX;
     this.messageVictoire = "Niveau 1 terminé ! Direction le niveau 2...";
     this.niveauSuivant = "niveau2";
-    this.objectif = "OBJECTIF : récupère le parchemin tout en haut,\npuis franchis la porte de sortie";
+    this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie";
   }
 
   // ==========================================================================
