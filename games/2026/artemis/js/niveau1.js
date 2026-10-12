@@ -34,6 +34,8 @@ const DUREE_FONDU = 400; // ms
 const DUREE_ENTREE_ECHELLE = 160; // ms : le joueur se place sur l'échelle
 const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'échelle, avant le changement de niveau
 const NB_CAILLOUX = 14;
+const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
+const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
 const DISTANCE_MIN_DEPART = 72; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (hors de portée d'interaction)
 const PORTEE_INTERACTION = 40; // px : distance max à l'échelle de montée pour l'utiliser
 const COULEUR_DESCENTE = { texte: "#FFAC80", forme: 0xffac80 }; // orange de la palette
@@ -217,6 +219,16 @@ export default class niveau1 extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(fct.PROFONDEUR.hud);
+
+    // compteur de FPS : créé avant creerCameraHud, qui répartit les objets entre les deux caméras (le HUD est collé à l'écran)
+    this.texte_fps = null;
+    if (AFFICHER_FPS) {
+      this.texte_fps = this.add.text(8, this.scale.height - 8, "", { fontFamily: "monospace", fontSize: "18px", color: "#7CFF7C", stroke: "#080D1C", strokeThickness: 4 })
+        .setOrigin(0, 1)
+        .setScrollFactor(0)
+        .setDepth(fct.PROFONDEUR.hud);
+      this.prochain_fps = 0;
+    }
 
     lumiere.majLumieres(this); // sinon la première image s'affiche sans obscurité
     this.creerCameraHud();
@@ -706,7 +718,16 @@ export default class niveau1 extends Phaser.Scene {
 
 
 
+  // images par seconde, et nombre de lumières Light2D affichées (visibles / existantes) : de quoi mesurer le coût de la lumière
+  majFps(time) {
+    if (time < this.prochain_fps) return;
+    this.prochain_fps = time + PERIODE_FPS;
+    const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : "";
+    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres);
+  }
+
   update(time, delta) {
+    if (this.texte_fps) this.majFps(time);
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
       return;
