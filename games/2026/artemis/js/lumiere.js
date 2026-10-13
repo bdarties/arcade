@@ -1,6 +1,7 @@
 import * as fct from "./fonctions.js";
 import * as bonus from "./bonus.js";
 import * as cristaux from "./cristaux.js";
+import * as biomes from "./biomes.js";
 
 /***********************************************************************/
 /** LUMIERE : le jeu est dans le noir, la torche et quelques objets éclairent
@@ -47,7 +48,7 @@ const DISTANCE_MIN_TORCHE = 24; // px : face à un mur collé, les lumières res
 // lumières des objets qui brillent : rayon (px), couleur, intensité
 const LUMIERE_LASER = { rayon: 70, intensite: 1, couleurs: { bleu: 0x6fb8ff, rouge: 0xff6f6f } };
 const LUMIERE_TIR_ENNEMI = { rayon: 60, intensite: 0.9, couleur: 0x7cff7c };
-const LUMIERE_CRISTAL = { rayon: 110, intensite: 0.9, couleur: 0xffc060 };
+const LUMIERE_CRISTAL = { rayon: 110, intensite: 0.9 }; // la couleur vient du biome (cf. biomes.js)
 const LUMIERE_POTION = { rayon: 60, intensite: 0.8, couleur: 0xffe9b0 };
 const LUMIERE_ECLAT = { couleur: 0xffd9a0, rayon_par_px: 1.5 }; // rayon = celui du halo de l'ancien système x 1,5
 
@@ -147,7 +148,7 @@ function majLight2D(scene) {
     if (tir.active) suivre(scene, tir, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.couleur, LUMIERE_TIR_ENNEMI.intensite);
   });
   scene.cristaux.forEach((cristal) => {
-    if (cristal.active) suivre(scene, cristal, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.couleur, LUMIERE_CRISTAL.intensite);
+    if (cristal.active) suivre(scene, cristal, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, biomes.biomeDuNiveau(scene.niveau).lumiere, LUMIERE_CRISTAL.intensite);
   });
 
   // les éclats d'impact : ils faiblissent jusqu'à disparaître
@@ -421,7 +422,7 @@ function majDegrade(scene) {
     if (tir.active) pinceau(scene, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.intensite, LUMIERE_TIR_ENNEMI.couleur);
   });
   scene.cristaux.forEach((cristal) => {
-    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, LUMIERE_CRISTAL.couleur);
+    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, biomes.biomeDuNiveau(scene.niveau).lumiere);
   });
   scene.eclats = scene.eclats.filter((eclat) => scene.time.now < eclat.fin);
   scene.eclats.forEach((eclat) => {
