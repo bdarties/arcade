@@ -331,8 +331,8 @@ export const COMBAT = {
 //   "garde"  = ennemi 1 : corps à corps, il frappe     (calque Tiled "ennemis 1")
 //   "tireur" = ennemi 2 : il reste en place et tire     (calque Tiled "ennemis 2")
 export const TYPES_ENNEMIS = {
-  garde:  { sprite: "butler", anim: "marche", pv: 3, vitesse: 55, vitesseChasse: 100, degats: 17, portee: 44, preparation: 280, recharge: 1000, detection: 280, recul: 120 },
-  tireur: { sprite: "widow",  anim: "idle",   pv: 2, degats: 17, recharge: 2000, preparation: 350, detection: 560, vitesseBoule: 260 }
+  garde:  { sprite: "butler", anim: "marche", pv: 5, vitesse: 55, vitesseChasse: 100, degats: 17, portee: 44, preparation: 280, recharge: 1000, detection: 280, recul: 120 },
+  tireur: { sprite: "widow",  anim: "idle",   pv: 10, degats: 17, recharge: 2000, preparation: 350, detection: 560, vitesseBoule: 260 }
 };
 
 /***************************************************************

@@ -222,7 +222,7 @@ const combat = {
         x: x + Math.cos(a) * d,
         y: y + Math.sin(a) * d,
         alpha: 0,
-        duration: 280,
+        duration: 1000,
         onComplete: () => p.destroy()
       });
     }
