@@ -1,7 +1,9 @@
+import { creerTextures } from "./textures.js";
 import { PERSOS } from "./persos.js";
+import { JEUX } from "./jeux.js";
 
 // Scène de chargement : on charge TOUTES les images et la musique une seule
-// fois et on crée les animations.
+// fois, on dessine les petites textures et on crée les animations.
 // Ensuite on passe à l'écran titre.
 export default class chargement extends Phaser.Scene {
   constructor() {
@@ -26,19 +28,28 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_fond_accueil", "./assets/images/fond_accueil.jpg");
     this.load.image("img_fond_scene", "./assets/images/fond_scene.jpg");
 
-    // les 4 persos d'opéra et leur tete (affichée à coté du score)
-  PERSOS.forEach((perso) => {
-    if (perso.cle == "diva") {
-      this.load.spritesheet(perso.texture, "./assets/images/La_reine_de_la_nuit_spritesheet.png", { frameWidth: 235, frameHeight: 256 });
-    } else {
-      this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
-    }
-    this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
-    this.load.spritesheet(perso.marche, "./assets/images/marche_" + perso.cle + ".png", {
-      frameWidth: perso.tailleMarche[0],
-      frameHeight: perso.tailleMarche[1]
+    // Écrans de sélection et personnages de la version d'Abdul.
+    this.load.image("img_choisis_jeu", "./assets/images/choisis_jeu.png");
+    this.load.image("img_cadre_jeu", "./assets/images/cadre_jeu.png");
+        JEUX.forEach((jeu) => {
+      if (jeu.apercu) this.load.image(jeu.apercu, "./assets/images/apercu_" + jeu.cle + ".jpg");
     });
-  });
+    PERSOS.forEach((perso) => {
+      this.load.spritesheet(perso.texture, "./assets/images/" + perso.cle + ".png", { frameWidth: perso.taille[0], frameHeight: perso.taille[1] });
+      this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
+      this.load.spritesheet("img_grand_" + perso.cle, "./assets/images/grand_" + perso.cle + ".png", { frameWidth: 288, frameHeight: 360 });
+      this.load.image("img_portrait_" + perso.cle, "./assets/images/portrait_" + perso.cle + ".jpg");
+      this.load.image("img_portrait_nb_" + perso.cle, "./assets/images/portrait_" + perso.cle + "_nb.jpg");
+      this.load.image("img_nom_" + perso.cle, "./assets/images/nom_" + perso.cle + ".png");
+    });
+
+    this.load.image("img_fond_choix", "./assets/images/fond_choix.jpg");
+    this.load.image("img_choisis", "./assets/images/choisis.png");
+    this.load.image("img_zone_texte", "./assets/images/zone_texte.png");
+    this.load.image("img_fleche_gauche", "./assets/images/fleche_gauche.png");
+    this.load.image("img_fleche_droite", "./assets/images/fleche_droite.png");
+    this.load.image("img_cadre", "./assets/images/cadre.png");
+    this.load.image("img_cadre_choisi", "./assets/images/cadre_choisi.png");
 
     // Music Fall : persos du pack Sunny Land
     // renard : repos 0-3, course 4-9, saut 10, music_fall 11, blessé 12-13
@@ -49,34 +60,32 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_tete_renard2", "./assets/images/tete_renard2.png");
     this.load.image("img_touche_note", "./assets/images/touche_note.png");
 
-    // petits éléments graphiques (pixel art)
-    this.load.image("img_etoile", "./assets/images/etoile.png");   // étoile quand on réussit
-    this.load.image("img_vie", "./assets/images/vie.png");         // une vie = une croche dorée
-    this.load.image("img_halo", "./assets/images/halo.png");       // halo derrière le perso choisi
-    this.load.image("img_page", "./assets/images/page.png");       // la feuille de partition de Music Fall
-    this.load.image("img_note", "./assets/images/note.png");       // la croche qui tombe avec le perso
-    this.load.image("img_rideau", "./assets/images/rideau.png");   // le rideau rouge (essai 3)
+    // Memory Song : le décor, le saxophone et ses six touches.
+    this.load.image("img_fond_opera", "./assets/images/fond_opera.jpg");
+    this.load.image("img_saxo", "./assets/images/saxo.png");
+    for (var i = 1; i <= 6; i++) {
+      this.load.image("img_touche" + i, "./assets/images/touche" + i + ".png");
+    }
+
+    // Tuto son : fichiers préchargés, puis ajoutés au gestionnaire dans Memory Song.::::
+    [67, 69, 72, 60, 62, 64].forEach((note) => this.load.audio("saxo_" + note, "./assets/sons/saxo_" + note + ".wav"));
 
     // musique de fond (pack SunnyLand Music)
     this.load.audio("musique", "./assets/sons/musique.ogg");
   }
 
   create() {
+    creerTextures(this);
+        PERSOS.forEach((perso) => {
+      this.anims.create({ key: perso.anim, frames: this.anims.generateFrameNumbers(perso.texture, { start: 0, end: 5 }), frameRate: 6, repeat: -1 });
+      this.anims.create({ key: "anim_grand_" + perso.cle, frames: this.anims.generateFrameNumbers("img_grand_" + perso.cle, { start: 0, end: 3 }), frameRate: 5, repeat: -1 });
+    });
+
     // les persos Sunny Land sont en pixel art tout petit : quand on les
     // agrandit, on garde des pixels nets au lieu de les flouter
-    ["img_renard", "img_renard2", "img_grenouille", "img_etoile", "img_vie", "img_halo", "img_page", "img_note"].forEach((cle) =>
+    ["img_renard", "img_renard2", "img_grenouille"].forEach((cle) =>
       this.textures.get(cle).setFilter(Phaser.Textures.FilterMode.NEAREST)
     );
-    // les 4 persos d'opéra : pixel art aussi, et une animation de marche chacun
-    PERSOS.forEach((perso) => {
-      this.textures.get(perso.marche).setFilter(Phaser.Textures.FilterMode.NEAREST);
-      this.anims.create({
-        key: perso.animMarche,
-        frames: this.anims.generateFrameNumbers(perso.marche, { start: 0, end: 5 }),
-        frameRate: 12,
-        repeat: -1
-      });
-    });
     [
       ["anim_renard_repos", "img_renard", 8],
       ["anim_renard2_repos", "img_renard2", 8],
@@ -94,15 +103,7 @@ export default class chargement extends Phaser.Scene {
     this.registry.set("jeu", "music_fall");
     this.registry.set("mode", "solo");
     this.registry.set("perso1", "carmen");
-    this.registry.set("perso2", "maestro");
+    this.registry.set("perso2", "figaro");
     this.scene.start("accueil");
-    this.anims.create({
-      key: "anim_diva",
-      frames: this.anims.generateFrameNumbers("img_diva", { start: 0, end: 3 }),
-      frameRate: 8,
-      repeat: -1
-    });
   }
-
-  
 }
