@@ -53,12 +53,12 @@ const PROFILS = {
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
         musique: "2", // « Boss Battle #9 » (voir sons.js) : le premier combat garde « Boss Battle #8 »
         pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
-        pauses: [1400, 1000, 250], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
+        pauses: [1250, 900, 220], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
         attaques: [
             ["orbes", "colonne", "pluie", "orbes", "balayage", "colonne", "orbes", "lanternes"], // beaucoup d'orbes et de lasers, lanternes 1 fois sur 8
-            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "lanternes"],
-            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
+            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "spirale", "lanternes"],
+            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "spirale", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
         ]
     }
 };
@@ -69,9 +69,9 @@ const dure = (boss) => Boolean(profil.phase3Dure) && boss.phase === 2;
 // charge : multiplicateur du temps d'annonce ; orbes/ouverture/vitesse : une salve d'orbes ; salves : nombre de salves de suite ; pluie : orbes de la pluie ;
 // colonnes : décalages (px) des colonnes fixes autour de celle qui suit le robot ; balayage : un balayage suit les colonnes ; nova : anneaux d'orbes
 const DUR = [
-    { charge: 0.85, orbes: 7, ouverture: 80, vitesse: 380, salves: 1, pluie: 12, pluieVitesse: 400, colonnes: [-300, 300], balayage: false, nova: [18, 2, 260] },
-    { charge: 0.8, orbes: 10, ouverture: 110, vitesse: 430, salves: 2, pluie: 16, pluieVitesse: 425, colonnes: [-250, 250, -500, 500], balayage: true, nova: [20, 3, 290] },
-    { charge: 0.7, orbes: 13, ouverture: 130, vitesse: 480, salves: 3, pluie: 20, pluieVitesse: 450, colonnes: [-220, 220, -440, 440, -660, 660], balayage: true, nova: [24, 5, 330] }
+    { charge: 0.8, orbes: 8, ouverture: 85, vitesse: 410, salves: 1, pluie: 14, pluieVitesse: 430, colonnes: [-280, 280], balayage: false, nova: [18, 2, 280] },
+    { charge: 0.75, orbes: 11, ouverture: 115, vitesse: 460, salves: 2, pluie: 18, pluieVitesse: 460, colonnes: [-240, 240, -480, 480], balayage: true, nova: [22, 3, 310] },
+    { charge: 0.7, orbes: 14, ouverture: 135, vitesse: 510, salves: 3, pluie: 22, pluieVitesse: 490, colonnes: [-220, 220, -440, 440, -660, 660], balayage: true, nova: [24, 5, 350] }
 ];
 const rude = (boss) => (profil.phase3Dure ? DUR[boss.phase] : null); // les réglages durs de la phase en cours, ou null pour les autres boss
 // charge : ms de préparation avant le départ de l'attaque ; apres : ms que dure encore l'effet avant que la pause commence
@@ -82,7 +82,8 @@ const ATTAQUES = {
     lanternes: { charge: 520, apres: 0 },
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
-    pique: { charge: 720, apres: 1250 }
+    pique: { charge: 720, apres: 1250 },
+    spirale: { charge: 700, apres: 2500 } // (dernier boss, phases 2 et 3 : voir lancerSpirale)
 };
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
@@ -187,7 +188,7 @@ function majBoss(scene, boss, temps) {
     if (!boss.active) return;
     // il flotte doucement de haut en bas et de gauche à droite ; il rejoint sa place en douceur après un piqué
     if (boss.etat !== "mort" && boss.etat !== "enrage" && !boss.pique) {
-        const cibleX = scene.areneCentreX + Math.sin(temps / (dure(boss) ? 1000 : 1450)) * (160 + 40 * boss.phase);
+        const cibleX = scene.areneCentreX + Math.sin(temps / (dure(boss) ? 850 : profil.phase3Dure ? 1200 : 1450)) * (160 + 40 * boss.phase);
         const cibleY = boss.departY + Math.sin(temps / 900) * 14;
         boss.x += (cibleX - boss.x) * 0.15;
         boss.y += (cibleY - boss.y) * 0.15;
@@ -221,7 +222,7 @@ function lancerAttaque(scene, boss, nom) {
     boss.play("boss_charge");
     // (durées arrondies à des croches : tout reste en rythme avec la musique) // (phase 3 dure : l'attaque dure plus longtemps pour laisser
     // partir la deuxième salve d'orbes)
-    const apres = quantifier(ATTAQUES[nom].apres + (rude(boss) ? (nom === "orbes" && rude(boss).salves > 1 ? 350 * (rude(boss).salves - 1) + 150 : nom === "colonne" && rude(boss).balayage ? 1300 : 0) : 0));
+    const apres = quantifier(ATTAQUES[nom].apres + (rude(boss) ? (nom === "orbes" && rude(boss).salves > 1 ? 350 * (rude(boss).salves - 1) + 150 : nom === "colonne" && rude(boss).balayage ? 1200 : 0) : 0));
     // phase 3 dure : l'attaque est annoncée 30 % plus vite, il faut réagir plus vite. Pas moins : le trait de la colonne suit le robot 0,5 s puis
     // se fige (voir zone) ; si l'annonce durait moins, la colonne tomberait avant de se figer, pile sur le robot, impossible à éviter
     const charge = quantifier(ATTAQUES[nom].charge * (rude(boss) ? rude(boss).charge : 1));
@@ -283,6 +284,7 @@ function executer(scene, boss, nom, annonce, valide) {
     else if (nom === "lanternes") invoquerLanternes(scene, boss, valide);
     else if (nom === "nova") lancerNova(scene, boss, valide);
     else if (nom === "pique") piquer(scene, boss, annonce);
+    else if (nom === "spirale") lancerSpirale(scene, boss, valide);
 }
 
 // une orbe de lumière : le même halo que l'orbe du mage (ennemis.js), doré
@@ -312,7 +314,7 @@ function tirerOrbes(scene, boss) { // une salve en éventail, centrée sur le ro
 // phase 3 dure : juste après les colonnes, un trait annonce un balayage au sol (0,55 s), puis le rayon part : il faut éviter les colonnes
 // puis sauter ou monter sur une plateforme tout de suite après
 function balayageApresColonnes(scene, boss, valide) {
-    scene.time.delayedCall(650, () => {
+    scene.time.delayedCall(550, () => {
         if (!valide()) return;
         const balayage = zone(scene, { x: 640, y: scene.areneSolY - 28, w: 1400, h: 56, trait: { w: 1400, h: 6 } });
         scene.time.delayedCall(550, () => { if (valide()) declencher(scene, balayage); else detruireZone(balayage); });
@@ -332,6 +334,26 @@ function invoquerLanternes(scene, boss, valide) {
     const nombre = rude(boss) ? 2 : [2, 2, 4][boss.phase]; // dernier boss : seulement 2 lanternes, à toutes les phases
     for (let i = 0; i < nombre; i++) scene.time.delayedCall(i * 250, () => { if (valide()) invoquerLanterne(scene); });
     effets.eclats(scene, boss.x, boss.y - 30, ECLATS_OR[0], 12, ECLATS_OR[1]);
+}
+
+// La spirale (dernier boss, phases 2 et 3) : le boss tourne sur lui-même en crachant 3 bras d'orbes. Les bras tournent dans un sens, puis à la moitié
+// ils repartent dans l'autre sens : les nouveaux bras croisent ceux qui sont encore en l'air. Il faut passer entre les bras et lire le changement de sens.
+function lancerSpirale(scene, boss, valide) {
+    const etapes = boss.phase === 2 ? 18 : 14; // une série d'orbes toutes les 130 ms
+    const vitesse = boss.phase === 2 ? 330 : 300;
+    const bras = 3;
+    let angle = Phaser.Math.FloatBetween(0, Math.PI * 2); // le départ change à chaque fois
+    for (let i = 0; i < etapes; i++) scene.time.delayedCall(i * 130, () => {
+        if (!valide()) return;
+        const sens = i < etapes / 2 ? 1 : -1; // la seconde moitié tourne à l'envers
+        angle += sens * 0.34;
+        if (i % 3 === 0) jouerSonSurLeTemps(scene, "orbe");
+        for (let k = 0; k < bras; k++) {
+            const a = angle + (k / bras) * Math.PI * 2;
+            creerOrbe(scene, boss.x, boss.y + 10, Math.cos(a) * vitesse, Math.sin(a) * vitesse);
+        }
+    });
+    effets.eclats(scene, boss.x, boss.y, ECLATS_OR[0], 14, ECLATS_OR[1]);
 }
 
 function lancerNova(scene, boss, valide) { // des anneaux d'orbes qui s'écartent : chaque anneau est décalé du précédent, ce qui laisse des trous
