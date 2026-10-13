@@ -41,11 +41,9 @@ export default class selection extends Phaser.Scene {
     // map de test (export JSON de Tiled) et ses tilesets
     // le nom du tileset doit etre le meme que dans Tiled
     this.load.tilemapTiledJSON("map_test", "./assets/map/map_test.tmj");
-    this.load.image("tiles_decorative_cracks_floor", "./assets/map/decorative_cracks_floor.png");
-    this.load.image("tiles_decorative_cracks_walls", "./assets/map/decorative_cracks_walls.png");
-    this.load.image("tiles_walls_floor", "./assets/map/walls_floor.png");
 
-    // tilesets des biomes colorés : "tiles_bleu", "tiles_vert", "tiles_violet" (le biome gris garde walls_floor.png)
+    // tilesets des niveaux générés, un par biome (13 x 5 tuiles : murs et sol, cf. generation.js) : "tiles_gris", "tiles_bleu", "tiles_vert", "tiles_violet"
+    this.load.image("tiles_gris", "./assets/map/tileset.png");
     BIOMES_COLORES.forEach(([nom]) => this.load.image("tiles_" + nom, "./assets/map/tileset_" + nom + ".png"));
 
     // salle safe (map Tiled) et ses tilesets (cf. salle_safe.js)

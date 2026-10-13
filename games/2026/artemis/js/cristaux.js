@@ -1,5 +1,6 @@
 import * as fct from "./fonctions.js";
 import * as pierres from "./pierres.js";
+import * as biomes from "./biomes.js";
 
 /***********************************************************************/
 /** CRISTAUX : quelques cristaux lumineux contre les murs des niveaux, pour meubler l'obscurité
@@ -21,14 +22,15 @@ export function creerCristaux(scene, calque_sol, calque_murs) {
 
   // position = la base du cristal ; le sprite (38x39) est centré 19 px plus haut
   scene.groupe_cristaux = scene.physics.add.staticGroup();
+  const biome = biomes.biomeDuNiveau(scene.niveau); // la couleur des cristaux suit le biome du niveau
   scene.cristaux = scene.etat.cristaux.map((position) => {
-    const cristal = scene.groupe_cristaux.create(position.x, position.y - 19, "sprite_cristal");
+    const cristal = scene.groupe_cristaux.create(position.x, position.y - 19, biome.cristal);
     // hitbox sur le pied du cristal (colonnes 8 à 29, lignes 27 à 38) : on peut passer derrière le haut
     cristal.body.setSize(22, 12);
     cristal.body.setOffset(8, 27);
     cristal.setDepth(position.y); // même tri d'affichage que les joueurs et les cailloux
     cristal.coups_restants = position.coups ?? COUPS_CRISTAL;
-    cristal.anims.play({ key: "anim_cristal", startFrame: Phaser.Math.Between(0, 23) }); // pas tous synchronisés
+    cristal.anims.play({ key: biome.anim_cristal, startFrame: Phaser.Math.Between(0, 23) }); // pas tous synchronisés
     cristal.phase = Math.random() * Math.PI * 2; // pour la pulsation de la lumière
     return cristal;
   });

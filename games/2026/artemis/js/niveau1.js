@@ -134,12 +134,11 @@ export default class niveau1 extends Phaser.Scene {
       // grille[y][x] = true si mur (cf. generation.js), puis on la traduit en tuiles
       const grille = this.etat.grille;
       map = this.make.tilemap({ tileWidth: 32, tileHeight: 32, width: LARGEUR_NIVEAU, height: HAUTEUR_NIVEAU });
-      // le sol est toujours celui du biome gris ; les murs prennent le tileset du biome du niveau (mêmes numéros de tuiles)
+      // murs et sol viennent du tileset du biome du niveau (mêmes numéros de tuiles dans les quatre)
       const biome = biomes.biomeDuNiveau(this.niveau);
-      const tileset_sol = map.addTilesetImage("walls_floor", "tiles_walls_floor");
-      const tileset_murs = map.addTilesetImage("murs_" + biome.nom, biome.tileset);
-      calque_sol = map.createBlankLayer("sol", tileset_sol);
-      calque_murs = map.createBlankLayer("murs", tileset_murs);
+      const tileset = map.addTilesetImage("tileset_" + biome.nom, biome.tileset);
+      calque_sol = map.createBlankLayer("sol", tileset);
+      calque_murs = map.createBlankLayer("murs", tileset);
       grille.forEach((ligne, y) => ligne.forEach((mur, x) => {
         if (mur) calque_murs.putTileAt(generation.tuileMur(grille, x, y), x, y);
         else calque_sol.putTileAt(generation.TUILES.sol, x, y);
