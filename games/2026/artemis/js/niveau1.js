@@ -387,7 +387,7 @@ export default class niveau1 extends Phaser.Scene {
     this.etat.cailloux = cases_libres.slice(0, NB_CAILLOUX).map((tuile) => ({
       x: tuile.getCenterX(),
       y: tuile.getCenterY(),
-      image: Phaser.Utils.Array.GetRandom(["img_caillou_1", "img_caillou_2", "img_caillou_lune_1", "img_caillou_lune_2"]),
+      image: Phaser.Utils.Array.GetRandom(biomes.cailloux(biomes.biomeDuNiveau(this.niveau))).cle, // les cailloux ont la couleur du biome
       coups_restants: COUPS_CAILLOU,
       cache_le_trou: false
     }));
