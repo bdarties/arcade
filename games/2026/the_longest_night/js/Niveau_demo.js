@@ -3,7 +3,7 @@ import * as fct from "./fonctions.js";
 /***********************************************************************/
 /** VARIABLES GLOBALES 
 /***********************************************************************/
-var mode_fantome = true;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions reste actives.
+var mode_fantome = false;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions reste actives.
 var player; // désigne le sprite du joueur
 var player2;
 var clavier; // pour la gestion du clavier
@@ -291,11 +291,9 @@ export default class Niveau_demo extends Phaser.Scene {
     player.direction = "down"; //on définit une direction par défaut au lencement du jeu pour éviter qu'on se retrouve sans animation dès le début du jeu.
     // propriétées physique de l'objet player :
     calque_mur.setCollisionByProperty({estSolide: true});
-    if (mode_fantome == false){
-      this.physics.add.overlap(player, calque_mur);
-    }
-    this.physics.add.overlap(groupe_araignee, calque_mur);
-    this.physics.add.overlap(groupeBullets, calque_mur, (bullet) => bullet.destroy());
+    this.physics.add.collider(player, calque_mur);
+    this.physics.add.collider(groupe_araignee, calque_mur);
+    this.physics.add.collider(groupeBullets, calque_mur, (bullet) => bullet.destroy()); //définit directement le fait de détruire les balles au contact. Très pratique.
     
 
     //joueur 2
@@ -944,11 +942,11 @@ function degat_contact_ennemi(player, ennemi) {
     repeat: 4,
     onComplete: () => {
       player.setAlpha(1);
-      if (!player.active) { //permet de faire en sorte que le joueur continue de prendre des dégats même si il est sir l'ennemi et pas en contact.
+      if (!player.active) { 
         return;
       }
       player.colliderEnnemis.active = true;
-      if (this.physics.overlap(player, ennemi)) {
+      if (this.physics.overlap(player, ennemi)) { //permet de faire en sorte que le joueur continue de prendre des dégats même si il est sur l'ennemi et pas en contact.
         player.prochaineDegat = this.time.now;
         degat_contact_ennemi.call(this, player, ennemi);
       }
@@ -958,7 +956,7 @@ function degat_contact_ennemi(player, ennemi) {
   texteVies.setText('Points de vie : ' + player.points_vies);
 }
       function recharger(player,recharge) {
-        if (player.enRechargement || player.balle_restante === player.balle_max) {
+        if (player.enRechargement || player.balle_restante == player.balle_max) {
           return;
         }
         recharge.destroy();
@@ -1056,6 +1054,12 @@ function degat_contact_ennemi(player, ennemi) {
         const tireur = bullet.tireur;
         bullet.destroy();
         ennemi.points_vie -= 1;
+        ennemi.setTint(0xff0000);
+        this.time.delayedCall(200, () => {
+          if (ennemi.active) {
+            ennemi.clearTint();
+          }
+        });
         if (ennemi.points_vie <= 0){
           ennemi.destroy();
           son_areignne_blesse.play();
@@ -1069,7 +1073,7 @@ function degat_contact_ennemi(player, ennemi) {
 
 
     function recuperer_cle(player, cle){
-      player.score += 100
+      player.score += 500
       son_cle.play();
       cles_restantes -= 1;
       cle.destroy();
