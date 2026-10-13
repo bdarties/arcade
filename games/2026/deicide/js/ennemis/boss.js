@@ -22,7 +22,7 @@
 // Les tirs du robot le blessent. À 0 PV il s'enrage, brise le mur de l'arène (arene.js) et le robot fuit vers le niveau 2 (poursuite.js).
 import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
-import { gagnerPoints, bossTue } from "../systemes/points.js";
+import { gagnerPoints, bossTue, finirPartie } from "../systemes/points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
 import { lacherPV } from "../mecanismes/bonus.js";
 import { briserMurDroit } from "../mecanismes/arene.js"; // le mur de droite de l'arène du Dieu
@@ -50,6 +50,7 @@ const PROFILS = {
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
+        pantheon: true, // à la fin de la phase 1, le joueur choisit : continuer (phases 2 et 3) ou arrêter la partie (voir proposerPantheon)
         pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1750, 1300, 250], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
@@ -436,12 +437,30 @@ function changerDePhase(scene, boss, phase) {
     lacherPV(scene, 640, boss.y + 60); // une croix de soin tombe au milieu de l'arène
     const texte = scene.add.text(640, 120, "PHASE " + (phase + 1), { fontFamily: "monospace", fontSize: "28px", color: "#f5f0f8", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(104);
     scene.tweens.add({ targets: texte, alpha: 0, y: 100, duration: 1600, delay: 400, onComplete: () => texte.destroy() });
+    if (profil.pantheon && phase === 1) scene.time.delayedCall(900, () => proposerPantheon(scene, boss)); // l'éclair passe, puis le choix
     scene.time.delayedCall(DUREE_TRANSITION, () => {
         if (boss.etat !== "transition") return;
         boss.play("boss_idle");
         boss.etat = "combat";
         boss.prochaineAttaque = scene.time.now + surLeTemps(scene, 750);
     });
+}
+
+// Fin de la phase 1 du dernier boss : « Si tu veux entrer dans le panthéon, affronte la mort » (scène pantheon.js, posée par-dessus le niveau).
+function proposerPantheon(scene, boss) {
+    if (boss.etat !== "transition" || scene.mort || scene.partieFinie) return; // le robot est mort ou la partie est finie entre-temps
+    scene.scene.launch("pantheon", { origine: scene.scene.key, refuser: () => refuserPantheon(scene, boss) });
+    scene.scene.pause(); // fige le niveau : boss, tirs et chrono attendent la réponse
+}
+
+function refuserPantheon(scene, boss) { // NON : le combat s'arrête, la partie se termine (sans le bonus de mort du boss)
+    boss.etat = "fin"; // ni attaque ni fin de la transition : le boss ne fait plus rien
+    nettoyerCombat(scene, boss);
+    boss.body.enable = false;
+    if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true);
+    musiqueNiveau(scene); // le metal s'arrête
+    scene.tweens.add({ targets: [boss, boss.halo, ...elementsBarre(boss)], alpha: 0, duration: 1200 }); // le boss s'efface
+    finirPartie(scene); // arrête le chrono, puis ouvre le classement
 }
 
 // Le Dieu arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer au corps à corps ; il détruit le mur de droite de l'arène
