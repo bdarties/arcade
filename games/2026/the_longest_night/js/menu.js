@@ -22,7 +22,7 @@ export default class Menu extends Phaser.Scene {
         // Option A : Afficher l'image par-dessus le menu actuel en attendant un clic
         const storyImg = this.add.image(0, 0, "story_screen").setOrigin(0).setInteractive();
         storyImg.on("pointerdown", () => {
-          this.scene.start("Niveau_demo"); // Lance le niveau après le clic sur l'histoire
+          this.scene.start("niveau1"); // Lance le niveau après le clic sur l'histoire
         });
         
         // (Optionnel) Permettre aussi de passer l'histoire avec Entrée ou Espace
