@@ -1,182 +1,79 @@
-import * as fct from "./fonctions.js";
+const DIRECTIONS_ANIMATIONS = [
+  { key: "bas", file: "down" },
+  { key: "droite", file: "right" },
+  { key: "gauche", file: "left" },
+  { key: "haut", file: "up" }
+];
+const TYPES_ANIMATIONS = [
+  { key: "attente", file: "idle", frameCount: 4, frameRate: 5, repeat: -1 },
+  { key: "course", file: "run", frameCount: 6, frameRate: 5, repeat: -1 },
+  { key: "attaque", file: "attack", frameCount: 7, frameRate: 15, repeat: 0 }
+];
 
-/***********************************************************************/
-/** VARIABLES GLOBALES 
-/***********************************************************************/
-
-var player; // désigne le sprite du joueur
-var player2;
-var clavier; // pour la gestion du clavier
-var J1Haut, J1Bas, J1Gauche, J1Droite, J1boutonFeu,J1Interaction; //variables des touches du joueur 1
-var J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu,J2Interaction; //variables des touches du joueur 2
-var player_spawn; //définit l'endroit d'apparition du joueur1
-var player2_spawn; //définit l'endroit d'apparition du joueur2
-var tableau_spawn
-var nombre_cles = 1;
-var cles_creees = 0;
-var cles_recuperees = 0;
-var mode_deux_joueurs = true; //définit si on joue a deux joueurs. Si cette option est false, il n'y aura qu'un seul joueur.
-var groupe_cle; 
-var cle;
-var groupeBullets;
-var groupe_araignee;
-var tableau_ennemis; //tableau qui serivira a choisir et répartir alétoirement les ennemis
-var araignee;
-var points_vies;
-var vies;
-var cles_restantes
-var son_feu;
-var nombre_ennemis_apparissant;
-var musique_niveau1;
-var camJ1;
-var camJ1UI;
-var camJ2;
-var camJ2UI;
-var camGlobalUI;
-var scoreText;
-var score_J1_affiche;
-var score_J2_affiche;
-var balle_restanteJ1_affiche;
-var balle_restanteJ2_affiche;
-var points_viesJ1_affiche;
-var points_viesJ2_affiche;
-var son_blesse;
-var son_areignne_blesse;
-var son_cle;
-var cles_restantes_affiche;
-var temps_restant_affiche
-var temps_restant;
-var groupe_areignee;
-var arreignee;
-var camerasFusionnees = true; //sert a former une camera globale une fois les deux proches
-var cibleCamera; // point invisible au milieu des deux joueurs
-var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points
-var sortie_ouverte = false;
-var gameOver = false;
-// définition de la classe "selection"
+let player;
+let player2;
+let J1Haut, J1Bas, J1Gauche, J1Droite, J1boutonFeu, J1Interaction;
+let J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu, J2Interaction;
+let tableau_spawn;
+let nombre_cles = 1;
+let cles_creees = 0;
+let cles_restantes;
+let mode_deux_joueurs = false;
+let groupe_cle;
+let groupeBullets;
+let groupe_araignee;
+let tableau_ennemis;
+let groupe_recharges;
+let son_feu;
+let son_areignne_blesse;
+let son_cle;
+let nombre_ennemis_apparissant;
+let camJ1;
+let camJ1UI;
+let camJ2;
+let camJ2UI;
+let camGlobalUI;
+let score_J1_affiche;
+let score_J2_affiche;
+let balle_restanteJ1_affiche;
+let balle_restanteJ2_affiche;
+let points_viesJ1_affiche;
+let points_viesJ2_affiche;
+let cles_restantes_affiche;
+let temps_restant_affiche;
+let temps_restant;
+let camerasFusionnees = true;
+let cibleCamera;
+let sortie_ouverte = false;
 export default class Niveau_demo extends Phaser.Scene {
   constructor() {
     super({ key: "Niveau_demo" }); // mettre le meme nom que le nom de la classe
   }
 
 
-  /***********************************************************************/
-  /** FONCTION PRELOAD 
-/***********************************************************************/
-
-  /** La fonction preload est appelée une et une seule fois,
-   * lors du chargement de la scene dans le jeu.
-   * On y trouve surtout le chargement des assets (images, son ..)
-   */
   preload() {
-    const baseURL = this.sys.game.config.baseURL;
-    
-    this.load.setBaseURL(baseURL);
-    
-    // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
+    this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("Phaser_tuileGood", "./assets/map/tileset_good.png");
-    this.load.image("Phaser_tuileBad", "./assets/map/tileset_bad.png");
-    this.load.tilemapTiledJSON("carte1", "./assets/map/niveau_1.json"); 
-    this.load.image("img_background", "./assets/arriere_plan.jpg");
-    this.load.image("player1", "./assets/player_1/joueur1_image.png"); //servira a définir le joueur directement. L'image a en réalité peu d'importance car on verra l'animation d'attente du bas dès le début.
+    this.load.tilemapTiledJSON("carte1", "./assets/map/niveau_1.json");
+    this.load.image("player1", "./assets/player_1/joueur1_image.png");
     this.load.image("player2", "./assets/player_2/joueur2_image.png");
-    this.load.spritesheet("anim_attente_bas_J1", "./assets/player_1/idle_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
+
+    const joueurs = [
+      { dossier: "player_1", id: "J1", suffixe: "" },
+      { dossier: "player_2", id: "J2", suffixe: "_2" }
+    ];
+    joueurs.forEach(({ dossier, id, suffixe }) => {
+      TYPES_ANIMATIONS.forEach(({ key, file }) => {
+        DIRECTIONS_ANIMATIONS.forEach(({ key: direction, file: directionFichier }) => {
+          this.load.spritesheet(
+            `anim_${key}_${direction}_${id}`,
+            `./assets/${dossier}/${file}_${directionFichier}${suffixe}.png`,
+            { frameWidth: 32, frameHeight: 32 }
+          );
+        });
+      });
     });
-    this.load.spritesheet("anim_attente_droite_J1", "./assets/player_1/idle_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_gauche_J1", "./assets/player_1/idle_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_haut_J1", "./assets/player_1/idle_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_bas_J1", "./assets/player_1/run_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_droite_J1", "./assets/player_1/run_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_gauche_J1", "./assets/player_1/run_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_haut_J1", "./assets/player_1/run_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_bas_J1", "./assets/player_1/attack_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_droite_J1", "./assets/player_1/attack_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_gauche_J1", "./assets/player_1/attack_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_haut_J1", "./assets/player_1/attack_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-     this.load.spritesheet("anim_attente_bas_J2", "./assets/player_2/idle_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_droite_J2", "./assets/player_2/idle_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_gauche_J2", "./assets/player_2/idle_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_haut_J2", "./assets/player_2/idle_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_bas_J2", "./assets/player_2/run_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_droite_J2", "./assets/player_2/run_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_gauche_J2", "./assets/player_2/run_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_haut_J2", "./assets/player_2/run_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-     this.load.spritesheet("anim_attaque_bas_J2", "./assets/player_2/attack_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_droite_J2", "./assets/player_2/attack_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_gauche_J2", "./assets/player_2/attack_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_haut_J2", "./assets/player_2/attack_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    //instalations d'autres animations
+
     this.load.spritesheet("cle_bronze", "./assets/keys/Key_bronze.png", {
       frameWidth: 32,
       frameHeight: 64
@@ -186,15 +83,13 @@ export default class Niveau_demo extends Phaser.Scene {
       frameHeight:48
     });
     this.load.image("bullet", "./assets/star.png");
+    this.load.image("recharge", "./assets/star_of_dawn.png");
     this.load.image("sortie1_fermee", "./assets/door.png");
-    this.load.image("sortie1_ouverte", "./assets/door1_ouverte.png")
-    this.load.image("sortie2", "./assets/door2.png");
-    this.load.image("sortie3", "./assets/door3.png");
-    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
-    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
-    this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
-    this.load.audio("areignee_blesse","./assets/musique_et_sons/areigne_blesse.mp3")
-    this.load.audio("cle_collecte","./assets/musique_et_sons/cle_collecte.mp3")
+    this.load.image("sortie1_ouverte", "./assets/door1_ouverte.png");
+    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3");
+    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3");
+    this.load.audio("areignee_blesse", "./assets/musique_et_sons/areigne_blesse.mp3");
+    this.load.audio("cle_collecte", "./assets/musique_et_sons/cle_collecte.mp3");
   }
 
   /***********************************************************************/
@@ -208,350 +103,106 @@ export default class Niveau_demo extends Phaser.Scene {
    * ainsi que toutes les instructions permettant de planifier des evenements
    */
   create() {
-      fct.doNothing();
-      fct.doAlsoNothing();
-      //definition des paramètres du jeu
-      temps_restant = 80;
-      cles_creees = 0;
-      cles_recuperees = 0;
-      nombre_ennemis_apparissant = 4
-      sortie_ouverte = false;
+    temps_restant = 80;
+    cles_creees = 0;
+    nombre_ennemis_apparissant = 4;
+    sortie_ouverte = false;
 
-    /*************************************
-     *  CREATION DU MONDE *
-     *************************************/
-
-
-    const carteDuNiveau = this.make.tilemap({ key:"carte1"});
+    const carteDuNiveau = this.make.tilemap({ key: "carte1" });
     const tileset = carteDuNiveau.addTilesetImage(
       "tileset_good",
       "Phaser_tuileGood"
     );
-        const calque_sol = carteDuNiveau.createLayer(
-          "calque_sol",
-          tileset
-        );
-        const calque_details = carteDuNiveau.createLayer(
-          "calque_details",
-          tileset
-        );
-        const calque_mur = carteDuNiveau.createLayer(
-          "calque_mur",
-          tileset
-        );
-        const liste_spawn = carteDuNiveau.getObjectLayer("calque_spawn"); //ce calque d'objet servira plus tard pour faire un systeme de coordonées plus pratique. En attendant, les coordonnées seront inscrite manuellement en fonction des coordonées des points de la map tiled.
-/* DEFINITON DES COORDONNES
-      liste_spawn.objects.forEach(point => {
-      if (point.name == "Spawn_joueur1") {
-        player_spawn = {point.x, point.y}
-      }
-      if (point.name == "Spawn_joueur2") {
-        player_spawn = {point.x, point.y}
-    }
-    if (point.name == "Autre_spawn") {
-        player_spawn = {point.x, point.y}
-    }
-  }); 
-  */
-  player_spawn = {x:93.3333,y:672.0} 
-  player2_spawn = {x:243.333, y:673.333};8
-  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:40.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}];
+    carteDuNiveau.createLayer("calque_sol", tileset);
+    carteDuNiveau.createLayer("calque_details", tileset);
+    const calque_mur = carteDuNiveau.createLayer("calque_mur", tileset);
+    const player_spawn = { x: 93.3333, y: 672.0 };
+    const player2_spawn = { x: 243.333, y: 673.333 };
+    tableau_spawn = [
+      { x: 72.0, y: 1008.0 },
+      { x: 272.0, y: 1196.0 },
+      { x: 548.0, y: 304.0 },
+      { x: 1512.0, y: 40.0 },
+      { x: 1688.0, y: 1140.0 },
+      { x: 1900.0, y: 192.0 },
+      { x: 2604.0, y: 700.0 }
+    ];
 
-  /**************************
-   * INSTALATION DES ELEMENTS
-  ***************************/
-  groupeBullets = this.physics.add.group();
-  this.porte1 = this.physics.add.staticSprite(600, 414, "sortie1_fermee");
-  groupe_cle = this.physics.add.group();
-  groupe_araignee = this.physics.add.group();
-  //timer du jeu
-      this.time.addEvent({
+    groupeBullets = this.physics.add.group();
+    this.porte1 = this.physics.add.staticSprite(600, 414, "sortie1_fermee");
+    groupe_cle = this.physics.add.group();
+    groupe_araignee = this.physics.add.group();
+    groupe_recharges = this.physics.add.group();
+    this.time.addEvent({
       delay: 1000,
       repeat: temps_restant - 1,
       callback: () => {
         temps_restant -= 1;
         temps_restant_affiche.setText('Temps : ' + temps_restant);
-      }});
-      
-    
-    /****************************
-     *  CREATION DU PERSONNAGE  *
-     ****************************/
-    //joueur 1
-    player = this.physics.add.sprite(player_spawn.x,player_spawn.y, "player1");
+      }
+    });
 
-    //valeurs associées au joueur :
-    player.peutTirer = true; //on l'associe que une fois car on utilisera cette valeur de la même façon pour les deux joueurs
-    player.balle_restante = 10;
+    player = this.physics.add.sprite(player_spawn.x, player_spawn.y, "player1");
+    player.peutTirer = true;
+    player.balle_max = 10;
+    player.balle_restante = player.balle_max;
     player.score = 0;
     player.points_vies = 5;
     player.prochaineDegat = 0;
-    player.direction = "down"; //on définit une direction par défaut au lencement du jeu pour éviter qu'on se retrouve sans animation dès le début du jeu.
-    // propriétées physique de l'objet player :
-    calque_mur.setCollisionByProperty({estSolide: true});
+    player.direction = "down";
+    calque_mur.setCollisionByProperty({ estSolide: true });
     this.physics.add.collider(player, calque_mur);
     this.physics.add.collider(groupe_araignee, calque_mur);
-    this.physics.add.collider(groupeBullets, calque_mur, (bullet) => bullet.destroy());
-    
+    this.physics.add.collider(groupeBullets, calque_mur, bullet => bullet.destroy());
 
-    //joueur 2
-    if (mode_deux_joueurs == true){
+    if (mode_deux_joueurs) {
       player2 = this.physics.add.sprite(player2_spawn.x, player2_spawn.y, "player2");
-      //valeurs associées au joueur :
       player2.peutTirer = true;
-      player2.balle_restante = 10;
+      player2.balle_max = 10;
+      player2.balle_restante = player2.balle_max;
       player2.score = 0;
       player2.points_vies = 5;
       player2.prochaineDegat = 0;
       player2.direction = "down";
-    //  propriétées physique de l'objet player2 :
-    player2.setCollideWorldBounds(true); // le player se cognera contre les bords du monde
-    calque_mur.setCollisionByProperty({estSolide: true});
-    this.physics.add.overlap(player2, calque_mur);
-    this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
-  }
-    /***************************
-     *  CREATION DES ANIMATIONS *
-     ****************************/
-    //animations du joueur 1
-    this.anims.create({
-      key: "anim_attente_bas_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_bas_J1", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
+      player2.setCollideWorldBounds(true);
+      this.physics.add.overlap(player2, calque_mur);
+      this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
+    }
+    ["J1", "J2"].forEach(joueur => {
+      TYPES_ANIMATIONS.forEach(({ key, frameCount, frameRate, repeat }) => {
+        DIRECTIONS_ANIMATIONS.forEach(({ key: direction }) => {
+          const animationKey = `anim_${key}_${direction}_${joueur}`;
+          this.anims.create({
+            key: animationKey,
+            frames: this.anims.generateFrameNumbers(animationKey, {
+              start: 0,
+              end: frameCount - 1
+            }),
+            frameRate,
+            repeat
+          });
+        });
+      });
     });
-    this.anims.create({
-      key: "anim_attente_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_droite_J1", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_gauche_J1", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_haut_J1", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_bas_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_bas_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_gauche_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_droite_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_haut_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attaque_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_droite_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_gauche_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_bas_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_bas_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_haut_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    
-    //animations du joueur 2
-    this.anims.create({
-      key: "anim_attente_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_bas_J2", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_droite_J2", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_gauche_J2", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_haut_J2", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_bas_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_gauche_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_droite_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_haut_J2", {
-        start: 0,
-        end: 5
-      }),
-      frameRate: 5,
-      repeat: -1
-    });
-    this.anims.create({
-      key: "anim_attaque_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_droite_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_gauche_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_bas_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_haut_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    //autres éléments a animation
+
     this.anims.create({
       key: "animation_cle_bronze",
       frames: this.anims.generateFrameNumbers("cle_bronze", {
         start: 0,
         end: 10
-      }), 
-      frameRate: 10, 
-      repeat: -1 
+      }),
+      frameRate: 10,
+      repeat: -1
     });
     this.anims.create({
       key: "animation_areignee",
       frames: this.anims.generateFrameNumbers("areignee_ennemie", {
         start: 0,
         end: 7
-      }), 
-      frameRate: 3, 
-      repeat: -1 
+      }),
+      frameRate: 3,
+      repeat: -1
     });
-    
 
     /*****************************************************
      *  GESTION DE LA CAMERA *
@@ -628,17 +279,13 @@ export default class Niveau_demo extends Phaser.Scene {
      *  CREATION DES SONS *
      *************************************/
     son_feu = this.sound.add('coupDeFeu');
-    musique_niveau1 = this.sound.add('MusiqueNiveau1');
-    musique_niveau1.play({ loop: true });
-    son_blesse = this.sound.add('blesse')
+    this.sound.add("MusiqueNiveau1").play({ loop: true });
     son_areignne_blesse = this.sound.add('areignee_blesse')
     son_cle = this.sound.add('cle_collecte')
 
     /***********************
      *  CREATION DU CLAVIER ET TOUCHES *
      ************************/
-    clavier = this.input.keyboard.createCursorKeys();
-
     //touches Joueur 1
       J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.KeyCodes.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
       J1Bas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
@@ -648,9 +295,9 @@ export default class Niveau_demo extends Phaser.Scene {
       J1boutonFeu = this.input.keyboard.addKey('O');
     //touches Joueur 2
       J2Haut = this.input.keyboard.addKey('Z');
-      J2Bas = this.input.keyboard.addKey('L');
-      J2Gauche = this.input.keyboard.addKey('K');
-      J2Droite = this.input.keyboard.addKey('M');
+      J2Bas = this.input.keyboard.addKey('S');
+      J2Gauche = this.input.keyboard.addKey('Q');
+      J2Droite = this.input.keyboard.addKey('D');
       J2Interaction = this.input.keyboard.addKey('R');
       J2boutonFeu = this.input.keyboard.addKey('T');
     /*************************************************
@@ -674,6 +321,10 @@ export default class Niveau_demo extends Phaser.Scene {
      ******************************************************/
     this.physics.add.collider(player,player2);
     this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
+    this.physics.add.collider(player,groupe_recharges,recharger,null,this)
+    if (mode_deux_joueurs) {
+      this.physics.add.collider(player2, groupe_recharges, recharger, null, this);
+    }
     player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
     if (mode_deux_joueurs) {
       player2.colliderEnnemis = this.physics.add.collider(player2, groupe_araignee, degat_contact_ennemi, null, this);
@@ -693,143 +344,98 @@ export default class Niveau_demo extends Phaser.Scene {
   }
   
 
-  /***********************************************************************/
-  /** FONCTION UPDATE 
-/***********************************************************************/
-
   update() {
-  if (mode_deux_joueurs) {
-    gerer_cameras();
-  }
+    if (mode_deux_joueurs) {
+      gerer_cameras();
+    }
     deplacement_areignee.call(this);
-    //commandes joueur1
-    player.setVelocity(0);
-    if (J1Gauche.isDown){
-          player.direction = "left";
-          player.setVelocityX(-160);
-          if (!player.tirEnCours){
-            player.anims.playReverse("anim_course_gauche_J1", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
-        }}
-        else if (J1Droite.isDown) {
-          player.direction = "right";
-          player.setVelocityX(160);
-          if (!player.tirEnCours){
-            player.anims.play("anim_course_droite_J1", true);
-        }}
-        else if (J1Haut.isDown) {
-          player.direction = "up";
-          player.setVelocityY(-160);
-          if (!player.tirEnCours){
-          player.anims.play("anim_course_haut_J1", true);
-        }}
-        else if (J1Bas.isDown) {
-          player.direction = "down";
-          player.setVelocityY(160);
-          if (!player.tirEnCours){
-          player.anims.play("anim_course_bas_J1", true);
-        }}
-        else{
-          player.setVelocityX(0);
-          player.setVelocityY(0)
-          if (player.direction == "down"){
-            if (!player.tirEnCours){
-            player.anims.play("anim_attente_bas_J1",true);
-        }}
-          else if (player.direction == "up"){
-            if (!player.tirEnCours){
-            player.anims.play("anim_attente_haut_J1",true);
-        }}
-          else if (player.direction == "left"){
-            if (!player.tirEnCours){
-            player.anims.playReverse("anim_attente_gauche_J1",true);
-        }}
-          else if (player.direction == "right"){
-            if (!player.tirEnCours){
-            player.anims.play("anim_attente_droite_J1",true);
-        }}
-      }
-        if (Phaser.Input.Keyboard.JustDown(J1boutonFeu)){
-          tirer.call(this, player);
-        }
-
-    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte1)) {
-      gagnant = "Joueur 1";
-      this.scene.switch("Ecran_fin", {
-        gagnant,
+    deplacerJoueur(player, {
+      gauche: J1Gauche,
+      droite: J1Droite,
+      haut: J1Haut,
+      bas: J1Bas
+    }, "J1", true, player);
+    if (Phaser.Input.Keyboard.JustDown(J1boutonFeu)) {
+      tirer.call(this, player);
+    }
+    if (Phaser.Input.Keyboard.JustDown(J1Interaction) &&
+        sortie_ouverte && this.physics.overlap(player, this.porte1)) {
+      this.scene.start("Ecran_score", {
         scoreJ1: player.score,
-        scoreJ2: mode_deux_joueurs ? player2.score : 0,
-        temps_restant,
-        cles_recuperees
+        temps_restant
       });
     }
-  //commandes joueur2
-  if (mode_deux_joueurs){
-        if (J2Gauche.isDown) {
-          player2.direction = "left";
-          player2.setVelocityX(-160);
-            if (!player.tirEnCours){
-          player2.anims.playReverse("anim_course_gauche_J2", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
-        }}
-        else if (J2Droite.isDown) {
-          player2.direction = "right";
-          player2.setVelocityX(160);
-          if (!player.tirEnCours){
-            player2.anims.play("anim_course_droite_J2", true);
-          }}
-        else if (J2Haut.isDown) {
-          player2.direction = "up";
-          player2.setVelocityY(-160);
-          if (!player.tirEnCours){
-          player2.anims.play("anim_course_haut_J2", true);
-        }}
-        else if (J2Bas.isDown) {
-          player2.direction = "down";
-          player2.setVelocityY(160);
-          if (!player.tirEnCours){
-          player2.anims.play("anim_course_bas_J2", true);
-        }}
-        else{
-          player2.setVelocityX(0);
-          player2.setVelocityY(0)
-          if (player2.direction == "down"){
-            if (!player.tirEnCours){
-            player2.anims.play("anim_attente_bas_J2",true);
-        }}
-          else if (player2.direction == "up"){
-            if (!player.tirEnCours){
-            player2.anims.play("anim_attente_haut_J2",true);
-        }}
-          else if (player2.direction == "left"){
-            if (!player.tirEnCours){
-            player2.anims.playReverse("anim_attente_gauche_J2",true);
-        }}
-          else if (player2.direction == "right"){
-            if (!player.tirEnCours){
-            player2.anims.play("anim_attente_droite_J2",true);
-        }}
-      }
-        if (Phaser.Input.Keyboard.JustDown(J2boutonFeu)){
-          tirer.call(this, player2);
-        }
 
-    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
-      gagnant = "Joueur 2";
-      this.scene.switch("Ecran_score", {
-        gagnant,
-        scoreJ1: player.score,
-        scoreJ2: player2.score,
-        temps_restant,
-        cles_recuperees
-      });
+    if (!mode_deux_joueurs) {
+      return;
     }
+    deplacerJoueur(player2, {
+      gauche: J2Gauche,
+      droite: J2Droite,
+      haut: J2Haut,
+      bas: J2Bas
+    }, "J2", false, player);
+    if (Phaser.Input.Keyboard.JustDown(J2boutonFeu)) {
+      tirer.call(this, player2);
+    }
+    if (Phaser.Input.Keyboard.JustDown(J2Interaction) &&
+        sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
+      this.scene.start("Ecran_score", {
+        scoreJ1: player2.score,
+        temps_restant
+      });
     }
   }
 }
 
+function deplacerJoueur(joueur, touches, suffixe, reinitialiserVitesse, joueurAction) {
+  if (reinitialiserVitesse) {
+    joueur.setVelocity(0);
+  }
 
-/************************************************************************/
-/**FONCTIONS DU JEU **/
-/************************************************************************/
+  let direction;
+  let animationDirection;
+  let animationInverse = false;
+  if (touches.gauche.isDown) {
+    direction = "left";
+    animationDirection = "gauche";
+    animationInverse = true;
+    joueur.setVelocityX(-160);
+  } else if (touches.droite.isDown) {
+    direction = "right";
+    animationDirection = "droite";
+    joueur.setVelocityX(160);
+  } else if (touches.haut.isDown) {
+    direction = "up";
+    animationDirection = "haut";
+    joueur.setVelocityY(-160);
+  } else if (touches.bas.isDown) {
+    direction = "down";
+    animationDirection = "bas";
+    joueur.setVelocityY(160);
+  }
+
+  if (direction) {
+    joueur.direction = direction;
+  } else {
+    joueur.setVelocity(0);
+    animationDirection = {
+      down: "bas",
+      up: "haut",
+      left: "gauche",
+      right: "droite"
+    }[joueur.direction];
+  }
+
+  if (!joueurAction.tirEnCours) {
+    const animation = `anim_${direction ? "course" : "attente"}_${animationDirection}_${suffixe}`;
+    if (animationInverse) {
+      joueur.anims.playReverse(animation, true);
+    } else {
+      joueur.anims.play(animation, true);
+    }
+  }
+}
 
 function gerer_cameras() {
   const distance = Phaser.Math.Distance.Between(player.x, player.y, player2.x, player2.y);
@@ -873,7 +479,7 @@ function deplacement_areignee() {
         return;
       }
       const distance_areignee = Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y);
-      if (distance_areignee < distance_areignee) {
+      if (distance_areignee < distance_min_areignee) {
         distance_min_areignee = distance_areignee;
         joueur_cible = joueur;
       }
@@ -890,9 +496,9 @@ function deplacement_areignee() {
 
 
 function apparition_elements() {
-  if (groupe_araignee.countActive(true) + groupe_cle.countActive(true) < tableau_spawn.length) { //on empeche de accidentellement avoir plus de d'éléments que de spawn disponible
+  if (groupe_araignee.countActive(true) < nombre_ennemis_apparissant && tableau_spawn.length > 0) { //partie des ennemis
     const definition = Phaser.Utils.Array.GetRandom(tableau_ennemis);
-    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn); //cela permet de recuperer la valeur ET de la supprimer du tableau en même temps, évitant ainsi les spawns répétés. Sinon on aurait utilisé Phaser.Utils.Array.GetRandom si on voulait juste le récupérer. Cette méthode, combinée au fait qu'on compte la longeur du tableau ACTUELLE a chaque vérification a l'inconvénient de limiter l'apparition des éléments. Cependant, c'est un choix d'équilibrage justifiable par le fait qu'on a des munitions limitées.
+    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const ennemi = groupe_araignee.create(position.x, position.y, definition.texture);
     ennemi.points_vie = definition.points_vie;
     ennemi.degats = definition.degats;
@@ -904,9 +510,9 @@ function apparition_elements() {
       camJ2UI.ignore(ennemi);
     }
   }
-  if (cles_creees < nombre_cles && groupe_cle.countActive(true) < nombre_cles) {
-    const position = Phaser.Utils.Array.GetRandom(tableau_spawn);
-    cle = groupe_cle.create(position.x, position.y, "cle_bronze");
+  if (cles_creees < nombre_cles && groupe_cle.countActive(true) < nombre_cles && tableau_spawn.length > 0) { //partie des clés
+    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
+    const cle = groupe_cle.create(position.x, position.y, "cle_bronze");
     cles_creees += 1;
     cle.anims.play("animation_cle_bronze", true);
     camJ1UI.ignore(cle);
@@ -914,6 +520,15 @@ function apparition_elements() {
     if (mode_deux_joueurs) {
       camJ2.ignore(cle);
       camJ2UI.ignore(cle);
+    }
+  }
+  if (groupe_recharges.countActive(true) < 1 && tableau_spawn.length > 0) { //partie des recharges
+    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
+    const recharge = groupe_recharges.create(position.x, position.y, "recharge");
+    camJ1UI.ignore(recharge);
+    camGlobalUI.ignore(recharge);
+    if (mode_deux_joueurs) {
+      camJ2UI.ignore(recharge);
     }
   }
 }
@@ -931,21 +546,26 @@ function degat_contact_ennemi(player, ennemi) {
     duration: 100,
     yoyo: true,
     repeat: 4,
-    onComplete: () => player.setAlpha(1)
-  });
-  this.time.delayedCall(1000, () => {
-    if (player.active) {
-      player.colliderEnnemis.active = true;
+    onComplete: () => {
       player.setAlpha(1);
+      if (!player.active) { 
+        return;
+      }
+      player.colliderEnnemis.active = true;
+      if (this.physics.overlap(player, ennemi)) { //permet de faire en sorte que le joueur continue de prendre des dégats même si il est sur l'ennemi et pas en contact.
+        player.prochaineDegat = this.time.now;
+        degat_contact_ennemi.call(this, player, ennemi);
+      }
     }
   });
   const texteVies = player === player2 ? points_viesJ2_affiche : points_viesJ1_affiche;
   texteVies.setText('Points de vie : ' + player.points_vies);
 }
-      function recharger(player) {
-        if (player.enRechargement || player.balle_restante === player.capacite_chargeur) {
+      function recharger(player,recharge) {
+        if (player.enRechargement || player.balle_restante == player.balle_max) {
           return;
         }
+        recharge.destroy();
         player.enRechargement = true;
         player.peutTirer = false;
         const texteBalles = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
@@ -959,7 +579,7 @@ function degat_contact_ennemi(player, ennemi) {
           repeat: 4
         });
         this.time.delayedCall(1500, () => {
-          player.balle_restante = player.capacite_chargeur;
+          player.balle_restante = player.balle_max;
           player.enRechargement = false;
           player.peutTirer = true;
           texteBalles.setAlpha(1);
@@ -1040,6 +660,12 @@ function degat_contact_ennemi(player, ennemi) {
         const tireur = bullet.tireur;
         bullet.destroy();
         ennemi.points_vie -= 1;
+        ennemi.setTint(0xff0000);
+        this.time.delayedCall(200, () => {
+          if (ennemi.active) {
+            ennemi.clearTint();
+          }
+        });
         if (ennemi.points_vie <= 0){
           ennemi.destroy();
           son_areignne_blesse.play();
@@ -1051,19 +677,14 @@ function degat_contact_ennemi(player, ennemi) {
         }
       }
 
-      function partie_terminée(){
-        if (gameOver = true){
-          return;
-        }
-      }
+
     function recuperer_cle(player, cle){
-      player.cles_recuperees += 1;
+      player.score += 500
       son_cle.play();
       cles_restantes -= 1;
       cle.destroy();
       if (cles_restantes>0){
         cles_restantes_affiche.setText('Clés à récupérer : ' + cles_restantes);
-      
       }
       else{
         cles_restantes_affiche.setText('Dirigez vous vers la sortie !');

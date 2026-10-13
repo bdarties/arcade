@@ -3,6 +3,7 @@ import Niveau_demo from "./js/Niveau_demo.js";
 import Ecran_score from "./js/Ecran_score.js";
 import Game_over from "./js/Game_over.js";
 import niveau3 from "./js/niveau3.js";
+import Menu from "./js/menu.js";
 
 // configuration générale du jeu
 var config = {
@@ -29,11 +30,10 @@ var config = {
       debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [Niveau_demo, Ecran_score, Game_over, niveau3],
+  scene: [Menu, Niveau_demo, Ecran_score, Game_over, niveau3],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
 
 // création et lancement du jeu
 var game = new Phaser.Game(config);
-game.scene.start("selection");
