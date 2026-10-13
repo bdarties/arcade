@@ -92,7 +92,7 @@ export function jouerSonSurLeTemps(scene, nom) {
 
 function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
-    if (musique) musique.stop(); // coupe l'ancienne musique
+    if (musique) { musique.stop(); musique.destroy(); } // coupe l'ancienne musique et la libère (sans destroy, chaque nouvelle partie laissait un son de plus en mémoire)
     volumeBase = base; // on retient son volume de base : majVolumeMusique en a besoin quand le joueur règle le volume
     // crée la musique, au volume choisi dans le menu pause
     musique = scene.sound.add(nom, { loop: boucle, volume: base * reglages.musique / VOLUME_MAX });
@@ -116,5 +116,7 @@ export function musiqueNiveau(scene) { // remet la musique du niveau (à la mort
 export function musiqueDeScene(scene, nom, base = VOLUME_MUSIQUE) {
     lancerMusique(scene, nom, base); // lance la musique tout de suite
     // scene.switch endort et réveille les scènes sans refaire create : on relance la musique au réveil
-    scene.events.on("wake", () => lancerMusique(scene, nom, base));
+    const auReveil = () => lancerMusique(scene, nom, base);
+    scene.events.on("wake", auReveil);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off("wake", auReveil)); // sans ça, chaque nouvelle partie ajoutait un écouteur de plus
 }

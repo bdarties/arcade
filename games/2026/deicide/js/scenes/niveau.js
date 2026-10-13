@@ -102,6 +102,7 @@ export default class niveau extends Phaser.Scene {
     fondGris();
     this.events.on(Phaser.Scenes.Events.WAKE, fondGris); // scene.switch endort et réveille les scènes sans refaire create
     this.events.on(Phaser.Scenes.Events.SLEEP, fondNoir);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.events.off(Phaser.Scenes.Events.WAKE, fondGris); this.events.off(Phaser.Scenes.Events.SLEEP, fondNoir); }); // (ils s'empilaient à chaque nouvelle partie)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, fondNoir);
     return carte;
   }
@@ -166,6 +167,8 @@ export default class niveau extends Phaser.Scene {
     this.murDroit = null; // le mur de droite de l'arène du Dieu (pas encore posé)
     this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée)
+    this.areneSolY = undefined; // les repères de l'arène (posés quand elle se lance, voir arene.js) : oubliés à chaque nouvelle partie
+    this.areneCentreX = undefined;
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
     // instant jusqu'auquel le robot ne peut pas être blessé (le répit de réapparition est posé à la première image, voir update : l'horloge
     // n'est pas encore à jour dans create)
