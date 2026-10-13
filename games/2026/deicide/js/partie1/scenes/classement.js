@@ -90,6 +90,11 @@ const GLYPHES = {
     8: [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."], 9: [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
     ":": [".....", "..#..", "..#..", ".....", "..#..", "..#..", "....."], ".": [".....", ".....", ".....", ".....", ".....", "..#..", "..#.."],
     "-": [".....", ".....", ".....", "#####", ".....", ".....", "....."], "+": [".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."],
+    "'": ["..#..", "..#..", ".#...", ".....", ".....", ".....", "....."], ",": [".....", ".....", ".....", ".....", "..#..", "..#..", ".#..."],
+    "!": ["..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.."], "?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
+    "(": ["...#.", "..#..", ".#...", ".#...", ".#...", "..#..", "...#."], ")": [".#...", "..#..", "...#.", "...#.", "...#.", "..#..", ".#..."],
+    "/": ["....#", "....#", "...#.", "..#..", ".#...", "#....", "#...."], "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."],
+    "&": [".##..", "#..#.", "#.#..", ".#...", "#.#.#", "#..#.", ".##.#"],
     "^": ["..#..", ".###.", "#####", ".....", ".....", ".....", "....."], "~": [".....", ".....", ".....", "#####", ".###.", "..#..", "....."]
 };
 const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
@@ -163,7 +168,7 @@ export function plaque(scene, w, h, creux = true) { // renvoie la clé de la tex
 // ---------------------------------------------------------------------------------------------
 
 export default class classement extends Phaser.Scene {
-    constructor() { super({ key: "classement" }); }
+    constructor(cle = "classement") { super({ key: cle }); } // (la partie 2 en fait un faux écran de victoire : voir partie2/fauxPantheon.js)
 
     init(donnees) { // reçoit les données passées par scene.start
         this.tempsBrutMs = donnees.tempsBrutMs ?? 0;
@@ -382,7 +387,7 @@ export default class classement extends Phaser.Scene {
         this.zoneNom.removeAll(true);
         this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
         this.pied.destroy();
-        this.pied = ecrire(this, 640, 696, "I  REJOUER", 3, { teinte: CLAIR });
+        this.pied = ecrire(this, 640, 696, "I  CONTINUER", 3, { teinte: CLAIR });
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 });
         this.afficherTableau();
     }
@@ -411,7 +416,7 @@ export default class classement extends Phaser.Scene {
             this.afficherTableau(); // la ligne du joueur suit les lettres
         } else if (this.etape === "classement" && valider && this.pret) {
             jouerSon(this, "porte");
-            this.scene.start("menu"); // retour à l'accueil, pour la partie suivante
+            this.scene.start("credits"); // la fin du jeu : les crédits, qui ramènent ensuite à l'accueil pour la partie suivante
         }
     }
 

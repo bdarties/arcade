@@ -21,6 +21,7 @@ js/
     niveau2.js, niveau3.js, vide.js, faisceaux.js, poursuite.js   la fuite (niveau 2) et l'arène du dernier combat (niveau 3)
     fuite.js            le Dieu s'enrage, brise le mur de l'arène, le robot fuit vers le niveau 2
     bossFinal.js, attaques.js   le boss du dernier combat et ses attaques en plus (lasers, geysers, spirale, piqué)
+    formeFinale.js, finDeCombat.js, fauxPantheon.js   la fausse fin (faux écran de victoire qui se fissure) et la forme finale du boss (phase 4)
     musique.js, astuce.js, testsBorne.js   la musique du dernier combat, un conseil, les touches de test F9 et F10
 ```
 
@@ -44,7 +45,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 | dash (bouton E) | L | G |
 
 Menu pause : Échap ou X (start). Recommencer la partie : maintenir C + F (les boutons C et F de la borne, P et ; au clavier, la touche M en AZERTY) pendant 0,5 s.
-Touches de test, à retirer avant la borne : F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie).
+Touches de test, à retirer avant la borne : F4 (l'écran de victoire), F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie), F5 (la fausse fin : la fissure de l'écran, puis la phase 4, la forme finale du boss ; F5 ne recharge donc plus la page).
 
 ## Les explications des choix
 
