@@ -99,17 +99,17 @@ const GLYPHES = {
 };
 const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
 
-export function creerPolice(scene) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère
-    if (scene.textures.exists("police_fin")) return;
+export function creerPolice(scene, cle = "police_fin", bas = PAL.L) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère (bas : la couleur du bas des lettres ; la police « police_blanche » est toute blanche)
+    if (scene.textures.exists(cle)) return;
     const noms = Object.keys(GLYPHES);
-    const texture = scene.textures.createCanvas("police_fin", noms.length * LARGEUR_CASE, 8);
+    const texture = scene.textures.createCanvas(cle, noms.length * LARGEUR_CASE, 8);
     const ctx = texture.getContext();
     noms.forEach((nom, i) => {
         const ox = i * LARGEUR_CASE;
         const cases = [];
         GLYPHES[nom].forEach((ligne, y) => [...ligne].forEach((c, x) => { if (c === "#") cases.push([x, y]); }));
         ctx.fillStyle = PAL.K; cases.forEach(([x, y]) => ctx.fillRect(ox + x + 1, y + 1, 1, 1)); // l'ombre portée
-        cases.forEach(([x, y]) => { ctx.fillStyle = y <= 3 ? PAL.W : PAL.L; ctx.fillRect(ox + x, y, 1, 1); }); // clair en haut, lavande en bas
+        cases.forEach(([x, y]) => { ctx.fillStyle = y <= 3 ? PAL.W : bas; ctx.fillRect(ox + x, y, 1, 1); }); // clair en haut, lavande en bas
         texture.add(nom, 0, ox, 0, LARGEUR_CASE, 8);
     });
     texture.refresh();
@@ -117,13 +117,13 @@ export function creerPolice(scene) { // dessine une seule fois toutes les lettre
 }
 
 // écrit un texte (un groupe d'images, une par caractère). ancre : "centre", "gauche" ou "droite" par rapport à x. Les espaces sont vides.
-export function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10 } = {}) {
+export function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10, police = "police_fin" } = {}) {
     const largeur = texte.length * LARGEUR_CASE * echelle;
     const x0 = ancre === "gauche" ? x : ancre === "droite" ? x - largeur : x - largeur / 2;
     const groupe = scene.add.container(0, 0).setDepth(profondeur);
     groupe.lettres = [...texte].map((c, i) => {
         if (!GLYPHES[c]) return null; // espace ou caractère inconnu
-        const image = scene.add.image(x0 + i * LARGEUR_CASE * echelle, y, "police_fin", c).setOrigin(0, 0.5).setScale(echelle).setTint(teinte);
+        const image = scene.add.image(x0 + i * LARGEUR_CASE * echelle, y, police, c).setOrigin(0, 0.5).setScale(echelle).setTint(teinte);
         groupe.add(image);
         return image;
     });

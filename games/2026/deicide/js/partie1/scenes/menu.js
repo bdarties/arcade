@@ -1,4 +1,4 @@
-// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 2 JOUEURS (1 contre 1, voir versus.js)
+// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 1 V 1 (1 contre 1, voir versus.js)
 // C'est la première scène : elle charge tous les assets du jeu (avec une barre de chargement), puis attend qu'on appuie
 // sur un bouton. Le fond est l'image du menu (assets/images/menu/fond_menu.png, 1280 x 720). Le bouton Jouer est dans
 // assets/images/menu/bouton_jouer.png (15 images de 104 x 44 empilées : 0 = normal, 1 à 12 = survol animé, 13 et 14 = clic).
@@ -7,6 +7,7 @@
 import { chargerJeu } from "../systemes/chargement.js"; // charge tous les assets du jeu pendant que le menu s'affiche
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
+import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];
@@ -55,23 +56,23 @@ export default class menu extends Phaser.Scene {
       this.anims.create({ key: "bouton_jouer_clic", frames: this.anims.generateFrameNumbers("bouton_jouer", { start: 13, end: 14 }), frameRate: 12, repeat: 0 });
     }
     // agrandi x4 : la dalle fait 384 x 128 px (assez haut pour ne pas toucher la flamme du tir)
-    this.bouton = this.add.sprite(640, 420, "bouton_jouer", 1).setScale(4);
+    this.bouton = this.add.sprite(640, 405, "bouton_jouer", 1).setScale(4);
     this.bouton.play("bouton_jouer_survol");
     // seule la dalle réagit, pas les flammes
     this.bouton.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     this.bouton.on("pointerdown", () => this.lancer());
 
-    // le bouton « 2 JOUEURS » : dessiné en code, dans le style de la dalle « JOUER ». Haut / bas change de mode, un bouton valide celui qui
+    // le bouton « 1 V 1 » : la même dalle que « JOUER ». Haut / bas change de mode, un bouton valide celui qui
     // est choisi.
     this.mode = 1; // 1 = solo, 2 = 1 contre 1
-    this.boutonDeux = this.creerBoutonDeux(640, 548);
-    this.indication = this.add.text(640, 604, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
+    this.boutonDeux = this.creerBoutonDeux(640, 545);
+    this.indication = this.add.text(640, 640, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
     ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
-    this.boutonDeux.fond.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.mode = 2; this.lancer(); });
+    this.boutonDeux.dalle.on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
-    const aide = this.add.text(640, 650, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
+    const aide = this.add.text(640, 674, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
     // le but du jeu, sous le titre
     this.add.text(640, 275, "BATS LE DIEU DE LA LUMIÈRE LE PLUS VITE POSSIBLE", { fontFamily: "monospace", fontSize: "22px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 }); // il clignote doucement
@@ -82,13 +83,31 @@ export default class menu extends Phaser.Scene {
     this.lance = false;
   }
 
-  creerBoutonDeux(x, y) { // une dalle de métal avec le texte « 2 JOUEURS » ; majMode la met en valeur quand elle est choisie
-    const fond = this.add.rectangle(x, y, 384, 72, 0x2a2a2d).setStrokeStyle(4, 0x8a8a8a);
-    const interieur = this.add.rectangle(x, y, 336, 44, 0x0a0a0a).setStrokeStyle(3, 0x8a8a8a);
-    const texte = this.add.text(x + 14, y, "2 JOUEURS", { fontFamily: "monospace", fontSize: "34px", fontStyle: "bold", color: "#8a8a8a" }).setOrigin(0.5);
-    const fleche = this.add.triangle(x - 124, y, 0, 0, 0, 24, 20, 12, 0xf4b6c2).setOrigin(0.5);
-    this.tweens.add({ targets: fleche, x: x - 118, duration: 380, yoyo: true, repeat: -1 }); // elle bouge doucement
-    return { fond, interieur, texte, fleche };
+  creerTextureDalleVide() { // la dalle « JOUER » sans son texte : on recopie dans chaque image la colonne vide à droite du mot, sur toute sa place
+    if (this.textures.exists("bouton_vide")) return;
+    const source = this.textures.get("bouton_jouer").getSourceImage();
+    const texture = this.textures.createCanvas("bouton_vide", 104, 44 * 15);
+    const ctx = texture.getContext();
+    ctx.drawImage(source, 0, 0);
+    for (let image = 0; image < 15; image++) {
+      for (let x = 34; x < 80; x++) ctx.drawImage(source, 84, image * 44 + 15, 1, 17, x, image * 44 + 15, 1, 17); // lignes 15 à 31 : l'intérieur de la dalle (le mot est entre les colonnes 36 et 78)
+      texture.add(image, 0, 0, image * 44, 104, 44);
+    }
+    texture.refresh();
+    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.anims.create({ key: "bouton_vide_survol", frames: this.anims.generateFrameNumbers("bouton_vide", { start: 1, end: 12 }), frameRate: 12, repeat: -1 });
+  }
+
+  creerBoutonDeux(x, y) { // la même dalle animée que « JOUER », sans son texte, avec « 1V1 » écrit à la place (police pixel du jeu)
+    creerPolice(this, "police_blanche", "#ffffff"); // comme le mot « JOUER » : tout blanc
+    this.creerTextureDalleVide();
+    const dalle = this.add.sprite(x, y, "bouton_vide", 1).setScale(4);
+    dalle.play("bouton_vide_survol");
+    const texte = ecrire(this, x + 23, y + 7, "1V1", 7, { profondeur: 0, police: "police_blanche" });
+    const voile = this.add.rectangle(x, y, 416, 176, 0x0e0e11, 0.6); // atténue la dalle quand elle n'est pas choisie (on n'utilise pas l'alpha : le mot « JOUER » transparaîtrait sous le cache)
+    this.add.container(0, 0, [dalle, texte, voile]);
+    dalle.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
+    return { voile, dalle };
   }
 
   changerMode(mode) { // haut : solo, bas : 1 contre 1
@@ -97,14 +116,9 @@ export default class menu extends Phaser.Scene {
     this.majMode();
   }
 
-  majMode() { // le mode choisi est en couleur, l'autre est atténué
-    const deux = this.mode === 2;
-    this.bouton.setAlpha(deux ? 0.4 : 1);
-    const { fond, interieur, texte, fleche } = this.boutonDeux;
-    fond.setStrokeStyle(4, deux ? 0xf4b6c2 : 0x8a8a8a);
-    interieur.setStrokeStyle(3, deux ? 0xffffff : 0x8a8a8a);
-    texte.setColor(deux ? "#ffffff" : "#8a8a8a");
-    fleche.setVisible(deux);
+  majMode() { // le mode choisi est en pleine couleur, l'autre est atténué
+    this.bouton.setAlpha(this.mode === 2 ? 0.4 : 1);
+    this.boutonDeux.voile.setVisible(this.mode !== 2);
   }
 
   animer() { // les effets qui font vivre l'image fixe du menu

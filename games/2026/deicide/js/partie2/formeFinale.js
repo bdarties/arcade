@@ -46,6 +46,7 @@ export function installerFormeFinale() { // à appeler une fois, avant la créat
 
 // Les visuels de la forme finale (aussi appliqués d'un coup quand le robot meurt contre elle et que le combat reprend : voir apresApparition).
 export function appliquerFormeFinale(scene, boss) {
+    scene.maxLanternes = 1; // en forme finale : une seule lanterne vivante (boost de dégâts) à la fois (3 avant) ; la cadence d'apparition ne change pas
     boss.setScale(ECHELLE_FINALE);
     boss.setTint(TEINTE_FINALE);
     boss.teinteBase = TEINTE_FINALE;
@@ -56,6 +57,7 @@ export function appliquerFormeFinale(scene, boss) {
 
 // Après la fausse fin (voir finDeCombat.js, fauxPantheon.js) : le boss revient dans sa forme finale, avec tous ses PV.
 export function devenirFormeFinale(scene, boss) {
+    if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true); // celles apparues pendant l'animation disparaissent : on repart de zéro
     scene.registry.set("chronoActif", true); // le chrono repart (il était arrêté pendant la fausse fin)
     boss.fige = false;
     boss.intouchable = false;

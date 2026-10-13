@@ -127,14 +127,13 @@ export default class fauxPantheon extends classement {
             speed: { min: 250, max: 1100 }, angle: { min: 0, max: 360 }, gravityY: 800, lifespan: { min: 350, max: 1200 }, scale: { start: 3.4, end: 0 },
             alpha: { start: 1, end: 0 }, tint: [0xfff2c0, 0xffd45c, 0xffffff], blendMode: "ADD", emitting: false
         }).setDepth(103);
-        for (let i = 4; i < POINTS - 4; i += 2) etincelles.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 4);
+        for (let i = 4; i < POINTS - 4; i += 3) etincelles.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 3); // (moins de particules : elles pesaient sur les FPS pendant le coup)
         this.fissurer(lame);
         this.time.delayedCall(560, () => this.trancher(lame, voile, etincelles)); // les fissures se propagent sous le tremblement, puis l'écran est tranché
     }
 
     // Le réseau de fissures : de chaque point de la lame partent des fêlures brisées, qui s'étendent en 0,3 s. Elles sont dessinées sur l'écran (donc dans la photo qui sera coupée).
     fissurer(lame) {
-        const graphique = this.add.graphics().setDepth(101);
         const fissures = [];
         const branche = (x, y, angle, longueur, generation) => { // une fêlure : une ligne brisée qui peut se diviser
             const points = [{ x, y }];
@@ -154,18 +153,29 @@ export default class fauxPantheon extends classement {
             branche(p.x, p.y, normale + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
             branche(p.x, p.y, normale + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
         }
+        // Les fissures sont tracées sur un canevas 2D, segment après segment (seulement les nouveaux à chaque image) : redessiner des centaines de lignes épaisses en WebGL à chaque
+        // image faisait chuter les FPS pendant le coup. Le canevas est envoyé à la carte graphique une fois par image, comme une simple image.
+        if (this.textures.exists("fissures")) this.textures.remove("fissures");
+        const toile = this.textures.createCanvas("fissures", LARGEUR, HAUTEUR);
+        const ctx = toile.getContext();
+        ctx.lineCap = "round"; ctx.lineJoin = "round";
+        this.add.image(LARGEUR / 2, HAUTEUR / 2, "fissures").setDepth(101);
+        const deja = fissures.map(() => 1); // le nombre de points déjà tracés pour chaque fissure
         const etat = { avancee: 0 };
         this.tweens.add({ targets: etat, avancee: 1, duration: 320, ease: "Cubic.Out",
             onUpdate: () => {
-                graphique.clear();
-                fissures.forEach(({ points, epaisseur }) => {
+                fissures.forEach(({ points, epaisseur }, f) => {
                     const jusqua = Math.max(2, Math.floor(points.length * etat.avancee));
-                    [[epaisseur + 6, 0x000000, 0.55], [epaisseur + 2, 0xffd45c, 0.5], [epaisseur, 0xffffff, 1]].forEach(([largeur, couleur, alpha]) => { // un contour sombre, un reflet doré, un trait blanc
-                        graphique.lineStyle(largeur, couleur, alpha).beginPath().moveTo(points[0].x, points[0].y);
-                        for (let k = 1; k < jusqua; k++) graphique.lineTo(points[k].x, points[k].y);
-                        graphique.strokePath();
+                    if (jusqua <= deja[f]) return;
+                    [[epaisseur + 6, "rgba(0,0,0,0.55)"], [epaisseur + 2, "rgba(255,212,92,0.5)"], [epaisseur, "#ffffff"]].forEach(([largeur, couleur]) => { // un contour sombre, un reflet doré, un trait blanc
+                        ctx.lineWidth = largeur; ctx.strokeStyle = couleur;
+                        ctx.beginPath(); ctx.moveTo(points[deja[f] - 1].x, points[deja[f] - 1].y);
+                        for (let k = deja[f]; k < jusqua; k++) ctx.lineTo(points[k].x, points[k].y);
+                        ctx.stroke();
                     });
+                    deja[f] = jusqua;
                 });
+                toile.refresh();
             } });
     }
 
@@ -208,7 +218,7 @@ export default class fauxPantheon extends classement {
                 onComplete: () => lumiere.destroy() });
             // les étincelles et des éclats qui sortent de la coupure
             const eclats = this.add.particles(0, 0, "pixel", { speed: { min: 120, max: 600 }, angle: { min: 0, max: 360 }, gravityY: 300, lifespan: { min: 600, max: 1500 }, scale: { start: 3, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xfff2c0, 0xffd45c, 0xffffff, 0xb89cff], blendMode: "ADD", emitting: false }).setDepth(106);
-            for (let i = 6; i < POINTS - 6; i += 3) eclats.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 4);
+            for (let i = 6; i < POINTS - 6; i += 4) eclats.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 3);
             // les deux moitiés s'écartent perpendiculairement à la coupure, en tournant un peu, et sortent de l'écran
             [[haut, 1], [bas, -1]].forEach(([m, cote]) => this.tweens.add({
                 targets: m, x: m.x + normale.x * cote * 1200, y: m.y + normale.y * cote * 1200, angle: cote * 6,
