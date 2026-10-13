@@ -3,6 +3,7 @@
 // du niveau 1. Le boss apparaît dès qu'on arrive (voir boss.js, profil "soldat2"). Sa mort arrête le chrono et ouvre le classement.
 import niveau from "./niveau.js";
 import { faireApparaitreBoss } from "../ennemis/boss.js";
+import { chargerMusiqueDernierBoss } from "../systemes/sons.js"; // la musique de ce combat, chargée seulement ici (voir sons.js)
 
 const HAUT_DU_SOL = 22 * 32; // y du haut du sol de l'arène (ligne 22 de la map)
 
@@ -30,5 +31,10 @@ const CONFIG_NIVEAU3 = {
 export default class niveau3 extends niveau {
   constructor() {
     super("niveau3", CONFIG_NIVEAU3);
+  }
+
+  preload() {
+    super.preload(); // le reste du jeu est déjà chargé
+    chargerMusiqueDernierBoss(this); // la musique du dernier boss (rien à faire si elle est déjà chargée)
   }
 }

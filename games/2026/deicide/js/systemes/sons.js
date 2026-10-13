@@ -39,7 +39,12 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
     // musique metal du boss : l'introduction (jouée une fois)...
     scene.load.audio("musique_boss_intro", [DOSSIER + "musique_boss_intro.ogg", DOSSIER + "musique_boss_intro.mp3"]);
     scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]); // ...puis la boucle
-    // musique du dernier boss : « Boss Battle #9 » (113 battements par minute, en mi mineur)
+}
+
+// La musique du dernier boss : « Boss Battle #9 » (113 battements par minute, en mi mineur). Elle n'est PAS chargée avec le reste : une fois décodée elle pèse
+// 21 Mo en mémoire (le reste de la musique : 41 Mo), et le Raspberry Pi de la borne est juste en mémoire. Elle se charge seulement quand on arrive au
+// dernier combat (niveau3.js, preload).
+export function chargerMusiqueDernierBoss(scene) {
     scene.load.audio("musique_boss2_intro", [DOSSIER + "musique_boss2_intro.ogg", DOSSIER + "musique_boss2_intro.mp3"]);
     scene.load.audio("musique_boss2_boucle", [DOSSIER + "musique_boss2_boucle.ogg", DOSSIER + "musique_boss2_boucle.mp3"]);
 }
