@@ -306,12 +306,25 @@ export default class niveau1 extends Phaser.Scene {
   creerMurDeLumiere() {
     const m = MUR_LUMIERE;
     this.groupe_murs = this.physics.add.staticGroup();
-    this.groupe_murs.add(this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur));
+    this.murZone = this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur);
+    this.groupe_murs.add(this.murZone);
+    this.murOuvert = false; // vrai quand le mur a disparu
     const faisceau = this.add
       .rectangle(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur, 0xffe9a0, 0.22)
       .setDepth(6)
       .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.murVisuel = faisceau;
+    this.tweenMur = this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  }
+
+  // Le mur n'est utile que tant que le Détective n'a pas révélé les passerelles : dès qu'elles sont toutes
+  // révélées, il disparaît (sinon il bloquerait inutilement un joueur qui a déjà fait son travail).
+  ouvrirMurDeLumiere() {
+    this.murOuvert = true;
+    this.murZone.destroy(); // la zone solide disparaît tout de suite : on peut passer
+    this.tweenMur.stop();
+    this.tweens.add({ targets: this.murVisuel, alpha: 0, duration: 600, onComplete: () => this.murVisuel.destroy() });
+    this.afficherMessage("Les passerelles sont révélées : le mur de lumière disparaît !", 3500);
   }
 
   // Une passerelle fantôme : solide seulement quand la lampe l'éclaire
@@ -855,6 +868,7 @@ export default class niveau1 extends Phaser.Scene {
         const dansLaTache = this.distanceAuRectangle(faisceau.cx, faisceau.cy, passerelle.rect) <= REGLAGES.lampe.rayon;
         const toutPres = this.distanceAuRectangle(centre.x, centre.y, passerelle.rect) <= REGLAGES.lampe.rayonProche;
         if (dansLaTache || toutPres) {
+          passerelle.dejaEclairee = true; // éclairée au moins une fois (sert à ouvrir le mur de lumière)
           passerelle.eclaireJusqua = temps + REGLAGES.lampe.persistanceMs;
           if (REGLAGES.lampe.passerellesFixes == true) {
             passerelle.revelee = true; // révélée une fois : elle ne disparaîtra plus
@@ -869,6 +883,14 @@ export default class niveau1 extends Phaser.Scene {
       passerelle.alphaVisuel = Phaser.Math.Linear(passerelle.alphaVisuel, eclairee ? 1 : 0, 0.25);
       this.afficherFantome(passerelle, passerelle.alphaVisuel);
     });
+
+    // Toutes les passerelles ont été révélées au moins une fois : le mur de lumière (s'il y en a un) disparaît
+    const passerelles = this.groupe_fantomes.getChildren();
+    if (this.murZone !== undefined && this.murOuvert == false && passerelles.length > 0) {
+      if (passerelles.every((passerelle) => passerelle.dejaEclairee == true)) {
+        this.ouvrirMurDeLumiere();
+      }
+    }
   }
 
   afficherFantome(passerelle, alpha) {
