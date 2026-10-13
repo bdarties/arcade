@@ -1,4 +1,14 @@
-import * as fct from "./fonctions.js";
+const DIRECTIONS_ANIMATIONS = [
+  { key: "bas", file: "down" },
+  { key: "droite", file: "right" },
+  { key: "gauche", file: "left" },
+  { key: "haut", file: "up" }
+];
+const TYPES_ANIMATIONS = [
+  { key: "attente", file: "idle", frameCount: 4, frameRate: 5, repeat: -1 },
+  { key: "course", file: "run", frameCount: 6, frameRate: 5, repeat: -1 },
+  { key: "attaque", file: "attack", frameCount: 7, frameRate: 15, repeat: 0 }
+];
 
 /***********************************************************************/
 /** VARIABLES GLOBALES 
@@ -60,123 +70,29 @@ export default class Niveau_demo extends Phaser.Scene {
   }
 
 
-  /***********************************************************************/
-  /** FONCTION PRELOAD 
-/***********************************************************************/
-
-  /** La fonction preload est appelée une et une seule fois,
-   * lors du chargement de la scene dans le jeu.
-   * On y trouve surtout le chargement des assets (images, son ..)
-   */
   preload() {
-    const baseURL = this.sys.game.config.baseURL;
-    
-    this.load.setBaseURL(baseURL);
-    
-    // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
+    this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("Phaser_tuileGood", "./assets/map/tileset_good.png");
-    this.load.image("Phaser_tuileBad", "./assets/map/tileset_bad.png");
-    this.load.tilemapTiledJSON("carte1", "./assets/map/niveau_1.json"); 
-    this.load.image("img_background", "./assets/arriere_plan.jpg");
-    this.load.image("player1", "./assets/player_1/joueur1_image.png"); //servira a définir le joueur directement. L'image a en réalité peu d'importance car on verra l'animation d'attente du bas dès le début.
+    this.load.tilemapTiledJSON("carte1", "./assets/map/niveau_1.json");
+    this.load.image("player1", "./assets/player_1/joueur1_image.png");
     this.load.image("player2", "./assets/player_2/joueur2_image.png");
-    this.load.spritesheet("anim_attente_bas_J1", "./assets/player_1/idle_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
+
+    const joueurs = [
+      { dossier: "player_1", id: "J1", suffixe: "" },
+      { dossier: "player_2", id: "J2", suffixe: "_2" }
+    ];
+    joueurs.forEach(({ dossier, id, suffixe }) => {
+      TYPES_ANIMATIONS.forEach(({ key, file }) => {
+        DIRECTIONS_ANIMATIONS.forEach(({ key: direction, file: directionFichier }) => {
+          this.load.spritesheet(
+            `anim_${key}_${direction}_${id}`,
+            `./assets/${dossier}/${file}_${directionFichier}${suffixe}.png`,
+            { frameWidth: 32, frameHeight: 32 }
+          );
+        });
+      });
     });
-    this.load.spritesheet("anim_attente_droite_J1", "./assets/player_1/idle_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_gauche_J1", "./assets/player_1/idle_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_haut_J1", "./assets/player_1/idle_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_bas_J1", "./assets/player_1/run_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_droite_J1", "./assets/player_1/run_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_gauche_J1", "./assets/player_1/run_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_haut_J1", "./assets/player_1/run_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_bas_J1", "./assets/player_1/attack_down.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_droite_J1", "./assets/player_1/attack_right.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_gauche_J1", "./assets/player_1/attack_left.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_haut_J1", "./assets/player_1/attack_up.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-     this.load.spritesheet("anim_attente_bas_J2", "./assets/player_2/idle_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_droite_J2", "./assets/player_2/idle_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_gauche_J2", "./assets/player_2/idle_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attente_haut_J2", "./assets/player_2/idle_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_bas_J2", "./assets/player_2/run_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_droite_J2", "./assets/player_2/run_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_gauche_J2", "./assets/player_2/run_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_course_haut_J2", "./assets/player_2/run_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-     this.load.spritesheet("anim_attaque_bas_J2", "./assets/player_2/attack_down_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_droite_J2", "./assets/player_2/attack_right_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_gauche_J2", "./assets/player_2/attack_left_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    this.load.spritesheet("anim_attaque_haut_J2", "./assets/player_2/attack_up_2.png", {
-      frameWidth: 32,
-      frameHeight: 32
-    });
-    //instalations d'autres animations
+
     this.load.spritesheet("cle_bronze", "./assets/keys/Key_bronze.png", {
       frameWidth: 32,
       frameHeight: 64
@@ -197,14 +113,11 @@ export default class Niveau_demo extends Phaser.Scene {
     this.load.image("recharge", "./assets/star_of_dawn.png");
     this.load.image("soin", "./assets/medkit.png")
     this.load.image("sortie1_fermee", "./assets/door.png");
-    this.load.image("sortie1_ouverte", "./assets/door1_ouverte.png")
-    this.load.image("sortie2", "./assets/door2.png");
-    this.load.image("sortie3", "./assets/door3.png");
-    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
-    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
-    this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
-    this.load.audio("areignee_blesse","./assets/musique_et_sons/areigne_blesse.mp3")
-    this.load.audio("cle_collecte","./assets/musique_et_sons/cle_collecte.mp3")
+    this.load.image("sortie1_ouverte", "./assets/door1_ouverte.png");
+    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3");
+    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3");
+    this.load.audio("areignee_blesse", "./assets/musique_et_sons/areigne_blesse.mp3");
+    this.load.audio("cle_collecte", "./assets/musique_et_sons/cle_collecte.mp3");
   }
 
   /***********************************************************************/
@@ -227,12 +140,7 @@ export default class Niveau_demo extends Phaser.Scene {
       nombre_ennemis_apparissant = 4
       sortie_ouverte = false;
 
-    /*************************************
-     *  CREATION DU MONDE *
-     *************************************/
-
-
-    const carteDuNiveau = this.make.tilemap({ key:"carte1"});
+    const carteDuNiveau = this.make.tilemap({ key: "carte1" });
     const tileset = carteDuNiveau.addTilesetImage(
       "tileset_good",
       "Phaser_tuileGood"
@@ -284,18 +192,12 @@ export default class Niveau_demo extends Phaser.Scene {
       callback: () => {
         temps_restant -= 1;
         temps_restant_affiche.setText('Temps : ' + temps_restant);
-      }});
-      
-    
-    /****************************
-     *  CREATION DU PERSONNAGE  *
-     ****************************/
-    //joueur 1
-    player = this.physics.add.sprite(player_spawn.x,player_spawn.y, "player1");
+      }
+    });
 
-    //valeurs associées au joueur :
-    player.peutTirer = true; //on l'associe que une fois car on utilisera cette valeur de la même façon pour les deux joueurs
-    player.balle_max= 10;
+    player = this.physics.add.sprite(player_spawn.x, player_spawn.y, "player1");
+    player.peutTirer = true;
+    player.balle_max = 10;
     player.balle_restante = player.balle_max;
     player.score = 0;
     player.points_vies = 5;
@@ -308,7 +210,6 @@ export default class Niveau_demo extends Phaser.Scene {
     //joueur 2
     if (mode_deux_joueurs == true){
       player2 = this.physics.add.sprite(player2_spawn.x, player2_spawn.y, "player2");
-      //valeurs associées au joueur :
       player2.peutTirer = true;
       player2.balle_max = 10;
       player2.balle_restante = player2.balle_max;
@@ -334,235 +235,25 @@ export default class Niveau_demo extends Phaser.Scene {
       frameRate: 5, 
       repeat: -1 
     });
-    this.anims.create({
-      key: "anim_attente_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_droite_J1", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_gauche_J1", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_attente_haut_J1", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_bas_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_bas_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_gauche_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_droite_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_course_haut_J1", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attaque_droite_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_droite_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_gauche_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_gauche_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_bas_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_bas_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_haut_J1",
-      frames: this.anims.generateFrameNumbers("anim_attaque_haut_J1", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    
-    //animations du joueur 2
-    this.anims.create({
-      key: "anim_attente_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_bas_J2", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_droite_J2", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_gauche_J2", {
-        start: 0,
-        end: 3
-      }),
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_attente_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_attente_haut_J2", {
-        start: 0,
-        end: 3
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_bas_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_gauche_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_droite_J2", {
-        start: 0,
-        end: 5
-      }), 
-      frameRate: 5, 
-      repeat: -1 
-    });
-    this.anims.create({
-      key: "anim_course_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_course_haut_J2", {
-        start: 0,
-        end: 5
-      }),
-      frameRate: 5,
-      repeat: -1
-    });
-    this.anims.create({
-      key: "anim_attaque_droite_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_droite_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_gauche_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_gauche_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_bas_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_bas_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    this.anims.create({
-      key: "anim_attaque_haut_J2",
-      frames: this.anims.generateFrameNumbers("anim_attaque_haut_J2", {
-        start: 0,
-        end: 6
-      }), 
-      frameRate: 15, 
-      repeat: 0 
-    });
-    //autres éléments a animation
+
     this.anims.create({
       key: "animation_cle_bronze",
       frames: this.anims.generateFrameNumbers("cle_bronze", {
         start: 0,
         end: 10
-      }), 
-      frameRate: 10, 
-      repeat: -1 
+      }),
+      frameRate: 10,
+      repeat: -1
     });
     this.anims.create({
       key: "animation_areignee",
       frames: this.anims.generateFrameNumbers("areignee_ennemie", {
         start: 0,
         end: 7
-      }), 
-      frameRate: 3, 
-      repeat: -1 
+      }),
+      frameRate: 3,
+      repeat: -1
     });
-    
 
     /*****************************************************
      *  GESTION DE LA CAMERA *
@@ -641,17 +332,13 @@ export default class Niveau_demo extends Phaser.Scene {
      *  CREATION DES SONS *
      *************************************/
     son_feu = this.sound.add('coupDeFeu');
-    musique_niveau1 = this.sound.add('MusiqueNiveau1');
-    musique_niveau1.play({ loop: true });
-    son_blesse = this.sound.add('blesse')
+    this.sound.add("MusiqueNiveau1").play({ loop: true });
     son_areignne_blesse = this.sound.add('areignee_blesse')
     son_cle = this.sound.add('cle_collecte')
 
     /***********************
      *  CREATION DU CLAVIER ET TOUCHES *
      ************************/
-    clavier = this.input.keyboard.createCursorKeys();
-
     //touches Joueur 1
       J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.KeyCodes.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
       J1Bas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
@@ -661,9 +348,9 @@ export default class Niveau_demo extends Phaser.Scene {
       J1boutonFeu = this.input.keyboard.addKey('O');
     //touches Joueur 2
       J2Haut = this.input.keyboard.addKey('Z');
-      J2Bas = this.input.keyboard.addKey('L');
-      J2Gauche = this.input.keyboard.addKey('K');
-      J2Droite = this.input.keyboard.addKey('M');
+      J2Bas = this.input.keyboard.addKey('S');
+      J2Gauche = this.input.keyboard.addKey('Q');
+      J2Droite = this.input.keyboard.addKey('D');
       J2Interaction = this.input.keyboard.addKey('R');
       J2boutonFeu = this.input.keyboard.addKey('T');
     /*************************************************
@@ -719,10 +406,6 @@ export default class Niveau_demo extends Phaser.Scene {
       camGlobalUI.ignore([...hudJ1, ...hudJ2]);
     }
   
-
-  /***********************************************************************/
-  /** FONCTION UPDATE 
-/***********************************************************************/
 
   update() {
     //gestion indépendante des points de vie (au cas ou on voudrait ajouter une option pour soigner)
@@ -785,7 +468,7 @@ export default class Niveau_demo extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte1)) {
       this.scene.start("Ecran_score", {
         scoreJ1: player.score,
-        temps_restant,
+        temps_restant
       });
     }
   //commandes joueur2
@@ -838,13 +521,24 @@ export default class Niveau_demo extends Phaser.Scene {
           fct.tirer.call(this, player2);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
-      gagnant = "Joueur 2";
+    if (!mode_deux_joueurs) {
+      return;
+    }
+    deplacerJoueur(player2, {
+      gauche: J2Gauche,
+      droite: J2Droite,
+      haut: J2Haut,
+      bas: J2Bas
+    }, "J2", false, player);
+    if (Phaser.Input.Keyboard.JustDown(J2boutonFeu)) {
+      tirer.call(this, player2);
+    }
+    if (Phaser.Input.Keyboard.JustDown(J2Interaction) &&
+        sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
       this.scene.start("Ecran_score", {
         scoreJ1: player2.score,
-        temps_restant,
+        temps_restant
       });
     }
-    }
-  }
+  }}
 }
