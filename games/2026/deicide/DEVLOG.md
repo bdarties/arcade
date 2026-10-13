@@ -13,7 +13,7 @@
 - **La map du niveau 2 est dessinée dans Tiled** par Mathys. Le jeu lit des points dans des calques d'objets (`depart`, `fin`, `faisceau`, ennemis...) au lieu de colonnes écrites en dur dans le code : changer la map ne demande aucun changement de code (voir `assets/maps/LISEZ-MOI.md`).
 - **Le boss de la fuite n'est pas le moteur de `boss.js`** : ses attaques étaient liées à une arène fixe de 1280 px (sol, colonnes à x précis). Pendant la fuite tout est posé par rapport au robot et à l'écran, d'où un petit fichier à part qui réutilise juste les orbes et les feuilles d'images du boss.
 
-## Raccourcis de la borne (`reset.js`)
+## Raccourcis de la borne (`systemes/raccourcis.js`)
 - Les boutons physiques sont nommés A à F ; ils envoient I, O, P, K, L et ; : **C = P** et **F = ;**. Les deux boutons du centre sont select (Z) et start (X).
 - **Z + X maintenus 1,5 s** : retour à l'écran d'accueil (reset pour le joueur suivant). **C + F maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
 - Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X ouvre la pause, sauf si Z est déjà maintenu.
@@ -26,8 +26,23 @@
 - **Plus de bruit avant une attaque du boss** : le son de préparation (incantation du mage, puis grondement, puis laser grave) n'a convaincu personne, il est retiré. Les attaques gardent seulement leurs bruits d'impact (orbes, rayon), accordés et calés sur les croches. Un bruit de préparation pourra être ajouté plus tard (`jouerSonSurLeTemps` sait déjà caler un son sur la musique).
 - Le robot lui-même (tir, saut) reste instantané : on ne retarde jamais une action du joueur.
 
+## Le mode 1 contre 1 (`versus.js`)
+- **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
+- **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) découpées par `outils/generer_niveaux.py` : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
+- **Règles** : 3 PV par manche, au meilleur des 3 manches (le premier à 2 manches gagne). Chaque manche relance la scène (`scene.restart`) avec le score en paramètre : tout repart propre sans avoir à tout remettre à zéro à la main. 0,6 s d'invincibilité après un coup, pour qu'une rafale ne tue pas d'un coup.
+- **Réutilisation de `personnage.js`** : le code du robot visait un seul joueur. Trois petits changements : `creerPersonnage` accepte les touches et une teinte, chaque robot a son groupe de balles (`joueur.tirs`, pour savoir qui a tiré), et la visée automatique prend l'adversaire pour cible (`joueur.adversaire`) avec la même vérification de mur que pour les ennemis.
+- **Commandes** : J1 flèches + I (saut), K (tir), L (dash) ; J2 W A S D + R (saut), F (tir), G (dash) : les boutons de la borne (`gpio2keys.py`).
+
+## Le rangement du code (12/10/2026)
+- **Pourquoi ranger** : le dossier `js/` contenait 28 fichiers à plat. Ils sont maintenant classés par rôle : `scenes` (les écrans), `personnage`, `ennemis`, `mecanismes` (les règles des niveaux) et `systemes` (les outils partagés). Le plan est dans `readme.md`.
+- **Aucun changement de jeu** : avant et après, les mêmes scénarios (partie complète, relance, 1 contre 1, pause, reset, salles, caméra, saut coyote) donnent les mêmes résultats et les mêmes images.
+- **Une classe de base `niveau.js`** : `niveau1`, `niveau2` et `niveau3` en héritent et ne contiennent que ce qui change (carte, musique, départ). Avant, la base s'appelait `niveau1` et les autres en héritaient, ce qui était trompeur.
+- **`create` découpé** en étapes nommées (carte, robot, ennemis, lumières, remise à zéro) ; `majPersonnage` découpé en `marcherEtSauter`, `glisserEtSauterDuMur`, `dasherOuTirer`... avec le même ordre qu'avant.
+- **Supprimé** : le code des salles horizontales (plus aucune n'existe), des gardes qui ne servaient plus, 8 images de l'ancien gabarit Phaser jamais utilisées (`sky.png`, `bomb.png`, `dude.png`...), des commentaires périmés.
+- **`Personnage/` est devenu `personnage/`** : la borne tourne sous Linux, qui distingue majuscules et minuscules ; tous les noms de dossiers sont en minuscules.
+
 ## Un seul code pour les niveaux
-- `niveau1.js` lit sa config (map, départ, musique, salles, arène) : `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
+- `scenes/niveau.js` lit une config (map, départ, musique, salles, arène) : `niveau1`, `niveau2` et `niveau3` en héritent (`extends`). On ne copie pas 150 lignes de `create`.
 - `figerCalques` découpe le décor en bandes horizontales pour un niveau haut, verticales pour un niveau large.
 - `endormirLesLoins` regarde aussi la distance horizontale (sinon tous les ennemis d'un niveau large dorment ou se réveillent d'un coup).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Génère une map d'EXEMPLE pour le niveau 2 (horizontal, centré sur le dash) et la map de l'arène du dernier combat.
+"""Génère une map d'EXEMPLE pour le niveau 2 (horizontal, centré sur le dash) et les maps de l'arène du dernier combat et de l'arène du 1 contre 1 (le bas de la map 1).
 Le niveau 2 « pour de vrai » est dessiné dans Tiled (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : ce script écrit niveau2_genere.json
 et ne touche jamais niveau2.json.
 
@@ -41,7 +41,7 @@ class Niveau:
         self.fond = [[0] * largeur for _ in range(hauteur)]
         self.fond2 = [[0] * largeur for _ in range(hauteur)]
         self.jeu = [[0] * largeur for _ in range(hauteur)]
-        self.objets = {"orc": [], "lumière": [], "archer": [], "mage": [], "lanterne": [], "depart": [], "fin": [], "faisceau": []}
+        self.objets = {"orc": [], "lumière": [], "archer": [], "mage": [], "lanterne": [], "depart": [], "fin": [], "faisceau": [], "depart1": [], "depart2": []}
         self.prochain_id = 1
 
     def remplir_fond(self, ligne_min=0, ligne_max=None):
@@ -72,15 +72,15 @@ class Niveau:
         for nom, grille in (("Background and background", self.fond2), ("Background", self.fond), ("Gameplay", self.jeu)):
             calques.append({"id": ids[nom], "name": nom, "type": "tilelayer", "width": self.l, "height": self.h, "x": 0, "y": 0, "opacity": 1, "visible": True,
                             "data": [t for ligne in grille for t in ligne]})
-        ids_objets = {"orc": 7, "lumière": 10, "archer": 8, "mage": 9, "lanterne": 6, "depart": 11, "fin": 12, "faisceau": 13}
-        for nom in ("orc", "lumière", "archer", "mage", "lanterne", "depart", "fin", "faisceau"):
+        ids_objets = {"orc": 7, "lumière": 10, "archer": 8, "mage": 9, "lanterne": 6, "depart": 11, "fin": 12, "faisceau": 13, "depart1": 14, "depart2": 15}
+        for nom in ("orc", "lumière", "archer", "mage", "lanterne", "depart", "fin", "faisceau", "depart1", "depart2"):
             objets = []
             for (x, y) in self.objets[nom]:
                 objets.append({"id": self.prochain_id, "name": "", "type": "", "x": float(x), "y": float(y), "width": 0.0, "height": 0.0, "rotation": 0, "visible": True, "point": True, "properties": []})
                 self.prochain_id += 1
             calques.append({"id": ids_objets[nom], "name": nom, "type": "objectgroup", "draworder": "topdown", "x": 0, "y": 0, "opacity": 1, "visible": True, "objects": objets})
         carte = {k: modele[k] for k in ("compressionlevel", "infinite", "orientation", "renderorder", "tiledversion", "version", "tileheight", "tilewidth", "type", "tilesets")}
-        carte.update({"width": self.l, "height": self.h, "layers": calques, "nextlayerid": 14, "nextobjectid": self.prochain_id})
+        carte.update({"width": self.l, "height": self.h, "layers": calques, "nextlayerid": 16, "nextobjectid": self.prochain_id})
         return carte
 
 
@@ -168,10 +168,33 @@ def arene_dieu(modele):
     return n
 
 
+# =====================================================================================================================
+# ARÈNE DU 1 CONTRE 1 : le début de la map 1 (les 22 dernières lignes de niveau1.json : le sol, les murs et les plateformes de départ), 40 x 22 tuiles
+# =====================================================================================================================
+LIGNES_VERSUS = 22
+
+
+def arene_versus(modele):
+    """Découpe le bas de niveau1.json : mêmes tuiles, sans ennemis ni lanternes ; deux points de départ (depart1 à gauche, depart2 à droite)."""
+    l, h = modele["width"], modele["height"]
+    debut = h - LIGNES_VERSUS
+    n = Niveau(l, LIGNES_VERSUS)
+    for calque in modele["layers"]:
+        if calque["type"] != "tilelayer":
+            continue
+        cible = {"Background and background": n.fond2, "Background": n.fond, "Gameplay": n.jeu}[calque["name"]]
+        for r in range(LIGNES_VERSUS):
+            cible[r][:] = calque["data"][(debut + r) * l:(debut + r + 1) * l]
+    n.objets["depart1"] = [(6 * TUILE + TUILE // 2, LIGNES_VERSUS * TUILE - TUILE)]  # les pieds sur le sol (la dernière ligne est le sol) : colonne 6
+    n.objets["depart2"] = [(33 * TUILE + TUILE // 2, LIGNES_VERSUS * TUILE - TUILE)]  # colonne 33
+    return n
+
+
+
 if __name__ == "__main__":
     with open(os.path.join(DOSSIER, "niveau1.json"), encoding="utf-8") as f:
         modele = json.load(f)
-    for nom, fabrique in (("niveau2_genere.json", niveau2), ("arene_dieu.json", arene_dieu)):
+    for nom, fabrique in (("niveau2_genere.json", niveau2), ("arene_dieu.json", arene_dieu), ("arene_versus.json", arene_versus)):
         carte = fabrique(modele).en_json(modele)
         with open(os.path.join(DOSSIER, nom), "w", encoding="utf-8") as f:
             json.dump(carte, f, ensure_ascii=False, separators=(",", ":"))
