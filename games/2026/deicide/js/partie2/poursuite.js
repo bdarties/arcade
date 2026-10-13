@@ -6,7 +6,6 @@
 // Le boss est le même que celui de l'arène (boss.js : mêmes feuilles d'images, mêmes orbes), mais ses attaques sont posées par rapport au robot et à
 // l'écran, pas à une arène fixe.
 import { creerOrbe, creerAnimations } from "../partie1/ennemis/boss.js";
-import { ARGENT, LAVANDE, OMBRE, ETINCELLE, habillerRayon } from "../partie1/ennemis/apparence_boss.js"; // l'apparence des attaques (argent et lavande)
 import * as effets from "../partie1/systemes/effets.js";
 import { jouerSonSurLeTemps, surLeTemps, quantifier } from "../partie1/systemes/sons.js";
 
@@ -85,7 +84,7 @@ function tirerOrbes(scene, p) { // une salve en éventail vers le robot
     const boss = p.boss;
     const base = Phaser.Math.Angle.Between(boss.x, boss.y + 20, scene.player.x, scene.player.body.center.y);
     jouerSonSurLeTemps(scene, "orbe");
-    effets.eclats(scene, boss.x, boss.y + 20, ETINCELLE, 10, 300);
+    effets.eclats(scene, boss.x, boss.y + 20, 0xffd45c, 10, 300);
     for (let i = 0; i < 5; i++) {
         const angle = base + Phaser.Math.DegToRad((i - 2) * 14);
         creerOrbe(scene, boss.x, boss.y + 20, Math.cos(angle) * 330, Math.sin(angle) * 330);
@@ -96,7 +95,7 @@ function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, deva
     const haut = scene.cameras.main.worldView.y + 14;
     const xs = [170, 340, 510, 680].map((d) => Math.round(scene.player.x + d + Phaser.Math.Between(-30, 30)));
     const reperes = xs.map((x) => {
-        const r = scene.add.rectangle(x, haut + 20, 6, 40, LAVANDE, 0.8).setDepth(51);
+        const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
         effets.clignoter(scene, r, { alpha: 0.15, duration: 100 });
         return r;
     });
@@ -109,7 +108,7 @@ function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, deva
 function annoncerColonne(scene, p) { // un trait clignotant sur toute la hauteur, devant le robot, puis un rayon
     const hauteur = scene.carte.heightInPixels;
     const x = Math.round(scene.player.x + 300);
-    const trait = scene.add.rectangle(x, hauteur / 2, 8, hauteur, LAVANDE, 0.55).setDepth(51);
+    const trait = scene.add.rectangle(x, hauteur / 2, 8, hauteur, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     effets.clignoter(scene, trait, { alpha: { from: 0.15, to: 0.6 }, duration: 110 });
     p.colonnes.push({ x, trait, etat: "annonce", fin: 0, rayon: null, touche: false, allumage: scene.time.now + 900 });
 }
@@ -120,7 +119,7 @@ function majColonne(scene, c) {
         c.etat = "rayon";
         c.fin = scene.time.now + 450;
         const hauteur = scene.carte.heightInPixels;
-        c.rayon = habillerRayon(scene.add.rectangle(c.x, hauteur / 2, 72, hauteur, ARGENT, 0.95).setDepth(51));
+        c.rayon = scene.add.rectangle(c.x, hauteur / 2, 72, hauteur, 0xfff2c0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
         scene.tweens.add({ targets: c.rayon, alpha: 0, scaleX: 0.5, duration: 450, ease: "Quad.In" });
         jouerSonSurLeTemps(scene, "dash");
         scene.cameras.main.shake(180, 0.006);

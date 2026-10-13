@@ -19,7 +19,6 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 // Les tirs du robot le blessent. À 0 PV, le joueur choisit : arrêter la partie ici (le boss est vaincu), ou entrer dans le panthéon (OUI) : la
 // suite du jeu est alors dans js/partie2 (profil.suite).
-import { ARGENT, LAVANDE, ETINCELLE, habillerRayon, creerTextureEclat } from "./apparence_boss.js"; // l'apparence des attaques (argent et lavande, plus de lumière dorée)
 import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { gagnerPoints, finirPartie } from "../systemes/points.js";
@@ -69,7 +68,7 @@ export function reglages(boss) { // les réglages de la phase en cours : ceux de
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
 const ANIMATIONS = [["boss_idle", 8, 8, -1], ["boss_charge", 6, 12, 0], ["boss_attaque", 4, 16, 0], ["boss_mort", 8, 7, 0]];
-export const ECLATS_OR = [ETINCELLE, 300]; // mêmes réglages que les éclats de lanterne vivante (effets.js) : l'émetteur est déjà fabriqué
+export const ECLATS_OR = [0xffd45c, 300]; // mêmes réglages que les éclats de lanterne vivante (effets.js) : l'émetteur est déjà fabriqué
 export const ECLATS_BLANC = [0xffffff, 190];
 
 export function chargerBoss(scene) { // à appeler dans chargerJeu (preload)
@@ -120,7 +119,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
 
     if (scene.textures.exists("halo_doux")) { // une lueur dorée derrière lui (la texture vient d'ennemis.js)
         const halo = scene.add.image(x, y, "halo_doux");
-        halo.setScale(4.2).setTint(ETINCELLE).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0).setPipeline("SinglePipeline");
+        halo.setScale(4.2).setTint(0xfff2c0).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0).setPipeline("SinglePipeline");
         boss.halo = halo;
         boss.once("destroy", () => halo.destroy());
     }
@@ -271,7 +270,7 @@ export const ATTAQUES = {
             const nombre = reglages(boss).pluie;
             const largeurCase = 1120 / nombre;
             const xs = Array.from({ length: nombre }, (_, i) => Math.round(80 + largeurCase * i + Phaser.Math.Between(10, largeurCase - 10)));
-            const reperes = xs.map((x) => { const r = scene.add.rectangle(x, haut + 20, 6, 40, LAVANDE, 0.8).setDepth(51); effets.clignoter(scene, r, { alpha: 0.15, duration: 110 }); return r; });
+            const reperes = xs.map((x) => { const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); effets.clignoter(scene, r, { alpha: 0.15, duration: 110 }); return r; });
             return { xs, reperes, haut };
         },
         executer: faireTomberPluie
@@ -285,14 +284,13 @@ export const ATTAQUES = {
     nova: { charge: 560, apres: 900, executer: (scene, boss, annonce, valide) => lancerNova(scene, boss, valide) }
 };
 
-// une orbe du boss : une étoile d'argent qui tourne (voir apparence_boss.js)
+// une orbe de lumière : le même halo que l'orbe du mage (ennemis.js), doré
 export function creerOrbe(scene, x, y, vx, vy) { // (exportée : poursuite.js lance les mêmes orbes)
-    const orbe = scene.tirsEnnemis.create(x, y, creerTextureEclat(scene));
+    const orbe = scene.tirsEnnemis.create(x, y, "halo");
     orbe.setScale(0.25);
     orbe.body.setCircle(40, 88, 88); // hitbox ronde de 40 px de rayon, centrée dans l'image
-    orbe.setDepth(51).setPipeline("SinglePipeline");
+    orbe.setTint(0xfff2c0).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setPipeline("SinglePipeline");
     orbe.body.setVelocity(vx, vy);
-    orbe.body.setAngularVelocity(Phaser.Math.Between(0, 1) ? 360 : -360); // elle tourne sur elle-même (la hitbox est ronde : rien ne change)
     scene.time.delayedCall(3000, () => { if (orbe.active) orbe.destroy(); }); // elle disparaît au bout de 3 s si elle n'a rien touché : elle a quitté l'écran bien avant, et moins d'orbes en même temps ménage la borne
     return orbe;
 }
@@ -342,7 +340,7 @@ function lancerNova(scene, boss, valide) { // des anneaux d'orbes qui s'écarten
 // ---------------------------------------------------------------------------------------------
 
 export function zone(scene, { x, y, w, h, trait, suit = false, degats = true }) {
-    const t = scene.add.rectangle(x, y, trait.w, trait.h, LAVANDE, trait.w > 400 && trait.h > 200 ? 0.14 : 0.55).setDepth(51);
+    const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, trait.w > 400 && trait.h > 200 ? 0.14 : 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     const grand = trait.w > 400 && trait.h > 200; // un grand rectangle de lumière doit rester plus discret qu'un trait fin
     // il clignote : le danger est proche
     effets.clignoter(scene, t, { alpha: grand ? { from: 0.05, to: 0.22 } : { from: 0.15, to: 0.6 }, duration: 110 });
@@ -355,7 +353,7 @@ export function declencher(scene, z) { // le rayon tombe
     z.trait.destroy();
     z.etat = "rayon";
     z.fin = scene.time.now + 450; // le rayon reste 0,45 s
-    z.rayon = habillerRayon(scene.add.rectangle(z.x, z.y, z.w, z.h, ARGENT, 0.95).setDepth(51));
+    z.rayon = scene.add.rectangle(z.x, z.y, z.w, z.h, 0xfff2c0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     scene.tweens.add({ targets: z.rayon, alpha: 0, scaleY: z.w > 400 && z.h < 200 ? 0.4 : 1, scaleX: z.w > 400 ? (z.h < 200 ? 1 : 0.7) : 0.5, duration: 450, ease: "Quad.In" });
     jouerSonSurLeTemps(scene, "dash");
     effets.eclats(scene, z.x > 0 && z.w < 400 ? z.x : 640, scene.areneSolY, ECLATS_BLANC[0], 16, ECLATS_BLANC[1]);
@@ -395,7 +393,7 @@ const ETATS_SANS_DEGATS = ["apparition", "transition", "choix", "fin"]; // penda
 function toucherBoss(scene, boss, tir) {
     tir.destroy();
     if (boss.intouchable || ETATS_SANS_DEGATS.includes(boss.etat)) return;
-    if (profil.pvMinimum && boss.pv - 1 < profil.pvMinimum(boss)) { effets.flash(boss, ETINCELLE, 60); return; } // il tient bon : le coup ne compte pas (ni PV, ni points)
+    if (profil.pvMinimum && boss.pv - 1 < profil.pvMinimum(boss)) { effets.flash(boss, 0xffd45c, 60); return; } // il tient bon : le coup ne compte pas (ni PV, ni points)
     boss.pv -= 1;
     effets.flash(boss, 0xffffff, 60); // il devient blanc 60 ms
     effets.eclats(scene, tir.x, tir.y, ECLATS_BLANC[0], 6, ECLATS_BLANC[1]);

@@ -9,11 +9,10 @@
 import { jouerSonSurLeTemps } from "../partie1/systemes/sons.js";
 import * as effets from "../partie1/systemes/effets.js";
 import { ATTAQUES, zone, declencher, creerOrbe, ECLATS_OR } from "../partie1/ennemis/boss.js";
-import { ARGENT, LAVANDE, OMBRE, ETINCELLE, habillerRayon } from "../partie1/ennemis/apparence_boss.js"; // l'apparence des attaques (argent et lavande)
 import { poserRayonTournant } from "./attaques.js";
 
 const tracer = (scene, x, y, longueur, angle, epaisseur = 5) => { // un trait de lumière qui clignote, de (x, y) vers l'angle donné : l'annonce d'une trajectoire
-    const trait = scene.add.rectangle(x, y, longueur, epaisseur, LAVANDE, 0.7).setOrigin(0, 0.5).setRotation(angle).setDepth(51);
+    const trait = scene.add.rectangle(x, y, longueur, epaisseur, 0xfff2c0, 0.5).setOrigin(0, 0.5).setRotation(angle).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     effets.clignoter(scene, trait, { alpha: 0.12, duration: 110 });
     return trait;
 };
@@ -43,7 +42,7 @@ const DUREE_ECLAIR = 150; // ms
 function frapperLigne(scene, ligne, valide) {
     const angle = Math.atan2(ligne.vy, ligne.vx);
     const longueur = (scene.areneSolY - ligne.y) / Math.cos(ANGLE_METEORE) + 40;
-    const eclair = habillerRayon(scene.add.rectangle(ligne.x, ligne.y, longueur, EPAISSEUR_ECLAIR, ARGENT, 0.95).setOrigin(0, 0.5).setRotation(angle).setDepth(52));
+    const eclair = scene.add.rectangle(ligne.x, ligne.y, longueur, EPAISSEUR_ECLAIR, 0xffffff, 0.95).setOrigin(0, 0.5).setRotation(angle).setBlendMode(Phaser.BlendModes.ADD).setDepth(52);
     scene.tweens.add({ targets: eclair, alpha: 0, scaleY: 0.3, duration: DUREE_ECLAIR, onComplete: () => eclair.destroy() });
     let touche = false;
     const fin = scene.time.now + DUREE_ECLAIR;
@@ -75,7 +74,7 @@ function tirerMeteores(scene, lignes, valide) {
 const TROU_RIDEAU = 105; // demi-largeur du trou, en px
 
 function marqueTrou(scene, x) { // en haut de l'écran : une barre claire à l'endroit où le mur laissera passer
-    const marque = scene.add.rectangle(x, haut(scene) + 6, TROU_RIDEAU * 2, 12, LAVANDE, 0.9).setDepth(51);
+    const marque = scene.add.rectangle(x, haut(scene) + 6, TROU_RIDEAU * 2, 12, 0xfff2c0, 0.8).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     effets.clignoter(scene, marque, { alpha: 0.25, duration: 110 });
     return marque;
 }
@@ -130,7 +129,7 @@ function hauteursFenetres(scene) { // trois hauteurs possibles pour la fenêtre 
 const DEMI_FENETRE = 78; // demi-hauteur de la fenêtre
 function marqueFenetre(scene, cote, y) { // sur le bord de l'écran : un repère clair à la hauteur de la fenêtre
     const x = cote === "gauche" ? 14 : 1266;
-    const marque = scene.add.rectangle(x, y, 22, DEMI_FENETRE * 2, LAVANDE, 0.9).setDepth(51);
+    const marque = scene.add.rectangle(x, y, 22, DEMI_FENETRE * 2, 0xfff2c0, 0.8).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     effets.clignoter(scene, marque, { alpha: 0.25, duration: 110 });
     return marque;
 }
@@ -189,7 +188,7 @@ export function installerAttaquesUltimes() { // à appeler une fois, avant la cr
             const ox = Phaser.Math.Clamp(joueur.x + versLaDroite * Phaser.Math.Between(DISTANCE_PIVOT, DISTANCE_PIVOT + 180), 120, 1160), oy = scene.areneSolY - 330;
             const { angle: depart } = meilleurDepart(ox, oy, joueur.x, joueur.y, sens);
             const traits = [0, 1, 2, 3].map((k) => tracer(scene, ox, oy, 1700, depart + k * Math.PI / 2, 6));
-            const centre = scene.add.circle(ox, oy, 26, LAVANDE, 0.6).setStrokeStyle(3, OMBRE, 1).setDepth(51);
+            const centre = scene.add.circle(ox, oy, 26, 0xfff2c0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
             effets.clignoter(scene, centre, { alpha: 0.12, duration: 110 });
             return { ox, oy, depart, sens, reperes: [...traits, centre] };
         },
