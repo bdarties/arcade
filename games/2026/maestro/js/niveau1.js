@@ -133,8 +133,8 @@ export default class niveau1 extends Phaser.Scene {
     this.creerCamera();
     this.creerInterface();
 
-    this.afficherMessage(this.texteCommandes(), 7000);
-    this.afficherObjectif();
+    this.creerPanneauCommandes(); // le cadre fixe en bas : les commandes restent toujours visibles
+    this.afficherIntroduction(); // l'objectif, au centre de l'écran, avant de commencer à jouer
     this.installerSurveillance();
     this.demarrerMusique();
   }
@@ -215,23 +215,41 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface
-  afficherObjectif() {
+  // L'objectif, au CENTRE de l'écran, avant de commencer : il disparaît au premier appui (ou après 6 s)
+  afficherIntroduction() {
+    const fond = this.add.rectangle(0, 0, 820, 250, 0x0b1030, 0.94).setStrokeStyle(4, 0xf5d97a);
+    const titre = this.add
+      .text(0, -78, "OBJECTIF", { fontFamily: POLICE, fontSize: "20pt", fontStyle: "bold", color: "#f5d97a", stroke: "#000000", strokeThickness: 5 })
+      .setOrigin(0.5);
+    const objectif = this.add
+      .text(0, -22, this.objectif.replace(/^OBJECTIF :\s*/, ""), { fontFamily: POLICE, fontSize: "17pt", fontStyle: "bold", color: "#ffffff", align: "center", stroke: "#000000", strokeThickness: 4 })
+      .setOrigin(0.5);
+    const consigne = this.add
+      .text(0, 82, "Appuie sur une touche pour commencer", { fontFamily: POLICE, fontSize: "12pt", color: "#cfd6f5", stroke: "#000000", strokeThickness: 3 })
+      .setOrigin(0.5);
+    const cadre = this.add.container(640, 330, [fond, titre, objectif, consigne]).setScrollFactor(0).setDepth(150);
+    this.introduction = cadre;
+    const fermer = () => {
+      if (cadre.active) {
+        this.tweens.add({ targets: cadre, alpha: 0, duration: 500, onComplete: () => cadre.destroy() });
+      }
+    };
+    this.input.keyboard.once("keydown", fermer);
+    this.time.delayedCall(6000, fermer);
+  }
+
+  // Le cadre fixe en bas de l'écran : les commandes, toujours visibles (petit mais lisible)
+  creerPanneauCommandes() {
     const texte = this.add
-      .text(640, 48, this.objectif, {
-        fontFamily: POLICE,
-        fontSize: "17pt",
-        fontStyle: "bold",
-        color: "#ffe9a8",
-        align: "center",
-        stroke: "#000000",
-        strokeThickness: 5,
-        backgroundColor: "#000000aa",
-        padding: { x: 14, y: 8 }
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(100);
-    this.tweens.add({ targets: texte, alpha: 0, delay: 8000, duration: 1500 });
+      .text(0, 0, this.texteCommandes(), { fontFamily: POLICE, fontSize: "11pt", color: "#e8ecff", align: "center", lineSpacing: 2, stroke: "#000000", strokeThickness: 3 })
+      .setOrigin(0.5, 0.5);
+    const marge = 6;
+    const fond = this.add.rectangle(0, 0, texte.width + 24, texte.height + marge * 2, 0x05081a, 0.82).setStrokeStyle(2, 0xf5d97a, 0.8);
+    fond.setDepth(0);
+    texte.setDepth(1);
+    // Le cadre est calé au bas de l'écran (720 px) selon sa hauteur réelle, pour que rien ne dépasse
+    const hauteurCadre = texte.height + marge * 2;
+    this.panneauCommandes = this.add.container(640, 720 - 6 - hauteurCadre / 2, [fond, texte]).setScrollFactor(0).setDepth(120);
   }
 
   // Un panneau d'indication posé dans le décor (lisible sur n'importe quel fond)
@@ -662,7 +680,7 @@ export default class niveau1 extends Phaser.Scene {
     // Message temporaire au centre en bas
     this.texteMessage = fixe(
       this.add
-        .text(640, 676, "", {
+        .text(640, 628, "", {
           fontFamily: POLICE,
           fontSize: "14pt",
           fontStyle: "bold",
