@@ -51,12 +51,12 @@ const PROFILS = {
     },
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
         pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
-        pauses: [1750, 1300, 450], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
+        pauses: [1750, 1300, 250], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
         attaques: [
             ["orbes", "colonne", "pluie", "lanternes", "balayage"],
             ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"],
-            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique"]
+            ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova", "pique", "colonne", "balayage"] // colonne et balayage sont deux fois plus fréquents (pas la nova : 120 orbes d'un coup, trop pour la borne)
         ]
     }
 };
@@ -176,7 +176,7 @@ function majBoss(scene, boss, temps) {
     if (!boss.active) return;
     // il flotte doucement de haut en bas et de gauche à droite ; il rejoint sa place en douceur après un piqué
     if (boss.etat !== "mort" && boss.etat !== "enrage" && !boss.pique) {
-        const cibleX = scene.areneCentreX + Math.sin(temps / 1450) * (160 + 40 * boss.phase);
+        const cibleX = scene.areneCentreX + Math.sin(temps / (dure(boss) ? 1000 : 1450)) * (160 + 40 * boss.phase);
         const cibleY = boss.departY + Math.sin(temps / 900) * 14;
         boss.x += (cibleX - boss.x) * 0.15;
         boss.y += (cibleY - boss.y) * 0.15;
@@ -278,14 +278,14 @@ export function creerOrbe(scene, x, y, vx, vy) { // (exportée : poursuite.js la
     orbe.body.setCircle(40, 88, 88); // hitbox ronde de 40 px de rayon, centrée dans l'image
     orbe.setTint(0xfff2c0).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setPipeline("SinglePipeline");
     orbe.body.setVelocity(vx, vy);
-    scene.time.delayedCall(4000, () => { if (orbe.active) orbe.destroy(); }); // elle disparaît au bout de 4 s si elle n'a rien touché : elle a quitté l'écran bien avant, et moins d'orbes en même temps ménage la borne
+    scene.time.delayedCall(3000, () => { if (orbe.active) orbe.destroy(); }); // elle disparaît au bout de 3 s si elle n'a rien touché : elle a quitté l'écran bien avant, et moins d'orbes en même temps ménage la borne
     return orbe;
 }
 
 function tirerOrbes(scene, boss) { // une salve en éventail, centrée sur le robot
     const nombre = dure(boss) ? 11 : [3, 5, 7][boss.phase];
     const ouverture = dure(boss) ? 130 : [36, 60, 84][boss.phase]; // degrés entre la première et la dernière orbe
-    const vitesse = dure(boss) ? 440 : [290, 325, 360][boss.phase];
+    const vitesse = dure(boss) ? 480 : [290, 325, 360][boss.phase];
     const base = Phaser.Math.Angle.Between(boss.x, boss.y + 20, scene.player.x, scene.player.body.center.y);
     jouerSonSurLeTemps(scene, "orbe");
     effets.eclats(scene, boss.x, boss.y + 20, ECLATS_OR[0], 10, ECLATS_OR[1]);
@@ -300,7 +300,7 @@ function faireTomberPluie(scene, boss, annonce, valide) { // les orbes tombent a
     annonce.xs.forEach((x, i) => scene.time.delayedCall(i * 70, () => {
         if (annonce.reperes[i]) annonce.reperes[i].destroy();
         if (!valide()) return;
-        creerOrbe(scene, x, annonce.haut, 0, 390);
+        creerOrbe(scene, x, annonce.haut, 0, dure(boss) ? 450 : 390);
     }));
 }
 
@@ -320,7 +320,7 @@ function lancerNova(scene, boss, valide) { // des anneaux d'orbes qui s'écarten
         const decalage = (a % 2) * (Math.PI / nombre) + a * 0.15; // l'anneau suivant est tourné d'un demi-intervalle
         for (let i = 0; i < nombre; i++) {
             const angle = decalage + (i / nombre) * Math.PI * 2;
-            creerOrbe(scene, boss.x, boss.y + 10, Math.cos(angle) * (dure(boss) ? 300 : 230), Math.sin(angle) * (dure(boss) ? 300 : 230));
+            creerOrbe(scene, boss.x, boss.y + 10, Math.cos(angle) * (dure(boss) ? 330 : 230), Math.sin(angle) * (dure(boss) ? 330 : 230));
         }
     });
 }
@@ -333,7 +333,7 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
     boss.piqueTouche = false;
     const idPique = boss.jeton;
     boss.tweenPique = scene.tweens.add({
-        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: 340, ease: "Quad.In",
+        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: dure(boss) ? 280 : 340, ease: "Quad.In",
         onComplete: () => {
             scene.cameras.main.shake(180, 0.008);
             effets.eclats(scene, boss.x, scene.areneSolY, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);
