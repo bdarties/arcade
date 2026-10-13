@@ -45,6 +45,7 @@ function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
     jeu.registry.set("chrono", 0);
     jeu.registry.set("score", 0);
     jeu.registry.set("chronoActif", true);
+    jeu.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
     jeu.registry.set("astuceDashVue", false);
     jeu.registry.set("reprendreAuBoss", false); // pas de reprise dans l'arène : on repart du bas de la tour

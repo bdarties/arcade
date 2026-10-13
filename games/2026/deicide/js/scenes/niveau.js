@@ -213,8 +213,8 @@ export default class niveau extends Phaser.Scene {
   mourir() { // 0 PV : le robot meurt, puis le niveau recommence. Le chrono continue (la mort coûte du temps)
     this.mort = true;
     // mort pendant le combat du boss : on ne refait pas la tour, seulement le boss (et le score retrouve sa valeur d'avant le combat)
-    const auBoss = Boolean(this.areneLancee && this.cfg.departArene);
-    this.registry.set("reprendreAuBoss", auBoss);
+    const auBoss = Boolean(this.areneLancee);
+    this.registry.set("reprendreAuBoss", auBoss && Boolean(this.cfg.departArene)); // (le niveau 3 est déjà juste l'arène : rien à déplacer)
     jouerAction(this.player, "mort"); // animation de mort du robot (il ne peut plus bouger)
     this.time.delayedCall(1300, () => this.cameras.main.fadeOut(500, 0, 0, 0));
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {

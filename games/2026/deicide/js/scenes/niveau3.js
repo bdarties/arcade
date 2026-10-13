@@ -9,6 +9,7 @@ const HAUT_DU_SOL = 22 * 32; // y du haut du sol de l'arène (ligne 22 de la map
 function lancerArene(scene) { // appelée à chaque image : au premier appel, fige la caméra et fait apparaître le boss
     if (scene.areneLancee) return;
     scene.areneLancee = true;
+    scene.registry.set("scoreArene", scene.registry.get("score")); // le score en entrant : si le robot meurt ici, il le retrouve (voir niveau.js, mourir)
     const camera = scene.cameras.main;
     camera.stopFollow(); // la caméra cadre toute l'arène : le sol se trouve à 688 px du haut de l'écran, comme dans l'arène du Dieu
     camera.setScroll(0, HAUT_DU_SOL - 688);

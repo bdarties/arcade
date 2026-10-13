@@ -169,6 +169,7 @@ export default class menu extends Phaser.Scene {
     this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
     this.registry.set("score", 0); // le score aussi
     this.registry.set("astuceDashVue", false); // et le rappel du dash au début du niveau 2
+    this.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     this.registry.set("guideVu", false); // le guide (but et commandes) s'affichera au début de cette partie
     this.registry.set("chronoActif", true); // le chrono peut tourner (il a pu être arrêté par la partie précédente)
     this.bouton.play("bouton_jouer_clic");

@@ -96,6 +96,7 @@ export function creerAnimations(scene) { // crée une seule fois les 4 animation
 
 export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait apparaître le boss en (x, y) : le centre de son sprite
     profil = PROFILS[nomProfil]; // les réglages de ce boss
+    profil.cle = nomProfil; // son nom, pour retenir la phase atteinte (voir changerDePhase)
     creerAnimations(scene);
     musiqueBoss(scene); // la musique metal du combat démarre avec l'apparition du boss
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur
@@ -106,9 +107,12 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     // la teinte revient après chaque flash (voir effets.flash) // au-dessus du voile d'ombre (50) : c'est lui la lumière
     if (profil.teinte) { boss.setTint(profil.teinte); boss.teinteBase = profil.teinte; }
     boss.play("boss_idle");
-    boss.pv = profil.pv;
+    // reprise après une mort : le combat repart au début de la phase où le robot est mort (voir changerDePhase), pas depuis la phase 1
+    const reprise = scene.registry.get("phaseBoss");
+    const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
+    boss.pv = phaseDepart === 0 ? profil.pv : profil.seuils[phaseDepart - 1]; // au début d'une phase, le boss a exactement les PV de son seuil
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) -> mort
-    boss.phase = 0; // 0, 1 ou 2
+    boss.phase = phaseDepart; // 0, 1 ou 2
     boss.departY = y; // hauteur autour de laquelle il flotte
     boss.prochaineAttaque = Infinity; // pas d'attaque avant la fin de l'apparition
     boss.derniereAttaque = null;
@@ -123,6 +127,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
         boss.once("destroy", () => halo.destroy());
     }
     boss.barre = creerBarre(scene);
+    boss.barre.plein.width = LARGEUR_BARRE * boss.pv / profil.pv; // la barre est déjà au bon niveau si on reprend en phase 2 ou 3
     scene.tweens.add({ targets: [boss, boss.halo].filter(Boolean), alpha: { value: (cible) => (cible === boss ? 1 : 0.35) }, duration: 1500, onComplete: () => {
         boss.etat = "combat";
         boss.prochaineAttaque = scene.time.now + surLeTemps(scene, 1200); // la première attaque arrive peu après, sur une croche
@@ -419,6 +424,7 @@ function nettoyerCombat(scene, boss) { // efface tout ce que le boss avait lanc�
 function changerDePhase(scene, boss, phase) {
     nettoyerCombat(scene, boss);
     boss.phase = phase;
+    scene.registry.set("phaseBoss", { profil: profil.cle, phase }); // si le robot meurt, il reprendra ici
     boss.etat = "transition"; // intouchable un instant
     boss.play("boss_charge");
     scene.cameras.main.flash(300, 255, 242, 192);
