@@ -20,6 +20,7 @@
 
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau } from "./controles.js";
+import { enregistrerVictoire, NIVEAUX } from "./progression.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
 const LARGEUR_MONDE = 2176;
@@ -67,8 +68,8 @@ export default class niveau1 extends Phaser.Scene {
     this.couleurFond = COULEUR_FOND;
     this.listeTubas = TUBAS;
     this.listeCristaux = CRISTAUX;
-    this.messageVictoire = "Niveau 1 terminé ! Direction le niveau 2...";
-    this.niveauSuivant = "niveau2";
+    this.numeroNiveau = 1; // son numéro dans la progression (voir progression.js)
+    this.messageVictoire = "Niveau 1 terminé !";
     this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie";
   }
 
@@ -94,6 +95,7 @@ export default class niveau1 extends Phaser.Scene {
     this.definirNiveau();
     this.mode = this.registry.get("mode") || "solo"; // "solo" ou "duo" (choisi dans choix_mode)
     this.fini = false; // vrai quand le niveau est gagné ou perdu
+    this.debutNiveau = this.time.now; // pour mesurer le temps mis à finir le niveau
     this.fragmentRecupere = false;
     this.noteActuelle = 0; // 0 = Do, 1 = Mi, 2 = Sol
     this.lampe = { allumee: false, batterie: 100, angle: 0 }; // batterie en %, angle en degrés (0 = à l'horizontale)
@@ -1224,7 +1226,21 @@ export default class niveau1 extends Phaser.Scene {
     this.afficherMessage(this.messageVictoire, 2000);
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start(this.niveauSuivant); // la victoire mène directement au niveau suivant
+      this.terminerNiveau(); // la victoire mène à l'écran « Niveau terminé »
+    });
+  }
+
+  // Le niveau est gagné : on enregistre la victoire (progression.js) et on montre le bilan
+  terminerNiveau() {
+    const premiereFois = enregistrerVictoire(this.registry, this.numeroNiveau);
+    const niveau = NIVEAUX.find((n) => n.numero == this.numeroNiveau);
+    this.scene.start("niveau_termine", {
+      numero: this.numeroNiveau,
+      nom: niveau.nom,
+      vies: this.vies,
+      viesMax: this.viesMax,
+      secondes: Math.round((this.time.now - this.debutNiveau) / 1000),
+      premiereFois: premiereFois
     });
   }
 

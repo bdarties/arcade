@@ -10,6 +10,7 @@
 
 import { creerClavierMenu } from "./controles.js";
 import { REGLAGES } from "./reglages.js";
+import { nouvellePartie } from "./progression.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 const SCENE_SUIVANTE = "synopsis"; // le synopsis précède l'arrivée dans le lobby
@@ -157,6 +158,7 @@ export default class choix_mode extends Phaser.Scene {
   valider() {
     this.enTransition = true;
     this.registry.set("mode", MODES[this.choix].mode);
+    nouvellePartie(this.registry); // une nouvelle partie : aucun niveau terminé
     this.cameras.main.fadeOut(350, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.scene.start(SCENE_SUIVANTE);
