@@ -36,10 +36,6 @@ export default class histoire extends Phaser.Scene {
         texte: " « Si vous réussissez à exceller dans les jeux que je vous ai préparés, Je vous laisserai à nouveau votre liberté. » ",
         imageKey: 'illustration_deux'
       }
-      //{
-      //  texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
-      //  imageKey: null // Aucune image pour ce texte
-      //},
     ];
 
     this.indexDialogue = 0;
@@ -52,14 +48,11 @@ export default class histoire extends Phaser.Scene {
     this.cadreImage = this.add.image(640, 380, '').setVisible(false);
 
     // 3. Zone de texte.
-    // Pour un vrai effet machine à écrire, le texte doit être ALIGNÉ À GAUCHE et accroché
-    // par son coin haut-gauche (setOrigin(0, 0)) : chaque lettre garde alors sa place.
-    // x = 140 car (1280 - 1000) / 2 = 140 : le bloc de 1000 px de large reste centré à l'écran.
     this.texteAffiche = this.add.text(140, 520, '', {
       fontSize: '28px',
       fill: '#ffffff',
       align: 'left',
-      wordWrap: { width: 1000 } // Élargi à 1000px pour l'écran de 1280px
+      wordWrap: { width: 1000 }
     }).setOrigin(0, 0);
 
     // Indicatif tout en bas : caché tant que le joueur n'a pas choisi son mode
@@ -71,25 +64,37 @@ export default class histoire extends Phaser.Scene {
     // 4. Phase 1 : on affiche le choix du mode (les dialogues attendent)
     this.afficherChoixMode();
 
-    // 5. Clic souris
+    // 5. Clic souris (gardé par sécurité si tu testes sur PC)
     this.input.on('pointerdown', () => this.avancerHistoire());
 
-    // Touches (l'ancien écouteur "keydown-SPACE" est SUPPRIMÉ : sinon ESPACE
-    // ferait avancer l'histoire deux fois, via l'écouteur et via update())
+    // Touches
     this.touchesValider = creerTouches(this, [...BORNE.j1.boutons, ...BORNE.j2.boutons, "SPACE"]);
     this.touchesGauche  = creerTouches(this, [BORNE.j1.gauche, BORNE.j2.gauche]);
     this.touchesDroite  = creerTouches(this, [BORNE.j1.droite, BORNE.j2.droite]);
+
+    // MODIF: Touches "Bas" des joysticks pour skip l'histoire
+    this.touchesSkip = creerTouches(this, [BORNE.j1.bas, BORNE.j2.bas]); 
+
+    // MODIF: Création du texte d'aide "Passer" (caché par défaut, non interactif)
+    this.texteSkip = this.add.text(1150, 40, "Joystick ▼ : Passer", {
+      fontSize: '20px',
+      fill: '#aaaaaa',
+      backgroundColor: '#333333',
+      padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setVisible(false);
   }
+
 
   // ==============================
   // UPDATE (environ 60 fois par seconde) : lecture des touches
   // ==============================
 
   update() {
-    // On lit TOUJOURS les trois groupes de touches (pour consommer les appuis)
+    // On lit TOUJOURS les groupes de touches (pour consommer les appuis)
     const gauche  = uneTouchePressee(this.touchesGauche);
     const droite  = uneTouchePressee(this.touchesDroite);
     const valider = uneTouchePressee(this.touchesValider);
+    const skip    = uneTouchePressee(this.touchesSkip); // MODIF: lecture du skip
 
     // Phase 1 : choix du mode
     if (!this.choixFait) {
@@ -99,7 +104,13 @@ export default class histoire extends Phaser.Scene {
       return; // le même appui ne fait pas aussi avancer le dialogue
     }
 
-    // Phase 2 : dialogues
+    // MODIF: Phase 2 - Si joystick vers le bas, on zappe tout
+    if (skip) {
+      this.scene.start('clicker');
+      return;
+    }
+
+    // Phase 2 : dialogues classiques avec les boutons
     if (valider) this.avancerHistoire();
   }
 
@@ -153,24 +164,27 @@ export default class histoire extends Phaser.Scene {
   }
 
   choisirMode(nombre) {
-    // Stockage global : toutes les scènes pourront lire cette valeur
-    this.registry.set("joueurs", nombre);
-
-    // On retire le menu de choix
-    this.elementsChoix.forEach(element => element.destroy());
-    this.choixFait = true;
-
-    // Rappel du mode en haut de l'écran
-    this.add.text(640, 40, nombre === 1 ? "Mode : Solo" : "Mode : 1v1", {
-      fontSize: '26px',
-      fill: '#c8a20d'
-    }).setOrigin(0.5);
-
-    this.texteIndication.setVisible(true);
-
-    // Phase 2 : les dialogues démarrent
-    this.afficherEtapeActuelle();
-  }
+      // Stockage global : toutes les scènes pourront lire cette valeur
+      this.registry.set("joueurs", nombre);
+  
+      // On retire le menu de choix
+      this.elementsChoix.forEach(element => element.destroy());
+      this.choixFait = true;
+  
+      // Rappel du mode en haut de l'écran
+      this.add.text(640, 40, nombre === 1 ? "Mode : Solo" : "Mode : 1v1", {
+        fontSize: '26px',
+        fill: '#c8a20d'
+      }).setOrigin(0.5);
+  
+      this.texteIndication.setVisible(true);
+      
+      // MODIF: On affiche l'indication pour Skip pendant les dialogues
+      this.texteSkip.setVisible(true); 
+  
+      // Phase 2 : les dialogues démarrent
+      this.afficherEtapeActuelle();
+    }
 
   // ==============================
   // PHASE 2 : DIALOGUES
