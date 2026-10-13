@@ -24,6 +24,8 @@ const VOLUME_MUSIQUE = 0.3; // volume de base de la musique (pas trop fort pour 
 // la musique des combats de boss est franchement plus forte que celle du niveau (0,3 avec un morceau plus doux) // la musique metal du boss
 // est plus forte à l'origine que celle du niveau : on baisse son volume de base pour qu'elles sonnent pareil
 export const VOLUME_MUSIQUE_BOSS = 0.42;
+// la musique du dernier boss (Boss Battle #9) est 7 dB plus forte que celle du premier (mesure en LUFS, voir DEVLOG.md) : volume de base plus bas
+export const VOLUME_MUSIQUE_BOSS2 = 0.18;
 let musique = null; // la musique en cours, une seule à la fois pour tout le jeu
 let volumeBase = VOLUME_MUSIQUE; // le volume de base de la musique en cours (avant le réglage du joueur)
 export function volumeEffets() { return reglages.effets / VOLUME_MAX; } // réglage des bruitages, entre 0 et 1 (sert aussi au bip de bonus.js)
@@ -37,6 +39,9 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
     // musique metal du boss : l'introduction (jouée une fois)...
     scene.load.audio("musique_boss_intro", [DOSSIER + "musique_boss_intro.ogg", DOSSIER + "musique_boss_intro.mp3"]);
     scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]); // ...puis la boucle
+    // musique du dernier boss : « Boss Battle #9 » (113 battements par minute, en mi mineur)
+    scene.load.audio("musique_boss2_intro", [DOSSIER + "musique_boss2_intro.ogg", DOSSIER + "musique_boss2_intro.mp3"]);
+    scene.load.audio("musique_boss2_boucle", [DOSSIER + "musique_boss2_boucle.ogg", DOSSIER + "musique_boss2_boucle.mp3"]);
 }
 
 // --- Les sons de combat accordés avec la musique du boss -----------------------------------------------------------------------
@@ -50,19 +55,25 @@ const CROCHE = 150; // ms : une croche de la musique du boss
 // centièmes de ton, pour tomber sur une note de ré mineur
 const ACCORD = { orbe: 400, mage_incante: -200, dash: -141, lanterne: 57, ennemi_touche: 14, ennemi_mort: 240, joueur_mort: -121, tir: 168 };
 function musiqueDeBossEnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss")); }
-export const quantifier = (ms) => Math.max(CROCHE, Math.round(ms / CROCHE) * CROCHE); // arrondit une durée à un nombre entier de croches
+// Le dernier boss a une autre musique : 113 battements par minute (un battement = 531 ms), en mi mineur (un ton au-dessus de ré mineur).
+// Son pas est la double-croche (133 ms) : plus fin que la croche (265 ms), pour garder les annonces d'attaque courtes tout en restant en rythme.
+const PAS_BOSS2 = 60000 / 113 / 4;
+const TON = 200; // un ton en centièmes de ton : de ré mineur à mi mineur
+function musiqueBoss2EnCours() { return Boolean(musique && musique.isPlaying && musique.key.startsWith("musique_boss2")); }
+const pas = () => (musiqueBoss2EnCours() ? PAS_BOSS2 : CROCHE); // la plus petite durée de la musique en cours
+export const quantifier = (ms) => Math.max(pas(), Math.round(ms / pas()) * pas()); // arrondit une durée à un nombre entier de pas (croches)
 
 // le délai (proche de ms) qui fait tomber l'instant visé sur une croche de la musique ; ms sans changement s'il n'y a pas de musique de boss
 export function surLeTemps(scene, ms) {
     if (!musiqueDeBossEnCours()) return ms;
     const position = (musique.seek || 0) * 1000; // où en est la musique, en ms
-    const cible = Math.ceil((position + ms) / CROCHE) * CROCHE; // la prochaine croche à partir de là
+    const cible = Math.ceil((position + ms) / pas()) * pas(); // la prochaine croche à partir de là
     return Math.max(0, cible - position);
 }
 
 export function jouerSon(scene, nom, volumeEnPlus = 1) { // joue un son une fois
     const accorde = musiqueDeBossEnCours() && nom in ACCORD; // pendant un combat de boss : sur une note de la gamme
-    const variation = accorde ? ACCORD[nom] : Phaser.Math.Between(-100, 100); // sinon, petite variation de hauteur au hasard
+    const variation = accorde ? ACCORD[nom] + (musiqueBoss2EnCours() ? TON : 0) : Phaser.Math.Between(-100, 100); // sinon, petite variation de hauteur au hasard
     // detune change la hauteur : un son répété (tir, flèche) ne sonne pas toujours pareil
     scene.sound.play(nom, { volume: Math.min(1, SONS[nom] * volumeEffets() * volumeEnPlus), detune: variation });
 }
@@ -84,11 +95,12 @@ function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // la
     return musique;
 }
 
-export function musiqueBoss(scene) { // la musique metal du combat de boss : une introduction, puis la boucle
-    const intro = lancerMusique(scene, "musique_boss_intro", VOLUME_MUSIQUE_BOSS, false); // l'introduction, une seule fois
+export function musiqueBoss(scene, version = "") { // la musique metal du combat de boss : une introduction, puis la boucle (version "2" : dernier boss)
+    const volume = version === "2" ? VOLUME_MUSIQUE_BOSS2 : VOLUME_MUSIQUE_BOSS;
+    const intro = lancerMusique(scene, "musique_boss" + version + "_intro", volume, false); // l'introduction, une seule fois
     if (!intro) return;
     // quand elle finit, la boucle prend le relais (sauf si une autre musique l'a déjà remplacée)
-    intro.once("complete", () => { if (musique === intro) lancerMusique(scene, "musique_boss_boucle", VOLUME_MUSIQUE_BOSS); });
+    intro.once("complete", () => { if (musique === intro) lancerMusique(scene, "musique_boss" + version + "_boucle", volume); });
 }
 
 export function musiqueNiveau(scene) { // remet la musique du niveau (à la mort du boss, pour l'écran de fin)
