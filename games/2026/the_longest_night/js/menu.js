@@ -4,7 +4,6 @@ export default class Menu extends Phaser.Scene {
   }
 
   preload() {
-    this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("fond_menu", "./presentation.png");
     this.load.image("jouer", "./assets/menu/button_jouer.png");
     this.load.image("controles", "./assets/menu/button_controles.png");
@@ -13,19 +12,45 @@ export default class Menu extends Phaser.Scene {
 
   create() {
     this.add.image(0, 0, "fond_menu").setOrigin(0);
-    const info = this.add.text(640, 360, "", {
-      fontSize: "24px", color: "#ffffff", align: "center",
-      backgroundColor: "#111746", padding: { x: 20, y: 16 }, lineSpacing: 8
-    }).setOrigin(0.5).setVisible(false).setInteractive();
-    info.on("pointerdown", () => info.setVisible(false));
-    this.input.keyboard.on("keydown-ESC", () => info.setVisible(false));
 
-    [
-      ["jouer", 450, () => this.scene.start("Niveau_demo")],
-      ["controles", 550, () => info.setText("Joueur 1 : flèches, O pour tirer, I pour interagir\nJoueur 2 : Z, K, L, M, T pour tirer, R pour interagir\n\nÉchap ou clic pour revenir").setVisible(true)],
-      ["credits", 650, () => info.setText("Créé par\nLuna EGIDO-NEFFLIEZ\nMathéo AGUERRE--LE GALLOU\nLou-Anne DOUCHET--LEFÈVRE\n\nÉchap ou clic pour revenir").setVisible(true)]
-    ].forEach(([image, y, action]) =>
-      this.add.image(250, y, image).setInteractive({ useHandCursor: true }).on("pointerdown", action)
-    );
+    const actions = [
+      () => this.scene.start("Niveau_demo"),
+      () => this.scene.start("Controles"),
+      () => this.scene.start("Credits")
+    ];
+
+    this.buttons = [
+      this.add.image(250, 450, "jouer").setInteractive(),
+      this.add.image(250, 550, "controles").setInteractive(),
+      this.add.image(250, 650, "credits").setInteractive()
+    ];
+
+    this.index = 0; // commence à 0 : "jouer"
+    this.updateFocus(); // focus sur le 1er bouton 
+
+    // Choisir avec les flèches
+    this.input.keyboard.on("keydown-UP", () => {
+      this.index = (this.index - 1 + 3) % 3;
+      this.updateFocus();
+    });
+
+    this.input.keyboard.on("keydown-DOWN", () => {
+      this.index = (this.index + 1) % 3;
+      this.updateFocus();
+    });
+
+    this.input.keyboard.on("keydown-ENTER", () => actions[this.index]());
+
+    // Choisir avec la souris
+    this.buttons.forEach((btn, i) => {
+      btn.on("pointerover", () => { this.index = i; this.updateFocus(); });
+      btn.on("pointerdown", () => actions[i]());
+    });
+  }
+
+  updateFocus() {
+    this.buttons.forEach((btn, i) => {
+      btn.setTint(i === this.index ? 0xffffff : 0x888888); // Blanc si sélectionné, grisé sinon
+    });
   }
 }
