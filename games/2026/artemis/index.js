@@ -15,7 +15,7 @@ var config = {
   height: 720, // hauteur en pixels
    type: Phaser.AUTO,
   pixelArt: true, // pas de flou quand on agrandit les sprites
-  maxLights: 16, // lumières Light2D affichées en même temps (10 par défaut), cf. lumiere.js
+  maxLights: 6, // lumières Light2D affichées en même temps (10 par défaut) : le shader fait toujours maxLights tours de boucle par pixel, même avec moins de lumières, donc chaque unité coûte cher sur la borne (cf. lumiere.js)
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
