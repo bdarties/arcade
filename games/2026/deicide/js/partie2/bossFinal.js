@@ -34,7 +34,8 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
     PROFILS.soldat.suite = enrager; // la suite du boss du niveau 1 : si le joueur répond OUI, il s'enrage et c'est la fuite
     PROFILS.soldat2 = { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
         musique: "2", // « Boss Battle #9 » (voir musique.js) : le premier combat garde « Boss Battle #8 »
-        pv: 176, seuils: [136, 91], // (176 = 40 + 45 + 91 : les phases 1 et 2 gardent leurs 40 et 45 PV d'avant, la phase 3 en a 91 ; plus aucun soin en cours de combat) echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
+        // pv 176 = 40 + 45 + 91 : les phases 1 et 2 gardent leurs 40 et 45 PV d'avant, la phase 3 en a 91 ; plus aucun soin en cours de combat
+        pv: 176, seuils: [136, 91], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1250, 900, 220, 120], // des attaques beaucoup plus rapprochées : en phase 3 et en forme finale, presque sans répit
         pvPleinsApresMort: true, // si le robot meurt, le boss garde la phase atteinte mais repart avec TOUS ses PV
         reglages: DUR,
