@@ -186,6 +186,6 @@
 - **Laser circulaire (horloge)** : durée totale 1,65 s dont 0,75 s dormante, soit 0,9 s de lames actives (2,3 s avant) : il tourne de 0,63 rad seulement, assez court pour être esquivé.
 
 ## Numéro de version (13/10/2026)
-- **Quoi** : le menu affiche en bas à droite « v484 · 86d6673 · 13/10/2026 » (nombre de commits, empreinte du dernier commit, date). Il vient de `js/version.js`, généré par `python3 outils/version.py`.
-- **Pourquoi** : sur la borne, comparer ce numéro avec celui de `js/version.js` sur GitHub (branche `main`) dit tout de suite si le jeu est à jour.
-- **Règle** : lancer `python3 outils/version.py` et commiter `js/version.js` avant chaque pull request. L'empreinte est celle du commit juste avant ; après un « squash » sur GitHub, le nombre de commits de `main` peut différer de celui de la branche, c'est le fichier `version.js` de `main` qui fait foi.
+- **Quoi** : le menu affiche en bas à droite « v1 », « v2 », « v3 »... Le numéro vient de `js/version.js`, que `python3 outils/version.py` augmente de 1.
+- **Pourquoi** : sur la borne, comparer ce numéro avec celui de `js/version.js` sur GitHub (branche `main`) dit tout de suite si le jeu est à jour : plus petit = pas à jour.
+- **Règle** : une fois par pull request, lancer `python3 outils/version.py` puis commiter `js/version.js`. (Ne pas le relancer si la PR est déjà prête, sinon on saute un numéro.)
