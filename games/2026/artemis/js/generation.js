@@ -27,7 +27,9 @@ export const TUILES = {
     mur_ouest: 16, // mur à gauche du sol
     mur_est: 13, // mur à droite du sol
     coin_sud_ouest: 42,
-    coin_sud_est: 44
+    coin_sud_est: 44,
+    mur_ouest_haut: 29, // sol seulement en diagonale sud-est : la bande de côté continue vers le haut
+    mur_est_haut: 13 // sol seulement en diagonale sud-ouest
 };
 
 // génère une grille jouable de largeur x hauteur cases
@@ -51,16 +53,29 @@ export function genererGrille(largeur, hauteur) {
 // choisit la tuile d'un mur selon l'endroit où se trouve le sol autour de lui
 export function tuileMur(grille, x, y) {
     const sol = (dx, dy) => estSol(grille, x + dx, y + dy);
-    // un mur nord fait 3 cases de haut : bas des briques, haut des briques, rebord
-    if (sol(0, 1)) return TUILES.mur_nord_bas;
-    if (sol(0, 2)) return TUILES.mur_nord_haut;
-    if (sol(0, 3)) return TUILES.mur_nord_bord;
+    // un mur nord fait 3 cases de haut : bas des briques (rangée 0), haut des briques (1), rebord (2)
+    // une case est "de face" quand le sol est à 1, 2 ou 3 cases au sud : le tronçon de mur continue tant que la voisine est aussi de face
+    const rangee = distanceSudSol(grille, x, y) - 1;
+    if (rangee >= 0) {
+        // mur de 2 cases seulement, avec du sol juste au-dessus : sa rangée du haut est le rebord (sinon les briques s'arrêtent net contre le sol, sans la ligne claire du haut)
+        if (rangee === 1 && sol(0, -1)) return TUILES.mur_nord_bord;
+        return [TUILES.mur_nord_bas, TUILES.mur_nord_haut, TUILES.mur_nord_bord][rangee];
+    }
     if (sol(0, -1)) return TUILES.mur_sud;
     if (sol(1, 0)) return TUILES.mur_ouest;
     if (sol(-1, 0)) return TUILES.mur_est;
     if (sol(1, -1)) return TUILES.coin_sud_ouest;
     if (sol(-1, -1)) return TUILES.coin_sud_est;
+    if (sol(1, 1)) return TUILES.mur_ouest_haut;
+    if (sol(-1, 1)) return TUILES.mur_est_haut;
     return TUILES.plein;
+}
+
+// distance (1 à 3) entre une case de mur et le sol juste au sud d'elle, dans sa colonne ; 0 si ce n'est pas un mur de face
+function distanceSudSol(grille, x, y) {
+    if (estSol(grille, x, y)) return 0;
+    for (let d = 1; d <= 3; d++) if (estSol(grille, x, y + d)) return d;
+    return 0;
 }
 
 function creerGrille(largeur, hauteur, valeur) {
