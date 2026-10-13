@@ -6,11 +6,12 @@
 //  les cœurs, la caméra, les échelles, le mode solo et duo. Il ne redéfinit que ce qui change :
 //  la carte, les objets à ramasser et les textes.
 //
-//  OBJECTIF : ramasser 3 LAMPES (il y en a 7 sur le chemin), puis rejoindre la PORTE en haut à droite.
+//  OBJECTIF : ramasser 3 NOTES DE MUSIQUE (il y en a 7 sur le chemin) pour RÉVÉLER la PARTITION, la prendre,
+//  puis franchir la PORTE en haut à droite.
 //
 //  - Les plateformes et les échelles sont lues dans la carte Tiled (propriétés estSolide / estEchelle).
 //  - Des CRISTAUX colorés gardent le chemin : il faut tirer la note de la même couleur (Cantatrice).
-//  - Dans la ZONE SOMBRE, des passerelles fantômes mènent à une lampe BONUS (+1 cœur) :
+//  - Dans la ZONE SOMBRE, des passerelles fantômes mènent à une note dorée BONUS (+1 cœur) :
 //    le Détective doit les éclairer avec sa lampe.
 // ============================================================================
 
@@ -19,10 +20,13 @@ import niveau1 from "./niveau1.js";
 const LARGEUR_MONDE = 2176; // 68 tuiles de 32 px
 const HAUTEUR_MONDE = 736; // 23 tuiles de 32 px
 const TAILLE_TUILE = 32;
-const LAMPES_REQUISES = 3; // lampes à ramasser pour ouvrir la porte
+const NOTES_REQUISES = 3; // notes à ramasser pour révéler la partition
+const COULEURS_NOTES = [0xff6b7d, 0x62b0ff, 0xffd24a]; // Do (rouge), Mi (bleu), Sol (doré) : comme les ondes et les cristaux
+// La PARTITION à récupérer : posée sur la plateforme de la porte. Elle est visible dès le début mais « verrouillée ».
+const PARTITION = { x: 1745, y: 236 };
 
-// Positions [x, y] des 7 lampes : 4 sur la route du haut, 3 sur la route du bas
-const POSITIONS_LAMPES = [
+// Positions [x, y] des 7 notes de musique : 4 sur la route du haut, 3 sur la route du bas
+const POSITIONS_NOTES = [
   [730, 210], [1020, 258], [1300, 236], [1560, 258], // route du haut (au-dessus des plateformes mobiles)
   [1040, 514], [1260, 418], [1580, 500] // route du bas
 ];
@@ -53,7 +57,7 @@ const PLATEFORMES_MOBILES = [
   { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 2000 } // monte et descend
 ];
 
-// ---- La VOIE HAUTE : un parcours en hauteur, facultatif, qui mène à une lampe bonus (+1 cœur) ----
+// ---- La VOIE HAUTE : un parcours en hauteur, facultatif, qui mène à une note dorée bonus (+1 cœur) ----
 //  1. un TAMBOUR posé sur une plateforme fait rebondir très haut (plus haut qu'un saut normal) ;
 //  2. des plateformes fixes en hauteur ;
 //  3. des PLANCHES FRAGILES entre elles : elles tombent peu après qu'on a marché dessus, puis reviennent.
@@ -71,7 +75,7 @@ const PLANCHES_FRAGILES = [
 ]; // x, y = coin haut gauche (96 px de large)
 const DELAI_CHUTE_MS = 500; // temps entre le premier contact et la chute de la planche
 const DELAI_RETOUR_MS = 3500; // temps avant qu'elle revienne
-const LAMPE_VOIE_HAUTE = { x: 910, y: 130 };
+const NOTE_VOIE_HAUTE = { x: 910, y: 130 };
 
 // Ennemis en plus : ce niveau est plus dur que le niveau 1
 const TUBAS = [
@@ -79,8 +83,8 @@ const TUBAS = [
   { x: 1900, solY: 640, xMin: 1760, xMax: 2000 } // sur le sol d'arrivée
 ];
 
-// La lampe bonus, tout en haut, et les deux passerelles fantômes qui y mènent (x, y = coin haut gauche)
-const LAMPE_BONUS = { x: 1150, y: 40 };
+// La note dorée bonus, tout en haut, et les deux passerelles fantômes qui y mènent (x, y = coin haut gauche)
+const NOTE_BONUS = { x: 1150, y: 40 };
 const PASSERELLES = [
   { x: 1060, y: 220, width: 64, height: 16 },
   { x: 1120, y: 110, width: 64, height: 16 }
@@ -114,8 +118,6 @@ const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
 // Le DÉCOR : des éléments dessinés (planche d'images decor_niveau2.png) posés à la main dans le niveau.
 //  nom = nom de l'image · x, y = position · ancre : "bas" (posé sur le sol, y = le bas de l'objet) ou "haut" (suspendu, y = le haut)
 //  profondeur : plus c'est grand, plus c'est devant (les plateformes sont à 3, les héros à 10) · lueur : petite lumière orangée
-const VOILE_FOND = 0.4; // opacité du voile noir posé sur le fond (0 = aucun, 1 = noir total)
-
 const DECOR = [
   { nom: "paravent", x: 340, y: 640, ancre: "bas", profondeur: 0.7 },
   { nom: "pilier", x: 880, y: 640, ancre: "bas", profondeur: 0.9 },
@@ -151,7 +153,7 @@ export default class niveau2 extends niveau1 {
   // --------------------------------------------------------------------------
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    this.load.image("fond_theatre", "./assets/map2_sombre.jpg"); // fond : le théâtre d'ombres chinoises (le dragon)
+    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
     this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
     this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
@@ -165,10 +167,13 @@ export default class niveau2 extends niveau1 {
     this.couleurFond = 0x05070f;
     this.listeTubas = TUBAS; // deux Tubas dans ce niveau
     this.listeCristaux = CRISTAUX;
-    this.messageVictoire = "Niveau 2 terminé ! Retour au lobby...";
-    this.niveauSuivant = "lobby";
-    this.objectif = "OBJECTIF : ramasse " + LAMPES_REQUISES + " lampes (il y en a 7 sur le chemin),\npuis rejoins la porte en haut à droite";
-    this.lampesRamassees = 0;
+    this.numeroNiveau = 2; // son numéro dans la progression (voir progression.js)
+    this.musiqueNiveau = "musique_niveau2"; // la piste propre au niveau 2
+    this.messageVictoire = "Niveau 2 terminé !";
+    this.objectif = "OBJECTIF : ramasse " + NOTES_REQUISES + " notes de musique pour révéler la PARTITION,\npuis prends-la et franchis la porte en haut à droite";
+    this.notesRamassees = 0;
+    this.partitionActive = false; // vrai quand les 3 notes ont été ramassées : la partition s'illumine
+    this.partitionPrise = false;
   }
 
   // --------------------------------------------------------------------------
@@ -181,8 +186,7 @@ export default class niveau2 extends niveau1 {
     this.avecTuilesPlateformes = false; // les passerelles fantômes utilisent le dessin de secours
 
     this.add.image(0, 0, "fond_theatre").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0);
-    // un léger voile sombre sur le fond : il reste visible, mais les plateformes et les héros ressortent mieux
-    this.add.rectangle(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE, 0x000008, VOILE_FOND).setOrigin(0, 0).setDepth(0.5);
+    // (l'image de fond est déjà assombrie : un voile dessiné par-dessus à chaque image coûtait cher pour rien)
 
     // La carte Tiled ne sert plus qu'à deux choses : les ÉCHELLES (dessin) et les PLATEFORMES (leurs positions).
     // Tout le reste du décor est dessiné avec les images rouges (voir poserDecor).
@@ -216,7 +220,7 @@ export default class niveau2 extends niveau1 {
     });
     this.echelles = ECHELLES;
 
-    // Zone sombre + passerelles fantômes qui mènent à la lampe bonus
+    // Zone sombre + passerelles fantômes qui mènent à la note dorée bonus
     this.creerOmbre();
     PASSERELLES.forEach((passerelle) => this.ajouterFantome(passerelle));
 
@@ -227,8 +231,7 @@ export default class niveau2 extends niveau1 {
     // Panneaux d'indication
     this.ajouterIndice(250, 540, "Monte à l'échelle (haut)");
     this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
-    this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une lampe BONUS (+1 cœur)");
-    this.ajouterIndice(1840, 110, "La porte s'ouvre quand tu as " + LAMPES_REQUISES + " lampes");
+    this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une note dorée BONUS (+1 cœur)");
     this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
     this.ajouterIndice(190, 330, "Tambour : saute dessus pour rebondir très haut !");
     this.ajouterIndice(600, 108, "Voie haute : planches fragiles, ne traîne pas !");
@@ -293,7 +296,7 @@ export default class niveau2 extends niveau1 {
       if (d.lueur == true) {
         // petite lueur orangée autour de la lanterne (même texture que la lampe du Détective)
         const centreY = d.ancre == "bas" ? d.y - image.height * 0.8 : d.y + image.height * 0.45;
-        this.add.image(d.x, centreY, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setScale(0.55).setAlpha(0.35).setDepth(d.profondeur + 0.1);
+        this.lueur(d.x, centreY, 0.55, 0.35, undefined, d.profondeur + 0.1);
       }
     });
     // les plateformes ajoutées (fixes) : une zone solide + le dessin
@@ -426,12 +429,7 @@ export default class niveau2 extends niveau1 {
     });
   }
 
-  update(temps, delta) {
-    super.update(temps, delta);
-    if (this.fini == false) {
-      this.emporterLesHeros();
-    }
-  }
+
 
   // Les tuiles marquées « estSolide » dans Tiled deviennent des rectangles invisibles solides.
   // On regroupe les tuiles voisines (d'abord en lignes, puis les lignes identiques empilées) pour en avoir peu.
@@ -496,84 +494,256 @@ export default class niveau2 extends niveau1 {
   }
 
   // --------------------------------------------------------------------------
-  //  Objets : les lampes à ramasser et la porte de sortie
+  //  Objets : les notes de musique, la partition et la porte de sortie
   // --------------------------------------------------------------------------
   creerObjets() {
-    // Pas d'image de lampe : on en dessine une (graphics + generateTexture fabriquent une vraie texture)
-    if (this.textures.exists("img_lampe_theatre") == false) {
-      const dessin = this.make.graphics({ add: false });
-      dessin.fillStyle(0xff9a1f).fillRect(6, 18, 8, 7); // le pied
-      dessin.fillStyle(0xffd24a).fillCircle(10, 10, 9); // la flamme
-      dessin.fillStyle(0xffffff).fillCircle(8, 8, 3); // un reflet
-      dessin.generateTexture("img_lampe_theatre", 20, 26);
-      dessin.destroy();
-    }
+    this.creerTexturesNotes();
 
-    this.groupe_lampes = this.physics.add.group({ allowGravity: false });
-    POSITIONS_LAMPES.forEach((position) => this.ajouterLampe(position[0], position[1], false));
-    this.ajouterLampe(LAMPE_BONUS.x, LAMPE_BONUS.y, true);
-    this.ajouterLampe(LAMPE_VOIE_HAUTE.x, LAMPE_VOIE_HAUTE.y, true); // 2e lampe bonus, au bout de la voie haute
+    this.groupe_notes = this.physics.add.group({ allowGravity: false });
+    POSITIONS_NOTES.forEach((position, i) => this.ajouterNote(position[0], position[1], i % 3, false));
+    this.ajouterNote(NOTE_BONUS.x, NOTE_BONUS.y, 2, true);
+    this.ajouterNote(NOTE_VOIE_HAUTE.x, NOTE_VOIE_HAUTE.y, 2, true); // 2e note dorée, au bout de la voie haute
 
-    // La porte de sortie (même image que le niveau 1), fermée au début
+    // La porte de sortie (même image que le niveau 1, en rouge), fermée au début
     this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie_rouge", 0);
     this.porte.setDepth(3);
     this.porteOuverte = false;
     if (this.anims.exists("porte_ouvre_rouge") == false) {
       this.anims.create({ key: "porte_ouvre_rouge", frames: this.anims.generateFrameNumbers("porte_sortie_rouge", { start: 0, end: 5 }), frameRate: 8, repeat: 0 });
     }
+
+    this.creerPartition();
   }
 
-  ajouterLampe(x, y, bonus) {
-    const lampe = this.groupe_lampes.create(x, y, "img_lampe_theatre");
-    lampe.setDepth(6);
-    lampe.bonus = bonus;
-    if (bonus == true) {
-      lampe.setTint(0x9fd8ff).setScale(1.3); // la lampe bonus est bleutée et plus grosse
+  // Les images des notes sont dessinées en code (blanches : on les colore ensuite avec setTint)
+  creerTexturesNotes() {
+    const dessin = this.make.graphics({ add: false });
+    if (this.textures.exists("tex_note") == false) {
+      dessin.fillStyle(0xffffff);
+      dessin.fillEllipse(10, 34, 17, 12); // la tête
+      dessin.fillRect(15, 6, 3, 28); // la hampe
+      dessin.fillTriangle(18, 6, 30, 20, 18, 16); // le crochet
+      dessin.generateTexture("tex_note", 32, 44);
+      dessin.clear();
     }
-    // elle flotte doucement
-    this.tweens.add({ targets: lampe, y: y - 8, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    if (this.textures.exists("tex_note_double") == false) {
+      dessin.fillStyle(0xffffff);
+      dessin.fillEllipse(9, 36, 15, 11).fillEllipse(29, 32, 15, 11); // deux têtes
+      dessin.fillRect(13, 8, 3, 29).fillRect(33, 4, 3, 29); // deux hampes
+      dessin.fillTriangle(13, 8, 36, 4, 36, 12).fillTriangle(13, 8, 36, 12, 13, 16); // la barre qui les relie
+      dessin.generateTexture("tex_note_double", 44, 48);
+      dessin.clear();
+    }
+    if (this.textures.exists("tex_etincelle") == false) {
+      dessin.fillStyle(0xffffff).fillCircle(4, 4, 4);
+      dessin.generateTexture("tex_etincelle", 8, 8);
+    }
+    dessin.destroy();
   }
 
-  // Ramasser les lampes, franchir la porte
+  // Une note de musique à ramasser : colorée (Do rouge, Mi bleu, Sol doré), avec une petite lueur, qui flotte.
+  // bonus = vrai pour une note dorée plus grosse qui rend un cœur.
+  ajouterNote(x, y, indexCouleur, bonus) {
+    const couleur = bonus == true ? 0xffd24a : COULEURS_NOTES[indexCouleur];
+    const note = this.groupe_notes.create(x, y, bonus == true ? "tex_note_double" : "tex_note");
+    note.setDepth(6).setTint(couleur);
+    note.bonus = bonus;
+    note.couleur = couleur;
+    if (bonus == true) {
+      note.setScale(1.25);
+    }
+    note.lueur = this.lueur(x, y, bonus == true ? 0.6 : 0.42, 0.5, couleur, 5.9); // null en mode économique
+    // la note (et sa lueur, s'il y en a une) flottent ensemble
+    const flottent = note.lueur === null ? [note] : [note, note.lueur];
+    this.tweens.add({ targets: flottent, y: y - 8, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  }
+
+  // La PARTITION : le fragment à récupérer. Visible dès le début mais éteinte et « verrouillée » ; elle s'illumine
+  // quand on a ramassé les notes (voir revelerPartition). Halo, rayons, étincelles et flèche d'indication la mettent en valeur.
+  creerPartition() {
+    const x = PARTITION.x;
+    const y = PARTITION.y;
+
+    // les rayons de lumière qui tournent lentement derrière la partition (invisibles tant qu'elle est éteinte)
+    // et le halo : ce sont des effets décoratifs, absents en mode économique (rayons et halo valent alors null)
+    this.rayons = null;
+    this.halo_partition = null;
+    this.etincelles = null;
+    if (this.modeLeger == false) {
+      this.rayons = this.add.graphics({ x: x, y: y }).setDepth(5.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      this.rayons.fillStyle(0xffe6a0, 0.35);
+      for (let i = 0; i < 12; i++) {
+        const angle = (i * Math.PI * 2) / 12;
+        this.rayons.fillTriangle(0, 0, Math.cos(angle - 0.09) * 150, Math.sin(angle - 0.09) * 150, Math.cos(angle + 0.09) * 150, Math.sin(angle + 0.09) * 150);
+      }
+      this.halo_partition = this.lueur(x, y, 1.6, 0.35, 0x8fb4ff, 5.6); // lueur froide : verrouillée
+      this.effets.push(this.rayons);
+    }
+
+    // la partition elle-même : éteinte (grise, transparente) et sans collision tant que les notes ne sont pas ramassées
+    this.partition = this.physics.add.image(x, y, "img_partition");
+    this.partition.setDisplaySize(84, 84).setDepth(7).setAlpha(0.6).setTint(0x8fa0c0);
+    this.partition.body.setAllowGravity(false);
+    this.partition.body.enable = false;
+    this.echellePartition = this.partition.scaleX; // pour l'animation d'apparition
+    const flottent = this.halo_partition === null ? [this.partition] : [this.partition, this.halo_partition];
+    this.tweens.add({ targets: flottent, y: y - 10, duration: 1000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+
+    this.etiquettePartition = this.add
+      .text(x, y - 78, "PARTITION verrouillée\n(ramasse " + NOTES_REQUISES + " notes)", {
+        fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+        fontSize: "12pt",
+        color: "#cdd3e8",
+        align: "center",
+        stroke: "#000000",
+        strokeThickness: 4
+      })
+      .setOrigin(0.5)
+      .setDepth(8);
+
+    // La flèche qui indique où est la partition quand elle est hors de l'écran
+    this.indicateur = this.add.image(0, 0, "tex_fleche").setScrollFactor(0).setDepth(100).setVisible(false).setTint(0xffd24a).setScale(1.7);
+  }
+
+  // Les 3 notes sont ramassées : la partition s'illumine avec un grand effet
+  revelerPartition() {
+    this.partitionActive = true;
+    this.partition.body.enable = true;
+    this.partition.clearTint().setAlpha(1);
+    this.partition.setScale(this.echellePartition * 0.2);
+    this.tweens.add({ targets: this.partition, scale: this.echellePartition * 1.15, duration: 700, ease: "Back.easeOut" });
+    this.etiquettePartition.setText("PARTITION !").setColor("#ffe9a8").setFontSize("17pt");
+
+    // halo qui pulse + rayons qui tournent + étincelles (effets décoratifs : absents en mode économique)
+    if (this.modeLeger == false && this.halo_partition !== null && this.halo_partition.active == true) {
+      this.halo_partition.setTint(0xffd98a); // la lueur devient chaude
+      this.tweens.add({ targets: this.halo_partition, alpha: 0.5, scale: 1.9, duration: 500 });
+      this.tweens.add({ targets: this.halo_partition, scale: 2.3, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: 500 });
+      this.tweens.add({ targets: this.rayons, alpha: 0.55, duration: 600 });
+      this.tweens.add({ targets: this.rayons, angle: 360, duration: 16000, repeat: -1 });
+
+      this.etincelles = this.add.particles(PARTITION.x, PARTITION.y, "tex_etincelle", {
+        speed: { min: 30, max: 120 },
+        lifespan: 1000,
+        scale: { start: 1.1, end: 0 },
+        alpha: { start: 1, end: 0 },
+        tint: [0xffe08a, 0xffffff, 0xff9aa8],
+        blendMode: "ADD",
+        frequency: 60,
+        quantity: 1
+      });
+      this.etincelles.setDepth(7.5);
+      this.effets.push(this.etincelles);
+    }
+
+    this.cameras.main.flash(400, 255, 232, 160); // éclair doré
+    this.afficherMessage("La PARTITION est apparue en haut à droite ! Va la chercher !", 6000);
+    this.iconeFragment.setTint(0xffd98a);
+    this.tweens.add({ targets: this.iconeFragment, scale: this.iconeFragment.scale * 1.25, duration: 500, yoyo: true, repeat: -1 });
+  }
+
+  // Quand la partition est hors de l'écran, une flèche dorée au bord de l'écran montre sa direction
+  mettreAJourIndicateur(temps) {
+    if (this.partitionActive == false || this.partitionPrise == true) {
+      this.indicateur.setVisible(false);
+      return;
+    }
+    const vue = this.cameras.main.worldView;
+    const sx = this.partition.x - vue.x;
+    const sy = this.partition.y - vue.y;
+    const visible = sx > 60 && sx < 1220 && sy > 90 && sy < 660;
+    if (visible == true) {
+      this.indicateur.setVisible(false);
+      return;
+    }
+    const cx = 640;
+    const cy = 360;
+    const angle = Math.atan2(sy - cy, sx - cx);
+    // on place la flèche sur le bord de l'écran, dans la direction de la partition
+    const x = Phaser.Math.Clamp(cx + Math.cos(angle) * 700, 50, 1230);
+    const y = Phaser.Math.Clamp(cy + Math.sin(angle) * 700, 110, 650);
+    this.indicateur.setVisible(true).setPosition(x, y).setRotation(angle - Math.PI / 2);
+    this.indicateur.setScale(1.7 + Math.sin(temps / 150) * 0.2);
+  }
+
+  update(temps, delta) {
+    super.update(temps, delta);
+    if (this.fini == false) {
+      this.emporterLesHeros();
+      this.mettreAJourIndicateur(temps);
+    }
+  }
+
+  // Ramasser les notes et la partition, franchir la porte
   collisionsObjets() {
     // Tambours (rebond) et planches fragiles
     this.physics.add.overlap(this.persos, this.groupe_tambours, this.rebondirSurTambour, null, this);
     this.physics.add.collider(this.persos, this.groupe_fragiles, this.planchePietinee, (perso, plateforme) => this.peutMarcherSur(perso, plateforme), this);
     // Les héros marchent sur les plateformes mobiles (sauf s'ils sont sur une échelle)
     this.physics.add.collider(this.persos, this.groupe_mobiles, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
-    this.physics.add.overlap(this.persos, this.groupe_lampes, this.ramasserLampe, null, this);
+    this.physics.add.overlap(this.persos, this.groupe_notes, this.ramasserNote, null, this);
+    this.physics.add.overlap(this.persos, this.partition, this.ramasserFragment, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
   }
 
-  ramasserLampe(perso, lampe) {
-    lampe.disableBody(true, true); // la lampe disparaît
+  ramasserNote(perso, note) {
+    note.disableBody(true, true); // la note disparaît
+    if (note.lueur !== null && note.lueur.active) {
+      note.lueur.destroy();
+    }
+    // petit effet : une copie de la note monte en grossissant et s'efface
+    const copie = this.add.image(note.x, note.y, note.texture.key).setTint(note.couleur).setDepth(7).setScale(note.scale);
+    this.tweens.add({ targets: copie, y: copie.y - 50, scale: note.scale * 1.8, alpha: 0, duration: 500, onComplete: () => copie.destroy() });
 
-    if (lampe.bonus == true) {
-      // la lampe de l'ombre rend un cœur (sans dépasser le maximum)
+    if (note.bonus == true) {
+      // la note dorée rend un cœur (sans dépasser le maximum)
       this.vies = Math.min(this.vies + 1, this.viesMax);
       this.majCoeurs();
-      this.afficherMessage("Lampe de l'ombre ! +1 cœur", 3000);
+      this.afficherMessage("Note dorée ! +1 cœur", 3000);
       return;
     }
 
-    this.lampesRamassees += 1;
-    this.texteFragment.setText(Math.min(this.lampesRamassees, LAMPES_REQUISES) + " / " + LAMPES_REQUISES);
-    if (this.lampesRamassees == LAMPES_REQUISES) {
-      this.porteOuverte = true;
-      this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre
-      this.iconeFragment.clearTint();
-      this.afficherMessage("Assez de lampes ! La porte est ouverte, rejoins-la en haut à droite.", 4000);
-    } else if (this.lampesRamassees < LAMPES_REQUISES) {
-      this.afficherMessage("Lampe " + this.lampesRamassees + " / " + LAMPES_REQUISES, 1500);
+    this.notesRamassees += 1;
+    this.texteNotes.setText(Math.min(this.notesRamassees, NOTES_REQUISES) + " / " + NOTES_REQUISES);
+    if (this.notesRamassees == NOTES_REQUISES) {
+      this.revelerPartition();
+    } else if (this.notesRamassees < NOTES_REQUISES) {
+      this.afficherMessage("Note " + this.notesRamassees + " / " + NOTES_REQUISES, 1500);
     }
+  }
+
+  // Prendre la partition ouvre la porte (comme le parchemin du niveau 1)
+  ramasserFragment(perso, partition) {
+    if (this.partitionActive == false || this.partitionPrise == true) {
+      return;
+    }
+    this.partitionPrise = true;
+    this.fragmentRecupere = true;
+    partition.disableBody(true, true);
+    [this.etincelles, this.rayons, this.halo_partition, this.etiquettePartition, this.indicateur].forEach((objet) => {
+      if (objet && objet.active) {
+        if (objet.stop) {
+          objet.stop(); // les étincelles arrêtent d'en produire
+        }
+        objet.setVisible(false);
+      }
+    });
+    this.cameras.main.flash(300, 255, 240, 190);
+    this.porteOuverte = true;
+    this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre
+    this.tweens.killTweensOf(this.iconeFragment);
+    this.iconeFragment.clearTint().setScale(1);
+    this.texteFragment.setText("1 / 1");
+    this.afficherMessage("PARTITION récupérée ! La porte est ouverte : rejoins-la !", 5000);
   }
 
   // Devant la porte : si elle est fermée on explique pourquoi, sinon le niveau est gagné
   franchirPorte() {
     if (this.porteOuverte == false) {
       if (this.time.now > (this.prochaineAlertePorte || 0)) {
-        this.afficherMessage("Il te faut " + LAMPES_REQUISES + " lampes pour ouvrir la porte !", 2000);
-        this.prochaineAlertePorte = this.time.now + 2500; // on ne répète pas le message à chaque image
+        const aide = this.partitionActive == true ? "Prends la PARTITION pour ouvrir la porte !" : "Ramasse " + NOTES_REQUISES + " notes pour révéler la PARTITION !";
+        this.afficherMessage(aide, 2500);
+        this.prochaineAlertePorte = this.time.now + 3000; // on ne répète pas le message à chaque image
       }
       return;
     }
@@ -581,11 +751,22 @@ export default class niveau2 extends niveau1 {
   }
 
   // --------------------------------------------------------------------------
-  //  Interface : on reprend celle du niveau 1, le compteur affiche les lampes à la place du parchemin
+  //  Interface : celle du niveau 1 (la partition à droite, éteinte puis allumée) + un compteur de notes
   // --------------------------------------------------------------------------
   creerInterface() {
     super.creerInterface();
-    this.iconeFragment.setTexture("img_lampe_theatre").setDisplaySize(30, 40);
-    this.texteFragment.setText("0 / " + LAMPES_REQUISES);
+    const fixe = (objet) => objet.setScrollFactor(0).setDepth(100);
+    this.iconeNotes = fixe(this.add.image(1100, 44, "tex_note")).setTint(0xffd24a).setDisplaySize(24, 33);
+    this.texteNotes = fixe(
+      this.add
+        .text(1074, 44, "0 / " + NOTES_REQUISES, {
+          fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+          fontSize: "16pt",
+          color: "#dfe6ff",
+          stroke: "#000000",
+          strokeThickness: 4
+        })
+        .setOrigin(1, 0.5)
+    );
   }
 }

@@ -34,7 +34,12 @@ var config = {
     }
   },
   fps: {
-    limit: 30
+    limit: 30,
+    min: 20 // si l'ordinateur rame, le jeu ralentit au lieu de « sauter » (sans ça, un trou de 200 ms fait avancer le héros de 40 px d'un coup)
+  },
+  render: {
+    antialias: false, // pas de lissage des bords par la carte graphique : inutile ici et coûteux sur une petite carte
+    powerPreference: "high-performance" // demande la carte graphique la plus puissante quand il y en a plusieurs
   },
   // la PREMIÈRE scène de la liste est celle qui démarre : "chargement", puis "accueil"
   scene: [chargement, accueil, choix_mode, synopsis, lobby, selection, niveau1, niveau2, niveau3, niveau_termine, gameover],
