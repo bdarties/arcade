@@ -9,7 +9,7 @@ import { STATUE } from "./salle_safe.js";
 
 const PIERRES_MAX = 5; // pierres données au maximum par appui (pour ne pas appuyer 20 fois) ; on n'en donne pas plus que nécessaire
 const PORTEE = 56; // px : distance max entre le joueur et la statue pour que la bulle apparaisse
-const BULLE_Y = 118; // px : position (monde) de la bulle, au-dessus de la tête de la statue
+const BULLE_Y = STATUE.tete_y - 47; // px : position (monde) de la bulle, 47 px au-dessus de la tête de la statue
 const LARGEUR_BULLE = 104;
 const HAUTEUR_BULLE = 62;
 const DUREE_VOL = 440; // ms : la pierre vole du joueur vers la statue

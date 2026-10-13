@@ -16,9 +16,9 @@ const BORDURE = 3; // cases de mur autour du niveau (3 = hauteur d'un mur nord c
 const PART_SOL_MIN = 0.35; // on recommence si la zone jouable est trop petite
 const NB_ESSAIS_MAX = 20;
 
-// numéros des tuiles dans walls_floor.png (ligne x 13 + colonne), relevés dans map_test
+// numéros des tuiles dans les tilesets des biomes, tileset*.png (ligne x 13 + colonne), relevés dans map_test
 export const TUILES = {
-    sol: 79,
+    sol: 57, // une couleur unie, propre à chaque biome
     plein: 14, // intérieur de la roche (noir)
     mur_nord_bord: 7, // haut d'un mur nord (3e case au-dessus du sol)
     mur_nord_haut: 20, // briques, 2e case au-dessus du sol

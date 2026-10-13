@@ -6,15 +6,9 @@
 export const CLE_MAP = "map_safe";
 export const FICHIER_MAP = "./assets/map/safe_map_test.tmj";
 
-// tilesets de la map : [nom dans Tiled, clé Phaser de l'image, fichier]
-// "walls_floor" est déjà chargé par selection.js pour les niveaux générés (fichier null)
+// tilesets de la map : [nom dans Tiled, clé Phaser de l'image, fichier] ; la map n'en utilise plus qu'un, qui regroupe tout
 export const TILESETS = [
-  ["walls_floor", "tiles_walls_floor", null],
-  ["Walls_floor", "tiles_safe_walls_and_floor", "./assets/map/walls_and_floor.png"],
-  ["Exterior_objects", "tiles_safe_exterior_objects", "./assets/map/exterior_objects.png"],
-  ["chest", "tiles_safe_chest", "./assets/map/chest.png"],
-  ["tileset_artemis_statue", "tiles_safe_statue", "./assets/map/tileset_artemis_statue.png"],
-  ["Objects_interior", "tiles_safe_objects_interior", "./assets/map/objects_interior.png"]
+  ["safe_map_tilest", "tiles_safe", "./assets/map/safe_map_tilest.png"]
 ];
 
 // la salle safe a sa place fixe, à la fin de chaque biome (cf. biomes.js) ;
@@ -26,20 +20,22 @@ export const MONTEE = { x: 12 * 32 + 16, y: 12 * 32 + 16 };
 export const TROU = { x: 30 * 32 + 16, y: 12 * 32 + 16 };
 
 // la statue (cf. offrande.js) : rectangle solide [x, y, largeur, hauteur] ; sa tête dépasse en haut, vers y = 165
-export const STATUE = { rect: [650, 224, 76, 94], centre_x: 688, tete_y: 165 };
+export const STATUE = { rect: [617, 194, 76, 94], centre_x: 655, tete_y: 130 };
 
 // objets de décor solides, en pixels de la map : [x, y, largeur, hauteur]
 // (les tuiles du calque "assets" ne sont pas solides : on pose ici des rectangles invisibles sous la statue, le coffre, etc.)
 // la statue descend jusqu'au mur : on ne peut pas passer derrière
 const OBSTACLES = [
   STATUE.rect, // statue
-  [662, 376, 48, 32], // coffre
-  [497, 192, 34, 24], // vase gauche
-  [849, 192, 34, 24], // vase droit
-  [1006, 196, 24, 36], // colonne en haut à droite
-  [349, 520, 26, 32], // colonne en bas à gauche
-  [320, 198, 70, 34], // gravats en haut à gauche
-  [1000, 508, 64, 52] // gravats en bas à droite
+  [632, 378, 48, 32], // coffre
+  [497, 164, 30, 22], // vase gauche
+  [785, 164, 30, 22], // vase droit
+  [964, 158, 24, 34], // colonne en haut à droite
+  [323, 544, 26, 32], // colonne en bas à gauche
+  [292, 176, 60, 30], // gravats en haut à gauche
+  [292, 496, 60, 30], // gravats en bas à gauche
+  [960, 272, 60, 30], // gravats à droite, au milieu
+  [970, 548, 60, 48] // gravats en bas à droite
 ];
 
 // construit la map Tiled : renvoie { map, calque_sol, calque_murs } comme pour un niveau généré

@@ -9,7 +9,7 @@ export const NIVEAUX_PAR_BIOME = 5; // niveaux 1 à 5 : premier biome (le 5 est 
 // lumiere : couleur de la lueur des cristaux (la teinte moyenne de leurs pixels colorés)
 // les tuiles de mur ont les mêmes numéros dans tous les tilesets (cf. TUILES dans generation.js) ; le sol reste celui du biome gris
 export const BIOMES = [
-  { nom: "gris", tileset: "tiles_walls_floor", cristal: "sprite_cristal", anim_cristal: "anim_cristal", lumiere: 0xffc060 },
+  { nom: "gris", tileset: "tiles_gris", cristal: "sprite_cristal", anim_cristal: "anim_cristal", lumiere: 0xffc060 },
   { nom: "bleu", tileset: "tiles_bleu", cristal: "sprite_cristal_bleu", anim_cristal: "anim_cristal_bleu", lumiere: 0x619add },
   { nom: "vert", tileset: "tiles_vert", cristal: "sprite_cristal_vert", anim_cristal: "anim_cristal_vert", lumiere: 0x6ec76c },
   { nom: "violet", tileset: "tiles_violet", cristal: "sprite_cristal_violet", anim_cristal: "anim_cristal_violet", lumiere: 0xa878c8 }
