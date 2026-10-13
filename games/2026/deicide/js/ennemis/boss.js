@@ -121,7 +121,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     const reprise = scene.registry.get("phaseBoss");
     const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
     // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir raccourcis.js)
-    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 ? profil.pv : profil.seuils[phaseDepart - 1];
+    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 || profil.phase3Dure ? profil.pv : profil.seuils[phaseDepart - 1]; // dernier boss : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) -> mort
     boss.phase = phaseDepart; // 0, 1 ou 2
     if (reprise && reprise.pv !== undefined) scene.registry.set("phaseBoss", { profil: nomProfil, phase: phaseDepart }); // les PV donnés ne servent qu'une fois : après une mort, le boss reprend au seuil de sa phase
