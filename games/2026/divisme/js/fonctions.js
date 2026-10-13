@@ -599,7 +599,9 @@ export function compteARebours(scene, quandFini) {
 
 // Fin de manche : après un court délai, affiche "Appuie sur un bouton pour continuer"
 // puis exécute "action" au premier appui.
-export function attendreContinuer(scene, action) {
+// "y" : hauteur du message (480 par défaut, sous le cadre de résultat ; on peut la changer
+// quand l'écran est plus chargé, comme l'écran de résultat final).
+export function attendreContinuer(scene, action, y = 480) {
 
     scene.time.delayedCall(DELAI_RESULTAT, () => {
 
@@ -608,7 +610,7 @@ export function attendreContinuer(scene, action) {
         reglage.backgroundColor = css(COULEURS.NUIT);
         reglage.padding = { x: 16, y: 8 };
 
-        const indication = scene.add.text(640, 480, "Appuie sur un bouton pour continuer", reglage)
+        const indication = scene.add.text(640, y, "Appuie sur un bouton pour continuer", reglage)
             .setOrigin(0.5).setDepth(61);
 
         scene.tweens.add({ targets: indication, alpha: 0.4, duration: 600, yoyo: true, repeat: -1 });
@@ -622,9 +624,14 @@ export function attendreContinuer(scene, action) {
 // 11. SCORES
 // ==============================================================
 // Chaque mini-jeu enregistre ses points dans le "registry" (la mémoire commune
-// à toutes les scènes). La scène "classement" les lit à la fin.
+// à toutes les scènes). Les points s'ADDITIONNENT au fil de la partie, et la
+// scène "resultat" les lit à la fin pour désigner le gagnant.
+//
+// Le registry contient deux choses :
+//   "scores"    : { clicker: [pointsJ1, pointsJ2], rythme: [...], taupe: [...] }
+//   "reussites" : { clicker: true, rythme: false, taupe: true }   (utile pour le SOLO)
 
-// Les trois mini-jeux (leur nom sert de titre ET de ligne du classement)
+// Les trois mini-jeux (leur nom sert de titre ET de ligne du résultat final)
 export const MINIJEUX = {
     clicker: { nom: "Le Grand Concert" },
     rythme:  { nom: "L'Air d'Opéra" },
@@ -637,21 +644,52 @@ export const POINTS = {
     PAR_MASQUE: 5       // taupe : un point de score
 };
 
-// À appeler au début d'une nouvelle partie
+// SOLO : nombre de mini-jeux à réussir (sur 3) pour gagner la partie
+export const REUSSITES_POUR_GAGNER = 2;
+
+// À appeler au début d'une nouvelle partie (c'est le clicker, 1er mini-jeu, qui le fait)
 export function reinitialiserScores(scene) {
     scene.registry.set("scores", {});
+    scene.registry.set("reussites", {});
 }
 
 // À appeler à la fin d'un mini-jeu : cle = "clicker", "rythme" ou "taupe"
-export function enregistrerScore(scene, cle, pointsJ1, pointsJ2 = 0) {
+//   pointsJ1, pointsJ2 : les points gagnés pendant CE mini-jeu
+//   reussi             : (solo) vrai si le joueur a réussi le mini-jeu
+export function enregistrerScore(scene, cle, pointsJ1, pointsJ2 = 0, reussi = false) {
 
     const scores = scene.registry.get("scores") || {};
-
     scores[cle] = [pointsJ1, pointsJ2];
-
     scene.registry.set("scores", scores);
+
+    const reussites = scene.registry.get("reussites") || {};
+    reussites[cle] = reussi;
+    scene.registry.set("reussites", reussites);
 }
 
 export function lireScores(scene) {
     return scene.registry.get("scores") || {};
+}
+
+export function lireReussites(scene) {
+    return scene.registry.get("reussites") || {};
+}
+
+// Total d'un joueur sur tous les mini-jeux (numero : 0 pour le joueur 1, 1 pour le joueur 2)
+export function totalJoueur(scene, numero) {
+
+    const scores = lireScores(scene);
+
+    return Object.keys(MINIJEUX).reduce((total, cle) => {
+        const points = scores[cle] || [0, 0];
+        return total + (points[numero] || 0);
+    }, 0);
+}
+
+// Nombre de mini-jeux réussis (solo)
+export function nombreReussites(scene) {
+
+    const reussites = lireReussites(scene);
+
+    return Object.keys(MINIJEUX).filter(cle => reussites[cle]).length;
 }

@@ -25,6 +25,7 @@ import {
     compteARebours,
     attendreContinuer,
     enregistrerScore,
+    reinitialiserScores,
     creerTouches,
     uneTouchePressee
 } from "./fonctions.js";
@@ -34,7 +35,7 @@ import {
 // ==============================
 
 // Durée de la manche, en secondes
-const DUREE_MANCHE = 15;
+const DUREE_MANCHE = 20;
 
 // SOLO : le crescendo
 const GAIN_PAR_CLIC = 4;        // % de jauge gagnés à chaque clic
@@ -94,6 +95,10 @@ export default class clicker extends Phaser.Scene {
     // ==============================
 
     create() {
+
+        // Le clicker est le PREMIER mini-jeu : une nouvelle partie commence,
+        // on efface donc les scores de la partie précédente.
+        reinitialiserScores(this);
 
         // Mode choisi dans histoire.js (1 joueur par défaut)
         this.nombreJoueurs = this.registry.get("joueurs") || 1;
@@ -156,7 +161,7 @@ export default class clicker extends Phaser.Scene {
 
         if (this.nombreJoueurs === 1) {
             lignes = [
-                "Appuie sur les boutons A à F, le plus vite possible.",
+                "Clique sur le gros bouton, ou appuie sur les boutons A à F, le plus vite possible.",
                 "La jauge descend toute seule : ne t'arrête pas !",
                 "Remplis-la avant la fin du temps pour gagner."
             ];
@@ -501,7 +506,8 @@ export default class clicker extends Phaser.Scene {
         // Points : 100 pour la réussite + un bonus par seconde restante
         const points = POINTS_REUSSITE + this.tempsRestant * POINTS_PAR_SECONDE_RESTANTE;
 
-        enregistrerScore(this, "clicker", points, 0);
+        // Le dernier paramètre (true) dit : "ce mini-jeu est RÉUSSI" (compté pour la victoire finale)
+        enregistrerScore(this, "clicker", points, 0, true);
 
         afficherResultat(this, "BRAVO !", "Fortissimo atteint !  +" + points + " pts", undefined, true);
 
@@ -533,7 +539,8 @@ export default class clicker extends Phaser.Scene {
             // Jauge pas pleine : une vie perdue, mais on garde les points du niveau atteint
             const points = Math.round(this.niveauJauge);
 
-            enregistrerScore(this, "clicker", points, 0);
+            // false = mini-jeu RATÉ (les points sont quand même ajoutés au score total)
+            enregistrerScore(this, "clicker", points, 0, false);
 
             this.viesJ1 = retirerVie(this, this.masquesJ1, this.viesJ1);
 
