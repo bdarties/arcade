@@ -86,5 +86,5 @@ export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton 
 game.config.idGame = "deicide";
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 activerRaccourcis(game); // C + F (P et ;) maintenus 0,5 s : remet le jeu à zéro sans relancer la borne
-activerTestsPartie2(game); // F9 et F10 (test : niveau 2, phase 3 du dernier boss) : à retirer avec la partie 2
+activerTestsPartie2(game); // F9, F10 et F5 (test : niveau 2, phase 3 et forme finale du dernier boss) : à retirer avec la partie 2
 compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

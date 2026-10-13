@@ -34,6 +34,27 @@
 - **Pourquoi un score « empaqueté »** : l'API de la borne ne stocke que le jeu, le nom et UN entier par score, et on ne doit pas modifier `app/` (code partagé). On range donc trois chiffres dans l'entier : `(999999 - temps net en cs) x 100 000 000 + (999999 - temps total en cs) x 100 + (99 - morts)`. Le temps net pèse le plus : le tri de la borne (plus grand en tête) classe comme avant, puis le temps total le plus court, puis le moins de morts. Le plus gros nombre fait environ 1e14, sous la limite des entiers de JavaScript (9e15). Les anciens scores (10 000 000 - temps net en ms) sont reconnus (ils sont plus petits que 1e8) et affichés sans temps total ni morts.
 - **Morts** : `registry "morts"`, remis à 0 au lancement d'une partie (menu.js, raccourcis.js), +1 à chaque `mourir()` de niveau.js.
 
+## La fausse fin et la forme finale du dernier boss (13/10, partie 2)
+- **Déroulement** : quand le boss final tombe à 0 PV en phase 3, il se dissout comme pour une vraie victoire et l'écran du panthéon s'affiche (le vrai `classement.js`, avec sa
+  séquence de victoire, le chrono arrêté). Puis une fissure dorée part du tableau, l'écran vole en éclats (une capture de l'écran découpée en morceaux irréguliers qui tombent), et
+  derrière, le boss revient : il apparaît dans le fond, grossit et devient violet. Le combat reprend contre la **forme finale** (phase 4). Si on la bat, c'est la vraie fin et le vrai panthéon.
+- **Comment** : `partie2/fauxPantheon.js` est une scène qui HÉRITE de `classement` (partie 1) : même écran, mais au lieu de proposer d'enregistrer le score elle déclenche la fissure.
+  Elle est posée par-dessus le niveau 3, mis en pause, comme le menu pause ; l'horloge du niveau est rattrapée à la reprise. `finDeCombat.js` choisit entre fausse fin (phases 1 à 3) et vraie fin
+  (forme finale). Le moteur du boss a seulement reçu des crochets facultatifs dans les profils (`pvDePhase`, `pvMinimum`, `choisirAttaque`, `apresApparition`, `etiquettePhase`, `pvDebutPhase`).
+- **La forme finale** (`formeFinale.js`) : 100 PV, plus grande (4,8 au lieu de 3,8), violette, presque sans pause (120 ms) et **six attaques entièrement nouvelles**, qui ne servent dans aucune
+  autre phase (`attaquesUltimes.js`) : *météores* (orbes en diagonale, deux volées de sens opposés, annoncées par des traînées), *rideaux* (trois murs d'orbes qui tombent, le trou change de place et
+  est annoncé en haut de l'écran), *horloge* (quatre lames de lumière en croix qui tournent autour du centre de l'arène : sauter ou dasher au bon moment), *étau* (deux murs d'orbes arrivent des côtés avec une
+  fenêtre à une hauteur annoncée : sol, plateforme ou en l'air ; puis ils reviennent avec les hauteurs échangées), *traque* (six orbes qui tournent vers le robot, 1,9 rad/s au plus : on les sème en sautant ou en dashant)
+  et *damier* (le sol s'allume par blocs de 160 px en alternance, trois fois de suite : une plateforme protège car les blocs font 118 px de haut). Elles sont toutes annoncées. Les phases 1 à 3 gardent les leurs.
+  Si le robot meurt contre elle, le combat reprend directement en forme finale (registre `phaseBoss`), sans refaire la fausse fin.
+- **Moins de hasard en phase 3 et en forme finale** : le boss lance d'abord, au hasard, les attaques qu'il n'a pas encore faites, puis tire dans un « sac » mélangé (chaque attaque revient avant
+  qu'une autre se répète). Et il TIENT BON à 1 PV tant qu'il n'a pas lancé chacune de ses attaques au moins une fois : un tir qui le toucherait à ce moment-là ne compte pas (ni PV, ni points).
+  Impossible donc de le finir sans les avoir toutes vues.
+- **Bug corrigé** : la phase 3 commençait avec 45 PV quand on y arrivait en continuant le combat, mais avec 130 PV après une mort (`pvPleinsApresMort`) : le boss ne devenait « normal » qu'après la
+  première mort. Maintenant la phase 3 commence toujours avec tous ses PV (130) : il se soigne en y entrant (`pvDebutPhase`).
+- **Touche de test** : F5 lance le dernier combat et déclenche tout de suite la fausse fin (dissolution du boss, faux panthéon, fissure de l'écran), puis la forme finale (F5 ne recharge donc plus la page).
+- **Non vérifié** : si la forme finale est « faisable mais extrêmement dure » : elle est mesurée (attaques, durées, PV), pas jouée.
+
 ## Le jeu en deux parties : js/partie1 et js/partie2 (13/10)
 - **Pourquoi** : pour pouvoir expliquer le jeu à l'oral jusqu'à la fin du 1er boss, sans que la suite (la fuite, le dernier combat) ne se mélange au code à présenter.
   `js/partie1` est un jeu complet, qui s'arrête quand le Dieu de la Lumière est vaincu (le joueur choisit alors d'enregistrer son temps dans le panthéon).

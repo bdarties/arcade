@@ -23,7 +23,8 @@ const EPAISSEUR_LASER = 34; // largeur du rayon, en px
 const LASERS = [ // par phase : décalage entre deux rayons (rad), nombre de rayons, vitesse de balayage (rad/s)
     { ecart: 0.5, nombre: 3, balayage: 0 },
     { ecart: 0.36, nombre: 5, balayage: 0.45 },
-    { ecart: 0.27, nombre: 7, balayage: 0.75 }
+    { ecart: 0.27, nombre: 7, balayage: 0.75 },
+    { ecart: 0.22, nombre: 9, balayage: 1.0 } // la forme finale
 ];
 function preparerLasers(scene, boss) { // crée les traits d'annonce
     const reglage = LASERS[boss.phase];
@@ -47,6 +48,15 @@ function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne
     laser.ox = boss.x; laser.oy = boss.y; // le rayon part de là où le boss était
     laser.rayon = scene.add.rectangle(laser.ox, laser.oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(laser.angle);
     scene.tweens.add({ targets: laser.rayon, alpha: 0, scaleY: 0.3, duration: 600, ease: "Quad.In" });
+}
+// Un rayon qui tourne autour d'un point fixe (la forme finale s'en sert pour l'horloge : voir attaquesUltimes.js). C'est un laser comme les autres :
+// majLasers le fait tourner et le fait blesser le robot qui le touche (un seul coup par attaque).
+export function poserRayonTournant(scene, { ox, oy, angle, balayage, duree }) {
+    const laser = { decalage: 0, trait: null, rayon: null, etat: "rayon", angle, verrouJusqua: 0, fin: scene.time.now + duree, balayage, ox, oy };
+    laser.rayon = scene.add.rectangle(ox, oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(angle);
+    effets.clignoter(scene, laser.rayon, { alpha: 0.6, duration: 140 }); // il vibre : il reste actif tout le temps
+    scene.lasersBoss.push(laser);
+    return laser;
 }
 function detruireLaser(laser) {
     if (laser.trait) laser.trait.destroy();
@@ -85,7 +95,7 @@ function majLasers(scene, boss) { // à chaque image : les traits suivent le bos
 const HAUT_GEYSER = 120;
 function geyser(scene, x) { return zone(scene, { x, y: scene.areneSolY - HAUT_GEYSER / 2, w: 56, h: HAUT_GEYSER, trait: { w: 8, h: HAUT_GEYSER } }); }
 function xsGeysers(boss, milieux = false) { // les positions des jets sur toute la largeur de l'arène (milieux : entre les jets de la première vague)
-    const nombre = boss.phase === 2 ? 8 : 6;
+    const nombre = boss.phase >= 2 ? 8 : 6; // (phase 3 et forme finale : 8 jets)
     const pas = 1060 / (nombre - 1);
     return Array.from({ length: milieux ? nombre - 1 : nombre }, (_, i) => Math.round(110 + pas * (i + (milieux ? 0.5 : 0))));
 }
@@ -93,7 +103,7 @@ function lancerGeysers(scene, boss, annonce, valide) {
     const sens = Phaser.Math.RND.pick([1, -1]); // la vague part de la gauche ou de la droite
     const jaillir = (zones, ecart, direction) => [...zones].sort((a, b) => direction * (a.x - b.x)).forEach((z, i) => scene.time.delayedCall(i * ecart, () => { if (valide()) declencher(scene, z); }));
     jaillir(annonce.zones, 110, sens);
-    if (boss.phase !== 2) return;
+    if (boss.phase < 2) return; // (la 2e vague : phase 3 et forme finale)
     scene.time.delayedCall(800, () => { // deuxième vague, entre les jets de la première, annoncée 0,55 s avant
         if (!valide()) return;
         const zones = xsGeysers(boss, true).map((x) => geyser(scene, x));
@@ -104,8 +114,8 @@ function lancerGeysers(scene, boss, annonce, valide) {
 // La spirale (dernier boss, phases 2 et 3) : le boss tourne sur lui-même en crachant 3 bras d'orbes. Les bras tournent dans un sens, puis à la moitié
 // ils repartent dans l'autre sens : les nouveaux bras croisent ceux qui sont encore en l'air. Il faut passer entre les bras et lire le changement de sens.
 function lancerSpirale(scene, boss, valide) {
-    const etapes = boss.phase === 2 ? 18 : 14; // une série d'orbes toutes les 130 ms
-    const vitesse = boss.phase === 2 ? 330 : 300;
+    const etapes = boss.phase >= 2 ? 18 : 14; // une série d'orbes toutes les 130 ms
+    const vitesse = boss.phase >= 2 ? 330 : 300;
     const bras = 3;
     let angle = Phaser.Math.FloatBetween(0, Math.PI * 2); // le départ change à chaque fois
     for (let i = 0; i < etapes; i++) scene.time.delayedCall(i * 130, () => {
@@ -129,7 +139,7 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
     boss.piqueTouche = false;
     const idPique = boss.jeton;
     boss.tweenPique = scene.tweens.add({
-        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: boss.phase === 2 ? 280 : 340, ease: "Quad.In",
+        targets: boss, x: cibleX, y: scene.areneSolY - 130, duration: boss.phase >= 2 ? 280 : 340, ease: "Quad.In",
         onComplete: () => {
             scene.cameras.main.shake(180, 0.008);
             effets.eclats(scene, boss.x, scene.areneSolY, ECLATS_BLANC[0], 20, ECLATS_BLANC[1]);

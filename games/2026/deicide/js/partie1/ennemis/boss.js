@@ -37,7 +37,9 @@ const LARGEUR_BARRE = 520; // barre de vie du boss, en haut de l'écran
 // cause (texte de mort), points (bonus quand il est vaincu).
 // Un profil peut aussi avoir (tout est facultatif, la partie 2 s'en sert pour le boss final) : reglages (des valeurs qui remplacent celles de BASE,
 // une entrée par phase), dureeEnPlus(nom, boss), apresColonnes(scene, boss, valide), finDeCombat(scene, boss), suite(scene, boss), musique,
-// pvPleinsApresMort.
+// pvPleinsApresMort, pvDePhase(phase) (les PV d'une phase, s'ils ne sont pas profil.pv), pvMinimum(boss) (sous cette valeur le boss ne peut pas
+// descendre), choisirAttaque(scene, boss) (sa propre façon de tirer les attaques), apresApparition(scene, boss), etiquettePhase(phase),
+// pvDebutPhase(phase) (les PV du boss quand il ENTRE dans cette phase, ou rien : il garde ceux qu'il a).
 export const PROFILS = {
     soldat: {
         pantheon: true, // à 0 PV, le joueur choisit : arrêter la partie ici ou continuer (OUI : profil.suite, définie par la partie 2) (voir proposerPantheon)
@@ -97,13 +99,15 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     const reprise = scene.registry.get("phaseBoss");
     const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
     // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir partie2/testsBorne.js)
-    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 || profil.pvPleinsApresMort ? profil.pv : profil.seuils[phaseDepart - 1]; // pvPleinsApresMort : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
+    boss.pvMax = profil.pvDePhase ? profil.pvDePhase(phaseDepart) : profil.pv; // les PV de la phase de départ (la barre de vie se règle dessus)
+    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 || profil.pvPleinsApresMort ? boss.pvMax : profil.seuils[phaseDepart - 1]; // pvPleinsApresMort : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) ; puis choix, fin (ou ce que fait la partie 2)
     boss.phase = phaseDepart; // 0 ou 1 (2 pour un boss à 3 phases)
     if (reprise && reprise.pv !== undefined) scene.registry.set("phaseBoss", { profil: nomProfil, phase: phaseDepart }); // les PV donnés ne servent qu'une fois : après une mort, le boss reprend au seuil de sa phase
     boss.departY = y; // hauteur autour de laquelle il flotte
     boss.prochaineAttaque = Infinity; // pas d'attaque avant la fin de l'apparition
     boss.derniereAttaque = null;
+    boss.faits = new Set(); // les attaques que le boss a lancées depuis le début de cette phase (voir pvMinimum)
     boss.jeton = 0; // numéro de l'attaque en cours : une attaque interrompue (changement de phase, mort) ne fait plus rien
     boss.enMouvement = false; // vrai quand une attaque déplace elle-même le boss (il ne flotte plus : voir majBoss)
     boss.fige = false; // vrai quand le boss ne doit plus bouger du tout
@@ -118,7 +122,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
         boss.once("destroy", () => halo.destroy());
     }
     boss.barre = creerBarre(scene);
-    boss.barre.plein.width = LARGEUR_BARRE * boss.pv / profil.pv; // la barre est déjà au bon niveau si on reprend en phase 2 ou 3
+    boss.barre.plein.width = LARGEUR_BARRE * boss.pv / boss.pvMax; // la barre est déjà au bon niveau si on reprend en phase 2 ou 3
     scene.tweens.add({ targets: [boss, boss.halo].filter(Boolean), alpha: { value: (cible) => (cible === boss ? 1 : 0.35) }, duration: 1500, onComplete: () => {
         boss.etat = "combat";
         boss.prochaineAttaque = scene.time.now + surLeTemps(scene, 1200); // la première attaque arrive peu après, sur une croche
@@ -127,6 +131,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
 
     scene.physics.add.overlap(scene.tirsJoueur, boss, (a, b) => toucherBoss(scene, boss, a === boss ? b : a)); // un tir du robot touche le boss
     scene.boss = boss;
+    if (profil.apresApparition) profil.apresApparition(scene, boss); // (le boss final retrouve ici sa forme finale si le robot est mort contre elle)
     const suivre = (temps) => majBoss(scene, boss, temps);
     scene.events.on(Phaser.Scenes.Events.UPDATE, suivre);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, suivre));
@@ -151,7 +156,7 @@ function creerBarre(scene) {
 export function elementsBarre(boss) { return [boss.barre.fond, boss.barre.plein, boss.barre.nom, ...boss.barre.reperes]; }
 
 function majBarre(scene, boss) { // la barre rétrécit en douceur, avec un éclat blanc
-    const largeur = LARGEUR_BARRE * Math.max(0, boss.pv) / profil.pv;
+    const largeur = LARGEUR_BARRE * Math.max(0, boss.pv) / boss.pvMax;
     scene.tweens.add({ targets: boss.barre.plein, width: largeur, duration: 160 });
     boss.barre.plein.setFillStyle(0xffffff);
     scene.time.delayedCall(80, () => { if (boss.barre.plein.active) boss.barre.plein.setFillStyle(0xe7e0e9); });
@@ -178,6 +183,7 @@ function majBoss(scene, boss, temps) {
 
 function choisirAttaque(scene, boss) {
     if (boss.forcer) return boss.forcer; // TEST : boss.forcer = "balayage" (dans la console) lance toujours cette attaque
+    if (profil.choisirAttaque) { const choix = profil.choisirAttaque(scene, boss); if (choix) return choix; } // un boss peut tirer ses attaques à sa façon (partie 2)
     // jamais deux fois la même de suite ; pas de lanternes s'il y en a déjà deux en l'air
     const dejaLa = scene.lanternesVivantes ? scene.lanternesVivantes.countActive() : 0;
     const possibles = profil.attaques[boss.phase].filter((nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2));
@@ -204,6 +210,7 @@ function lancerAttaque(scene, boss, nom) {
     scene.time.delayedCall(charge, () => {
         if (!valide()) { nettoyerAnnonce(nom, annonce); return; } // il est mort ou a changé de phase entre-temps
         boss.play("boss_attaque");
+        boss.faits.add(nom); // cette attaque est faite (le boss final ne peut pas mourir avant d'avoir tout lancé : voir pvMinimum)
         def.executer(scene, boss, annonce, valide);
         boss.once("animationcomplete-boss_attaque", () => { if (valide()) boss.play("boss_idle"); }); // il retrouve son calme visuellement
         scene.time.delayedCall(apres, () => { // l'effet est fini : la pause avant la prochaine attaque commence
@@ -378,6 +385,7 @@ const ETATS_SANS_DEGATS = ["apparition", "transition", "choix", "fin"]; // penda
 function toucherBoss(scene, boss, tir) {
     tir.destroy();
     if (boss.intouchable || ETATS_SANS_DEGATS.includes(boss.etat)) return;
+    if (profil.pvMinimum && boss.pv - 1 < profil.pvMinimum(boss)) { effets.flash(boss, 0xffd45c, 60); return; } // il tient bon : le coup ne compte pas (ni PV, ni points)
     boss.pv -= 1;
     effets.flash(boss, 0xffffff, 60); // il devient blanc 60 ms
     effets.eclats(scene, tir.x, tir.y, ECLATS_BLANC[0], 6, ECLATS_BLANC[1]);
@@ -399,9 +407,12 @@ export function nettoyerCombat(scene, boss) { // efface tout ce que le boss avai
     Object.values(ATTAQUES).forEach((def) => { if (def.nettoyer) def.nettoyer(scene, boss); }); // et ce que les attaques de la partie 2 avaient posé
 }
 
-function changerDePhase(scene, boss, phase) {
+export function changerDePhase(scene, boss, phase) {
     nettoyerCombat(scene, boss);
     boss.phase = phase;
+    boss.faits = new Set(); // on recompte les attaques lancées dans cette phase
+    const pvDebut = profil.pvDebutPhase ? profil.pvDebutPhase(phase) : undefined;
+    if (pvDebut !== undefined) { boss.pv = pvDebut; boss.barre.plein.width = LARGEUR_BARRE * boss.pv / boss.pvMax; } // il se soigne en entrant dans la phase
     scene.registry.set("phaseBoss", { profil: profil.cle, phase }); // si le robot meurt, il reprendra ici
     boss.etat = "transition"; // intouchable un instant
     boss.play("boss_charge");
@@ -409,7 +420,7 @@ function changerDePhase(scene, boss, phase) {
     scene.cameras.main.shake(400, 0.009);
     effets.eclats(scene, boss.x, boss.y, ECLATS_OR[0], 28, ECLATS_OR[1]);
     lacherPV(scene, 640, boss.y + 60); // une croix de soin tombe au milieu de l'arène
-    const texte = scene.add.text(640, 120, "PHASE " + (phase + 1), { fontFamily: "monospace", fontSize: "28px", color: "#f5f0f8", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(104);
+    const texte = scene.add.text(640, 120, profil.etiquettePhase ? profil.etiquettePhase(phase) : "PHASE " + (phase + 1), { fontFamily: "monospace", fontSize: "28px", color: "#f5f0f8", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(104);
     scene.tweens.add({ targets: texte, alpha: 0, y: 100, duration: 1600, delay: 400, onComplete: () => texte.destroy() });
     scene.time.delayedCall(DUREE_TRANSITION, () => {
         if (boss.etat !== "transition") return;
