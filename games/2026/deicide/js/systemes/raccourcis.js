@@ -12,6 +12,7 @@
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
 //   - F9 : lance directement le niveau 2
+//   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
 const COMBOS = [
     { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
     { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
@@ -72,7 +73,7 @@ function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Dieu ; ensuite (ou de
     });
 }
 
-// ---- touches de test F8 et F9 (TEMPORAIRES) ----
+// ---- touches de test F8, F9 et F10 (TEMPORAIRES) ----
 function teleporterRobot(jeu) { // F8 : chaque niveau indique où dans sa config (teleportBoss)
     jeu.scene.getScenes(true).forEach((scene) => { // (seulement les scènes qui tournent : pas un niveau en pause)
         if (!scene.cfg || !scene.cfg.teleportBoss) return;
@@ -87,10 +88,18 @@ function lancerNiveau2(jeu) { // F9 : une partie qui commence directement au niv
     jeu.scene.start("niveau2");
 }
 
+function lancerPhase3(jeu) { // F10 : une partie qui commence directement à la phase 3 du dernier boss
+    arreterToutesLesScenes(jeu);
+    nouvellePartie(jeu);
+    jeu.registry.set("phaseBoss", { profil: "soldat2", phase: 2, pv: 130 }); // la reprise de boss.js fait le reste : phase 3, tous les PV (130 = pv du profil soldat2)
+    jeu.scene.start("niveau3");
+}
+
 export function activerRaccourcis(jeu) {
     window.addEventListener("keydown", (evenement) => { // les touches de test
         if (evenement.key === "F8") teleporterRobot(jeu);
         if (evenement.key === "F9") { evenement.preventDefault(); lancerNiveau2(jeu); }
+        if (evenement.key === "F10") { evenement.preventDefault(); lancerPhase3(jeu); }
     });
 
     const enfoncees = new Set(); // les touches de combo actuellement maintenues
