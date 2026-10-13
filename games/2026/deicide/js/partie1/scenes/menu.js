@@ -83,14 +83,29 @@ export default class menu extends Phaser.Scene {
     this.lance = false;
   }
 
-  creerBoutonDeux(x, y) { // la même dalle animée que « JOUER » : on cache son texte et on écrit « 1 V 1 » à la place (police pixel du jeu)
-    creerPolice(this);
-    const dalle = this.add.sprite(x, y, "bouton_jouer", 1).setScale(4);
-    dalle.play("bouton_jouer_survol");
-    const cache = this.add.rectangle(x + 38, y + 6, 224, 52, 0x050505); // le fond sombre qui recouvre le mot « JOUER » (centre de la dalle : 52 / 22 sur l'image)
-    const texte = ecrire(this, x + 23, y + 7, "1V1", 7, { profondeur: 0 });
+  creerTextureDalleVide() { // la dalle « JOUER » sans son texte : on recopie dans chaque image la colonne vide à droite du mot, sur toute sa place
+    if (this.textures.exists("bouton_vide")) return;
+    const source = this.textures.get("bouton_jouer").getSourceImage();
+    const texture = this.textures.createCanvas("bouton_vide", 104, 44 * 15);
+    const ctx = texture.getContext();
+    ctx.drawImage(source, 0, 0);
+    for (let image = 0; image < 15; image++) {
+      for (let x = 34; x < 80; x++) ctx.drawImage(source, 84, image * 44 + 15, 1, 17, x, image * 44 + 15, 1, 17); // lignes 15 à 31 : l'intérieur de la dalle (le mot est entre les colonnes 36 et 78)
+      texture.add(image, 0, 0, image * 44, 104, 44);
+    }
+    texture.refresh();
+    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.anims.create({ key: "bouton_vide_survol", frames: this.anims.generateFrameNumbers("bouton_vide", { start: 1, end: 12 }), frameRate: 12, repeat: -1 });
+  }
+
+  creerBoutonDeux(x, y) { // la même dalle animée que « JOUER », sans son texte, avec « 1V1 » écrit à la place (police pixel du jeu)
+    creerPolice(this, "police_blanche", "#ffffff"); // comme le mot « JOUER » : tout blanc
+    this.creerTextureDalleVide();
+    const dalle = this.add.sprite(x, y, "bouton_vide", 1).setScale(4);
+    dalle.play("bouton_vide_survol");
+    const texte = ecrire(this, x + 23, y + 7, "1V1", 7, { profondeur: 0, police: "police_blanche" });
     const voile = this.add.rectangle(x, y, 416, 176, 0x0e0e11, 0.6); // atténue la dalle quand elle n'est pas choisie (on n'utilise pas l'alpha : le mot « JOUER » transparaîtrait sous le cache)
-    const groupe = this.add.container(0, 0, [dalle, cache, texte, voile]);
+    this.add.container(0, 0, [dalle, texte, voile]);
     dalle.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     return { voile, dalle };
   }

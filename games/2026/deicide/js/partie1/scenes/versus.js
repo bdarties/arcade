@@ -9,6 +9,7 @@ import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction 
 import { jouerSon, musiqueDeScene, chargerMusiqueBoss, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { objetsDe } from "../systemes/chargement.js";
+import { preparerPause } from "./pause.js"; // le menu pause (Échap ou X), comme dans les niveaux
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
 
 const PV_PAR_MANCHE = 3;
@@ -83,6 +84,8 @@ export default class versus extends Phaser.Scene {
     this.creerInterface();
     this.finie = false;
     this.ecranFinal = false;
+    this.partieFinie = false; // vrai entre deux manches et à l'écran final : pas de pause (voir preparerPause)
+    preparerPause(this);
     musiqueDeScene(this, "musique_boss_boucle", VOLUME_MUSIQUE_BOSS); // le metal des combats de boss
     this.annoncer("MANCHE " + this.manche, 1200); // une annonce au début de chaque manche
   }
@@ -137,6 +140,7 @@ export default class versus extends Phaser.Scene {
 
   finirManche(vainqueur) { // un robot est à 0 PV
     this.finie = true;
+    this.partieFinie = true;
     const perdant = vainqueur.adversaire;
     perdant.mortVersus = true;
     perdant.body.setVelocityX(0);

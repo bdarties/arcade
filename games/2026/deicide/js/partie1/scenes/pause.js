@@ -100,7 +100,7 @@ export default class pause extends Phaser.Scene {
 
     // ---- les lignes du menu : { nom, type: "action" ou "curseur", ... } ----
     lignesMenu() {
-        return [
+        const lignes = [
             { nom: "REPRENDRE", type: "action", action: () => this.reprendre() },
             { nom: "MUSIQUE", type: "curseur", reglage: "musique", min: 0, max: VOLUME_MAX },
             { nom: "BRUITAGES", type: "curseur", reglage: "effets", min: 0, max: VOLUME_MAX },
@@ -108,6 +108,7 @@ export default class pause extends Phaser.Scene {
             { nom: "CRÉDITS", type: "action", action: () => this.afficherCredits() },
             { nom: this.confirmerQuitter ? "REAPPUIE POUR QUITTER" : "MENU PRINCIPAL", type: "action", action: () => this.quitter() }
         ];
+        return this.origine === "versus" ? lignes.filter((ligne) => ligne.reglage !== "luminosite") : lignes; // le 1 contre 1 n'a pas de voile d'ombre : pas de réglage de luminosité
     }
 
     vider() { // efface la page affichée
