@@ -1,0 +1,33 @@
+joueur 1 clavier :
+fleche up -> haut
+fleche down -> bas
+fleche left -> gauche 
+fleche right -> droite
+i -> interaction
+o -> tirer
+
+joueur 1 borne : 
+joystick rouge up -> haut
+joystick rouge down -> bas
+joystick rouge left -> gauche
+joystick rouge right -> droite
+i noir -> interaction
+o noir -> tirer
+
+-------------------------------------------
+
+joueur 1 clavier :
+Z rouge -> haut
+fleche down -> bas
+fleche left -> gauche 
+fleche right -> droite
+I -> interaction
+O -> tirer
+
+joueur 1 borne : 
+joystick noir Z -> haut
+joystick noir S -> bas
+joystick noir Q -> gauche
+joystick noir D -> droite
+R rouge -> interaction
+T rouge -> tirer
