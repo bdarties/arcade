@@ -187,3 +187,16 @@ export function cri(scene, duree = 1.05) {
     gorge.connect(distorsion).connect(enveloppe).connect(sortieCri);
     souffle(c, sortieCri, "bandpass", 1500, 4200, t + duree * 0.25, duree * 0.75, 0.6); // le souffle rauque qui monte avec le hurlement
 }
+
+export function annonce(scene) { // l'annonce du nom du boss : un accord de cuivres sec, un coup grave et un éclat métallique
+    const c = contexte(scene); if (!c) return;
+    const sortieAnnonce = sortieForte(c, 1.0, 0.6, -10), t = c.currentTime + 0.01;
+    [110, 165, 220, 330].forEach((f, i) => note(c, sortieAnnonce, "sawtooth", f, t, 0.55, 0.7, i % 2 ? 8 : -8));
+    [440, 660, 880].forEach((f) => note(c, sortieAnnonce, "square", f, t, 0.3, 0.2));
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.35);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1.3, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g).connect(sortieAnnonce); o.start(t); o.stop(t + 0.55);
+    souffle(c, sortieAnnonce, "highpass", 1500, 6000, t, 0.14, 0.9);
+    [4200, 6300].forEach((f) => note(c, sortieAnnonce, "sine", f, t + 0.02, 0.8, 0.1));
+}

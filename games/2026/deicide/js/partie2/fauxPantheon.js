@@ -3,10 +3,10 @@
 // Les deux moitiés de l'écran s'écartent dans la lumière, et derrière, le boss revient en arrière-plan sous sa forme finale.
 // Il est posé par-dessus le niveau 3, qui est en pause : quand l'écran est tranché, le niveau reprend (voir finDeCombat.js : retour).
 // Les sons sont synthétisés (synth.js) ; l'entaille est une courbe de Bézier dessinée en lame effilée, avec un halo, une onde de choc et des étincelles.
-import classement from "../partie1/scenes/classement.js";
+import classement, { ecrire, OR, CLAIR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu)
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon, volumeEffets } from "../partie1/systemes/sons.js";
-import { fanfare, battements, montee, coupDEpee, impact, verre, cri } from "./synth.js";
+import { fanfare, battements, montee, coupDEpee, impact, verre, cri, annonce } from "./synth.js";
 
 const LARGEUR = 1280, HAUTEUR = 720;
 const TEINTE_FINALE = 0x9a7cff; // le violet de la forme finale (voir formeFinale.js)
@@ -240,7 +240,51 @@ export default class fauxPantheon extends classement {
             this.cameras.main.shake(700, 0.02);
             jouerSon(this, "joueur_mort");
         });
-        this.time.delayedCall(3500, () => this.terminer());
+        this.time.delayedCall(1750, () => this.banniere(Math.min(625, y + 345))); // le nom du boss claque en dessous de lui, au moment où il change de forme
+        this.time.delayedCall(4500, () => this.terminer());
+    }
+
+    // ---- LA BANNIÈRE : le nom du boss, comme à la présentation d'un combattant dans Smash Bros. Un grand bandeau incliné qui arrive en glissant, les lettres qui claquent une à une, un éclat qui
+    // le balaie, un flash, des étincelles aux deux bouts et un tremblement, puis il repart. ----
+    banniere(yCentre) {
+        const L = 1080, H = 176; // largeur et hauteur du bandeau
+        const groupe = this.add.container(-1600, yCentre).setDepth(120).setAngle(-4); // incliné de 4°, comme les bandeaux de Smash
+        const forme = (x, y, l, h, couleur, alpha = 1) => groupe.add(this.add.rectangle(x, y, l, h, couleur, alpha));
+        forme(12, 16, L + 34, H + 34, 0x000000, 0.55); // l'ombre
+        forme(0, 0, L + 24, H + 24, 0xffffff); // le contour blanc...
+        forme(0, 0, L + 10, H + 10, 0xffd45c); // ...puis doré
+        forme(0, 0, L, H, 0x2a1670); // le corps violet foncé
+        forme(0, -H * 0.25, L, H * 0.5, 0x5a3bd9); // la moitié haute, plus claire (le dégradé du bandeau)
+        forme(0, -H / 2 + 7, L, 14, 0xb89cff); // le liseré clair en haut
+        forme(0, H / 2 - 5, L, 10, 0x180c48); // et le bord sombre en bas
+        for (let x = -L / 2 + 40; x < L / 2; x += 62) forme(x, 0, 12, H, 0xffffff, 0.07); // la trame : de fines bandes verticales
+        const eclat = this.add.rectangle(-L / 2, 0, 90, H, 0xffffff, 0.6).setBlendMode(Phaser.BlendModes.ADD); // l'éclat qui balaie le bandeau
+        groupe.add(eclat);
+        const nom = ecrire(this, 0, -26, "DIEU DE LA LUMIERE", 7, { teinte: 0xffffff });
+        const sous = ecrire(this, 0, 52, "FORME FINALE", 4, { teinte: OR });
+        groupe.add([nom, sous]);
+        nom.lettres.concat(sous.lettres).forEach((lettre) => { if (lettre) lettre.setAlpha(0); }); // les lettres apparaissent une à une
+        // 1) il arrive en glissant, avec un petit dépassement
+        this.tweens.add({ targets: groupe, x: 640, duration: 330, ease: "Back.Out",
+            onComplete: () => {
+                // 2) l'impact de l'arrivée : un flash, un tremblement, des étincelles, l'annonce sonore
+                annonce(this);
+                this.cameras.main.flash(180, 255, 255, 255);
+                this.cameras.main.shake(420, 0.016);
+                const etincelles = this.add.particles(0, 0, "pixel", { speed: { min: 200, max: 760 }, angle: { min: 0, max: 360 }, gravityY: 500, lifespan: { min: 300, max: 900 }, scale: { start: 3, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffffff, 0xffd45c, 0xb89cff], blendMode: "ADD", emitting: false }).setDepth(121);
+                [-L / 2, L / 2].forEach((dx) => etincelles.emitParticleAt(640 + dx, yCentre + dx * 0.07, 36));
+                // 3) les lettres claquent une à une (chacune grossit puis se pose), l'éclat traverse le bandeau
+                [[nom, 7], [sous, 4]].forEach(([texte, echelle], r) => texte.lettres.forEach((lettre, i) => {
+                    if (!lettre) return;
+                    lettre.setScale(echelle * 2.2);
+                    this.tweens.add({ targets: lettre, alpha: 1, scale: echelle, duration: 170, delay: 80 + i * 32 + r * 250, ease: "Back.Out" });
+                }));
+                this.tweens.add({ targets: eclat, x: L / 2 - 20, duration: 650, delay: 150, ease: "Cubic.InOut" });
+                this.tweens.add({ targets: groupe, scale: 1.025, duration: 600, yoyo: true, repeat: 2, ease: "Sine.InOut" }); // il respire pendant qu'il est affiché
+            }
+        });
+        // 4) il repart par la droite, avant que le niveau reprenne
+        this.time.delayedCall(2750, () => this.tweens.add({ targets: groupe, x: 2000, duration: 280, ease: "Cubic.In", onComplete: () => groupe.destroy() }));
     }
 
     terminer() { // le niveau 3 reprend, comme à la fermeture du menu pause (voir pause.js)
