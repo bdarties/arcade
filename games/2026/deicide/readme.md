@@ -32,7 +32,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 
 | | Joueur 1 | Joueur 2 (1 contre 1) |
 |---|---|---|
-| déplacer / viser | flèches | W A S D |
+| déplacer / viser | flèches | Q Z D S (ou A W D S) |
 | saut | I | R |
 | tir (visée automatique) | K | F |
 | dash | L | G |

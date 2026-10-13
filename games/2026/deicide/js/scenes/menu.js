@@ -67,7 +67,7 @@ export default class menu extends Phaser.Scene {
     this.boutonDeux = this.creerBoutonDeux(640, 548);
     this.indication = this.add.text(640, 604, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
-    ["UP", "W"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
+    ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
     this.boutonDeux.fond.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
