@@ -2,11 +2,12 @@
 // Appelé une fois par index.js (activerRaccourcis).
 //
 // DEUX BOUTONS MAINTENUS 1,5 s (une barre en bas de l'écran se remplit) :
-//   - Z + X (select + start)   : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
+//   - C + F (P et ;)           : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
 //                                l'accueil ou l'écran de fin : retour à l'accueil. La borne n'est pas relancée.
 //   - Z + B (select J1 + select J2) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
-// Z (select J1) et X (start) sont les deux boutons du centre du joueur 1, B est le select du joueur 2 (voir gpio2keys.py) : Z et B ne servent
-// à rien d'autre dans le jeu. Les touches du robot sont I, K et L : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
+// C et F sont les boutons 3 et 6 du joueur 1 : ils envoient P et ; (voir gpio2keys.py). Sur un clavier AZERTY, la touche ; est la touche M :
+// on reconnaît donc ; par sa position (evenement.code "Semicolon"), pas par la lettre. Z est le select J1 et B le select J2 : Z et B ne servent
+// à rien d'autre dans le jeu. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
 // un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
@@ -14,12 +15,13 @@
 //   - F9 : lance directement le niveau 2
 //   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
 const COMBOS = [
-    { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
+    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // P (bouton C) et ; (bouton F)
     { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
 ];
 const DUREE = 1500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 300; // ms avant d'afficher la barre (un appui très court ne montre rien)
 const CODES = COMBOS.flatMap((combo) => combo.touches);
+const identifiant = (evenement) => (evenement.code === "Semicolon" ? "Semicolon" : evenement.keyCode); // la touche ; (ou M en AZERTY) par sa position, les autres par leur code
 
 function arreterToutesLesScenes(jeu) {
     jeu.sound.stopAll(); // coupe la musique
@@ -45,6 +47,7 @@ function reinitialiser(jeu) {
 function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
     jeu.registry.set("chrono", 0);
     jeu.registry.set("score", 0);
+    jeu.registry.set("morts", 0);
     jeu.registry.set("chronoActif", true);
     jeu.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
@@ -120,14 +123,16 @@ export function activerRaccourcis(jeu) {
     function annuler() { combo = null; boite.style.display = "none"; }
 
     window.addEventListener("keydown", (evenement) => {
-        if (!CODES.includes(evenement.keyCode)) return;
-        enfoncees.add(evenement.keyCode);
+        const touche = identifiant(evenement);
+        if (!CODES.includes(touche)) return;
+        enfoncees.add(touche);
         const trouve = COMBOS.find((c) => c.touches.every((code) => enfoncees.has(code))); // les deux touches d'un combo sont enfoncées ensemble
         if (trouve && combo === null) { combo = trouve; debut = performance.now(); }
     });
     window.addEventListener("keyup", (evenement) => {
-        if (!CODES.includes(evenement.keyCode)) return;
-        enfoncees.delete(evenement.keyCode);
+        const touche = identifiant(evenement);
+        if (!CODES.includes(touche)) return;
+        enfoncees.delete(touche);
         if (combo && !combo.touches.every((code) => enfoncees.has(code))) annuler(); // un des deux boutons est relâché : on annule
     });
     window.addEventListener("blur", () => { enfoncees.clear(); annuler(); }); // la page perd le focus : on oublie les touches

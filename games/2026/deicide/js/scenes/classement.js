@@ -18,26 +18,39 @@ const SCORE_BASE = 10000000; // 10 millions de ms = presque 3 h : aucun temps r�
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)
 
 const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const COL_NET = 964, COL_BRUT = 1092, COL_MORTS = 1168; // la fin (côté droit) de chaque colonne du tableau
 const NB_LETTRES = 3; // le nom fait 3 lettres, comme sur une vraie borne
 const TOUCHES_VALIDER = ["KeyI", "Enter", "Space"]; // I = le bouton de saut de la borne
 const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de jeu, on ignore les appuis au début
 
 // les couleurs du HUD (voir PAL dans personnage/hud.js) et de la lanterne (or)
 const PAL = { K: "#211924", a: "#251d2a", b: "#2f2535", c: "#372b3e", d: "#3f3249", m: "#5f4f6e", n: "#8a779b", L: "#ac98b6", W: "#e7e0e9", G: "#f5f0f8" };
-const OR = 0xffd45c;
+export const OR = 0xffd45c;
 const OR_SOMBRE = 0xc99a2e;
 const ROSE = 0xf4b6c2; // le rose pâle du projet : la ligne du joueur
-const CLAIR = 0xf5f0f8;
-const LAVANDE = 0xac98b6;
-const GRIS_VIOLET = 0x8a779b;
+export const CLAIR = 0xf5f0f8;
+export const LAVANDE = 0xac98b6;
+export const GRIS_VIOLET = 0x8a779b;
 
 function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes)
     const total = Math.floor(Math.min(Math.max(0, ms), TEMPS_MAX_MS) / 10); // en centièmes de seconde
     const deux = (n) => String(n).padStart(2, "0");
     return deux(Math.floor(total / 6000)) + ":" + deux(Math.floor(total / 100) % 60) + "." + deux(total % 100);
 }
-function tempsVersScore(tempsNetMs) { return SCORE_BASE - Math.round(tempsNetMs); } // ce qu'on envoie à l'API (entier)
-function scoreVersTemps(score) { return SCORE_BASE - score; } // ce qu'on affiche
+// L'API de la borne ne garde que trois choses par score : le jeu, le nom et UN entier (le plus grand est en tête). On y range trois chiffres :
+//   score = (999999 - temps net en cs) * 100 000 000  +  (999999 - temps total en cs) * 100  +  (99 - morts)
+// (cs = centièmes de seconde). Le temps net est le plus important : le tri de la borne (plus grand en tête) classe donc comme avant ; à égalité,
+// le temps total le plus court, puis le moins de morts. Le plus gros score possible fait ~1e14 : bien en dessous de la limite des entiers de JavaScript.
+const CS_MAX = 999999; // 2 h 46 : au-delà, on affiche le maximum
+const MORTS_MAX = 99;
+const cs = (ms) => Math.min(CS_MAX, Math.max(0, Math.round(ms / 10)));
+function empaqueter(tempsNetMs, tempsBrutMs, morts) { // ce qu'on envoie à l'API (entier)
+    return (CS_MAX - cs(tempsNetMs)) * 100000000 + (CS_MAX - cs(tempsBrutMs)) * 100 + (MORTS_MAX - Math.min(MORTS_MAX, morts));
+}
+function deballer(score) { // ce qu'on affiche : { net, brut, morts } (brut et morts sont null pour un ancien score, qui ne gardait que le temps net)
+    if (score < 100000000) return { net: SCORE_BASE - score, brut: null, morts: null }; // ancien format : 10 000 000 - temps net en ms
+    return { net: (CS_MAX - Math.floor(score / 100000000)) * 10, brut: (CS_MAX - (Math.floor(score / 100) % 1000000)) * 10, morts: MORTS_MAX - (score % 100) };
+}
 
 // le module de score de la borne n'existe que quand le jeu tourne dans la borne : on le charge au moment d'en avoir besoin,
 // et s'il manque (jeu ouvert à part, pendant les tests) on continue sans classement au lieu de planter
@@ -74,7 +87,7 @@ const GLYPHES = {
 };
 const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
 
-function creerPolice(scene) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère
+export function creerPolice(scene) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère
     if (scene.textures.exists("police_fin")) return;
     const noms = Object.keys(GLYPHES);
     const texture = scene.textures.createCanvas("police_fin", noms.length * LARGEUR_CASE, 8);
@@ -92,7 +105,7 @@ function creerPolice(scene) { // dessine une seule fois toutes les lettres dans 
 }
 
 // écrit un texte (un groupe d'images, une par caractère). ancre : "centre", "gauche" ou "droite" par rapport à x. Les espaces sont vides.
-function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10 } = {}) {
+export function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10 } = {}) {
     const largeur = texte.length * LARGEUR_CASE * echelle;
     const x0 = ancre === "gauche" ? x : ancre === "droite" ? x - largeur : x - largeur / 2;
     const groupe = scene.add.container(0, 0).setDepth(profondeur);
@@ -113,7 +126,7 @@ function changerTexte(groupe, texte) { // remplace les caractères d'un texte de
 // Les plaques : la même construction que celles du HUD (contour sombre, filet clair en haut, ombre en bas, rivets, coins coupés)
 // ---------------------------------------------------------------------------------------------
 
-function plaque(scene, w, h, creux = true) { // renvoie la clé de la texture ; w et h sont en pixels du dessin (agrandis à l'écran)
+export function plaque(scene, w, h, creux = true) { // renvoie la clé de la texture ; w et h sont en pixels du dessin (agrandis à l'écran)
     const cle = "plaque_fin_" + w + "x" + h + (creux ? "c" : "");
     if (scene.textures.exists(cle)) return cle;
     const texture = scene.textures.createCanvas(cle, w, h);
@@ -149,13 +162,15 @@ export default class classement extends Phaser.Scene {
         this.tempsBrutMs = donnees.tempsBrutMs ?? 0;
         this.points = donnees.points ?? 0;
         this.tempsNetMs = donnees.tempsNetMs ?? this.tempsBrutMs;
+        this.morts = donnees.morts ?? 0;
     }
 
     create() {
         this.cameras.main.setBackgroundColor("#0e0e11");
         this.cameras.main.fadeIn(500, 0, 0, 0);
         creerPolice(this);
-        this.etape = "intro"; // intro -> saisie (nouveau record) ou classement -> (envoi) -> classement
+        this.etape = "intro"; // intro -> choix (nouveau record) -> saisie -> (envoi) -> classement ; ou intro -> classement
+        this.enregistrer = 0; // le choix « enregistrer mon score » : 0 = OUI, 1 = NON
         this.pret = false; // les validations ne comptent qu'après un court délai
         this.sequenceFinie = false;
         this.apiPrete = false;
@@ -210,19 +225,24 @@ export default class classement extends Phaser.Scene {
         const gauche = 112, droite = 590;
         const ligne = (y, nom, valeur, teinte) => ({ nom: ecrire(this, gauche, y, nom, 3, { ancre: "gauche", teinte: LAVANDE }), valeur: ecrire(this, droite, y, valeur, 3, { ancre: "droite", teinte }) });
         this.lignes = [
-            ligne(212, "TEMPS", formaterTemps(this.tempsBrutMs), CLAIR),
-            ligne(256, "POINTS", String(Math.min(this.points, 999999)).padStart(6, "0"), CLAIR),
-            ligne(300, "BONUS", "-" + formaterTemps(this.tempsBrutMs - this.tempsNetMs), OR)
+            ligne(202, "TEMPS TOTAL", formaterTemps(this.tempsBrutMs), CLAIR), // le temps réel de la partie, sans rien retirer
+            ligne(238, "MORTS", String(Math.min(this.morts, MORTS_MAX)).padStart(2, "0"), CLAIR),
+            ligne(274, "POINTS", String(Math.min(this.points, 999999)).padStart(6, "0"), CLAIR),
+            ligne(310, "BONUS", "-" + formaterTemps(this.tempsBrutMs - this.tempsNetMs), OR)
         ];
         this.lignes.forEach((l) => { l.nom.setAlpha(0); l.valeur.setAlpha(0); });
-        this.separateur = this.add.rectangle(350, 336, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0);
-        this.libelleFinal = ecrire(this, 350, 372, "TEMPS FINAL", 3, { teinte: GRIS_VIOLET }).setAlpha(0);
-        this.tempsFinal = ecrire(this, 350, 434, formaterTemps(this.tempsBrutMs), 6, { teinte: CLAIR }).setAlpha(0);
+        this.separateur = this.add.rectangle(350, 340, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0);
+        this.libelleFinal = ecrire(this, 350, 372, "TEMPS NET", 3, { teinte: GRIS_VIOLET }).setAlpha(0);
+        this.tempsFinal = ecrire(this, 350, 432, formaterTemps(this.tempsBrutMs), 6, { teinte: CLAIR }).setAlpha(0);
         this.zoneNom = this.add.container(0, 0).setDepth(10); // la saisie du nom ou le message sous le temps final
 
         // panneau de droite : le classement
-        this.entete = ecrire(this, 930, 206, "CLASSEMENT", 4, { teinte: CLAIR }).setAlpha(0);
-        this.traitEntete = this.add.rectangle(930, 236, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0);
+        this.entete = ecrire(this, 930, 200, "PANTHEON", 4, { teinte: CLAIR }).setAlpha(0);
+        this.traitEntete = this.add.rectangle(930, 228, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0);
+        // les titres des colonnes : le temps net (celui qui classe), le temps total et le nombre de morts
+        this.titresColonnes = [ecrire(this, COL_NET, 246, "NET", 2, { ancre: "droite", teinte: GRIS_VIOLET }), ecrire(this, COL_BRUT, 246, "TOTAL", 2, { ancre: "droite", teinte: GRIS_VIOLET }),
+            ecrire(this, COL_MORTS, 246, "MORTS", 2, { ancre: "droite", teinte: GRIS_VIOLET })];
+        this.titresColonnes.forEach((t) => t.setAlpha(0));
         this.groupeTableau = this.add.container(0, 0).setDepth(10);
         this.pied = ecrire(this, 640, 676, "", 2, { teinte: GRIS_VIOLET }); // l'aide des touches, en bas
     }
@@ -238,11 +258,12 @@ export default class classement extends Phaser.Scene {
             jouerSon(this, "porte");
         });
         apres(850, () => { montrer(this.sousTitre); montrer([this.plaqueGauche, this.plaqueDroite], 350); });
-        apres(1250, () => { montrer([this.lignes[0].nom, this.lignes[0].valeur]); montrer([this.entete, this.traitEntete]); this.afficherTableau(); });
-        apres(1550, () => montrer([this.lignes[1].nom, this.lignes[1].valeur]));
-        apres(1850, () => { montrer([this.lignes[2].nom, this.lignes[2].valeur]); jouerSon(this, "ennemi_touche"); });
-        apres(2250, () => montrer([this.separateur, this.libelleFinal, this.tempsFinal]));
-        apres(2700, () => { // le temps FINAL se décompte jusqu'au temps net : les points « mangent » le temps
+        apres(1250, () => { montrer([this.lignes[0].nom, this.lignes[0].valeur]); montrer([this.entete, this.traitEntete, ...this.titresColonnes]); this.afficherTableau(); });
+        apres(1500, () => montrer([this.lignes[1].nom, this.lignes[1].valeur]));
+        apres(1750, () => montrer([this.lignes[2].nom, this.lignes[2].valeur]));
+        apres(2000, () => { montrer([this.lignes[3].nom, this.lignes[3].valeur]); jouerSon(this, "ennemi_touche"); });
+        apres(2400, () => montrer([this.separateur, this.libelleFinal, this.tempsFinal]));
+        apres(2850, () => { // le temps FINAL se décompte jusqu'au temps net : les points « mangent » le temps
             const etat = { v: this.tempsBrutMs };
             this.tweens.add({
                 targets: etat, v: this.tempsNetMs, duration: 1200, ease: "Cubic.Out",
@@ -270,13 +291,49 @@ export default class classement extends Phaser.Scene {
 
     decider() { // la séquence est finie et le classement chargé : saisie du nom ou simple affichage
         if (!this.sequenceFinie || !this.apiPrete || this.etape !== "intro") return;
-        const score = tempsVersScore(this.tempsNetMs);
+        const score = empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts);
         const dernier = this.tableau[this.tableau.length - 1];
         const nouveauRecord = Boolean(this.api) && (this.tableau.length < 10 || score > dernier.score); // à égalité on ne passe pas devant
         this.pret = false;
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
-        if (nouveauRecord) this.ouvrirSaisie();
-        else this.ouvrirClassement(this.api ? "PAS DANS LE TOP 10" : "CLASSEMENT INDISPONIBLE");
+        if (nouveauRecord) this.ouvrirChoix();
+        else this.ouvrirClassement(this.api ? "PAS DANS LE TOP 10" : "PANTHEON INDISPONIBLE");
+    }
+
+    // ---- le choix d'enregistrer son score ou non : deux petits boutons OUI / NON sous la bannière « nouveau record » ----
+
+    ouvrirChoix() {
+        this.etape = "choix";
+        this.zoneNom.removeAll(true);
+        const banniere = ecrire(this, 350, 482, "NOUVEAU RECORD", 4, { teinte: OR });
+        this.tweens.add({ targets: banniere, alpha: 0.45, duration: 480, yoyo: true, repeat: -1 });
+        this.zoneNom.add([banniere, ecrire(this, 350, 524, "ENREGISTRER TON SCORE", 3, { teinte: CLAIR })]);
+        this.boutonsChoix = ["OUI", "NON"].map((nom, i) => {
+            const x = 350 + (i === 0 ? -80 : 80);
+            const fond = this.add.image(x, 590, plaque(this, 32, 16, false)).setScale(3);
+            const mot = ecrire(this, x, 590, nom, 5);
+            this.zoneNom.add([fond, mot]);
+            return { fond, mot };
+        });
+        this.pied.destroy();
+        this.pied = ecrire(this, 640, 696, "GAUCHE DROITE  CHOISIR    I  VALIDER", 2, { teinte: GRIS_VIOLET });
+        this.afficherChoix();
+    }
+
+    afficherChoix() { // le choix en cours en or, l'autre éteint
+        this.boutonsChoix.forEach((b, i) => {
+            const choisi = i === this.enregistrer;
+            b.fond.setTint(choisi ? OR : 0xffffff).setAlpha(choisi ? 1 : 0.55);
+            b.mot.lettres.forEach((l) => l && l.setTint(choisi ? OR : GRIS_VIOLET));
+        });
+    }
+
+    validerChoix() {
+        jouerSon(this, "porte");
+        this.pret = false; // la même touche ne doit pas valider aussi la saisie du nom
+        this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
+        if (this.enregistrer === 0) this.ouvrirSaisie();
+        else this.ouvrirClassement("SCORE NON ENREGISTRE"); // le joueur ne veut pas apparaître dans le panthéon
     }
 
     // ---- la saisie du nom : trois cases, la case choisie en or avec une flèche au-dessus et en dessous ----
@@ -327,7 +384,10 @@ export default class classement extends Phaser.Scene {
 
     touche(code) {
         const valider = TOUCHES_VALIDER.includes(code);
-        if (this.etape === "saisie") {
+        if (this.etape === "choix") {
+            if (code === "ArrowLeft" || code === "ArrowRight") { this.enregistrer = code === "ArrowLeft" ? 0 : 1; this.afficherChoix(); }
+            else if (valider && this.pret) this.validerChoix();
+        } else if (this.etape === "saisie") {
             if (code === "ArrowUp" || code === "ArrowDown") {
                 const decalage = code === "ArrowUp" ? 1 : -1;
                 const index = (LETTRES.indexOf(this.nom[this.curseur]) + decalage + LETTRES.length) % LETTRES.length; // % : on boucle de Z à A
@@ -352,7 +412,7 @@ export default class classement extends Phaser.Scene {
         this.etape = "envoi"; // bloque les appuis pendant l'envoi
         const nom = this.nom.join("");
         jouerSon(this, "porte");
-        const resultat = await this.api.ajoute_score(this.sys.game.config.idGame, nom, tempsVersScore(this.tempsNetMs));
+        const resultat = await this.api.ajoute_score(this.sys.game.config.idGame, nom, empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts));
         this.tableau = await this.api.get_tab_score(this.sys.game.config.idGame); // le tableau à jour, avec le nouveau temps
         this.nomJoueur = resultat.success ? nom : null; // pour surligner sa ligne
         this.pret = false;
@@ -363,13 +423,14 @@ export default class classement extends Phaser.Scene {
     // ---- le classement : 10 lignes, la ligne du joueur en rose ----
 
     lignesTableau() { // les 10 lignes à afficher : le top 10 de la borne, avec la ligne du joueur glissée à sa place pendant la saisie
-        const net = Math.round(this.tempsNetMs);
-        const reel = this.tableau.map((l) => ({ nom: String(l.player), temps: scoreVersTemps(l.score) }));
+        const mien = deballer(empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts)); // mes chiffres, arrondis comme dans la base
+        const reel = this.tableau.map((l) => ({ nom: String(l.player), ...deballer(l.score), score: l.score }));
         if (this.etape === "saisie") {
-            const i = reel.findIndex((l) => l.temps > net); // à égalité, le joueur passe derrière
-            reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), temps: net, moi: true });
+            const monScore = empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts);
+            const i = reel.findIndex((l) => l.score < monScore); // à égalité parfaite, le joueur passe derrière
+            reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), ...mien, moi: true });
         } else if (this.nomJoueur) {
-            const moi = reel.find((l) => l.nom === this.nomJoueur && l.temps === net);
+            const moi = reel.find((l) => l.nom === this.nomJoueur && l.net === mien.net && l.brut === mien.brut && l.morts === mien.morts);
             if (moi) moi.moi = true;
         }
         return reel.slice(0, 10);
@@ -382,14 +443,17 @@ export default class classement extends Phaser.Scene {
         const lignes = this.lignesTableau();
         const couleurRang = [OR, 0xe7e0e9, OR_SOMBRE];
         for (let i = 0; i < 10; i++) {
-            const y = 268 + i * 36;
+            const y = 276 + i * 34;
             const l = lignes[i];
             const teinte = l ? (l.moi ? ROSE : i < 3 ? couleurRang[i] : LAVANDE) : 0x5f4f6e;
             const elements = [];
             if (l && l.moi) elements.push(this.add.rectangle(930, y, 480, 32, 0x372b3e, 0.9)); // un fond derrière la ligne du joueur
-            elements.push(ecrire(this, 700, y, String(i + 1).padStart(2, "0"), 3, { ancre: "gauche", teinte }));
-            elements.push(ecrire(this, 790, y, l ? l.nom.padEnd(NB_LETTRES, " ") : "---", 3, { ancre: "gauche", teinte }));
-            elements.push(ecrire(this, 1168, y, l ? formaterTemps(l.temps) : "--:--.--", 3, { ancre: "droite", teinte }));
+            const secondaire = l && l.moi ? ROSE : 0x8a779b; // le temps total et les morts sont plus discrets que le temps net
+            elements.push(ecrire(this, 686, y, String(i + 1).padStart(2, "0"), 3, { ancre: "gauche", teinte }));
+            elements.push(ecrire(this, 740, y, l ? l.nom.padEnd(NB_LETTRES, " ") : "---", 3, { ancre: "gauche", teinte }));
+            elements.push(ecrire(this, COL_NET, y, l ? formaterTemps(l.net) : "--:--.--", 3, { ancre: "droite", teinte }));
+            elements.push(ecrire(this, COL_BRUT, y, l && l.brut !== null ? formaterTemps(l.brut) : "--:--.--", 2, { ancre: "droite", teinte: l ? secondaire : teinte })); // (ancien score : pas de temps total)
+            elements.push(ecrire(this, COL_MORTS, y, l && l.morts !== null ? String(l.morts).padStart(2, "0") : "--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
             this.groupeTableau.add(elements);
             if (l && l.moi) this.clignote.push(this.tweens.add({ targets: elements, alpha: 0.55, duration: 380, yoyo: true, repeat: -1 }));
         }

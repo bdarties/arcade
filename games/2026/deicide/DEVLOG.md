@@ -15,8 +15,8 @@
 
 ## Raccourcis de la borne (`systemes/raccourcis.js`)
 - Les boutons physiques sont nommés A à F ; ils envoient I, O, P, K, L et ; : **C = P** et **F = ;**. Les deux boutons du centre sont select (Z) et start (X).
-- **Z + X maintenus 1,5 s** : retour à l'écran d'accueil (reset pour le joueur suivant). **C + F maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
-- Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X ouvre la pause, sauf si Z est déjà maintenu.
+- **C + F maintenus 1,5 s** (P et ; au clavier, la touche M en AZERTY) : retour à l'écran d'accueil (reset pour le joueur suivant). **Z + B maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
+- Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X (start) ouvre la pause.
 
 ## Le son des combats de boss
 - **Musique plus forte** : le metal passe de 0,2 à 0,42 de volume de base (le niveau est à 0,3 avec un morceau plus doux) ; le réglage « Musique » du menu pause la baisse toujours.
@@ -26,6 +26,13 @@
 - **Plus de bruit avant une attaque du boss** : le son de préparation (incantation du mage, puis grondement, puis laser grave) n'a convaincu personne, il est retiré. Les attaques gardent seulement leurs bruits d'impact (orbes, rayon), accordés et calés sur les croches. Un bruit de préparation pourra être ajouté plus tard (`jouerSonSurLeTemps` sait déjà caler un son sur la musique).
 - **Autre musique pour le dernier boss** (13/10) : « Boss Battle #9 [Metal] » de nene (CC0, OpenGameArt), plus dure que la #8. Mesurée avec le fichier MIDI du morceau : 113 battements par minute (un battement = 531 ms), l'intro fait 8 mesures et la boucle 20 mesures ; les notes sont en mi mineur (E, D, C, G, F#, B, A), donc un ton au-dessus de ré mineur : les bruitages accordés prennent +200 centièmes de ton. Le pas de rythme passe à la double-croche (133 ms) : avec la croche (265 ms), une annonce de 630 ms tombait à 531 ms, et la colonne de lumière aurait tombé 31 ms après s'être figée (impossible à éviter). Volume de base 0,18 au lieu de 0,42 : la #9 est 7 dB plus forte (mesure en LUFS : -7,6 contre -14,8). Le Soldat du niveau 1 garde la #8.
 - Le robot lui-même (tir, saut) reste instantané : on ne retarde jamais une action du joueur.
+
+## Le panthéon (anciennement « classement », `scenes/classement.js`)
+- **Nom** : le tableau des scores s'appelle maintenant le panthéon à l'écran (le fichier et la scène gardent le nom `classement`, pour ne pas tout renommer).
+- **Choix d'enregistrer** : si le temps entre dans le top 10, deux boutons OUI / NON demandent « enregistrer ton score » avant la saisie du nom. NON : rien n'est envoyé, le tableau reste tel quel.
+- **Stats** : le panneau de gauche montre le temps total (réel, sans rien retirer), le nombre de morts, les points, le bonus, puis le temps net. Le tableau montre pour chaque joueur le temps net (celui qui classe), le temps total et les morts.
+- **Pourquoi un score « empaqueté »** : l'API de la borne ne stocke que le jeu, le nom et UN entier par score, et on ne doit pas modifier `app/` (code partagé). On range donc trois chiffres dans l'entier : `(999999 - temps net en cs) x 100 000 000 + (999999 - temps total en cs) x 100 + (99 - morts)`. Le temps net pèse le plus : le tri de la borne (plus grand en tête) classe comme avant, puis le temps total le plus court, puis le moins de morts. Le plus gros nombre fait environ 1e14, sous la limite des entiers de JavaScript (9e15). Les anciens scores (10 000 000 - temps net en ms) sont reconnus (ils sont plus petits que 1e8) et affichés sans temps total ni morts.
+- **Morts** : `registry "morts"`, remis à 0 au lancement d'une partie (menu.js, raccourcis.js), +1 à chaque `mourir()` de niveau.js.
 
 ## Le mode 1 contre 1 (`versus.js`)
 - **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.

@@ -28,6 +28,6 @@ export function finirPartie(scene) { // arrête le chrono et envoie le joueur à
     scene.time.delayedCall(DELAI_FIN, () => {
         const tempsBrutMs = scene.registry.get("chrono");
         const points = scene.registry.get("score");
-        scene.scene.start("classement", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points) });
+        scene.scene.start("classement", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0 });
     });
 }
