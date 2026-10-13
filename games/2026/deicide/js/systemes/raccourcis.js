@@ -120,12 +120,21 @@ export function activerRaccourcis(jeu) {
     boite.append(texte, fond);
     document.body.appendChild(boite);
 
+    // Après un reset les boutons sont encore enfoncés : le clavier répète alors la touche (un « keydown » toutes les 30 ms), et le combo repartait aussitôt,
+    // sans fin (un reset toutes les 0,5 s tant qu'on tient les boutons : le jeu redémarrait en boucle et restait figé sur la borne). Ce verrou
+    // l'empêche : après un reset il faut RELÂCHER tous les boutons avant de pouvoir en déclencher un autre.
+    let verrou = false;
+
     function annuler() { combo = null; boite.style.display = "none"; }
 
     window.addEventListener("keydown", (evenement) => {
+        // Un vrai appui commence toujours par un « keydown » qui n'est pas une répétition. Si les boutons étaient DÉJÀ enfoncés quand la page s'est chargée
+        // (au lancement du jeu sur la borne), le navigateur ne voit que des répétitions : on les ignore, sinon le reset se déclencherait tout seul.
+        if (evenement.repeat) return;
         const touche = identifiant(evenement);
         if (!CODES.includes(touche)) return;
         enfoncees.add(touche);
+        if (verrou) return; // un reset vient d'avoir lieu : on attend que tout soit relâché
         const trouve = COMBOS.find((c) => c.touches.every((code) => enfoncees.has(code))); // les deux touches d'un combo sont enfoncées ensemble
         if (trouve && combo === null) { combo = trouve; debut = performance.now(); }
     });
@@ -133,16 +142,17 @@ export function activerRaccourcis(jeu) {
         const touche = identifiant(evenement);
         if (!CODES.includes(touche)) return;
         enfoncees.delete(touche);
+        if (verrou && enfoncees.size === 0) verrou = false; // tout est relâché : un nouveau reset est possible
         if (combo && !combo.touches.every((code) => enfoncees.has(code))) annuler(); // un des deux boutons est relâché : on annule
     });
-    window.addEventListener("blur", () => { enfoncees.clear(); annuler(); }); // la page perd le focus : on oublie les touches
+    window.addEventListener("blur", () => { enfoncees.clear(); verrou = false; annuler(); }); // la page perd le focus : on oublie les touches
 
     setInterval(() => { // vérifie la durée et met la barre à jour
         if (combo === null) return;
         const maintenu = performance.now() - debut;
         if (maintenu >= DUREE) {
             const action = combo.action;
-            enfoncees.clear();
+            verrou = true; // (les touches restent dans « enfoncees » : elles sont toujours physiquement enfoncées)
             annuler();
             action(jeu);
             return;
