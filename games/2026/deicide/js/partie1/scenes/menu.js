@@ -7,6 +7,7 @@
 import { chargerJeu } from "../systemes/chargement.js"; // charge tous les assets du jeu pendant que le menu s'affiche
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
+import { VERSION } from "../../version.js"; // le numéro de version du jeu (voir outils/version.py)
 import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
@@ -72,6 +73,7 @@ export default class menu extends Phaser.Scene {
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
     this.boutonDeux.dalle.on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
+    this.add.text(1262, 686, VERSION, { fontFamily: "monospace", fontSize: "20px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(1, 1).setDepth(10); // en bas à droite : sur la borne, on voit si le jeu est à jour
     const aide = this.add.text(640, 674, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
     // le but du jeu, sous le titre
     this.add.text(640, 275, "BATS LE DIEU DE LA LUMIÈRE LE PLUS VITE POSSIBLE", { fontFamily: "monospace", fontSize: "22px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
