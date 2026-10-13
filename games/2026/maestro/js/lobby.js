@@ -29,18 +29,20 @@ const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 const SOLIDES = [
   [0, 1434, 1024, 102], // le sol
   [0, 1328, 352, 32], // l'estrade de la porte 1 (« Les Coulisses »)
-  [352, 1328, 96, 16], // le bord droit de cette estrade
-  [720, 1321, 256, 39], // la marche devant la grille de la porte 3
-  [528, 1298, 160, 62], // le panneau bleu à droite de la billetterie
-  [350, 1282, 142, 20], // la plateforme du milieu (pied de la longue échelle)
-  [450, 1250, 102, 22], // la petite plateforme au-dessus
-  [608, 1201, 96, 47], // la petite plateforme suspendue (pied de l'échelle de droite)
-  [528, 1026, 160, 62], // le panneau bleu du haut
-  [336, 960, 208, 40], // la poutre en haut de la longue échelle
+  [400, 1234, 224, 16], // plateforme centrée sur x = 512, au pied de la longue échelle
+  [724, 1330, 300, 32], // le portail complet, contre le bord droit
+  [610, 1401, 14, 15], // les marches de l'escalier vers le portail
+  [624, 1386, 10, 30],
+  [634, 1371, 20, 45],
+  [654, 1354, 20, 62],
+  [674, 1342, 28, 74],
+  [702, 1330, 22, 86],
+  [10, 1076, 332, 12], // le dessus du rideau de la porte 1 est praticable
+  [0, 814, 192, 16], // la plateforme contre le bord gauche, au-dessus du rideau
+  [512, 974, 180, 16], // la poutre centrée sur l'arrivée de l'échelle (x = 602)
   [336, 752, 256, 32], // les plateformes qui mènent à la porte 2
-  [608, 752, 240, 80],
-  [240, 640, 160, 80],
-  [624, 592, 240, 48],
+  [624, 754, 224, 16], // bord doré de la plateforme sous l'échelle de droite
+  [624, 596, 240, 44], // dessus visible de la plateforme à l'arrivée de cette échelle
   [350, 508, 270, 18] // la passerelle sous la porte 2 : sans elle, on ne pouvait pas se tenir devant
 ];
 
@@ -49,10 +51,9 @@ const SOLIDES = [
 // ajustée sur le dessus de la plateforme la plus proche, voir trouverEchelles).
 const ECHELLES = [
   { x: 221, haut: 1328, bas: 1440 }, // sous l'estrade de la porte 1 (« Les Coulisses »)
-  { x: 382, haut: 976, bas: 1281 }, // la longue échelle du milieu
-  { x: 642, haut: 1034, bas: 1210 }, // à droite de la billetterie
-  { x: 815, haut: 596, bas: 756 }, // sous la porte 2 (« Les Ombres chinoises »)
-  { x: 470, haut: 752, bas: 960, dessiner: true } // AJOUTÉE : relie la poutre du bas aux plateformes du haut (rien n'y menait)
+  { x: 602, haut: 974, bas: 1234 }, // du bord droit de la plateforme centrale au milieu de la poutre
+  { x: 174, haut: 814, bas: 1076 }, // du dessus du rideau à la plateforme supérieure gauche
+  { x: 814, haut: 596, bas: 754 } // sous la porte 2 (« Les Ombres chinoises »)
 ];
 
 // Où apparaissent les joueurs (x, et y du sol sur lequel ils se posent)
@@ -64,7 +65,7 @@ const SPAWN = { x: 450, solY: 1434 };
 const PORTES = [
   { nom: "1 — LES COULISSES", scene: "niveau1", x: 104, y: 1250, largeur: 168, hauteur: 184 },
   { nom: "2 — LES OMBRES CHINOISES", scene: null, x: 400, y: 430, largeur: 224, hauteur: 130 },
-  { nom: "3 — LA GRANDE SCÈNE", scene: null, x: 760, y: 1160, largeur: 144, hauteur: 152 }
+  { nom: "3 — LA GRANDE SCÈNE", scene: null, x: 776, y: 1160, largeur: 192, hauteur: 170 }
 ];
 
 export default class lobby extends Phaser.Scene {
