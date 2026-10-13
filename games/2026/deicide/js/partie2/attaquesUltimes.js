@@ -97,7 +97,7 @@ function trous() { // trois trous : chacun à 280 px au moins du précédent (at
 // ---------------------------------------------------------------------------------------------
 const VITESSE_HORLOGE = 0.7; // rad/s (1,15 puis 0,95 avant : plus lente, donc plus facile à esquiver)
 const EPAISSEUR_HORLOGE = 20; // px, l'épaisseur des lames (34 pour les lasers du boss)
-const DUREE_HORLOGE = 2300; // ms, dormants compris (1,55 s de lames actives)
+const DUREE_HORLOGE = 1650; // ms, dormants compris (0,9 s de lames actives : 2,2 s puis 2,3 s avant, trop long pour les éviter)
 const GRACE_HORLOGE = 750; // ms pendant lesquels les lames sont dormantes à leur apparition (voir poserRayonTournant)
 const DISTANCE_PIVOT = 380; // le pivot est choisi à au moins cette distance (horizontale) du robot : la lame ne tourne jamais autour de lui
 const ZONE_CENTRE_HORLOGE = 230; // px de part et d'autre du centre de l'arène (x = 640) où le robot doit se trouver pour que l'horloge soit lancée

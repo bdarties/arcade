@@ -21,13 +21,13 @@ export function bossTue(scene, boss, profil) { // à appeler dans boss.js quand 
     finirPartie(scene); // arrête le chrono, puis ouvre l'écran de fin
 }
 
-export function finirPartie(scene) { // arrête le chrono et envoie le joueur à l'écran de classement
+export function finirPartie(scene) { // arrête le chrono et envoie le joueur aux crédits, puis à l'écran de classement
     if (scene.partieFinie) return; // déjà appelée (deux déclenchements en même temps) : on ne le fait qu'une fois
     scene.partieFinie = true;
     scene.registry.set("chronoActif", false); // le chrono s'arrête tout de suite : le temps de l'animation ne compte pas
     scene.time.delayedCall(DELAI_FIN, () => {
         const tempsBrutMs = scene.registry.get("chrono");
         const points = scene.registry.get("score");
-        scene.scene.start("classement", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0 });
+        scene.scene.start("credits", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0 }); // les crédits d'abord, puis le panthéon (credits.js les lui transmet)
     });
 }

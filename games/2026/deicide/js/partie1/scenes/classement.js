@@ -387,7 +387,7 @@ export default class classement extends Phaser.Scene {
         this.zoneNom.removeAll(true);
         this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
         this.pied.destroy();
-        this.pied = ecrire(this, 640, 696, "I  CONTINUER", 3, { teinte: CLAIR });
+        this.pied = ecrire(this, 640, 696, "I  RETOUR A L'ACCUEIL", 3, { teinte: CLAIR });
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 });
         this.afficherTableau();
     }
@@ -416,7 +416,8 @@ export default class classement extends Phaser.Scene {
             this.afficherTableau(); // la ligne du joueur suit les lettres
         } else if (this.etape === "classement" && valider && this.pret) {
             jouerSon(this, "porte");
-            this.scene.start("credits"); // la fin du jeu : les crédits, qui ramènent ensuite à l'accueil pour la partie suivante
+            this.sound.stopAll();
+            this.scene.start("menu"); // la fin du jeu : le panthéon est la dernière chose vue (les crédits sont passés avant), retour à l'accueil pour la partie suivante
         }
     }
 
