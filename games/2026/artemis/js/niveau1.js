@@ -427,17 +427,19 @@ export default class niveau1 extends Phaser.Scene {
 
   // la caméra suit le milieu des joueurs
   placerCible() {
-    const n = this.joueurs.length;
-    const x = this.joueurs.reduce((somme, j) => somme + j.sprite.x, 0) / n;
-    const y = this.joueurs.reduce((somme, j) => somme + j.sprite.y, 0) / n;
+    const en_jeu = this.joueursEnJeu();
+    const n = en_jeu.length;
+    const x = en_jeu.reduce((somme, j) => somme + j.sprite.x, 0) / n;
+    const y = en_jeu.reduce((somme, j) => somme + j.sprite.y, 0) / n;
     this.cible_camera.setPosition(x, y);
   }
 
   // zoom voulu : le plus grand possible (jusqu'à ZOOM_CAMERA) pour que tous les joueurs tiennent à l'écran, avec une marge
   // avec un seul joueur la largeur et la hauteur sont celles de la marge seule : on retombe sur ZOOM_CAMERA
   zoomVoulu() {
-    const xs = this.joueurs.map((j) => j.sprite.x);
-    const ys = this.joueurs.map((j) => j.sprite.y);
+    const en_jeu = this.joueursEnJeu();
+    const xs = en_jeu.map((j) => j.sprite.x);
+    const ys = en_jeu.map((j) => j.sprite.y);
     const largeur = Math.max(...xs) - Math.min(...xs) + 2 * MARGE_ZOOM;
     const hauteur = Math.max(...ys) - Math.min(...ys) + 2 * MARGE_ZOOM;
     return Phaser.Math.Clamp(Math.min(this.scale.width / largeur, this.scale.height / hauteur), ZOOM_MIN, ZOOM_CAMERA);
@@ -456,7 +458,7 @@ export default class niveau1 extends Phaser.Scene {
     if (this.joueurs.length < 2) return;
     const vue = this.cameras.main.worldView;
     if (vue.width <= 2 * MARGE_ECRAN) return; // la caméra n'a pas encore calculé sa vue (toute première image)
-    this.joueurs.forEach((j) => {
+    this.joueursEnJeu().forEach((j) => { // un joueur à terre reste où il est
       j.sprite.x = Phaser.Math.Clamp(j.sprite.x, vue.left + MARGE_ECRAN, vue.right - MARGE_ECRAN);
       j.sprite.y = Phaser.Math.Clamp(j.sprite.y, vue.top + MARGE_ECRAN, vue.bottom - MARGE_ECRAN);
     });
@@ -534,6 +536,23 @@ export default class niveau1 extends Phaser.Scene {
     caillou.destroy();
   }
 
+  // un joueur à 0 PV est à terre : il ne bouge plus, les ennemis l'ignorent, il ne bloque pas les passages
+  // seule la statue de la salle safe le relève (cf. recevoirOffrande) ; la partie est perdue quand tous sont à terre
+  estMort(j) {
+    return j.pv <= 0;
+  }
+
+  // les joueurs encore debout (tous, si plus personne ne l'est : c'est l'image du game over)
+  joueursEnJeu() {
+    const debout = this.joueurs.filter((j) => !this.estMort(j));
+    return debout.length > 0 ? debout : this.joueurs;
+  }
+
+  // offrande à la statue (cf. offrande.js) : le joueur à terre est servi avant celui qui donne
+  beneficiaireOffrande(j) {
+    return this.joueurs.find((autre) => this.estMort(autre)) || j;
+  }
+
   // offrande à la statue (cf. offrande.js) : nombre de pierres pour tout récupérer (0 si le joueur est au maximum)
   // une stamina à compléter seule coûte une pierre
   pierresPourSoigner(j) {
@@ -547,6 +566,12 @@ export default class niveau1 extends Phaser.Scene {
     j.pv = Math.min(j.pv + nombre * PV_PAR_PIERRE, PV_MAX);
     j.stamina = STAMINA_MAX;
     j.essouffle = false;
+    if (avant <= 0 && j.pv > 0) { // relevé : il reparaît à côté de son coéquipier
+      const debout = this.joueurs.find((autre) => autre !== j && !this.estMort(autre));
+      if (debout) j.sprite.setPosition(debout.sprite.x, debout.sprite.y);
+      j.sprite.clearTint();
+      j.torche_allumee = true;
+    }
     return j.pv - avant;
   }
 
@@ -611,6 +636,18 @@ export default class niveau1 extends Phaser.Scene {
   // déplacement, actions et animation d'un joueur, selon ses touches
   majJoueur(j, secondes) {
     const touches = j.touches;
+    if (this.estMort(j)) {
+      // à terre : grisé et immobile ; on vide les appuis en attente pour qu'ils ne partent pas une fois relevé
+      j.frappe = null;
+      j.torche_allumee = false;
+      j.sprite.setVelocity(0, 0).setTint(0x777788);
+      j.sprite.anims.stop();
+      j.sprite.setDepth(j.sprite.y);
+      [touches.changer_equipement, touches.frapper_tirer, touches.torche].forEach((touche) => Phaser.Input.Keyboard.JustDown(touche));
+      fct.majBarre(j.barre_vie, j.pv, PV_MAX);
+      fct.majBarre(j.barre_stamina, j.stamina, STAMINA_MAX);
+      return;
+    }
     this.majEffets(j, secondes);
     let vx = 0;
     let vy = 0;
@@ -690,23 +727,25 @@ export default class niveau1 extends Phaser.Scene {
 
     // on lit les appuis à chaque image, même loin d'un passage : JustDown garde un appui en mémoire
     // jusqu'à sa lecture, sinon un appui d'avant servirait au moment d'arriver près de l'échelle
-    const appuis = this.joueurs.filter((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir));
+    // un joueur à terre ne compte pas : il ne bloque pas le passage et suit les autres
+    const en_jeu = this.joueursEnJeu();
+    const appuis = this.joueurs.filter((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir) && en_jeu.includes(j));
 
     this.passage_proche = null;
     for (const p of passages) {
-      const proches = this.joueurs.filter((j) =>
+      const proches = en_jeu.filter((j) =>
         Phaser.Math.Distance.Between(j.sprite.body.center.x, j.sprite.body.center.y, p.objet.x, p.objet.y) <= PORTEE_INTERACTION);
       if (proches.length === 0) continue;
 
-      const tous = proches.length === this.joueurs.length;
+      const tous = proches.length === en_jeu.length;
       if (tous && appuis.some((j) => proches.includes(j))) {
         this.changerDeNiveau(p.niveau, p.arrivee);
         return true;
       }
 
       // indication : "[I] descendre" quand tout le monde est là, sinon "descendre 1/2"
-      const touches = this.joueurs.map((j) => j.definition.touches.interagir).join(" / ");
-      this.compteur_echelle.setText(tous ? "[" + touches + "] " + p.verbe : p.verbe + " " + proches.length + "/" + this.joueurs.length);
+      const touches = en_jeu.map((j) => j.definition.touches.interagir).join(" / ");
+      this.compteur_echelle.setText(tous ? "[" + touches + "] " + p.verbe : p.verbe + " " + proches.length + "/" + en_jeu.length);
       this.compteur_echelle.setColor(p.couleur.texte);
       // la flèche oscille doucement, dans le sens du passage
       const oscillation = Math.sin(this.time.now / 180) * 3;
