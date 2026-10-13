@@ -1,8 +1,8 @@
-// arene.js : l'arène du Soldat de la Lumière, tout en haut du niveau 1 (appelée à chaque image par niveau1.js : verifierArene)
+// arene.js : l'arène du Dieu de la Lumière, tout en haut du niveau 1 (appelée à chaque image par niveau1.js : verifierArene)
 //  1. Quand le robot arrive au-dessus du grand sol de la ligne 25, la caméra se fige sur l'arène, l'ouverture du sol se referme et le
-//    Soldat apparaît.
+//    Dieu apparaît.
 //  2. Un mur de pierre ferme aussi le côté droit de l'arène (poserMurDroit).
-//  3. Quand le Soldat est vaincu (boss.js, enrager), il brise ce mur (briserMurDroit) : « FUIS >>> » s'affiche ; le robot qui passe par l'ouverture
+//  3. Quand le Dieu est vaincu (boss.js, enrager), il brise ce mur (briserMurDroit) : « FUIS >>> » s'affiche ; le robot qui passe par l'ouverture
 //     arrive au niveau 2 (sortirParLaDroite).
 import { faireApparaitreBoss } from "../ennemis/boss.js";
 import * as effets from "../systemes/effets.js"; // éclats
@@ -14,10 +14,11 @@ const COLONNES_MUR = [38, 39]; // le mur de droite de l'arène : les deux derni�
 const LIGNES_MUR = [0, 24]; // de la ligne 0 à la ligne 24 (le sol de l'arène est la ligne 25)
 
 export function verifierArene(scene) { // à appeler dans update() : lance l'arène quand le joueur arrive en haut
-    if (scene.fuiteOuverte) { sortirParLaDroite(scene); return; } // le Soldat est enragé et le mur est brisé : on fuit
+    if (scene.fuiteOuverte) { sortirParLaDroite(scene); return; } // le Dieu est enragé et le mur est brisé : on fuit
     if (scene.areneLancee) return; // l'arène est déjà lancée : on ne refait rien
     if (scene.player.body.bottom > HAUT_DU_SOL) return; // les pieds du joueur sont encore sous le sol de l'arène : il n'est pas arrivé
     scene.areneLancee = true; // on note que l'arène est lancée, pour ne le faire qu'une seule fois
+    scene.registry.set("scoreArene", scene.registry.get("score")); // le score en entrant : si le robot meurt ici, il le retrouve (voir niveau.js, mourir)
     const camera = scene.cameras.main; // la caméra du niveau
     camera.stopFollow(); // la caméra arrête de suivre le joueur...
     camera.pan(640, HAUT_DU_SOL - 360 + 32, 800, "Sine.easeInOut"); // ...et glisse en 0,8 s pour cadrer toute l'arène, sol compris
@@ -32,14 +33,14 @@ export function verifierArene(scene) { // à appeler dans update() : lance l'ar�
     mur.setAlpha(0); // le mur est invisible au départ...
     scene.tweens.add({ targets: mur, alpha: 1, duration: 300 }); // ...et apparaît en 0,3 s
     camera.shake(300, 0.01); // tremblement : on sent que la salle se referme
-    poserMurDroit(scene); // le mur de droite, qui se brisera quand le Soldat s'enragera
+    poserMurDroit(scene); // le mur de droite, qui se brisera quand le Dieu s'enragera
     scene.areneSolY = HAUT_DU_SOL; // le sol de l'arène : la colonne de lumière du boss tombe jusque-là
     scene.areneCentreX = 640; // le milieu de l'arène : le boss flotte autour
     // le boss apparaît en fondu une fois la caméra en place, en haut de la salle
     scene.time.delayedCall(1000, () => faireApparaitreBoss(scene, 640, HAUT_DU_SOL - 360 + 32 - 80));
 }
 // ---------------------------------------------------------------------------------------------
-// Le mur de droite : posé quand l'arène se ferme, brisé quand le Soldat s'enrage (boss.js, enrager)
+// Le mur de droite : posé quand l'arène se ferme, brisé quand le Dieu s'enrage (boss.js, enrager)
 // ---------------------------------------------------------------------------------------------
 
 function casesDuMur() {
@@ -78,9 +79,9 @@ function poserMurDroit(scene) {
     scene.murDroit = mur;
 }
 
-// Le Soldat enragé détruit le mur, en plusieurs temps bien visibles : il charge une boule d'énergie, tire un rayon sur le mur, le mur
+// Le Dieu enragé détruit le mur, en plusieurs temps bien visibles : il charge une boule d'énergie, tire un rayon sur le mur, le mur
 // s'embrase puis éclate.
-// `boss` : le sprite du Soldat. Le robot peut bouger pendant ce temps ; la sortie ne s'ouvre qu'à l'explosion.
+// `boss` : le sprite du Dieu. Le robot peut bouger pendant ce temps ; la sortie ne s'ouvre qu'à l'explosion.
 export function briserMurDroit(scene, boss) {
     if (!scene.murDroit) return;
     const mur = scene.murDroit;
@@ -134,7 +135,7 @@ function casserMurDroit(scene) { // le mur éclate : gros éclats de pierre, fla
     const fleches = [0, 1, 2].map((i) => scene.add.text(1050 + i * 62, hauteur - 130, ">", { fontFamily: "monospace", fontSize: "88px", color: "#ffd9a0", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setDepth(100));
     // elles clignotent l'une après l'autre : ça « court » vers la droite
     fleches.forEach((f, i) => scene.tweens.add({ targets: f, alpha: { from: 0.15, to: 1 }, duration: 260, delay: i * 130, yoyo: true, repeat: -1, repeatDelay: 260 }));
-    const texte = scene.add.text(640, 90, "FUIS  >>>", { fontFamily: "monospace", fontSize: "48px", color: "#ffb4a8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    const texte = scene.add.text(640, 90, "FUIS  >>>\nBOUTON E : DASH", { fontFamily: "monospace", fontSize: "48px", align: "center", color: "#ffb4a8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     scene.tweens.add({ targets: texte, scale: { from: 1, to: 1.12 }, duration: 320, yoyo: true, repeat: -1 });
     scene.elementsFuite = [lumiere, texte, ...fleches]; // supprimés quand on quitte l'arène
     scene.fuiteOuverte = true; // verifierArene surveille maintenant la sortie

@@ -2,10 +2,11 @@
 // Appelé une fois par index.js (activerRaccourcis).
 //
 // DEUX BOUTONS MAINTENUS 1,5 s (une barre en bas de l'écran se remplit) :
-//   - Z + X (select + start)   : remettre le jeu à zéro, retour à l'écran d'accueil, sans relancer la borne (le joueur suivant)
-//   - C + F (P + ; au clavier) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
-// Les boutons de la borne sont nommés A à F ; ils envoient I, O, P, K, L et ; (voir gpio2keys.py) : C = P et F = ;. Z (select) et X (start) sont les
-// deux boutons du centre. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
+//   - Z + X (select + start)   : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
+//                                l'accueil ou l'écran de fin : retour à l'accueil. La borne n'est pas relancée.
+//   - Z + B (select J1 + select J2) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
+// Z (select J1) et X (start) sont les deux boutons du centre du joueur 1, B est le select du joueur 2 (voir gpio2keys.py) : Z et B ne servent
+// à rien d'autre dans le jeu. Les touches du robot sont I, K et L : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
 // un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
@@ -13,7 +14,7 @@
 //   - F9 : lance directement le niveau 2
 const COMBOS = [
     { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
-    { nom: "boss", touches: [80, 186], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // P et ;
+    { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
 ];
 const DUREE = 1500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 300; // ms avant d'afficher la barre (un appui très court ne montre rien)
@@ -24,20 +25,33 @@ function arreterToutesLesScenes(jeu) {
     jeu.scene.getScenes(false).forEach((scene) => jeu.scene.stop(scene.scene.key)); // arrête toutes les scènes (niveau, pause, classement...)
 }
 
-// revient à l'écran d'accueil : le chrono, le score et les vies repartent de zéro quand on relance une partie (voir menu.js)
+// vrai si cette scène tourne ou est en pause (le niveau reste « en pause » sous le menu pause)
+function enCours(jeu, cle) {
+    const systeme = jeu.scene.getScene(cle).sys;
+    return systeme.isActive() || systeme.isPaused();
+}
+
+// recommence la partie en cours : une partie solo repart du début du niveau 1, un 1 contre 1 repart à 0 - 0. Depuis l'accueil ou l'écran de fin,
+// il n'y a pas de partie en cours : on revient à l'accueil.
 function reinitialiser(jeu) {
+    const solo = ["niveau1", "niveau2", "niveau3"].some((cle) => enCours(jeu, cle));
+    const versus = enCours(jeu, "versus");
     arreterToutesLesScenes(jeu);
-    jeu.scene.start("menu");
+    if (solo) { nouvellePartie(jeu); jeu.scene.start("niveau1"); }
+    else jeu.scene.start(versus ? "versus" : "menu");
 }
 
 function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
     jeu.registry.set("chrono", 0);
     jeu.registry.set("score", 0);
-    jeu.registry.set("vies", 3);
     jeu.registry.set("chronoActif", true);
+    jeu.registry.set("phaseBoss", null); // le boss repart de sa phase 1
+    jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
+    jeu.registry.set("astuceDashVue", false);
+    jeu.registry.set("reprendreAuBoss", false); // pas de reprise dans l'arène : on repart du bas de la tour
 }
 
-function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Soldat ; ensuite (ou depuis le niveau 2) : dans l'arène du dernier combat
+function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Dieu ; ensuite (ou depuis le niveau 2) : dans l'arène du dernier combat
     const actives = jeu.scene.getScenes(true).map((scene) => scene.scene.key);
     const courante = actives.find((cle) => ["niveau1", "niveau2", "niveau3"].includes(cle));
     if (courante === "niveau3") return; // déjà dans le dernier combat
@@ -49,8 +63,8 @@ function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Soldat ; ensuite (ou 
         return;
     }
     arreterToutesLesScenes(jeu);
-    if (courante) { jeu.scene.start("niveau3"); return; } // arène du Soldat déjà faite, ou niveau 2 : on passe au dernier combat
-    nouvellePartie(jeu); // depuis l'accueil ou le classement : nouvelle partie directement dans l'arène du Soldat
+    if (courante) { jeu.scene.start("niveau3"); return; } // arène du Dieu déjà faite, ou niveau 2 : on passe au dernier combat
+    nouvellePartie(jeu); // depuis l'accueil ou le classement : nouvelle partie directement dans l'arène du Dieu
     jeu.scene.start("niveau1");
     jeu.scene.getScene("niveau1").events.once(Phaser.Scenes.Events.CREATE, () => {
         const niveau = jeu.scene.getScene("niveau1");

@@ -16,7 +16,7 @@ import { traineeDash } from "../systemes/effets.js"; // copies fantômes derriè
 //   update()  de chaque niveau      : majPersonnage(this.player, this.clavier)
 //   pour une animation ponctuelle   : jouerAction(this.player, "degats")
 //
-// Touches gérées par majPersonnage : flèches (déplacement et visée), I (saut), K (tir), L (dash). O (ouvrir les portes) est lue par les niveaux.
+// Touches gérées par majPersonnage : flèches (déplacement et visée), I (saut), K (tir), L (dash).
 // Ce sont les boutons de la borne (gpio2keys.py) : I = bouton 1, K = bouton 4, L = bouton 5, O = bouton 2.
 // Saut de mur : en l'air contre un mur, en poussant vers lui, le robot glisse lentement ;
 // un nouvel appui sur le bouton de saut (I) le fait rebondir dans l'autre sens.
@@ -199,7 +199,7 @@ function creerTextureBalle(scene) {
 }
 
 // crée le joueur en (x, y). y correspond aux pieds du robot.
-// options (pour le mode 1 contre 1, voir versus.js) : touches = { saut, tir, dash, porte } (noms de touches, celles du joueur 1 par
+// options (pour le mode 1 contre 1, voir versus.js) : touches = { saut, tir, dash } (noms de touches, celles du joueur 1 par
 // défaut), teinte = couleur du robot
 export function creerPersonnage(scene, x, y, options = {}) {
     const joueur = scene.physics.add.sprite(x, y, PREFIXE + "repos");
@@ -215,8 +215,8 @@ export function creerPersonnage(scene, x, y, options = {}) {
     joueur.sensMur = 0; // dernier mur touché en l'air : -1 = à gauche, 1 = à droite
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
-    // I = saut, K = tir, L = dash, O = ouvrir les portes ; false : on ne bloque pas les raccourcis du navigateur
-    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L", porte: "O" }, false);
+    // I = saut, K = tir, L = dash ; false : on ne bloque pas les raccourcis du navigateur
+    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L" }, false);
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.instantSol = -1e9; // dernier instant où il était au sol (pour le saut « coyote »)

@@ -1,4 +1,4 @@
-// niveau2.js : le niveau 2, horizontal : une fuite. Le Soldat de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
+// niveau2.js : le niveau 2, horizontal : une fuite. Le Dieu de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
 // C'est le même niveau que le niveau 1 (voir niveau.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
 // (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
@@ -8,6 +8,7 @@ import { objetsDe } from "../systemes/chargement.js";
 import { VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import { preparerVide, majVide } from "../mecanismes/vide.js";
 import { preparerFaisceaux, majFaisceaux } from "../mecanismes/faisceaux.js";
+import { montrerAstuceDash } from "../systemes/guide.js"; // rappel du dash (bouton E)
 import { preparerPoursuite, majPoursuite, finirPoursuite } from "../ennemis/poursuite.js";
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
@@ -17,6 +18,7 @@ function creerNiveau2(scene) { // appelée une fois, à la fin du create du nive
   const fin = objetsDe(scene.carte, "fin")[0]; // le point d'arrivée posé dans Tiled ; sinon, 100 px avant le bord droit de la map
   scene.xFin = fin ? fin.x : scene.carte.widthInPixels - 100;
   preparerPoursuite(scene);
+  montrerAstuceDash(scene); // le dash est indispensable ici : on le rappelle une fois
 }
 
 function majNiveau2(scene) { // appelée à chaque image

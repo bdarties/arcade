@@ -67,11 +67,13 @@ export default class menu extends Phaser.Scene {
     this.boutonDeux = this.creerBoutonDeux(640, 548);
     this.indication = this.add.text(640, 604, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
-    ["UP", "W"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
+    ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
     this.boutonDeux.fond.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
     const aide = this.add.text(640, 650, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
+    // le but du jeu, sous le titre
+    this.add.text(640, 275, "BATS LE DIEU DE LA LUMIÈRE LE PLUS VITE POSSIBLE", { fontFamily: "monospace", fontSize: "22px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 }); // il clignote doucement
 
     TOUCHES_JOUER.forEach((nom) => this.input.keyboard.addKey(nom).on("down", () => this.lancer()));
@@ -158,7 +160,7 @@ export default class menu extends Phaser.Scene {
   lancer() { // un bouton a été pressé : le bouton s'enfonce, l'écran s'éteint, puis le niveau 1 commence
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
-    if (this.mode === 2) { // 1 contre 1 : pas de chrono ni de vies, on file dans l'arène
+    if (this.mode === 2) { // 1 contre 1 : pas de chrono, on file dans l'arène
       jouerSon(this, "porte");
       this.cameras.main.fadeOut(350, 0, 0, 0);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start("versus"));
@@ -166,7 +168,9 @@ export default class menu extends Phaser.Scene {
     }
     this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
     this.registry.set("score", 0); // le score aussi
-    this.registry.set("vies", 3); // et les 3 vies (la valeur de VIES_DEPART dans hud.js)
+    this.registry.set("astuceDashVue", false); // et le rappel du dash au début du niveau 2
+    this.registry.set("phaseBoss", null); // le boss repart de sa phase 1
+    this.registry.set("guideVu", false); // le guide (but et commandes) s'affichera au début de cette partie
     this.registry.set("chronoActif", true); // le chrono peut tourner (il a pu être arrêté par la partie précédente)
     this.bouton.play("bouton_jouer_clic");
     jouerSon(this, "porte"); // bruit de porte, comme quand on entre dans un niveau

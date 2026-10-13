@@ -6,8 +6,8 @@
 - **Test avec un robot** (script de test) : le saut suivi d'un dash entre 350 et 450 ms après le décollage passe les trous de 11 à 12 tuiles, même avec une plateforme 2 tuiles plus haute. Un dash trop tôt (250 ms) tombe dans le vide.
 - **Le vide** : le bas de la map est un sol invisible, donc on ne « tombe » jamais vraiment. `vide.js` retire 1 PV et remet le robot sur le dernier sol sûr, sinon le robot resterait coincé en bas.
 
-## La fuite : le Soldat enragé (fin du niveau 1 → niveau 2)
-- **Pourquoi la fin du niveau 1 change :** à 0 PV, le Soldat ne meurt plus : il s'enrage (rouge, plus gros), le mur de droite de l'arène se brise (`arene.js`) et le robot doit fuir. En franchissant l'ouverture, on passe au niveau 2.
+## La fuite : le Dieu enragé (fin du niveau 1 → niveau 2)
+- **Pourquoi la fin du niveau 1 change :** à 0 PV, le Dieu ne meurt plus : il s'enrage (rouge, plus gros), le mur de droite de l'arène se brise (`arene.js`) et le robot doit fuir. En franchissant l'ouverture, on passe au niveau 2.
 - **Niveau 2 = une course-poursuite** (`poursuite.js`) : un mur de lumière avance à 232 px/s (le robot marche à 260 px/s) et le boss enragé vole derrière en lançant orbes, pluies d'orbes et colonnes de lumière. Le mur ne rattrape que celui qui s'arrête ou rate un saut : le dash sert à reprendre de l'avance.
 - **Pas de salle fermée dans le niveau 2** : on ne peut pas s'arrêter pendant une fuite. Les salles de combat restent dans le niveau 1.
 - **La map du niveau 2 est dessinée dans Tiled** par Mathys. Le jeu lit des points dans des calques d'objets (`depart`, `fin`, `faisceau`, ennemis...) au lieu de colonnes écrites en dur dans le code : changer la map ne demande aucun changement de code (voir `assets/maps/LISEZ-MOI.md`).
@@ -51,7 +51,7 @@
 - Si on change un trou, on relance le script : il vérifie que le niveau reste faisable.
 
 ## Les boss
-- `boss.js` a un profil par boss : le **Soldat** (fin du niveau 1, 80 PV, 2 phases, il s'enrage à 0 PV au lieu de mourir) et le **Soldat v2** (dernier combat, 130 PV, 3 phases, rouge et plus grand, attaques bien plus rapprochées).
+- `boss.js` a un profil par boss : le **Dieu** (fin du niveau 1, 80 PV, 2 phases, il s'enrage à 0 PV au lieu de mourir) et le **Dieu v2** (dernier combat, 130 PV, 3 phases, rouge et plus grand, attaques bien plus rapprochées).
 - **Dernier combat** (`niveau3.js`, une arène de la taille de l'écran) : après la fuite, on affronte le même boss en version enragée. Cette fois il meurt pour de bon : bonus de 3 000 points (30 s retirées du temps net), chrono arrêté, classement.
 - Pourquoi une scène à part : `boss.js` suppose une arène de 1280 px qui commence à x = 0, alors que le niveau 2 est large.
 - **La fuite devient plus dure en avançant** (`poursuite.js`) : le mur passe de 232 à 264 px/s (le robot marche à 260, donc à la fin il faut dasher) et le boss attaque de plus en plus souvent (toutes les 2,3 s puis toutes les 1,5 s).
@@ -59,3 +59,22 @@
 ## Ce qui n'est pas mesuré
 - La durée réelle d'une partie (visée : environ 2 min 30 par niveau) : à chronométrer en jouant.
 - Les FPS sur la borne avec le niveau 2 (map de 8 960 px de large) : à vérifier avec F3.
+
+## Guide du joueur
+- **Pourquoi si peu ?** Le joueur doit comprendre le but sans que le jeu l'interrompe. Le but est écrit à l'accueil (« Battre le Dieu de la Lumière ») et affiché 7 s au début de la partie (`systemes/guide.js`), en fondu, sans pause ni blocage de touche.
+- **Pourquoi pas de rappel des commandes en plus ?** La légende du HUD (en haut à droite) les affiche déjà en permanence : un second rappel faisait doublon (essayé, puis retiré après capture d'écran).
+- **Une seule fois par partie** : un registre `guideVu` est remis à faux au lancement (`menu.js`), pour que le texte ne revienne pas après chaque mort.
+
+## Dieu de la Lumière, plus de vies, reprise au boss
+- **Un seul nom pour le boss :** « Dieu de la Lumière » partout (barre de vie, textes, readme). Le but affiché au joueur et le boss rencontré sont maintenant les mêmes.
+- **Le système de vies est retiré :** il n'a jamais servi (mourir ne coûtait aucune vie, seulement du temps). Le classement est au temps, donc la pénalité de la mort, c'est le chrono qui continue.
+- **La touche « porte » (O) est retirée :** les salles s'ouvrent toutes seules quand les ennemis sont morts, la touche ne faisait rien.
+- **Mourir contre le boss du niveau 1 ne refait pas la tour :** le robot repart à l'entrée de l'arène (`departArene` dans la config du niveau), avec le score qu'il avait en y entrant (`scoreArene`). Hors boss, mourir remet toujours le niveau et le score à zéro.
+- **« Le plus vite possible » :** ajouté aux textes du menu et du début de partie, puisque le classement se fait au temps.
+- **Raccourci de test vers le boss :** déplacé sur Z + B (les deux boutons « select »), qui ne servent à rien d'autre.
+- **Z + X maintenus 1,5 s recommence la partie :** une partie solo repart du bas du niveau 1 (chrono et score à zéro, texte du but de nouveau affiché), un 1 contre 1 repart à 0 - 0. Depuis l'accueil ou l'écran de fin, on revient à l'accueil. Avant, le raccourci renvoyait toujours à l'accueil alors que le menu pause annonçait « recommencer la partie ».
+- **Reprise au début de la phase atteinte :** si le robot meurt contre le boss, le combat repart au début de la phase où il est mort (phase 1 : boss plein, phase 2 : PV du premier seuil, phase 3 : PV du second seuil), avec la barre de vie déjà au bon niveau. La phase atteinte est retenue dans le registre (`phaseBoss`, avec le nom du profil pour ne pas mélanger le boss du niveau 1 et le dernier boss) et remise à zéro à chaque nouvelle partie. Au dernier combat (niveau 3), le score retrouve aussi sa valeur d'avant le combat.
+- **Wall jump expliqué au début :** après le but, un second message (7 s) dit « contre un mur, appuie sur le bouton A pour rebondir et monter ». Les deux messages passent par une seule fonction (`message` dans `guide.js`) : un message est un texte qui apparaît en fondu, reste 7 s et s'efface.
+- **Consigne dans les salles de combat :** « TUE TOUS LES ENNEMIS POUR POUVOIR MONTER », sous le compteur d'ennemis, jusqu'à l'ouverture de la sortie. Sans elle, le joueur voyait la sortie bouchée sans savoir pourquoi.
+- **Joueur 2 : Q Z D S (clavier AZERTY) :** les directions du joueur 2 acceptent Q et Z en plus de A et W. Le joystick de la borne envoie A et W (clavier QWERTY, `gpio2keys.py`) : garder les deux évite qu'il cesse de marcher sur la borne. Le menu accepte aussi Z pour remonter au choix « JOUER ».
+- **Les touches affichées sont celles de la borne :** la légende du HUD montre les boutons A (saut), D (tir) et E (dash) au lieu des lettres du clavier I, K, L, comme sur la borne (schéma du cours : A à F). Le menu pause dit « A : valider », « START : reprendre » et « SELECT + START » pour recommencer. Le jeu lit toujours les mêmes touches : seuls les textes changent.

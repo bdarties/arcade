@@ -108,6 +108,8 @@ function fermerSalle(scene, salle) {
     salle.restants = salle.ennemis.length;
     // le compteur, en haut au milieu de l'écran
     salle.compteur = scene.add.text(640, 36, "ENNEMIS RESTANTS : " + salle.restants, { fontFamily: POLICE, fontSize: "24px", color: "#e7e0e9", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    // la consigne, sous le compteur : sans elle le joueur ne sait pas pourquoi la sortie reste fermée
+    salle.consigne = scene.add.text(640, 70, "TUE TOUS LES ENNEMIS POUR POUVOIR MONTER", { fontFamily: POLICE, fontSize: "20px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     scene.time.delayedCall(1000, () => faireApparaitreEnnemis(scene, salle)); // les ennemis apparaissent une fois la caméra en place
 }
 
@@ -135,6 +137,7 @@ function ouvrirSalle(scene, salle) { // le dernier ennemi est mort : la sortie s
     // et s'effacent en 0,4 s
     scene.tweens.add({ targets: salle.sortieMur.visible, alpha: 0, duration: 400, onComplete: () => salle.sortieMur.visible.destroy() });
     salle.compteur.setText("SORTIE OUVERTE");
+    salle.consigne.destroy(); // la consigne n'a plus de raison d'être
     // le message disparaît après 1,5 s
     scene.tweens.add({ targets: salle.compteur, alpha: 0, delay: 1500, duration: 500, onComplete: () => salle.compteur.destroy() });
     reprendreCamera(scene);

@@ -1,4 +1,4 @@
-// boss.js : le Soldat de la Lumière : mini-boss de fin du niveau 1 (profil « soldat » : à 0 PV il ne meurt pas, il s'enrage) et boss final
+// boss.js : le Dieu de la Lumière : mini-boss de fin du niveau 1 (profil « soldat » : à 0 PV il ne meurt pas, il s'enrage) et boss final
 // (profil « soldat2 » : plus fort, dans l'arène de niveau3.js). Le moteur (phases, attaques, barre de vie) est le même, réglé par le profil
 // (PROFILS).
 // Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
@@ -25,12 +25,12 @@ import * as effets from "../systemes/effets.js";
 import { gagnerPoints, bossTue } from "../systemes/points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
 import { lacherPV } from "../mecanismes/bonus.js";
-import { briserMurDroit } from "../mecanismes/arene.js"; // le mur de droite de l'arène du Soldat
+import { briserMurDroit } from "../mecanismes/arene.js"; // le mur de droite de l'arène du Dieu
 
 
 const LARGEUR_IMAGE = 152; // une image des feuilles
 const HAUTEUR_IMAGE = 116;
-const ECHELLE_ENRAGE = 1.7; // de combien le Soldat gonfle en s'enrageant (3 x 1,7 = 5,1 : environ 775 px de large)
+const ECHELLE_ENRAGE = 1.7; // de combien le Dieu gonfle en s'enrageant (3 x 1,7 = 5,1 : environ 775 px de large)
 const COULEUR_ENRAGE = 0xff6a5a; // la teinte rouge du boss enragé (aussi dans poursuite.js)
 const ECHELLE = 3; // le sprite est agrandi x3 : 456 x 348 px à l'écran, avec des pixels francs de 3 px comme le HUD (l'arène fait 1280 px de large)
 const DUREE_TRANSITION = 2000; // ms d'invulnérabilité à chaque changement de phase (plus que la plus longue préparation d'attaque)
@@ -45,12 +45,12 @@ const PROFILS = {
     soldat: {
         // à 0 PV il ne meurt pas : il s'enrage, le mur de l'arène se brise et on fuit vers le niveau 2 (voir arene.js et poursuite.js) ;
         // plus court que l'ancien boss final : 2 phases seulement
-        pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "SOLDAT DE LA LUMIÈRE", cause: "le Soldat de la Lumière", points: 1000, enrage: true,
+        pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 1000, enrage: true,
         pauses: [2000, 1500, 1500],
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
-        pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "SOLDAT DE LA LUMIÈRE ENRAGÉ", cause: "le Soldat enragé", points: 3000,
+        pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1750, 1300, 800], // des attaques beaucoup plus rapprochées
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, plus d'orbes, orbes doublées, 4 colonnes
         attaques: [
@@ -96,6 +96,7 @@ export function creerAnimations(scene) { // crée une seule fois les 4 animation
 
 export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait apparaître le boss en (x, y) : le centre de son sprite
     profil = PROFILS[nomProfil]; // les réglages de ce boss
+    profil.cle = nomProfil; // son nom, pour retenir la phase atteinte (voir changerDePhase)
     creerAnimations(scene);
     musiqueBoss(scene); // la musique metal du combat démarre avec l'apparition du boss
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur
@@ -106,9 +107,12 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     // la teinte revient après chaque flash (voir effets.flash) // au-dessus du voile d'ombre (50) : c'est lui la lumière
     if (profil.teinte) { boss.setTint(profil.teinte); boss.teinteBase = profil.teinte; }
     boss.play("boss_idle");
-    boss.pv = profil.pv;
+    // reprise après une mort : le combat repart au début de la phase où le robot est mort (voir changerDePhase), pas depuis la phase 1
+    const reprise = scene.registry.get("phaseBoss");
+    const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
+    boss.pv = phaseDepart === 0 ? profil.pv : profil.seuils[phaseDepart - 1]; // au début d'une phase, le boss a exactement les PV de son seuil
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) -> mort
-    boss.phase = 0; // 0, 1 ou 2
+    boss.phase = phaseDepart; // 0, 1 ou 2
     boss.departY = y; // hauteur autour de laquelle il flotte
     boss.prochaineAttaque = Infinity; // pas d'attaque avant la fin de l'apparition
     boss.derniereAttaque = null;
@@ -123,6 +127,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
         boss.once("destroy", () => halo.destroy());
     }
     boss.barre = creerBarre(scene);
+    boss.barre.plein.width = LARGEUR_BARRE * boss.pv / profil.pv; // la barre est déjà au bon niveau si on reprend en phase 2 ou 3
     scene.tweens.add({ targets: [boss, boss.halo].filter(Boolean), alpha: { value: (cible) => (cible === boss ? 1 : 0.35) }, duration: 1500, onComplete: () => {
         boss.etat = "combat";
         boss.prochaineAttaque = scene.time.now + surLeTemps(scene, 1200); // la première attaque arrive peu après, sur une croche
@@ -401,7 +406,7 @@ function toucherBoss(scene, boss, tir) {
     jouerSon(scene, "ennemi_touche");
     gagnerPoints(scene, POINTS_PAR_TIR, boss.x, boss.y - 120);
     majBarre(scene, boss);
-    // à 0 PV le Soldat du niveau 1 ne meurt pas : il s'enrage ; le dernier boss, lui, meurt
+    // à 0 PV le Dieu du niveau 1 ne meurt pas : il s'enrage ; le dernier boss, lui, meurt
     if (boss.pv <= 0) { if (profil.enrage) enrager(scene, boss); else mourir(scene, boss); return; }
     const phase = boss.pv <= profil.seuils[1] ? 2 : boss.pv <= profil.seuils[0] ? 1 : 0;
     if (phase > boss.phase) changerDePhase(scene, boss, phase);
@@ -419,6 +424,7 @@ function nettoyerCombat(scene, boss) { // efface tout ce que le boss avait lanc�
 function changerDePhase(scene, boss, phase) {
     nettoyerCombat(scene, boss);
     boss.phase = phase;
+    scene.registry.set("phaseBoss", { profil: profil.cle, phase }); // si le robot meurt, il reprendra ici
     boss.etat = "transition"; // intouchable un instant
     boss.play("boss_charge");
     scene.cameras.main.flash(300, 255, 242, 192);
@@ -435,7 +441,7 @@ function changerDePhase(scene, boss, phase) {
     });
 }
 
-// Le Soldat arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer au corps à corps ; il détruit le mur de droite de l'arène
+// Le Dieu arrive à 0 PV : il devient enragé. Il ne peut plus être touché ni attaquer au corps à corps ; il détruit le mur de droite de l'arène
 // (arene.js : briserMurDroit) puis le robot doit fuir. Pendant la fuite il lance des orbes.
 function enrager(scene, boss) {
     nettoyerCombat(scene, boss);

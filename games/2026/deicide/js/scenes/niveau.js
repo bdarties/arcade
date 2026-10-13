@@ -9,6 +9,7 @@
 //   arene          : une fonction appelée à chaque image, propre au niveau (ferme l'arène du boss, vérifie la sortie, la poursuite...)
 //   creer          : une fonction appelée une fois à la fin du create (facultative)
 //   fondVide       : la couleur de la map là où il n'y a rien (facultative, gris par défaut)
+//   departArene    : { x, y } où le robot réapparaît s'il meurt pendant le combat du boss (facultatif : sans lui, le niveau recommence du début)
 //   teleportBoss   : { x, y } où la touche de test F8 téléporte le robot
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
 import { creerHud } from "../personnage/hud.js";
@@ -22,6 +23,7 @@ import { chargerJeu, objetsDe } from "../systemes/chargement.js";
 import { preparerSalles, verifierSalles } from "../mecanismes/salles.js"; // salles de combat fermées
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
 import { preparerBonus } from "../mecanismes/bonus.js"; // les PV que lâchent les ennemis
+import { montrerGuide } from "../systemes/guide.js"; // le but, affiché une fois au début de la partie
 import { preparerBoost } from "../mecanismes/boost.js"; // le boost du robot (rafale, vitesse, reflet)
 import { preparerLanternesVivantes } from "../ennemis/lanterneVivante.js"; // les lanternes ailées qui donnent le boost
 
@@ -60,8 +62,10 @@ export default class niveau extends Phaser.Scene {
     preparerSalles(this, this.cfg.salles); // les salles de combat fermées (voir salles.js)
     if (this.cfg.creer) this.cfg.creer(this); // ce qui est propre à ce niveau (vide, faisceaux, poursuite...)
     preparerPause(this); // Échap ou X ouvre le menu pause
+    montrerGuide(this); // le but (une seule fois par partie, ils s'effacent seuls)
     // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
     effets.preparerEffets(this);
+    this.reprendreAuBoss(); // si le robot est mort contre le boss : on le remet dans l'arène
   }
 
   // La carte : les calques de tuiles, les collisions, la taille du monde et de la caméra. Renvoie la carte (les points d'apparition en sont
@@ -159,7 +163,7 @@ export default class niveau extends Phaser.Scene {
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
     // sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
     this.fuiteOuverte = false;
-    this.murDroit = null; // le mur de droite de l'arène du Soldat (pas encore posé)
+    this.murDroit = null; // le mur de droite de l'arène du Dieu (pas encore posé)
     this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée)
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
@@ -169,6 +173,13 @@ export default class niveau extends Phaser.Scene {
     this.graceAPoser = true;
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
+  }
+
+  reprendreAuBoss() { // appelée à la fin de create : après une mort contre le boss, le robot repart de l'entrée de l'arène (elle se referme alors toute seule)
+    if (!this.registry.get("reprendreAuBoss")) return;
+    this.registry.set("reprendreAuBoss", false);
+    this.player.setPosition(this.cfg.departArene.x, this.cfg.departArene.y);
+    this.player.body.setVelocity(0, 0);
   }
 
   update() {
@@ -199,12 +210,16 @@ export default class niveau extends Phaser.Scene {
     else this.tweens.add({ targets: this.player, alpha: 0.35, duration: 90, yoyo: true, repeat: 5, onComplete: () => this.player.setAlpha(1) }); // il clignote pendant l'invincibilité
   }
 
-  mourir() { // 0 PV : le robot meurt, puis le niveau recommence depuis le bas. Le chrono continue (la mort coûte du temps) et le score repart de zéro
+  mourir() { // 0 PV : le robot meurt, puis le niveau recommence. Le chrono continue (la mort coûte du temps)
     this.mort = true;
+    // mort pendant le combat du boss : on ne refait pas la tour, seulement le boss (et le score retrouve sa valeur d'avant le combat)
+    const auBoss = Boolean(this.areneLancee);
+    this.registry.set("reprendreAuBoss", auBoss && Boolean(this.cfg.departArene)); // (le niveau 3 est déjà juste l'arène : rien à déplacer)
     jouerAction(this.player, "mort"); // animation de mort du robot (il ne peut plus bouger)
     this.time.delayedCall(1300, () => this.cameras.main.fadeOut(500, 0, 0, 0));
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.registry.set("score", 0); // sinon on referait le tour des ennemis pour gagner des points à chaque mort
+      // hors boss : le score repart de zéro (sinon on referait le tour des ennemis pour gagner des points à chaque mort)
+      this.registry.set("score", auBoss ? this.registry.get("scoreArene") : 0);
       this.scene.restart(); // tout le niveau est refait : les ennemis, les lanternes, l'arène et le boss
     });
   }

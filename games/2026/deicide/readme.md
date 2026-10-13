@@ -1,6 +1,6 @@
 # DEICIDE
 
-Plateformer « ombre et lumière » (Phaser 3.60) — SAÉ borne d'arcade. Le robot monte une tour dans l'ombre, la lumière le brûle ; il affronte le Soldat de la Lumière, fuit en dashant à travers un deuxième niveau, puis livre un dernier combat. Un mode 1 contre 1 se joue à deux sur la borne.
+Plateformer « ombre et lumière » (Phaser 3.60) — SAÉ borne d'arcade. Le robot monte une tour dans l'ombre, la lumière le brûle ; il affronte le Dieu de la Lumière, fuit en dashant à travers un deuxième niveau, puis livre un dernier combat. Un mode 1 contre 1 se joue à deux sur la borne.
 
 ## Où est quoi
 
@@ -32,13 +32,13 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 
 | | Joueur 1 | Joueur 2 (1 contre 1) |
 |---|---|---|
-| déplacer / viser | flèches | W A S D |
-| saut | I | R |
-| tir (visée automatique) | K | F |
-| dash | L | G |
+| déplacer / viser | flèches | Q Z D S (ou A W D S) |
+| saut (bouton A) | I | R |
+| tir (bouton D, visée automatique) | K | F |
+| dash (bouton E) | L | G |
 
-Menu pause : Échap ou X (start). Reset de la borne : maintenir Z + X pendant 1,5 s.
-Touches de test, à retirer avant la borne : F8 (téléporter), F9 (niveau 2 direct), maintenir C + F (aller au boss).
+Menu pause : Échap ou X (start). Recommencer la partie : maintenir Z + X (SELECT + START sur la borne) pendant 1,5 s.
+Touches de test, à retirer avant la borne : F8 (téléporter), F9 (niveau 2 direct), maintenir Z + B (aller au boss).
 
 ## Les explications des choix
 

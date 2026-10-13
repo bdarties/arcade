@@ -3,7 +3,7 @@
 // 3 manches :
 // le premier à gagner 2 manches gagne la partie. Chaque manche relance la scène (this.scene.restart) : tout repart propre, seuls les points
 // des manches passent.
-// Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : W A S D, R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne
+// Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : Q Z D S (ou A W D S), R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne
 // (voir gpio2keys.py).
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
 import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
@@ -49,12 +49,15 @@ export default class versus extends Phaser.Scene {
     const [depart2] = objetsDe(carte, "depart2");
     this.joueurs = [
       creerPersonnage(this, depart1.x, depart1.y),
-      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G", porte: "T" } })
+      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G" } })
     ];
     this.joueurs[1].regardeGauche = true; // le joueur 2 regarde vers le joueur 1
+    // joueur 2 : Q Z D S sur un clavier AZERTY. A et W marchent aussi : le joystick de la borne envoie A et W (clavier QWERTY, voir gpio2keys.py)
+    const touche = (nom) => this.input.keyboard.addKey(nom, false);
+    const ou = (a, b) => ({ get isDown() { return a.isDown || b.isDown; } }); // « l'une ou l'autre est enfoncée »
     this.claviers = [
       this.input.keyboard.createCursorKeys(),
-      { left: this.input.keyboard.addKey("A", false), right: this.input.keyboard.addKey("D", false), up: this.input.keyboard.addKey("W", false), down: this.input.keyboard.addKey("S", false) }
+      { left: ou(touche("Q"), touche("A")), right: touche("D"), up: ou(touche("Z"), touche("W")), down: touche("S") }
     ];
     this.joueurs.forEach((joueur, i) => {
       joueur.numero = i; // 0 = joueur 1, 1 = joueur 2
