@@ -72,3 +72,4 @@
 - **Mourir contre le boss du niveau 1 ne refait pas la tour :** le robot repart à l'entrée de l'arène (`departArene` dans la config du niveau), avec le score qu'il avait en y entrant (`scoreArene`). Hors boss, mourir remet toujours le niveau et le score à zéro.
 - **« Le plus vite possible » :** ajouté aux textes du menu et du début de partie, puisque le classement se fait au temps.
 - **Raccourci de test vers le boss :** déplacé sur Z + B (les deux boutons « select »), qui ne servent à rien d'autre.
+- **Z + X maintenus 1,5 s recommence la partie :** une partie solo repart du bas du niveau 1 (chrono et score à zéro, texte du but de nouveau affiché), un 1 contre 1 repart à 0 - 0. Depuis l'accueil ou l'écran de fin, on revient à l'accueil. Avant, le raccourci renvoyait toujours à l'accueil alors que le menu pause annonçait « recommencer la partie ».

@@ -37,7 +37,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 | tir (visée automatique) | K | F |
 | dash | L | G |
 
-Menu pause : Échap ou X (start). Reset de la borne : maintenir Z + X pendant 1,5 s.
+Menu pause : Échap ou X (start). Recommencer la partie : maintenir Z + X pendant 1,5 s.
 Touches de test, à retirer avant la borne : F8 (téléporter), F9 (niveau 2 direct), maintenir Z + B (aller au boss).
 
 ## Les explications des choix
