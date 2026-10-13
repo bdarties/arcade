@@ -8,6 +8,7 @@ import * as butin from "./butin.js";
 import * as bonus from "./bonus.js";
 import * as cristaux from "./cristaux.js";
 import * as lumiere from "./lumiere.js";
+import * as biomes from "./biomes.js";
 
 const LARGEUR_NIVEAU = 50; // cases de 32 px
 const HAUTEUR_NIVEAU = 34;
@@ -107,8 +108,8 @@ export default class niveau1 extends Phaser.Scene {
     const niveaux = this.registry.get("niveaux");
     const nouveau = !niveaux[this.niveau];
     if (nouveau) {
-      // une salle safe apparait rarement, jamais au niveau 1 ni deux fois de suite
-      const safe = this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && Math.random() < salle_safe.chanceSafe();
+      // la salle safe ferme chaque biome (niveaux 5, 10, 15...) ; avec "?safe" dans l'adresse, elle apparait à chaque fois (jamais deux de suite)
+      const safe = biomes.estNiveauSafe(this.niveau) || (this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && salle_safe.safeForcee());
       niveaux[this.niveau] = safe ? {
         safe: true, // salle de temple faite sous Tiled : éclairée, sans ennemi ni caillou (cf. salle_safe.js)
         grille: null,
@@ -133,9 +134,12 @@ export default class niveau1 extends Phaser.Scene {
       // grille[y][x] = true si mur (cf. generation.js), puis on la traduit en tuiles
       const grille = this.etat.grille;
       map = this.make.tilemap({ tileWidth: 32, tileHeight: 32, width: LARGEUR_NIVEAU, height: HAUTEUR_NIVEAU });
-      const tileset = map.addTilesetImage("walls_floor", "tiles_walls_floor");
-      calque_sol = map.createBlankLayer("sol", tileset);
-      calque_murs = map.createBlankLayer("murs", tileset);
+      // le sol est toujours celui du biome gris ; les murs prennent le tileset du biome du niveau (mêmes numéros de tuiles)
+      const biome = biomes.biomeDuNiveau(this.niveau);
+      const tileset_sol = map.addTilesetImage("walls_floor", "tiles_walls_floor");
+      const tileset_murs = map.addTilesetImage("murs_" + biome.nom, biome.tileset);
+      calque_sol = map.createBlankLayer("sol", tileset_sol);
+      calque_murs = map.createBlankLayer("murs", tileset_murs);
       grille.forEach((ligne, y) => ligne.forEach((mur, x) => {
         if (mur) calque_murs.putTileAt(generation.tuileMur(grille, x, y), x, y);
         else calque_sol.putTileAt(generation.TUILES.sol, x, y);

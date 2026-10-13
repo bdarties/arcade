@@ -1,5 +1,5 @@
 /***********************************************************************/
-/** SALLE SAFE : une salle de temple (map faite sous Tiled) qui apparait rarement entre deux niveaux
+/** SALLE SAFE : une salle de temple (map faite sous Tiled) qui ferme chaque biome (niveaux 5, 10, 15...)
 /** toujours éclairée, sans ennemi ni caillou ; on y entre par l'échelle de montée et on en repart par le trou
 /***********************************************************************/
 
@@ -17,9 +17,9 @@ export const TILESETS = [
   ["Objects_interior", "tiles_safe_objects_interior", "./assets/map/objects_interior.png"]
 ];
 
-// chance qu'un nouveau niveau soit la salle safe ; en ouvrant le jeu avec "?safe" dans l'adresse elle apparait à chaque fois (pour la tester)
-const CHANCE_SAFE = 0.1;
-export const chanceSafe = () => (new URLSearchParams(window.location.search).has("safe") ? 1 : CHANCE_SAFE);
+// la salle safe a sa place fixe, à la fin de chaque biome (cf. biomes.js) ;
+// en ouvrant le jeu avec "?safe" dans l'adresse elle apparait en plus à chaque niveau (pour la tester)
+export const safeForcee = () => new URLSearchParams(window.location.search).has("safe");
 
 // positions des deux passages, en pixels (cases de 32 px) : l'échelle pour remonter à gauche, le trou pour descendre à droite
 export const MONTEE = { x: 12 * 32 + 16, y: 12 * 32 + 16 };
