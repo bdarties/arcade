@@ -36,15 +36,26 @@ export function chargerSons(scene) { // à appeler dans le preload du niveau 1, 
     Object.keys(SONS).forEach(nom => scene.load.audio(nom, DOSSIER + nom + ".mp3")); // charge chaque son de la liste
     // l'ogg boucle sans blanc, le mp3 sert si le navigateur ne lit pas l'ogg
     scene.load.audio("musique_niveau", [DOSSIER + "musique_niveau.ogg", DOSSIER + "musique_niveau.mp3"]);
-    // musique metal du boss : l'introduction (jouée une fois)...
-    scene.load.audio("musique_boss_intro", [DOSSIER + "musique_boss_intro.ogg", DOSSIER + "musique_boss_intro.mp3"]);
-    scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]); // ...puis la boucle
+}
+
+// La musique metal du boss : l'introduction (jouée une fois), puis la boucle. Elle n'est pas chargée au lancement avec le reste : décodée, elle pèse
+// 21 Mo en mémoire (la moitié de toute la musique), et le Raspberry Pi de la borne a peu de mémoire. Elle se charge en arrière-plan quand le niveau 1
+// démarre (niveau.js, create) : elle est prête bien avant l'arène. Le niveau 2 et le 1 contre 1 la chargent dans leur preload (ils en ont besoin tout de suite).
+export function chargerMusiqueBoss(scene) {
+    if (!scene.cache.audio.exists("musique_boss_intro")) scene.load.audio("musique_boss_intro", [DOSSIER + "musique_boss_intro.ogg", DOSSIER + "musique_boss_intro.mp3"]);
+    if (!scene.cache.audio.exists("musique_boss_boucle")) scene.load.audio("musique_boss_boucle", [DOSSIER + "musique_boss_boucle.ogg", DOSSIER + "musique_boss_boucle.mp3"]);
+}
+export function chargerMusiqueBossEnArrierePlan(scene) { // sans bloquer le jeu : le décodage se fait pendant qu'on joue
+    if (scene.cache.audio.exists("musique_boss_boucle")) return; // déjà là (2e partie, retour après une mort...)
+    chargerMusiqueBoss(scene);
+    scene.load.start(); // un chargement lancé après le preload doit être démarré à la main
 }
 
 // La musique du dernier boss : « Boss Battle #9 » (113 battements par minute, en mi mineur). Elle n'est PAS chargée avec le reste : une fois décodée elle pèse
 // 21 Mo en mémoire (le reste de la musique : 41 Mo), et le Raspberry Pi de la borne est juste en mémoire. Elle se charge seulement quand on arrive au
 // dernier combat (niveau3.js, preload).
 export function chargerMusiqueDernierBoss(scene) {
+    if (scene.cache.audio.exists("musique_boss2_intro")) return;
     scene.load.audio("musique_boss2_intro", [DOSSIER + "musique_boss2_intro.ogg", DOSSIER + "musique_boss2_intro.mp3"]);
     scene.load.audio("musique_boss2_boucle", [DOSSIER + "musique_boss2_boucle.ogg", DOSSIER + "musique_boss2_boucle.mp3"]);
 }
@@ -92,7 +103,7 @@ export function jouerSonSurLeTemps(scene, nom) {
 
 function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
-    if (musique) { musique.stop(); musique.destroy(); } // coupe l'ancienne musique et la libère (sans destroy, chaque nouvelle partie laissait un son de plus en mémoire)
+    if (musique && musique.manager) { musique.stop(); musique.destroy(); } // (manager est vide si le son a déjà été détruit) // coupe l'ancienne musique et la libère (sans destroy, chaque nouvelle partie laissait un son de plus en mémoire)
     volumeBase = base; // on retient son volume de base : majVolumeMusique en a besoin quand le joueur règle le volume
     // crée la musique, au volume choisi dans le menu pause
     musique = scene.sound.add(nom, { loop: boucle, volume: base * reglages.musique / VOLUME_MAX });
@@ -100,7 +111,14 @@ function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // la
     return musique;
 }
 
-export function musiqueBoss(scene, version = "") { // la musique metal du combat de boss : une introduction, puis la boucle (version "2" : dernier boss)
+export function musiqueBoss(scene, version = "", dejaEssaye = false) { // la musique metal du combat de boss : une introduction, puis la boucle (version "2" : dernier boss)
+    if (!scene.cache.audio.exists("musique_boss" + version + "_boucle")) { // pas encore chargée (arène atteinte très vite) : on la charge, puis elle démarre
+        if (dejaEssaye) return; // le chargement a échoué : tant pis, pas de musique plutôt qu'une boucle
+        if (version === "") chargerMusiqueBoss(scene); else chargerMusiqueDernierBoss(scene);
+        scene.load.once(Phaser.Loader.Events.COMPLETE, () => musiqueBoss(scene, version, true));
+        scene.load.start();
+        return;
+    }
     const volume = version === "2" ? VOLUME_MUSIQUE_BOSS2 : VOLUME_MUSIQUE_BOSS;
     const intro = lancerMusique(scene, "musique_boss" + version + "_intro", volume, false); // l'introduction, une seule fois
     if (!intro) return;

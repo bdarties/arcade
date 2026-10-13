@@ -15,7 +15,7 @@ import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction 
 import { creerHud } from "../personnage/hud.js";
 import * as ennemis from "../ennemis/ennemis.js";
 import * as lumiere from "../mecanismes/lumiere.js";
-import { jouerSon, musiqueDeScene } from "../systemes/sons.js"; // bruitages et musique
+import { jouerSon, musiqueDeScene, chargerMusiqueBoss, chargerMusiqueBossEnArrierePlan } from "../systemes/sons.js"; // bruitages et musique
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js";
@@ -39,6 +39,7 @@ export default class niveau extends Phaser.Scene {
 
   preload() { // tous les assets sont normalement déjà chargés par le menu (voir menu.js) ; sinon ils se chargent ici
     chargerJeu(this);
+    if (this.cfg.musique === "musique_boss_boucle") chargerMusiqueBoss(this); // le niveau 2 joue la musique du boss dès le début
   }
 
   // Le create suit toujours le même ordre : les étapes plus bas ont besoin de ce que les précédentes ont créé.
@@ -66,6 +67,7 @@ export default class niveau extends Phaser.Scene {
     // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
     effets.preparerEffets(this);
     this.reprendreAuBoss(); // si le robot est mort contre le boss : on le remet dans l'arène
+    chargerMusiqueBossEnArrierePlan(this); // la musique du boss, décodée pendant qu'on joue (pas au lancement : voir sons.js)
   }
 
   // La carte : les calques de tuiles, les collisions, la taille du monde et de la caméra. Renvoie la carte (les points d'apparition en sont
