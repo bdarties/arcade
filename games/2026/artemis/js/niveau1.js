@@ -228,6 +228,10 @@ export default class niveau1 extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(fct.PROFONDEUR.hud);
       this.prochain_fps = 0;
+      // le processeur graphique utilisé par le navigateur : "SwiftShader", "llvmpipe" ou "software" veut dire que le WebGL est calculé par le processeur (très lent)
+      const gl = this.game.renderer.gl;
+      const extension = gl?.getExtension("WEBGL_debug_renderer_info");
+      this.info_gpu = extension ? String(gl.getParameter(extension.UNMASKED_RENDERER_WEBGL)) : "GPU inconnu";
     }
 
     lumiere.majLumieres(this); // sinon la première image s'affiche sans obscurité
@@ -722,8 +726,8 @@ export default class niveau1 extends Phaser.Scene {
   majFps(time) {
     if (time < this.prochain_fps) return;
     this.prochain_fps = time + PERIODE_FPS;
-    const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : "";
-    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres);
+    const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : this.pinceaux ? "  lumières " + this.nb_pinceaux : "";
+    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres + "\n" + this.info_gpu);
   }
 
   update(time, delta) {

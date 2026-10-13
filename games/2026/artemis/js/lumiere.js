@@ -17,7 +17,18 @@ import * as cristaux from "./cristaux.js";
 // Light2D ne sait faire que des lumières rondes : le cône de la torche est une petite chaîne de lumières devant le joueur,
 // qui s'arrête au premier mur ; les lasers, tirs, cristaux, potions et éclats ont chacun leur lumière (cf. majLumieres)
 // Phaser n'affiche que les lumières les plus proches de la caméra (maxLights dans index.js) : les autres sont ignorées
-const LIGHT2D = true;
+// choix du système de lumière (un seul est actif) :
+//   "degrade" : le noir gommé décrit plus haut, mais avec un pinceau en dégradé radial (une seule image) à la place des cercles par paliers :
+//               toutes les lumières (torche, cristaux, lasers...) pour un coût très faible côté processeur graphique
+//   "light2d" : les lumières de Phaser (Light2D) : jolies mais lourdes, la borne tombe vers 10 FPS
+//   "ancien"  : cercles et cônes par paliers, le tout premier système (gardé pour comparer)
+const MODE = "degrade";
+const LIGHT2D = MODE === "light2d";
+const DEGRADE = MODE === "degrade";
+// essais de performance sur la borne : ce que Light2D éclaire (false : pleine luminosité, donc plus rapide mais sans obscurité)
+const ECLAIRER_SOL = true; // le calque du sol, qui couvre tout l'écran
+const ECLAIRER_MURS = true; // le calque des murs
+const ECLAIRER_OBJETS = true; // ennemis, cailloux, trou, échelle, butin
 const AMBIANT = 0x090b18; // luminosité de ce qu'aucune lumière n'atteint (0x000000 : noir complet)
 const RAYON_JOUEUR = 95; // px : rayon du halo autour d'un joueur
 const INTENSITE_JOUEUR = 0.5; // 1 : la couleur normale de l'image au centre ; plus : plus clair
@@ -114,7 +125,7 @@ function majLight2D(scene) {
   });
   scene.butin.forEach((objet) => {
     if (objet.definition.lumiere) suivre(scene, objet, objet.x, objet.y, LUMIERE_POTION.rayon, LUMIERE_POTION.couleur, LUMIERE_POTION.intensite);
-    else if (!objet.eclaire) {
+    else if (ECLAIRER_OBJETS && !objet.eclaire) {
       objet.setPipeline("Light2D"); // les objets qui ne brillent pas sont éclairés comme la carte
       objet.eclaire = true;
     }
@@ -152,13 +163,15 @@ function majLight2D(scene) {
 // les calques de la carte sont éclairés comme le reste (sans effet si l'ancien système est utilisé)
 export function eclairerCalques(scene, calques) {
   if (!LIGHT2D || scene.etat.safe) return;
-  calques.forEach((calque) => calque.setPipeline("Light2D"));
+  const [sol, murs] = calques;
+  if (ECLAIRER_SOL) sol.setPipeline("Light2D");
+  if (ECLAIRER_MURS) murs.setPipeline("Light2D");
 }
 
 // les ennemis, les cailloux, le trou et l'échelle sont éclairés comme la carte : on ne les voit que près d'une lumière
 // les objets qui brillent eux-mêmes (cristaux, lasers, tirs d'aliens, potions) n'ont pas le pipeline : ils restent visibles dans le noir
 export function eclairerObjets(scene) {
-  if (!LIGHT2D || scene.etat.safe) return;
+  if (!LIGHT2D || scene.etat.safe || !ECLAIRER_OBJETS) return;
   const objets = [...scene.ennemis.getChildren(), ...scene.cailloux.getChildren(), scene.trou, scene.echelle_montee];
   objets.forEach((objet) => objet?.setPipeline("Light2D"));
 }
@@ -167,6 +180,10 @@ export function eclairerObjets(scene) {
 export function creerObscurite(scene) {
   if (LIGHT2D) {
     creerLight2D(scene);
+    return;
+  }
+  if (DEGRADE) {
+    creerDegrade(scene);
     return;
   }
   scene.obscurite = scene.etat.safe ? null : scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height)
@@ -248,6 +265,10 @@ export function majLumieres(scene) {
     majLight2D(scene);
     return;
   }
+  if (DEGRADE) {
+    majDegrade(scene);
+    return;
+  }
   scene.forme_lumiere.clear();
 
   // le joueur : un petit halo autour de lui, et le cône de sa torche si elle est allumée
@@ -280,4 +301,92 @@ export function majLumieres(scene) {
   // étapes 1 et 3 : tout noir, puis on gomme tout ce qui a été dessiné
   scene.obscurite.fill(0x000000);
   scene.obscurite.erase(scene.forme_lumiere);
+}
+
+/***********************************************************************/
+/** MODE "degrade" : le noir gommé, avec un pinceau en dégradé
+/** une seule image (un disque blanc qui s'estompe du centre vers le bord) sert de gomme pour toutes les lumières :
+/** chaque lumière est une copie de cette image, à sa taille et à son opacité, gommée dans le noir en un seul appel
+/** (aucun calcul de lumière par pixel). La lumière est neutre : la gomme n'a pas de couleur.
+/** (une lueur colorée en mélange additif a été essayée : elle délave l'image et coûte 8 FPS dans les mesures)
+/***********************************************************************/
+
+const OPACITE_NOIR = 0.96; // 1 - luminosité ambiante : ce qu'aucune lumière n'atteint reste très sombre mais visible
+const RAYON_VISIBILITE_JOUEUR = 26; // px : un joueur reste toujours visible, même hors de toute lumière
+
+// l'image du pinceau, créée une seule fois pour tout le jeu : opacité (1 - t)^2, t allant de 0 au centre à 1 au bord
+function creerTextureDegrade(scene) {
+  if (scene.textures.exists("degrade_lumiere")) return;
+  const taille = 256;
+  const canvas = scene.textures.createCanvas("degrade_lumiere", taille, taille);
+  const ctx = canvas.getContext();
+  const degrade = ctx.createRadialGradient(taille / 2, taille / 2, 0, taille / 2, taille / 2, taille / 2);
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10;
+    degrade.addColorStop(t, "rgba(255,255,255," + Math.pow(1 - t, 2).toFixed(3) + ")");
+  }
+  ctx.fillStyle = degrade;
+  ctx.fillRect(0, 0, taille, taille);
+  canvas.refresh();
+}
+
+function creerDegrade(scene) {
+  creerTextureDegrade(scene);
+  scene.obscurite = scene.etat.safe ? null : scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height)
+    .setOrigin(0, 0)
+    .setScrollFactor(0) // il reste collé à l'écran quand la caméra bouge
+    .setDepth(fct.PROFONDEUR.obscurite);
+  scene.pinceaux = []; // images réutilisées d'une image à l'autre : jamais affichées, seulement gommées dans le noir
+  scene.nb_pinceaux = 0;
+}
+
+// une lumière : le pinceau, placé en coordonnées d'écran (le noir est collé à l'écran), à la taille et à l'opacité voulues
+function pinceau(scene, x, y, rayon, force) {
+  const camera = scene.cameras.main;
+  const i = scene.nb_pinceaux++;
+  if (!scene.pinceaux[i]) scene.pinceaux[i] = scene.make.image({ key: "degrade_lumiere" }, false);
+  scene.pinceaux[i].setPosition(x - camera.scrollX, y - camera.scrollY).setDisplaySize(rayon * 2, rayon * 2).setAlpha(Math.min(force, 1));
+}
+
+// à appeler à chaque image : les mêmes lumières qu'avec Light2D (cf. majLight2D), en pinceaux
+function majDegrade(scene) {
+  scene.nb_pinceaux = 0;
+  scene.joueurs.forEach((j) => {
+    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_JOUEUR, INTENSITE_JOUEUR);
+    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1);
+    if (!j.torche_allumee) return;
+    // la torche : une chaîne de pinceaux devant le joueur, qui s'arrête avant le premier mur (comme avec Light2D)
+    const portee = porteeTorche(j);
+    const distance = distanceMur(scene, j, portee);
+    const centre = j.sprite.body.center;
+    for (let k = 0; k < NB_LUMIERES_TORCHE; k++) {
+      const d = distance * (k + 1) / NB_LUMIERES_TORCHE;
+      const rayon = (RAYON_TORCHE_PROCHE + d * RAYON_TORCHE_PAR_PX) * (0.5 + 0.5 * distance / portee);
+      const intensite = INTENSITE_TORCHE_PROCHE + (INTENSITE_TORCHE_LOIN - INTENSITE_TORCHE_PROCHE) * (d / portee);
+      pinceau(scene, centre.x + j.regard.x * d, centre.y + j.regard.y * d, rayon, intensite);
+    }
+  });
+  scene.butin.forEach((objet) => {
+    if (objet.definition.lumiere) pinceau(scene, objet.x, objet.y, LUMIERE_POTION.rayon, LUMIERE_POTION.intensite);
+  });
+  scene.projectiles.getChildren().forEach((laser) => {
+    if (laser.active) pinceau(scene, laser.x, laser.y, LUMIERE_LASER.rayon, LUMIERE_LASER.intensite);
+  });
+  scene.tirs_ennemis.getChildren().forEach((tir) => {
+    if (tir.active) pinceau(scene, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.intensite);
+  });
+  scene.cristaux.forEach((cristal) => {
+    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite);
+  });
+  scene.eclats = scene.eclats.filter((eclat) => scene.time.now < eclat.fin);
+  scene.eclats.forEach((eclat) => {
+    const restant = (eclat.fin - scene.time.now) / (eclat.duree ?? DUREE_ECLAT); // 1 puis 0
+    const echelle = eclat.expansion ? 0.6 + 0.4 * (1 - restant) : 1;
+    pinceau(scene, eclat.x, eclat.y, (eclat.halo ?? HALO_ECLAT)[0][0] * LUMIERE_ECLAT.rayon_par_px * echelle, restant);
+  });
+
+  // tout le noir, moins ce que les pinceaux gomment (un seul appel pour tous)
+  scene.obscurite.clear();
+  scene.obscurite.fill(0x000000, OPACITE_NOIR);
+  scene.obscurite.erase(scene.pinceaux.slice(0, scene.nb_pinceaux));
 }
