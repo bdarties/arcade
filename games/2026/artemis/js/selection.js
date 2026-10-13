@@ -150,7 +150,8 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("fondSonore", "./assets/sons/fond_sonore.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("echelle", "./assets/sons/ladder.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
-    /* >>>>> AJOUT IMAGE <<<<< */ this.load.image("img_commandes", "./assets/commandes.png");
+    /* >>>>> AJOUT commande solo <<<<< */this.load.image("img_commandes_solo", "./assets/commandes_solo.png");
+    /* >>>>> AJOUT commande duo <<<<< */ this.load.image("img_commandes_duo", "./assets/commandes_duo.png"); 
   }
 
   /***********************************************************************/

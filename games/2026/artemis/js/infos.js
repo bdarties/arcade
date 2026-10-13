@@ -42,7 +42,10 @@ export default class infos extends Phaser.Scene {
     this.cameras.main.fadeIn(DUREE_FONDU);
     if (this.page === "commandes") {
       // une image de 1280x720 qui contient tout : fond, titre et schéma des deux joueurs
-      this.add.image(0, 0, "img_commandes").setOrigin(0, 0);
+      const imageCommandes = this.depuis_pause && this.registry.get("nb_joueurs") === 1
+        ? "img_commandes_solo"
+        : "img_commandes_duo";
+      this.add.image(0, 0, imageCommandes).setOrigin(0, 0);
     } else {
       this.add.image(0, 0, "img_fond_menu").setOrigin(0, 0);
       // voile sombre sous le texte, pour qu'il reste lisible sur le décor
