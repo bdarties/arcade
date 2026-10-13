@@ -109,6 +109,8 @@ export default class niveau1 extends Phaser.Scene {
       this.registry.set("modeLeger", true); // sans WebGL le dessin est bien plus lent : on économise dès le départ
     }
     this.fragmentRecupere = false;
+    this.sonPartitionJoue = false;
+    this.events.once("shutdown", () => this.arreterSonPartition());
     this.noteActuelle = 0; // 0 = Do, 1 = Mi, 2 = Sol
     this.lampe = { allumee: false, batterie: 100, angle: 0 }; // batterie en %, angle en degrés (0 = à l'horizontale)
     this.viesMax = this.mode == "duo" ? REGLAGES.vies.duo : REGLAGES.vies.solo;
@@ -713,20 +715,41 @@ export default class niveau1 extends Phaser.Scene {
     this.verifierSonPartition();
   }
 
-  // Le chœur s'élève quand un personnage s'approche de la partition (une fois par approche)
+  // Niveau 1 : le chœur s'élève dès que la partition entre dans le cadre de la caméra.
+  // Les autres niveaux conservent leur déclenchement à proximité.
   verifierSonPartition() {
     const partition = this.partition;
     const disponible = partition && partition.active && partition.body && partition.body.enable && this.partitionActive !== false && this.partitionPrise !== true && this.fragmentRecupere !== true;
     if (!disponible) {
+      this.arreterSonPartition();
       return;
     }
-    const plusProche = Math.min(...this.persos.map((perso) => Phaser.Math.Distance.Between(perso.x, perso.y, partition.x, partition.y)));
+    if (this.numeroNiveau == 1) {
+      const vue = this.cameras.main.worldView;
+      const limites = partition.getBounds();
+      const visible = partition.visible && partition.alpha > 0 && limites.right > vue.left && limites.left < vue.right && limites.bottom > vue.top && limites.top < vue.bottom;
+      if (visible && this.sonPartitionJoue !== true) {
+        this.sonPartitionJoue = true;
+        this.sound.play("son_partition", { volume: 0.3 });
+      } else if (!visible) {
+        this.arreterSonPartition();
+      }
+      return;
+    }
+    const plusProche = Math.min(...this.persos.filter((perso) => perso.body.enable == true).map((perso) => Phaser.Math.Distance.Between(perso.x, perso.y, partition.x, partition.y)));
     if (plusProche < 200 && this.sonPartitionJoue !== true) {
       this.sonPartitionJoue = true;
-      this.sound.play("son_partition", { volume: 0.6 });
+      this.sound.play("son_partition", { volume: this.numeroNiveau == 1 ? 0.3 : 0.6 });
     } else if (plusProche > 320) {
-      this.sonPartitionJoue = false; // on s'éloigne : le chœur pourra rejouer à la prochaine approche
+      this.arreterSonPartition(); // on s'éloigne : le chœur pourra rejouer à la prochaine approche
     }
+  }
+
+  arreterSonPartition() {
+    if (this.sonPartitionJoue == true) {
+      this.sound.stopByKey("son_partition");
+    }
+    this.sonPartitionJoue = false;
   }
 
   // --------------------------------------------------------------------------
@@ -1378,6 +1401,7 @@ export default class niveau1 extends Phaser.Scene {
   // Plus de cœur : on joue l'animation de mort, puis écran Game Over
   perdre() {
     this.fini = true;
+    this.arreterSonPartition();
     this.persos.forEach((perso) => {
       this.lacherEchelle(perso);
       perso.setVelocityX(0);
@@ -1403,6 +1427,7 @@ export default class niveau1 extends Phaser.Scene {
       return;
     }
     this.fragmentRecupere = true;
+    this.arreterSonPartition();
     partition.disableBody(true, true); // le parchemin disparaît
     this.porteOuverte = true;
     this.porte.anims.play("porte_ouvre"); // la porte s'ouvre
