@@ -62,9 +62,11 @@ function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne
 }
 // Un rayon qui tourne autour d'un point fixe (la forme finale s'en sert pour l'horloge : voir attaquesUltimes.js). C'est un laser comme les autres :
 // majLasers le fait tourner et le fait blesser le robot qui le touche (un seul coup par attaque).
-export function poserRayonTournant(scene, { ox, oy, angle, balayage, duree }) {
-    const laser = { decalage: 0, trait: null, rayon: null, etat: "rayon", angle, verrouJusqua: 0, fin: scene.time.now + duree, balayage, ox, oy };
+// `grace` : pendant ces ms le rayon est « dormant » (transparent, il ne blesse pas) : un robot qui se trouve près du rayon à son apparition a le temps de s'écarter.
+export function poserRayonTournant(scene, { ox, oy, angle, balayage, duree, grace = 0 }) {
+    const laser = { decalage: 0, trait: null, rayon: null, etat: "rayon", angle, verrouJusqua: 0, fin: scene.time.now + duree, balayage, ox, oy, actifDepuis: scene.time.now + grace };
     laser.rayon = scene.add.rectangle(ox, oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(angle);
+    if (grace > 0) { laser.rayon.setAlpha(0.25); scene.tweens.add({ targets: laser.rayon, alpha: 0.95, duration: 120, delay: grace }); } // dormant, puis il s'allume d'un coup
     effets.clignoter(scene, laser.rayon, { alpha: 0.6, duration: 140 }); // il vibre : il reste actif tout le temps
     scene.lasersBoss.push(laser);
     return laser;
@@ -96,7 +98,7 @@ function majLasers(scene, boss) { // à chaque image : les traits suivent le bos
         const dx = Math.cos(laser.angle), dy = Math.sin(laser.angle);
         const avance = Math.max(0, Math.min(LONGUEUR_LASER, px * dx + py * dy)); // le point du rayon le plus proche du robot
         const distance = Math.hypot(px - dx * avance, py - dy * avance);
-        if (!laser.touche && distance < EPAISSEUR_LASER / 2 + 16) {
+        if (!laser.touche && scene.time.now >= (laser.actifDepuis || 0) && distance < EPAISSEUR_LASER / 2 + 16) {
             scene.lasersBoss.forEach((l) => { l.touche = true; }); // un seul coup par attaque
             scene.blesserJoueur(1, "Foudroyé par " + boss.profil.cause, true); // (un rayon blesse même un robot en boule)
         }

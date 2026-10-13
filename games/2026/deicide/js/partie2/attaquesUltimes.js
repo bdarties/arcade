@@ -23,13 +23,15 @@ const haut = (scene) => scene.cameras.main.worldView.y + 12; // le haut de l'éc
 // ---------------------------------------------------------------------------------------------
 const ANGLE_METEORE = 0.5; // rad, par rapport à la verticale : la pente des météores
 const VITESSE_METEORE = 560;
+const ECHELLE_METEORE = 0.32; // la taille d'un météore : son corps fait 26 px, à peine plus que le robot (20 px de large). Avant 0,42 (34 px) et 10 météores par volée
+const NOMBRE_METEORES = 12, ECART_METEORES = 105; // plus nombreux et plus serrés pour compenser : il y a toujours un trou de plus de 55 px entre deux trajectoires
 
 function lignesMeteores(scene, sens) { // 10 trajectoires parallèles, avec leur trait d'annonce
     const y = haut(scene);
     const vx = sens * Math.sin(ANGLE_METEORE) * VITESSE_METEORE, vy = Math.cos(ANGLE_METEORE) * VITESSE_METEORE;
     const decalage = -sens * (scene.areneSolY - y) * Math.tan(ANGLE_METEORE) / 2; // la volée est centrée : elle arrive de part et d'autre de l'écran
-    return Array.from({ length: 10 }, (_, i) => {
-        const x = 70 + i * 128 + decalage;
+    return Array.from({ length: NOMBRE_METEORES }, (_, i) => {
+        const x = 70 + i * ECART_METEORES + decalage;
         return { x, y, vx, vy, trait: tracer(scene, x, y, (scene.areneSolY - y) / Math.cos(ANGLE_METEORE), Math.atan2(vy, vx)) };
     });
 }
@@ -37,7 +39,7 @@ function tirerMeteores(scene, lignes, valide) {
     jouerSonSurLeTemps(scene, "orbe");
     lignes.forEach((ligne, i) => scene.time.delayedCall(i * 90, () => { // en cascade, d'un bord à l'autre
         ligne.trait.destroy();
-        if (valide()) creerOrbe(scene, ligne.x, ligne.y, ligne.vx, ligne.vy).setScale(0.42); // un météore : une orbe plus grosse
+        if (valide()) creerOrbe(scene, ligne.x, ligne.y, ligne.vx, ligne.vy).setScale(ECHELLE_METEORE); // un météore : une orbe fine
     }));
 }
 
@@ -69,7 +71,26 @@ function trous() { // trois trous : chacun à 280 px au moins du précédent (at
 // Horloge
 // ---------------------------------------------------------------------------------------------
 const VITESSE_HORLOGE = 1.15; // rad/s
-const DUREE_HORLOGE = 2200; // ms (plus courte : 3,4 s avant)
+const DUREE_HORLOGE = 2200; // ms, dormants compris (1,75 s de lames actives)
+const GRACE_HORLOGE = 450; // ms pendant lesquels les lames sont dormantes à leur apparition (voir poserRayonTournant)
+const DISTANCE_PIVOT = 380; // le pivot est choisi à au moins cette distance (horizontale) du robot : la lame ne tourne jamais autour de lui
+const DEGAGEMENT_DEPART = 150; // et les lames démarrent à au moins 150 px du robot si c'est possible
+
+function distanceRayon(px, py, ox, oy, angle) { // distance d'un point à un rayon de 1700 px qui part de (ox, oy)
+    const dx = Math.cos(angle), dy = Math.sin(angle), vx = px - ox, vy = py - oy;
+    const t = Math.max(0, Math.min(1700, vx * dx + vy * dy));
+    return Math.hypot(vx - dx * t, vy - dy * t);
+}
+// L'angle de départ de la croix qui éloigne le plus les 4 lames du robot (pendant la 1re demi-seconde de rotation, dans le sens choisi)
+function meilleurDepart(ox, oy, px, py, sens) {
+    let meilleur = { angle: 0, marge: -1 };
+    for (let a = 0; a < Math.PI / 2; a += 0.02) {
+        let marge = Infinity;
+        for (let k = 0; k < 4; k++) for (let t = 0; t <= 0.5; t += 0.1) marge = Math.min(marge, distanceRayon(px, py, ox, oy, a + k * Math.PI / 2 + sens * VITESSE_HORLOGE * t));
+        if (marge > meilleur.marge) meilleur = { angle: a, marge };
+    }
+    return meilleur;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Étau
@@ -132,19 +153,22 @@ export function installerAttaquesUltimes() { // à appeler une fois, avant la cr
     };
     ATTAQUES.horloge = {
         charge: 900, apres: 2500,
-        annoncer(scene) { // quatre traits en croix autour du centre de l'arène : l'angle de départ des lames
-            const ox = 640, oy = scene.areneSolY - 330, depart = Phaser.Math.FloatBetween(0, Math.PI / 2);
+        annoncer(scene) { // quatre traits en croix autour d'un pivot choisi LOIN du robot : l'angle de départ des lames
+            const joueur = scene.player.body.center;
+            const sens = Phaser.Math.RND.pick([1, -1]);
+            const versLaDroite = joueur.x < 640 ? 1 : -1; // le pivot est du côté le plus dégagé de l'arène
+            const ox = Phaser.Math.Clamp(joueur.x + versLaDroite * Phaser.Math.Between(DISTANCE_PIVOT, DISTANCE_PIVOT + 180), 120, 1160), oy = scene.areneSolY - 330;
+            const { angle: depart } = meilleurDepart(ox, oy, joueur.x, joueur.y, sens);
             const traits = [0, 1, 2, 3].map((k) => tracer(scene, ox, oy, 1700, depart + k * Math.PI / 2, 6));
             const centre = scene.add.circle(ox, oy, 26, 0xfff2c0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
             effets.clignoter(scene, centre, { alpha: 0.12, duration: 110 });
-            return { ox, oy, depart, reperes: [...traits, centre] };
+            return { ox, oy, depart, sens, reperes: [...traits, centre] };
         },
         executer(scene, boss, annonce) {
             annonce.reperes.forEach((r) => r.destroy());
-            const sens = Phaser.Math.RND.pick([1, -1]);
             jouerSonSurLeTemps(scene, "dash");
             scene.cameras.main.shake(200, 0.006);
-            [0, 1, 2, 3].forEach((k) => poserRayonTournant(scene, { ox: annonce.ox, oy: annonce.oy, angle: annonce.depart + k * Math.PI / 2, balayage: sens * VITESSE_HORLOGE, duree: DUREE_HORLOGE }));
+            [0, 1, 2, 3].forEach((k) => poserRayonTournant(scene, { ox: annonce.ox, oy: annonce.oy, angle: annonce.depart + k * Math.PI / 2, balayage: annonce.sens * VITESSE_HORLOGE, duree: DUREE_HORLOGE, grace: GRACE_HORLOGE }));
         }
     };
     ATTAQUES.etau = {
