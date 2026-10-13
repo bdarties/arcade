@@ -45,7 +45,7 @@ const PLATEFORMES_AJOUTEES = [{ x: 380, y: 320, largeur: 160 }]; // x, y = coin 
 //  x = nouvelle position de départ · dx, dy = distance parcourue · dureeMs = temps d'un aller simple
 const PLATEFORMES_MOBILES = [
   // route du haut
-  { origine: { x: 640, y: 288 }, largeur: 160, hauteur: 64, x: 650, dx: 0, dy: -60, dureeMs: 1955 }, // monte et descend
+  { origine: { x: 640, y: 288 }, largeur: 160, hauteur: 64, x: 650, dx: 60, dy: 0, dureeMs: 1955 }, // va et vient (reste à y = 288 : ne monte pas vers la voie haute)
   { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2040 }, // va et vient
   { origine: { x: 1216, y: 256 }, largeur: 160, hauteur: 64, x: 1216, dx: 0, dy: 70, dureeMs: 2125 }, // monte et descend
   { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 1870 }, // va et vient
@@ -61,21 +61,21 @@ const PLATEFORMES_MOBILES = [
 //  1. un TAMBOUR posé sur une plateforme fait rebondir très haut (plus haut qu'un saut normal) ;
 //  2. des plateformes fixes en hauteur ;
 //  3. des PLANCHES FRAGILES entre elles : elles tombent peu après qu'on a marché dessus, puis reviennent.
-const TAMBOURS = [{ x: 176, y: 384 }]; // x = centre, y = dessus de la plateforme sur laquelle il est posé
+const TAMBOURS = [{ x: 220, y: 384 }]; // x = centre, y = dessus de la plateforme sur laquelle il est posé
 const FORCE_TAMBOUR = -760; // vitesse de rebond (un saut normal : -520)
 const LARGEUR_PLATEFORME_HAUTE = 160;
 const LARGEUR_PLANCHE = 96;
 const PLATEFORMES_HAUTES = [
-  { x: 300, y: 170 }, // x, y = coin haut gauche (160 px de large)
-  { x: 832, y: 170 }
+  { x: 300, y: 120 }, // x, y = coin haut gauche (160 px de large) ; y = 120 : hors de portée d'un saut normal (135 px)
+  { x: 832, y: 120 }
 ];
 const PLANCHES_FRAGILES = [
-  { x: 520, y: 170 },
-  { x: 676, y: 170 }
+  { x: 520, y: 120 },
+  { x: 676, y: 120 }
 ]; // x, y = coin haut gauche (96 px de large)
 const DELAI_CHUTE_MS = 500; // temps entre le premier contact et la chute de la planche
 const DELAI_RETOUR_MS = 3500; // temps avant qu'elle revienne
-const NOTE_VOIE_HAUTE = { x: 910, y: 130 };
+const NOTE_VOIE_HAUTE = { x: 910, y: 80 };
 
 // Ennemis en plus : ce niveau est plus dur que le niveau 1
 const TUBAS = [
@@ -120,9 +120,7 @@ const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
 //  profondeur : plus c'est grand, plus c'est devant (les plateformes sont à 3, les héros à 10) · lueur : petite lumière orangée
 const DECOR = [
   { nom: "pilier", x: 880, y: 640, ancre: "bas", profondeur: 0.9 },
-  { nom: "pilier", x: 1700, y: 640, ancre: "bas", profondeur: 0.9 },
   { nom: "rideau", x: 100, y: 640, ancre: "bas", profondeur: 0.95 },
-  { nom: "rideau", x: 2080, y: 640, ancre: "bas", profondeur: 0.95 },
   { nom: "banniere", x: 520, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere", x: 1260, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere", x: 1900, y: 0, ancre: "haut", profondeur: 1 },
@@ -133,9 +131,6 @@ const DECOR = [
   { nom: "lanterne", x: 1500, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lanterne2", x: 1860, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lampadaire", x: 760, y: 640, ancre: "bas", profondeur: 2, lueur: true },
-  { nom: "lampadaire", x: 1780, y: 640, ancre: "bas", profondeur: 2, lueur: true },
-  { nom: "caisse", x: 1960, y: 640, ancre: "bas", profondeur: 2 },
-  { nom: "vase", x: 1760, y: 640, ancre: "bas", profondeur: 2 },
   { nom: "pagode", x: 1836, y: 232, ancre: "bas", profondeur: 2 }
 ];
 
@@ -149,7 +144,7 @@ export default class niveau2 extends niveau1 {
   // --------------------------------------------------------------------------
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
+    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
     this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
     this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
@@ -231,7 +226,7 @@ export default class niveau2 extends niveau1 {
     this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (bouton B)\npour atteindre une note dorée BONUS (+1 cœur)");
     this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
     this.ajouterIndice(190, 330, "Tambour : saute dessus pour rebondir très haut !");
-    this.ajouterIndice(600, 108, "Voie haute : planches fragiles, ne traîne pas !");
+    this.ajouterIndice(600, 70, "Voie haute : seul le TAMBOUR y mène ! Planches fragiles, ne traîne pas.");
 
     this.creerPlateformesMobiles();
     this.creerVoieHaute();
@@ -290,6 +285,12 @@ export default class niveau2 extends niveau1 {
     DECOR.forEach((d) => {
       const image = this.add.image(d.x, d.y, "decor2", d.nom);
       image.setOrigin(0.5, d.ancre == "bas" ? 1 : 0).setDepth(d.profondeur);
+      if (d.nom == "pilier") {
+        // le pilier est un vrai obstacle : solide de TOUS les côtés (pas à sens unique), on peut s'y poser dessus
+        const zone = this.add.zone(d.x, d.y - image.height / 2, image.width, image.height);
+        this.groupe_plateformes.add(zone);
+        zone.unSens = false;
+      }
       if (d.lueur == true) {
         // petite lueur orangée autour de la lanterne (même texture que la lampe du Détective)
         const centreY = d.ancre == "bas" ? d.y - image.height * 0.8 : d.y + image.height * 0.45;
