@@ -1,7 +1,7 @@
-// credits.js : l'écran de crédits, à la toute fin du jeu : après le panthéon (classement.js), avant le retour à l'accueil.
+// credits.js : l'écran de crédits, à la fin du jeu : après la victoire, AVANT le panthéon (classement.js : saisie du nom et tableau), qui est la dernière chose vue avant le retour à l'accueil.
 // Le titre apparaît au centre avec ses lettres qui scintillent, puis les crédits défilent vers le haut (le nom des créateurs, les graphismes, les musiques, les bruitages, le moteur),
 // et le défilé se termine sur « FIN ». Le décor est celui de l'écran du panthéon : une lueur violette qui respire, des colonnes sur les bords, de la poussière qui monte.
-// N'importe quel bouton (après 1,5 s) saute les crédits ; sinon la fin du défilé ramène à l'accueil toute seule.
+// N'importe quel bouton (après 1,5 s) saute les crédits ; sinon la fin du défilé mène toute seule au panthéon.
 import { creerPolice, ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // la police pixel et les couleurs du jeu
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js";
@@ -25,6 +25,10 @@ const SECTIONS = [
 
 export default class credits extends Phaser.Scene {
     constructor() { super({ key: "credits" }); }
+
+    init(donnees) { // le résultat de la partie, à transmettre au panthéon (classement.js) qui vient APRÈS les crédits ; sans résultat (test), retour à l'accueil
+        this.resultat = donnees && donnees.tempsBrutMs !== undefined ? donnees : null;
+    }
 
     // La musique des crédits n'est PAS chargée avec le reste du jeu : décodée elle pèse 19 Mo en mémoire, et le Raspberry Pi de la borne en a peu. Elle se charge ici, à l'arrivée sur les crédits.
     preload() {
@@ -180,7 +184,7 @@ export default class credits extends Phaser.Scene {
         jouerSon(this, "lanterne");
         this.cameras.main.flash(220, 255, 235, 170);
         this.tweens.add({ targets: this.fin, scale: 1.1, duration: 700, yoyo: true, repeat: -1, ease: "Sine.InOut" });
-        const invite = ecrire(this, 640, 640, "I  RETOUR A L'ACCUEIL", 3, { teinte: GRIS_VIOLET });
+        const invite = ecrire(this, 640, 640, this.resultat ? "I  CONTINUER" : "I  RETOUR A L'ACCUEIL", 3, { teinte: GRIS_VIOLET });
         invite.setDepth(40);
         this.tweens.add({ targets: invite, alpha: 0.3, duration: 650, yoyo: true, repeat: -1 });
         this.time.delayedCall(10000, () => this.sortir()); // la fin de la musique (le calme) accompagne « FIN » : 10 s avant le retour automatique
@@ -192,6 +196,6 @@ export default class credits extends Phaser.Scene {
         const musique = this.sound.get("musique_credits"); // la musique s'éteint en fondu avec l'écran
         if (musique) this.tweens.add({ targets: musique, volume: 0, duration: 650, onComplete: () => musique.stop() });
         this.cameras.main.fadeOut(700, 0, 0, 0);
-        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start("menu")); // retour à l'accueil, pour la partie suivante
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => { if (this.resultat) this.scene.start("classement", this.resultat); else this.scene.start("menu"); }); // le panthéon (c'est la dernière chose vue) ; sans résultat : l'accueil
     }
 }
