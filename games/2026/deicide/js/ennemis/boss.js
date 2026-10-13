@@ -51,6 +51,7 @@ const PROFILS = {
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
+        musique: "2", // « Boss Battle #9 » (voir sons.js) : le premier combat garde « Boss Battle #8 »
         pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1400, 1000, 250], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
@@ -108,7 +109,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     profil = PROFILS[nomProfil]; // les réglages de ce boss
     profil.cle = nomProfil; // son nom, pour retenir la phase atteinte (voir changerDePhase)
     creerAnimations(scene);
-    musiqueBoss(scene); // la musique metal du combat démarre avec l'apparition du boss
+    musiqueBoss(scene, profil.musique); // la musique metal du combat démarre avec l'apparition du boss
     const boss = scene.physics.add.sprite(x, y, "boss_idle", 0); // un sprite avec un corps physique, pour les tirs du joueur
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
