@@ -88,7 +88,7 @@ export default class menu extends Phaser.Scene {
     const dalle = this.add.sprite(x, y, "bouton_jouer", 1).setScale(4);
     dalle.play("bouton_jouer_survol");
     const cache = this.add.rectangle(x + 38, y + 6, 224, 52, 0x050505); // le fond sombre qui recouvre le mot « JOUER » (centre de la dalle : 52 / 22 sur l'image)
-    const texte = ecrire(this, x + 38, y + 5, "1V1", 7, { profondeur: 0 });
+    const texte = ecrire(this, x + 23, y + 7, "1V1", 7, { profondeur: 0 });
     const voile = this.add.rectangle(x, y, 416, 176, 0x0e0e11, 0.6); // atténue la dalle quand elle n'est pas choisie (on n'utilise pas l'alpha : le mot « JOUER » transparaîtrait sous le cache)
     const groupe = this.add.container(0, 0, [dalle, cache, texte, voile]);
     dalle.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
