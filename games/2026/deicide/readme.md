@@ -60,3 +60,5 @@ par quelques tables que la partie 1 expose : `PROFILS` et `ATTAQUES` (les boss e
 
 Pour que le jeu s'arrête à la fin du 1er boss, il suffit de retirer de `index.js` les lignes qui parlent de la partie 2 (`installerPartie2`, `scenesPartie2`, `activerTestsPartie2`) :
 la réponse OUI mène alors directement à l'écran de fin. Les fichiers de la partie 2 peuvent rester dans le dossier, ils ne sont plus chargés.
+
+Numéro de version : affiché en bas à droite du menu. Avant chaque pull request : `python3 outils/version.py` puis commiter `js/version.js` (voir DEVLOG.md).

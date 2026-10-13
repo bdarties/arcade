@@ -184,3 +184,8 @@
 - **FPS de la fissure** : le réseau de fissures est dessiné sur deux canevas pendant la tension (14 ms), au coup on ne fait que les afficher (3 ms), au lieu de redessiner des centaines de lignes à chaque image.
 - **Ordre de la fin (changé le 13/10/2026)** : victoire → crédits → panthéon (saisie du nom et tableau) → accueil. Le panthéon est la dernière chose vue. `finirPartie` lance les crédits avec le résultat de la partie, les crédits le transmettent à `classement` (sans résultat, par exemple en test, ils ramènent à l'accueil). Une touche pressée pour sauter les crédits ne valide rien dans le panthéon : sa séquence d'intro ignore les touches, puis un délai évite les validations accidentelles.
 - **Laser circulaire (horloge)** : durée totale 1,65 s dont 0,75 s dormante, soit 0,9 s de lames actives (2,3 s avant) : il tourne de 0,63 rad seulement, assez court pour être esquivé.
+
+## Numéro de version (13/10/2026)
+- **Quoi** : le menu affiche en bas à droite « v484 · 86d6673 · 13/10/2026 » (nombre de commits, empreinte du dernier commit, date). Il vient de `js/version.js`, généré par `python3 outils/version.py`.
+- **Pourquoi** : sur la borne, comparer ce numéro avec celui de `js/version.js` sur GitHub (branche `main`) dit tout de suite si le jeu est à jour.
+- **Règle** : lancer `python3 outils/version.py` et commiter `js/version.js` avant chaque pull request. L'empreinte est celle du commit juste avant ; après un « squash » sur GitHub, le nombre de commits de `main` peut différer de celui de la branche, c'est le fichier `version.js` de `main` qui fait foi.
