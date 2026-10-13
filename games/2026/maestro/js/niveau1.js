@@ -30,6 +30,8 @@ const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner pl
 // Mur de lumière : empêche d'atteindre le parchemin en sautant depuis la plateforme de droite
 // (sol_14). Sans lui, on pourrait se passer des passerelles fantômes, donc du Détective.
 const MUR_LUMIERE = { x: 1664, y: 100, largeur: 16, hauteur: 246 };
+const MARGE_REPRISE = 96; // à la réapparition, le héros est au moins à 96 px du bord de sa plateforme (au milieu si elle est étroite)
+const FIGE_REPRISE_MS = 500; // et il est figé 0,5 s pour ne pas retomber avec une touche encore enfoncée
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
@@ -306,12 +308,25 @@ export default class niveau1 extends Phaser.Scene {
   creerMurDeLumiere() {
     const m = MUR_LUMIERE;
     this.groupe_murs = this.physics.add.staticGroup();
-    this.groupe_murs.add(this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur));
+    this.murZone = this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur);
+    this.groupe_murs.add(this.murZone);
+    this.murOuvert = false; // vrai quand le mur a disparu
     const faisceau = this.add
       .rectangle(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur, 0xffe9a0, 0.22)
       .setDepth(6)
       .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.murVisuel = faisceau;
+    this.tweenMur = this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+  }
+
+  // Le mur n'est utile que tant que le Détective n'a pas révélé les passerelles : dès qu'elles sont toutes
+  // révélées, il disparaît (sinon il bloquerait inutilement un joueur qui a déjà fait son travail).
+  ouvrirMurDeLumiere() {
+    this.murOuvert = true;
+    this.murZone.destroy(); // la zone solide disparaît tout de suite : on peut passer
+    this.tweenMur.stop();
+    this.tweens.add({ targets: this.murVisuel, alpha: 0, duration: 600, onComplete: () => this.murVisuel.destroy() });
+    this.afficherMessage("Les passerelles sont révélées : le mur de lumière disparaît !", 3500);
   }
 
   // Une passerelle fantôme : solide seulement quand la lampe l'éclaire
@@ -383,6 +398,7 @@ export default class niveau1 extends Phaser.Scene {
     perso.enEchelle = false; // vrai quand le personnage est accroché à une échelle
     perso.invincibleJusqua = 0; // pas de dégâts avant cet instant (ms)
     perso.sonneJusqua = 0; // choc : pas de contrôle avant cet instant (ms)
+    perso.figeJusqua = 0; // après une réapparition : pas de contrôle avant cet instant (ms), sans animation de choc
     perso.tireJusqua = 0; // animation de tir / d'allumage en cours jusqu'à cet instant (ms)
     perso.dernierTir = -9999;
     return perso;
@@ -460,9 +476,7 @@ export default class niveau1 extends Phaser.Scene {
   creerCollisions() {
     // Les personnages marchent sur les plateformes, sauf quand ils sont accrochés à une échelle
     // (la 3e fonction est une CONDITION : si elle renvoie false, il n'y a pas de collision)
-    this.physics.add.collider(this.persos, this.groupe_plateformes, null, function (perso) {
-      return perso.enEchelle != true;
-    });
+    this.physics.add.collider(this.persos, this.groupe_plateformes, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
     this.physics.add.collider(this.groupe_tubas, this.groupe_plateformes);
     this.physics.add.collider(this.persos, this.groupe_murs);
 
@@ -487,6 +501,19 @@ export default class niveau1 extends Phaser.Scene {
     this.physics.add.overlap(this.persos, this.groupe_ondes_ennemies, this.ondeEnnemieTouche, null, this);
 
     this.collisionsObjets();
+  }
+
+  // Le héros peut-il marcher sur cette plateforme ? Pas s'il est sur une échelle. Et une plateforme « à sens unique »
+  // (propriété unSens, utilisée au niveau 2) se traverse par le DESSOUS et par les côtés : on ne se cogne plus la tête,
+  // on ne s'y pose que si on tombe depuis le dessus.
+  peutMarcherSur(perso, plateforme) {
+    if (perso.enEchelle == true) {
+      return false;
+    }
+    if (plateforme.unSens == true) {
+      return perso.body.velocity.y >= 0 && perso.body.bottom <= plateforme.body.top + 14;
+    }
+    return true;
   }
 
   // Ramasser le parchemin, franchir la porte (niveau2.js remplace le parchemin par des lampes)
@@ -603,7 +630,9 @@ export default class niveau1 extends Phaser.Scene {
   // --------------------------------------------------------------------------
   gererPersonnage(perso, temps, delta) {
     // En duo les deux jouent. En solo, seul le personnage actif obéit aux touches.
-    const controle = this.mode == "duo" || perso == this.actif;
+    // Figé juste après une réapparition : sinon une touche encore enfoncée le ferait retomber dans le vide
+    const fige = temps < perso.figeJusqua;
+    const controle = (this.mode == "duo" || perso == this.actif) && fige == false;
     const sonne = temps < perso.sonneJusqua; // vient d'être touché : pas de contrôle un court instant
 
     this.gererEchelle(perso, controle, sonne);
@@ -855,6 +884,7 @@ export default class niveau1 extends Phaser.Scene {
         const dansLaTache = this.distanceAuRectangle(faisceau.cx, faisceau.cy, passerelle.rect) <= REGLAGES.lampe.rayon;
         const toutPres = this.distanceAuRectangle(centre.x, centre.y, passerelle.rect) <= REGLAGES.lampe.rayonProche;
         if (dansLaTache || toutPres) {
+          passerelle.dejaEclairee = true; // éclairée au moins une fois (sert à ouvrir le mur de lumière)
           passerelle.eclaireJusqua = temps + REGLAGES.lampe.persistanceMs;
           if (REGLAGES.lampe.passerellesFixes == true) {
             passerelle.revelee = true; // révélée une fois : elle ne disparaîtra plus
@@ -869,6 +899,14 @@ export default class niveau1 extends Phaser.Scene {
       passerelle.alphaVisuel = Phaser.Math.Linear(passerelle.alphaVisuel, eclairee ? 1 : 0, 0.25);
       this.afficherFantome(passerelle, passerelle.alphaVisuel);
     });
+
+    // Toutes les passerelles ont été révélées au moins une fois : le mur de lumière (s'il y en a un) disparaît
+    const passerelles = this.groupe_fantomes.getChildren();
+    if (this.murZone !== undefined && this.murOuvert == false && passerelles.length > 0) {
+      if (passerelles.every((passerelle) => passerelle.dejaEclairee == true)) {
+        this.ouvrirMurDeLumiere();
+      }
+    }
   }
 
   afficherFantome(passerelle, alpha) {
@@ -1112,8 +1150,9 @@ export default class niveau1 extends Phaser.Scene {
     if (sol === undefined) {
       return; // il se tient sur une passerelle fantôme : on garde l'ancienne position
     }
-    // on reste à 24 px du bord de la plateforme pour ne pas retomber tout de suite
-    const x = Phaser.Math.Clamp(corps.center.x, sol.body.left + 24, sol.body.right - 24);
+    // on reste LOIN du bord de la plateforme pour ne pas retomber tout de suite (au milieu si elle est étroite)
+    const marge = Math.min(MARGE_REPRISE, sol.body.width / 2);
+    const x = Phaser.Math.Clamp(corps.center.x, sol.body.left + marge, sol.body.right - marge);
     perso.positionSure = { x: x, y: perso.y };
   }
 
@@ -1126,9 +1165,11 @@ export default class niveau1 extends Phaser.Scene {
     const depart = perso == this.cantatrice ? this.departs.j1 : this.departs.j2;
     const sure = perso.positionSure !== undefined ? perso.positionSure : { x: depart.x, y: depart.y - 40 };
     this.lacherEchelle(perso);
-    perso.setPosition(sure.x, sure.y);
-    perso.setVelocity(0, 0);
+    // body.reset : la bonne façon de téléporter un corps physique (position ET vitesse remises à zéro).
+    // Avec un simple setPosition, le corps garde sa vitesse de chute : le héros s'enfonçait dans le sol et retombait.
+    perso.body.reset(sure.x, sure.y);
     perso.invincibleJusqua = this.time.now + REGLAGES.vies.invincibiliteMs;
+    perso.figeJusqua = this.time.now + FIGE_REPRISE_MS; // il ne bouge pas pendant un court instant
     this.faireClignoter(perso);
     this.afficherMessage("Tombé dans le vide ! (-1 cœur)", 2500);
   }
