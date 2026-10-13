@@ -9,6 +9,7 @@
 // ne se déclenche pas en jouant, et la durée évite un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
+//   - F4 : lance directement les crédits de fin (écran credits.js)
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
 //   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/testsBorne.js)
 const COMBOS = [
@@ -61,8 +62,14 @@ function teleporterRobot(jeu) { // F8 : chaque niveau indique où dans sa config
     });
 }
 
+function lancerCredits(jeu) { // F4 : les crédits de fin
+    arreterToutesLesScenes(jeu); // (coupe aussi la musique)
+    jeu.scene.start("credits");
+}
+
 export function activerRaccourcis(jeu) {
     window.addEventListener("keydown", (evenement) => { // les touches de test
+        if (evenement.key === "F4") { evenement.preventDefault(); lancerCredits(jeu); }
         if (evenement.key === "F8") teleporterRobot(jeu);
     });
 

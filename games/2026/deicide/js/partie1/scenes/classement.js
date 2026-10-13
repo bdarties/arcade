@@ -387,7 +387,7 @@ export default class classement extends Phaser.Scene {
         this.zoneNom.removeAll(true);
         this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
         this.pied.destroy();
-        this.pied = ecrire(this, 640, 696, "I  REJOUER", 3, { teinte: CLAIR });
+        this.pied = ecrire(this, 640, 696, "I  CONTINUER", 3, { teinte: CLAIR });
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 });
         this.afficherTableau();
     }

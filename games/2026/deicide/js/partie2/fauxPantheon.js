@@ -3,7 +3,7 @@
 // Les deux moitiés de l'écran s'écartent dans la lumière, et derrière, le boss revient en arrière-plan sous sa forme finale.
 // Il est posé par-dessus le niveau 3, qui est en pause : quand l'écran est tranché, le niveau reprend (voir finDeCombat.js : retour).
 // Les sons sont synthétisés (synth.js) ; l'entaille est une courbe de Bézier dessinée en lame effilée, avec un halo, une onde de choc et des étincelles.
-import classement, { ecrire, OR, CLAIR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu)
+import classement, { ecrire, plaque, OR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu ; plaque : la plaque d'armure du HUD)
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon, volumeEffets } from "../partie1/systemes/sons.js";
 import { fanfare, battements, montee, coupDEpee, impact, verre, cri, annonce } from "./synth.js";
@@ -244,27 +244,31 @@ export default class fauxPantheon extends classement {
         this.time.delayedCall(4500, () => this.terminer());
     }
 
-    // ---- LA BANNIÈRE : le nom du boss, comme à la présentation d'un combattant dans Smash Bros. Un grand bandeau incliné qui arrive en glissant, les lettres qui claquent une à une, un éclat qui
-    // le balaie, un flash, des étincelles aux deux bouts et un tremblement, puis il repart. ----
+    // ---- LA BANNIÈRE : le nom du boss, comme à la présentation d'un combattant dans Smash Bros, mais dans la DA du jeu : la plaque d'armure du HUD (coins coupés, rivets, creux sombre), des filets
+    // et des losanges dorés, le nom dans la police pixel à deux tons. Elle arrive en glissant, les lettres claquent une à une, un éclat balaie l'intérieur de la plaque, puis elle repart. ----
     banniere(yCentre) {
-        const L = 1080, H = 176; // largeur et hauteur du bandeau
-        const groupe = this.add.container(-1600, yCentre).setDepth(120).setAngle(-4); // incliné de 4°, comme les bandeaux de Smash
-        const forme = (x, y, l, h, couleur, alpha = 1) => groupe.add(this.add.rectangle(x, y, l, h, couleur, alpha));
-        forme(12, 16, L + 34, H + 34, 0x000000, 0.55); // l'ombre
-        forme(0, 0, L + 24, H + 24, 0xffffff); // le contour blanc...
-        forme(0, 0, L + 10, H + 10, 0xffd45c); // ...puis doré
-        forme(0, 0, L, H, 0x2a1670); // le corps violet foncé
-        forme(0, -H * 0.25, L, H * 0.5, 0x5a3bd9); // la moitié haute, plus claire (le dégradé du bandeau)
-        forme(0, -H / 2 + 7, L, 14, 0xb89cff); // le liseré clair en haut
-        forme(0, H / 2 - 5, L, 10, 0x180c48); // et le bord sombre en bas
-        for (let x = -L / 2 + 40; x < L / 2; x += 62) forme(x, 0, 12, H, 0xffffff, 0.07); // la trame : de fines bandes verticales
-        const eclat = this.add.rectangle(-L / 2, 0, 90, H, 0xffffff, 0.6).setBlendMode(Phaser.BlendModes.ADD); // l'éclat qui balaie le bandeau
+        const E = 4, LP = 272, HP = 46; // la plaque est dessinée en 272 x 46 pixels, agrandis x4 : 1088 x 184 à l'écran
+        const L = LP * E, H = HP * E;
+        const interieur = { l: L - 2 * 6 * E, h: H - 2 * 6 * E }; // le creux sombre où s'inscrit le texte (6 pixels de bord, voir plaque() dans classement.js)
+        const groupe = this.add.container(-1600, yCentre).setDepth(120);
+        groupe.add(this.add.rectangle(10, 14, L, H, 0x000000, 0.55)); // l'ombre portée
+        groupe.add(this.add.image(0, 0, plaque(this, LP, HP, true)).setScale(E));
+        groupe.add(this.add.rectangle(0, 0, interieur.l - 20, interieur.h - 20).setStrokeStyle(2, OR, 0.5)); // un cadre doré fin dans le creux
+        const losange = (x, y, t, alpha = 1) => groupe.add(this.add.rectangle(x, y, t, t, OR, alpha).setAngle(45));
+        [-1, 1].forEach((cote) => { // des losanges dorés aux deux bouts, comme les ornements de l'écran de fin
+            const x = cote * (interieur.l / 2 - 52);
+            losange(x, 0, 30); losange(x + cote * 38, 0, 16, 0.8); losange(x + cote * 66, 0, 8, 0.6);
+            groupe.add(this.add.rectangle(x - cote * 40, 0, 4, interieur.h - 50, OR, 0.7)); // une barre dorée verticale à l'intérieur de chaque losange
+        });
+        groupe.add(this.add.rectangle(0, 20, 640, 3, OR, 0.85)); // le filet doré entre le nom et le sous-titre...
+        losange(0, 20, 14);
+        const eclat = this.add.rectangle(-interieur.l / 2 + 40, 0, 90, interieur.h - 16, 0xffffff, 0.45).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0); // l'éclat qui balaie l'intérieur de la plaque (invisible avant et après son passage)
         groupe.add(eclat);
-        const nom = ecrire(this, 0, -26, "DIEU DE LA LUMIERE", 7, { teinte: 0xffffff });
+        const nom = ecrire(this, 0, -26, "DIEU DE LA LUMIERE", 7, { teinte: 0xffffff }); // (la teinte blanche laisse les deux tons de la police : clair en haut, lavande en bas)
         const sous = ecrire(this, 0, 52, "FORME FINALE", 4, { teinte: OR });
         groupe.add([nom, sous]);
         nom.lettres.concat(sous.lettres).forEach((lettre) => { if (lettre) lettre.setAlpha(0); }); // les lettres apparaissent une à une
-        // 1) il arrive en glissant, avec un petit dépassement
+        // 1) elle arrive en glissant, avec un petit dépassement
         this.tweens.add({ targets: groupe, x: 640, duration: 330, ease: "Back.Out",
             onComplete: () => {
                 // 2) l'impact de l'arrivée : un flash, un tremblement, des étincelles, l'annonce sonore
@@ -272,18 +276,19 @@ export default class fauxPantheon extends classement {
                 this.cameras.main.flash(180, 255, 255, 255);
                 this.cameras.main.shake(420, 0.016);
                 const etincelles = this.add.particles(0, 0, "pixel", { speed: { min: 200, max: 760 }, angle: { min: 0, max: 360 }, gravityY: 500, lifespan: { min: 300, max: 900 }, scale: { start: 3, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xffffff, 0xffd45c, 0xb89cff], blendMode: "ADD", emitting: false }).setDepth(121);
-                [-L / 2, L / 2].forEach((dx) => etincelles.emitParticleAt(640 + dx, yCentre + dx * 0.07, 36));
-                // 3) les lettres claquent une à une (chacune grossit puis se pose), l'éclat traverse le bandeau
+                [-L / 2, L / 2].forEach((dx) => etincelles.emitParticleAt(640 + dx, yCentre, 36));
+                // 3) les lettres claquent une à une (chacune grossit puis se pose), l'éclat traverse la plaque
                 [[nom, 7], [sous, 4]].forEach(([texte, echelle], r) => texte.lettres.forEach((lettre, i) => {
                     if (!lettre) return;
                     lettre.setScale(echelle * 2.2);
                     this.tweens.add({ targets: lettre, alpha: 1, scale: echelle, duration: 170, delay: 80 + i * 32 + r * 250, ease: "Back.Out" });
                 }));
-                this.tweens.add({ targets: eclat, x: L / 2 - 20, duration: 650, delay: 150, ease: "Cubic.InOut" });
-                this.tweens.add({ targets: groupe, scale: 1.025, duration: 600, yoyo: true, repeat: 2, ease: "Sine.InOut" }); // il respire pendant qu'il est affiché
+                this.tweens.add({ targets: eclat, x: interieur.l / 2 - 40, duration: 650, delay: 150, ease: "Cubic.InOut" });
+                this.tweens.add({ targets: eclat, alpha: 0.45, duration: 120, delay: 150, onComplete: () => this.tweens.add({ targets: eclat, alpha: 0, duration: 220, delay: 300 }) });
+                this.tweens.add({ targets: groupe, scale: 1.02, duration: 600, yoyo: true, repeat: 2, ease: "Sine.InOut" }); // elle respire pendant qu'elle est affichée
             }
         });
-        // 4) il repart par la droite, avant que le niveau reprenne
+        // 4) elle repart par la droite, avant que le niveau reprenne
         this.time.delayedCall(2750, () => this.tweens.add({ targets: groupe, x: 2000, duration: 280, ease: "Cubic.In", onComplete: () => groupe.destroy() }));
     }
 

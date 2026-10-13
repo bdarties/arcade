@@ -45,7 +45,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 | dash (bouton E) | L | G |
 
 Menu pause : Échap ou X (start). Recommencer la partie : maintenir C + F (les boutons C et F de la borne, P et ; au clavier, la touche M en AZERTY) pendant 0,5 s.
-Touches de test, à retirer avant la borne : F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie), F5 (la fausse fin : la fissure de l'écran, puis la phase 4, la forme finale du boss ; F5 ne recharge donc plus la page).
+Touches de test, à retirer avant la borne : F4 (les crédits de fin), F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie), F5 (la fausse fin : la fissure de l'écran, puis la phase 4, la forme finale du boss ; F5 ne recharge donc plus la page).
 
 ## Les explications des choix
 
