@@ -720,6 +720,7 @@ export default class niveau2 extends niveau1 {
     }
     this.partitionPrise = true;
     this.fragmentRecupere = true;
+    this.arreterSonPartition(); // le chœur s'arrête dès qu'on tient le fragment
     partition.disableBody(true, true);
     [this.etincelles, this.rayons, this.halo_partition, this.etiquettePartition, this.indicateur].forEach((objet) => {
       if (objet && objet.active) {

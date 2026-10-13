@@ -342,8 +342,9 @@ export default class lobby extends Phaser.Scene {
 
     // En duo chacun a ses touches. En solo, les deux joysticks fonctionnent pour le perso actif.
     this.cantatrice = this.creerPersonnage("cantatrice", SPAWN.x, this.mode == "duo" ? [j1] : [j1, j2]);
-    this.detective = this.creerPersonnage("detective", SPAWN.x + 60, this.mode == "duo" ? [j2] : [j1, j2]);
-    this.persos = [this.cantatrice, this.detective];
+    // En solo il n'y a qu'un seul corps (comme au niveau 1) : pas de Détective dans le lobby
+    this.detective = this.mode == "duo" ? this.creerPersonnage("detective", SPAWN.x + 60, [j2]) : null;
+    this.persos = this.mode == "duo" ? [this.cantatrice, this.detective] : [this.cantatrice];
     this.actif = this.cantatrice; // en solo : le personnage qu'on contrôle en ce moment
 
     // On marche sur le sol, sauf quand on est accroché à une échelle
@@ -394,7 +395,7 @@ export default class lobby extends Phaser.Scene {
       stroke: "#000000",
       strokeThickness: 5
     };
-    const consigne = "LE LOBBY · " + (this.mode == "solo" ? "joystick : marcher · A : sauter · D : changer" : "J1 : A sauter · J2 : A sauter") + "\n" + aideClavier();
+    const consigne = "LE LOBBY · " + (this.mode == "solo" ? "joystick : marcher · A : sauter" : "J1 : A sauter · J2 : A sauter") + "\n" + aideClavier();
     this.texteConsigne = this.add.text(640, 30, consigne, { ...style, fontStyle: "bold" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.tweens.add({ targets: this.texteConsigne, alpha: 0, delay: 6000, duration: 1500 });
 
@@ -425,14 +426,6 @@ export default class lobby extends Phaser.Scene {
   update(temps) {
     if (this.enTransition == true) {
       return;
-    }
-
-    // Solo : le bouton D change de personnage
-    if (this.mode == "solo" && this.toucheAppuyee(this.actif, "D")) {
-      this.actif = this.actif == this.cantatrice ? this.detective : this.cantatrice;
-      const nouveau = this.actif;
-      nouveau.setTintFill(0xffffff); // petit flash blanc pour montrer qui est actif
-      this.time.delayedCall(120, () => nouveau.clearTint());
     }
 
     this.persos.forEach((perso) => this.gererPersonnage(perso));
