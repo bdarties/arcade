@@ -110,9 +110,11 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     // reprise après une mort : le combat repart au début de la phase où le robot est mort (voir changerDePhase), pas depuis la phase 1
     const reprise = scene.registry.get("phaseBoss");
     const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
-    boss.pv = phaseDepart === 0 ? profil.pv : profil.seuils[phaseDepart - 1]; // au début d'une phase, le boss a exactement les PV de son seuil
+    // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir raccourcis.js)
+    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 ? profil.pv : profil.seuils[phaseDepart - 1];
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) -> mort
     boss.phase = phaseDepart; // 0, 1 ou 2
+    if (reprise && reprise.pv !== undefined) scene.registry.set("phaseBoss", { profil: nomProfil, phase: phaseDepart }); // les PV donnés ne servent qu'une fois : après une mort, le boss reprend au seuil de sa phase
     boss.departY = y; // hauteur autour de laquelle il flotte
     boss.prochaineAttaque = Infinity; // pas d'attaque avant la fin de l'apparition
     boss.derniereAttaque = null;

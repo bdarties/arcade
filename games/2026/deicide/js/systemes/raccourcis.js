@@ -12,7 +12,7 @@
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
 //   - F9 : lance directement le niveau 2
-//   - F10 : lance directement la phase 3 du dernier boss (niveau 3, le boss repart avec 45 PV)
+//   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
 const COMBOS = [
     { nom: "reset", touches: [90, 88], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // Z et X
     { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
@@ -91,7 +91,7 @@ function lancerNiveau2(jeu) { // F9 : une partie qui commence directement au niv
 function lancerPhase3(jeu) { // F10 : une partie qui commence directement à la phase 3 du dernier boss
     arreterToutesLesScenes(jeu);
     nouvellePartie(jeu);
-    jeu.registry.set("phaseBoss", { profil: "soldat2", phase: 2 }); // la reprise de boss.js fait le reste : phase 3, PV du seuil
+    jeu.registry.set("phaseBoss", { profil: "soldat2", phase: 2, pv: 130 }); // la reprise de boss.js fait le reste : phase 3, tous les PV (130 = pv du profil soldat2)
     jeu.scene.start("niveau3");
 }
 
