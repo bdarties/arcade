@@ -30,7 +30,7 @@ var config = {
       gravity: {
         y: 0 // jeu vu de dessus : pas de gravité
       },
-      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
   scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause, synopsis],
