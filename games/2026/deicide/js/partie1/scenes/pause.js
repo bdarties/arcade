@@ -29,7 +29,8 @@ const CREDITS = [
     ["BRUITAGES", "Kenney (Sci-fi, RPG Audio, Impact Sounds), rubberduck,"],
     ["", "jaggedstone  (licence CC0)"],
     ["MUSIQUE", "« Dark Shrine Loop » par qubodup et yd (niveau)"],
-    ["", "« Boss Battle #8 Metal » et « #9 Metal » par nene (boss), OpenGameArt, CC0"],
+    ["", "« Boss Battle #8 » et « #9 » (Metal) par nene (boss), CC0"],
+    ["CRI DU BOSS", "« Aggressive Monster Roar » par yodguard (Pixabay)"],
     ["MOTEUR", "Phaser 3.60"]
 ];
 
@@ -147,7 +148,7 @@ export default class pause extends Phaser.Scene {
         const jeu = this.add.text(640, 190, "DEICIDE", { fontFamily: POLICE, fontSize: "30px", color: SELECTION }).setOrigin(0.5);
         this.lignes.push(jeu);
         CREDITS.forEach(([titre, texte], i) => {
-            const y = 245 + i * 38;
+            const y = 245 + i * 34; // (34 px entre deux lignes : il y a 10 lignes, elles doivent tenir au-dessus de l'aide)
             if (titre) this.lignes.push(this.add.text(290, y, titre, { fontFamily: POLICE, fontSize: "14px", color: ATTENUE }).setOrigin(0, 0.5));
             this.lignes.push(this.add.text(430, y, texte, { fontFamily: POLICE, fontSize: "16px", color: TEXTE }).setOrigin(0, 0.5));
         });

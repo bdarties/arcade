@@ -7,7 +7,8 @@ import { MUSIQUES_BOSS } from "../partie1/systemes/sons.js";
 const DOSSIER = "./assets/sons/";
 
 export function chargerMusiqueDernierBoss(scene) {
-    if (scene.cache.audio.exists("musique_boss2_intro")) return;
+    if (scene.cache.audio.exists("cri_boss")) return; // (déjà chargés : le niveau a déjà été joué)
+    scene.load.audio("cri_boss", [DOSSIER + "cri_boss.ogg", DOSSIER + "cri_boss.mp3"]); // le cri du boss quand il revient (fauxPantheon.js) : 2,5 s, 41 Ko
     scene.load.audio("musique_boss2_intro", [DOSSIER + "musique_boss2_intro.ogg", DOSSIER + "musique_boss2_intro.mp3"]);
     scene.load.audio("musique_boss2_boucle", [DOSSIER + "musique_boss2_boucle.ogg", DOSSIER + "musique_boss2_boucle.mp3"]);
 }

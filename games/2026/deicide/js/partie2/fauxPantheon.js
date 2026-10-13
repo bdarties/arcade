@@ -5,7 +5,7 @@
 // Les sons sont synthétisés (synth.js) ; l'entaille est une courbe de Bézier dessinée en lame effilée, avec un halo, une onde de choc et des étincelles.
 import classement from "../partie1/scenes/classement.js";
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
-import { jouerSon } from "../partie1/systemes/sons.js";
+import { jouerSon, volumeEffets } from "../partie1/systemes/sons.js";
 import { fanfare, battements, montee, coupDEpee, impact, verre, cri } from "./synth.js";
 
 const LARGEUR = 1280, HAUTEUR = 720;
@@ -230,6 +230,9 @@ export default class fauxPantheon extends classement {
         this.tweens.add({ targets: spectre, alpha: 0.95, y, duration: 900, delay: 500 });
         this.tweens.add({ targets: spectre, scale: ECHELLE_FINALE, duration: 2300, delay: 500, ease: "Cubic.Out" });
         this.tweens.add({ targets: halo, alpha: 1, scale: 9, duration: 2300, delay: 500, ease: "Cubic.Out" });
+        // LE CRI : un cri de monstre (assets/sons/cri_boss, un seul cri d'un enregistrement qui en contenait deux) qui éclate quand le boss est là : il part 0,35 s avant le changement
+        // de forme pour que son pic tombe sur le flash et le tremblement.
+        this.time.delayedCall(1350, () => { if (this.cache.audio.exists("cri_boss")) this.sound.play("cri_boss", { volume: Math.min(1, volumeEffets()) }); });
         this.time.delayedCall(1700, () => { // à mi-chemin : il change de forme
             spectre.setTint(TEINTE_FINALE);
             halo.setFillStyle(0xd9c8ff, 0.5);

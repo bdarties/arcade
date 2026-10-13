@@ -23,3 +23,9 @@ Les bruitages ont été découpés, avec un fondu de fin et un volume harmonisé
 | musique_niveau.ogg / .mp3 | Dark Shrine Loop | [Dark Shrine Loop](https://opengameart.org/content/dark-shrine-loop) | qubodup & yd |
 | musique_boss_intro.ogg / .mp3 | boss_battle_8_metal_opening | [Boss Battle #8 Metal](https://opengameart.org/content/boss-battle-8-metal) | nene |
 | musique_boss_boucle.ogg / .mp3 | boss_battle_8_metal_loop | [Boss Battle #8 Metal](https://opengameart.org/content/boss-battle-8-metal) | nene |
+
+## Le cri du dernier boss
+
+| Fichier | Son d'origine | Page | Auteur | Licence |
+|---|---|---|---|---|
+| cri_boss.ogg / .mp3 | « Aggressive Monster Roar » (le 2e des deux cris de l'enregistrement, découpé à 2,5 s avec un fondu de fin et un volume harmonisé) | [Pixabay](https://pixabay.com/sound-effects/) | yodguard | Pixabay Content License : utilisation libre, y compris commerciale, sans attribution obligatoire (celle-ci n'est pas CC0 comme les autres sons) |
