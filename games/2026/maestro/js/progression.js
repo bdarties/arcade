@@ -28,6 +28,7 @@ export function niveauxTermines(registry) {
 export function nouvellePartie(registry) {
   registry.set("niveauxTermines", []);
   registry.set("deblocage", null);
+  registry.set("modeLeger", false); // on re-teste la vitesse de l'ordinateur à chaque nouvelle partie
 }
 
 export function estTermine(registry, numero) {

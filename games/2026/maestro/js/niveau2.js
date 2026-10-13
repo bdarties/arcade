@@ -118,8 +118,6 @@ const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
 // Le DÉCOR : des éléments dessinés (planche d'images decor_niveau2.png) posés à la main dans le niveau.
 //  nom = nom de l'image · x, y = position · ancre : "bas" (posé sur le sol, y = le bas de l'objet) ou "haut" (suspendu, y = le haut)
 //  profondeur : plus c'est grand, plus c'est devant (les plateformes sont à 3, les héros à 10) · lueur : petite lumière orangée
-const VOILE_FOND = 0.4; // opacité du voile noir posé sur le fond (0 = aucun, 1 = noir total)
-
 const DECOR = [
   { nom: "paravent", x: 340, y: 640, ancre: "bas", profondeur: 0.7 },
   { nom: "pilier", x: 880, y: 640, ancre: "bas", profondeur: 0.9 },
@@ -155,7 +153,7 @@ export default class niveau2 extends niveau1 {
   // --------------------------------------------------------------------------
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    this.load.image("fond_theatre", "./assets/map2_sombre.jpg"); // fond : le théâtre d'ombres chinoises (le dragon)
+    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
     this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
     this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
@@ -187,8 +185,7 @@ export default class niveau2 extends niveau1 {
     this.avecTuilesPlateformes = false; // les passerelles fantômes utilisent le dessin de secours
 
     this.add.image(0, 0, "fond_theatre").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0);
-    // un léger voile sombre sur le fond : il reste visible, mais les plateformes et les héros ressortent mieux
-    this.add.rectangle(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE, 0x000008, VOILE_FOND).setOrigin(0, 0).setDepth(0.5);
+    // (l'image de fond est déjà assombrie : un voile dessiné par-dessus à chaque image coûtait cher pour rien)
 
     // La carte Tiled ne sert plus qu'à deux choses : les ÉCHELLES (dessin) et les PLATEFORMES (leurs positions).
     // Tout le reste du décor est dessiné avec les images rouges (voir poserDecor).
@@ -298,7 +295,7 @@ export default class niveau2 extends niveau1 {
       if (d.lueur == true) {
         // petite lueur orangée autour de la lanterne (même texture que la lampe du Détective)
         const centreY = d.ancre == "bas" ? d.y - image.height * 0.8 : d.y + image.height * 0.45;
-        this.add.image(d.x, centreY, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setScale(0.55).setAlpha(0.35).setDepth(d.profondeur + 0.1);
+        this.lueur(d.x, centreY, 0.55, 0.35, undefined, d.profondeur + 0.1);
       }
     });
     // les plateformes ajoutées (fixes) : une zone solide + le dessin
@@ -554,10 +551,10 @@ export default class niveau2 extends niveau1 {
     if (bonus == true) {
       note.setScale(1.25);
     }
-    note.lueur = this.add.image(x, y, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setTint(couleur);
-    note.lueur.setScale(bonus == true ? 0.6 : 0.42).setAlpha(0.5).setDepth(5.9);
-    // la note et sa lueur flottent ensemble
-    this.tweens.add({ targets: [note, note.lueur], y: y - 8, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    note.lueur = this.lueur(x, y, bonus == true ? 0.6 : 0.42, 0.5, couleur, 5.9); // null en mode économique
+    // la note (et sa lueur, s'il y en a une) flottent ensemble
+    const flottent = note.lueur === null ? [note] : [note, note.lueur];
+    this.tweens.add({ targets: flottent, y: y - 8, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   // La PARTITION : le fragment à récupérer. Visible dès le début mais éteinte et « verrouillée » ; elle s'illumine
@@ -567,14 +564,20 @@ export default class niveau2 extends niveau1 {
     const y = PARTITION.y;
 
     // les rayons de lumière qui tournent lentement derrière la partition (invisibles tant qu'elle est éteinte)
-    this.rayons = this.add.graphics({ x: x, y: y }).setDepth(5.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-    this.rayons.fillStyle(0xffe6a0, 0.35);
-    for (let i = 0; i < 12; i++) {
-      const angle = (i * Math.PI * 2) / 12;
-      this.rayons.fillTriangle(0, 0, Math.cos(angle - 0.09) * 150, Math.sin(angle - 0.09) * 150, Math.cos(angle + 0.09) * 150, Math.sin(angle + 0.09) * 150);
+    // et le halo : ce sont des effets décoratifs, absents en mode économique (rayons et halo valent alors null)
+    this.rayons = null;
+    this.halo_partition = null;
+    this.etincelles = null;
+    if (this.modeLeger == false) {
+      this.rayons = this.add.graphics({ x: x, y: y }).setDepth(5.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      this.rayons.fillStyle(0xffe6a0, 0.35);
+      for (let i = 0; i < 12; i++) {
+        const angle = (i * Math.PI * 2) / 12;
+        this.rayons.fillTriangle(0, 0, Math.cos(angle - 0.09) * 150, Math.sin(angle - 0.09) * 150, Math.cos(angle + 0.09) * 150, Math.sin(angle + 0.09) * 150);
+      }
+      this.halo_partition = this.lueur(x, y, 1.6, 0.35, 0x8fb4ff, 5.6); // lueur froide : verrouillée
+      this.effets.push(this.rayons);
     }
-    this.halo_partition = this.add.image(x, y, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a);
-    this.halo_partition.setScale(1.6).setAlpha(0.35).setTint(0x8fb4ff).setDepth(5.6); // lueur froide : verrouillée
 
     // la partition elle-même : éteinte (grise, transparente) et sans collision tant que les notes ne sont pas ramassées
     this.partition = this.physics.add.image(x, y, "img_partition");
@@ -582,7 +585,8 @@ export default class niveau2 extends niveau1 {
     this.partition.body.setAllowGravity(false);
     this.partition.body.enable = false;
     this.echellePartition = this.partition.scaleX; // pour l'animation d'apparition
-    this.tweens.add({ targets: [this.partition, this.halo_partition], y: y - 10, duration: 1000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const flottent = this.halo_partition === null ? [this.partition] : [this.partition, this.halo_partition];
+    this.tweens.add({ targets: flottent, y: y - 10, duration: 1000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
     this.etiquettePartition = this.add
       .text(x, y - 78, "PARTITION verrouillée\n(ramasse " + NOTES_REQUISES + " notes)", {
@@ -609,25 +613,27 @@ export default class niveau2 extends niveau1 {
     this.tweens.add({ targets: this.partition, scale: this.echellePartition * 1.15, duration: 700, ease: "Back.easeOut" });
     this.etiquettePartition.setText("PARTITION !").setColor("#ffe9a8").setFontSize("17pt");
 
-    // halo qui pulse + rayons qui tournent
-    this.halo_partition.setTint(0xffd98a); // la lueur devient chaude
-    this.tweens.add({ targets: this.halo_partition, alpha: 0.5, scale: 1.9, duration: 500 });
-    this.tweens.add({ targets: this.halo_partition, scale: 2.3, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: 500 });
-    this.tweens.add({ targets: this.rayons, alpha: 0.55, duration: 600 });
-    this.tweens.add({ targets: this.rayons, angle: 360, duration: 16000, repeat: -1 });
+    // halo qui pulse + rayons qui tournent + étincelles (effets décoratifs : absents en mode économique)
+    if (this.modeLeger == false && this.halo_partition !== null && this.halo_partition.active == true) {
+      this.halo_partition.setTint(0xffd98a); // la lueur devient chaude
+      this.tweens.add({ targets: this.halo_partition, alpha: 0.5, scale: 1.9, duration: 500 });
+      this.tweens.add({ targets: this.halo_partition, scale: 2.3, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: 500 });
+      this.tweens.add({ targets: this.rayons, alpha: 0.55, duration: 600 });
+      this.tweens.add({ targets: this.rayons, angle: 360, duration: 16000, repeat: -1 });
 
-    // étincelles qui jaillissent en continu
-    this.etincelles = this.add.particles(PARTITION.x, PARTITION.y, "tex_etincelle", {
-      speed: { min: 30, max: 120 },
-      lifespan: 1000,
-      scale: { start: 1.1, end: 0 },
-      alpha: { start: 1, end: 0 },
-      tint: [0xffe08a, 0xffffff, 0xff9aa8],
-      blendMode: "ADD",
-      frequency: 60,
-      quantity: 1
-    });
-    this.etincelles.setDepth(7.5);
+      this.etincelles = this.add.particles(PARTITION.x, PARTITION.y, "tex_etincelle", {
+        speed: { min: 30, max: 120 },
+        lifespan: 1000,
+        scale: { start: 1.1, end: 0 },
+        alpha: { start: 1, end: 0 },
+        tint: [0xffe08a, 0xffffff, 0xff9aa8],
+        blendMode: "ADD",
+        frequency: 60,
+        quantity: 1
+      });
+      this.etincelles.setDepth(7.5);
+      this.effets.push(this.etincelles);
+    }
 
     this.cameras.main.flash(400, 255, 232, 160); // éclair doré
     this.afficherMessage("La PARTITION est apparue en haut à droite ! Va la chercher !", 6000);
@@ -681,7 +687,9 @@ export default class niveau2 extends niveau1 {
 
   ramasserNote(perso, note) {
     note.disableBody(true, true); // la note disparaît
-    note.lueur.destroy();
+    if (note.lueur !== null && note.lueur.active) {
+      note.lueur.destroy();
+    }
     // petit effet : une copie de la note monte en grossissant et s'efface
     const copie = this.add.image(note.x, note.y, note.texture.key).setTint(note.couleur).setDepth(7).setScale(note.scale);
     this.tweens.add({ targets: copie, y: copie.y - 50, scale: note.scale * 1.8, alpha: 0, duration: 500, onComplete: () => copie.destroy() });
@@ -711,8 +719,14 @@ export default class niveau2 extends niveau1 {
     this.partitionPrise = true;
     this.fragmentRecupere = true;
     partition.disableBody(true, true);
-    this.etincelles.stop();
-    [this.rayons, this.halo_partition, this.etiquettePartition, this.indicateur].forEach((objet) => objet.setVisible(false));
+    [this.etincelles, this.rayons, this.halo_partition, this.etiquettePartition, this.indicateur].forEach((objet) => {
+      if (objet && objet.active) {
+        if (objet.stop) {
+          objet.stop(); // les étincelles arrêtent d'en produire
+        }
+        objet.setVisible(false);
+      }
+    });
     this.cameras.main.flash(300, 255, 240, 190);
     this.porteOuverte = true;
     this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre

@@ -96,6 +96,10 @@ export default class niveau1 extends Phaser.Scene {
     this.mode = this.registry.get("mode") || "solo"; // "solo" ou "duo" (choisi dans choix_mode)
     this.fini = false; // vrai quand le niveau est gagné ou perdu
     this.debutNiveau = this.time.now; // pour mesurer le temps mis à finir le niveau
+    this.effets = []; // les effets lumineux décoratifs : on peut les supprimer si l'ordinateur est trop lent (mode économique)
+    if (this.sys.game.renderer.type == Phaser.CANVAS) {
+      this.registry.set("modeLeger", true); // sans WebGL le dessin est bien plus lent : on économise dès le départ
+    }
     this.fragmentRecupere = false;
     this.noteActuelle = 0; // 0 = Do, 1 = Mi, 2 = Sol
     this.lampe = { allumee: false, batterie: 100, angle: 0 }; // batterie en %, angle en degrés (0 = à l'horizontale)
@@ -121,6 +125,75 @@ export default class niveau1 extends Phaser.Scene {
 
     this.afficherMessage(this.texteCommandes(), 7000);
     this.afficherObjectif();
+    this.installerSurveillance();
+  }
+
+  // --------------------------------------------------------------------------
+  //  Performances : mode économique et compteur d'images par seconde
+  // --------------------------------------------------------------------------
+  // Vrai quand les effets lumineux doivent être réduits (ordinateur lent, ou rendu sans WebGL)
+  get modeLeger() {
+    return this.registry.get("modeLeger") == true;
+  }
+
+  // Une lueur décorative (image de lumière en mode additif). Renvoie null en mode économique.
+  lueur(x, y, echelle, alpha, couleur, profondeur) {
+    if (this.modeLeger == true) {
+      return null;
+    }
+    const image = this.add.image(x, y, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setScale(echelle).setAlpha(alpha).setDepth(profondeur);
+    if (couleur !== undefined) {
+      image.setTint(couleur);
+    }
+    this.effets.push(image);
+    return image;
+  }
+
+  // Supprime les effets décoratifs et simplifie la lampe : le jeu devient moins joli mais bien plus fluide
+  activerModeLeger() {
+    if (this.modeLeger == true && this.effets.length == 0) {
+      return;
+    }
+    this.registry.set("modeLeger", true);
+    this.effets.forEach((effet) => {
+      if (effet && effet.active) {
+        this.tweens.killTweensOf(effet);
+        effet.destroy();
+      }
+    });
+    this.effets = [];
+    this.faisceau.setBlendMode(Phaser.BlendModes.NORMAL); // le mode additif coûte cher à dessiner
+    this.halo.setBlendMode(Phaser.BlendModes.NORMAL);
+    this.afficherMessage("Mode économique : effets lumineux réduits", 4000);
+  }
+
+  // Surveille la vitesse du jeu : F2 affiche le compteur ; si le jeu reste lent plusieurs secondes de suite,
+  // on passe en mode économique tout seul.
+  installerSurveillance() {
+    this.compteurFps = this.add
+      .text(1270, 712, "", { fontFamily: "monospace", fontSize: "12pt", color: "#9dffb0", stroke: "#000000", strokeThickness: 3 })
+      .setOrigin(1, 1)
+      .setScrollFactor(0)
+      .setDepth(200)
+      .setVisible(false);
+    this.input.keyboard.on("keydown-F2", () => this.compteurFps.setVisible(this.compteurFps.visible == false));
+    this.secondesLentes = 0;
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        const fps = this.game.loop.actualFps;
+        const rendu = this.game.renderer.type == Phaser.CANVAS ? "Canvas" : "WebGL";
+        this.compteurFps.setText(Math.round(fps) + " fps · " + rendu + (this.modeLeger == true ? " · éco" : ""));
+        if (document.hidden == true || this.fini == true || this.time.now - this.debutNiveau < 3000) {
+          return; // onglet caché, niveau fini ou démarrage : on ne juge pas
+        }
+        this.secondesLentes = fps < 22 ? this.secondesLentes + 1 : 0;
+        if (this.secondesLentes >= 4 && this.modeLeger == false) {
+          this.activerModeLeger();
+        }
+      }
+    });
   }
 
   // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface
@@ -242,13 +315,8 @@ export default class niveau1 extends Phaser.Scene {
     deType("lampe").forEach((objet) => {
       const cle = this.textures.exists("img_lanterne") ? "img_lanterne" : "tex_lanterne";
       this.add.image(objet.x + 20, objet.y + 32, cle).setDisplaySize(40, 64).setDepth(4);
-      // petite lueur autour de la lanterne
-      this.add
-        .image(objet.x + 20, objet.y + 32, "tex_lumiere")
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setScale(0.6)
-        .setAlpha(0.4)
-        .setDepth(4);
+      // petite lueur autour de la lanterne (un effet décoratif : supprimé en mode économique)
+      this.lueur(objet.x + 20, objet.y + 32, 0.6, 0.4, undefined, 4);
     });
 
     // Panneaux d'indication posés dans le décor
@@ -378,6 +446,10 @@ export default class niveau1 extends Phaser.Scene {
     this.faisceau = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.halo = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false);
     this.halo.setScale((REGLAGES.lampe.rayon * 2) / 256);
+    if (this.modeLeger == true) {
+      this.faisceau.setBlendMode(Phaser.BlendModes.NORMAL);
+      this.halo.setBlendMode(Phaser.BlendModes.NORMAL);
+    }
     this.haloProche = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false);
     this.haloProche.setScale((REGLAGES.lampe.rayonProche * 2) / 256);
   }
@@ -848,7 +920,7 @@ export default class niveau1 extends Phaser.Scene {
 
     this.faisceau.clear();
     this.halo.setVisible(lampe.allumee);
-    this.haloProche.setVisible(lampe.allumee);
+    this.haloProche.setVisible(lampe.allumee && this.modeLeger == false);
     if (lampe.allumee == false) {
       return;
     }
@@ -1301,12 +1373,16 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   mettreAJourInterface(temps) {
-    // Barre de batterie : jaune, puis rouge quand elle est faible
+    // Barre de batterie : jaune, puis rouge quand elle est faible. On ne la redessine que si elle a changé.
     const faible = this.lampe.batterie <= REGLAGES.lampe.seuilClignote;
-    this.barreBatterie.clear();
-    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18);
-    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14);
-    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18);
+    const cle = Math.round(this.lampe.batterie) + (faible ? "f" : "n");
+    if (cle != this.cleBatterie) {
+      this.cleBatterie = cle;
+      this.barreBatterie.clear();
+      this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18);
+      this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14);
+      this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18);
+    }
 
     // Solo : on met en avant les informations du personnage actif
     if (this.mode == "solo") {
