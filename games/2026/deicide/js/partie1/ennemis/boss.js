@@ -414,6 +414,7 @@ export function changerDePhase(scene, boss, phase) {
     const pvDebut = profil.pvDebutPhase ? profil.pvDebutPhase(phase) : undefined;
     if (pvDebut !== undefined) { // il se soigne en entrant dans la phase
         boss.pv = pvDebut;
+        boss.pvMax = pvDebut; // la barre de vie se règle sur les PV de la nouvelle phase : elle est pleine
         scene.tweens.killTweensOf(boss.barre.plein); // le rétrécissement du dernier coup (majBarre) ramènerait sinon la barre à sa valeur d'avant le soin
         boss.barre.plein.width = LARGEUR_BARRE * boss.pv / boss.pvMax;
     }

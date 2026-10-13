@@ -37,7 +37,8 @@ export function choisirAttaque(scene, boss) {
     return i === -1 ? null : boss.sac.splice(i, 1)[0]; // null : le moteur tire normalement
 }
 
-export function pvDePhase(phase) { return phase === PHASE_FINALE ? PV_FINALE : 130; }
+export const PV_PHASE_3 = 91; // les PV de la phase 3 : 130 moins 30 % (130 avant)
+export function pvDePhase(phase) { return phase === PHASE_FINALE ? PV_FINALE : phase === 2 ? PV_PHASE_3 : 130; }
 
 export function installerFormeFinale() { // à appeler une fois, avant la création du jeu
     installerAttaquesUltimes(); // les six attaques de la forme finale

@@ -6,7 +6,7 @@ import { PROFILS, ATTAQUES } from "../partie1/ennemis/boss.js";
 import { balayageApresColonnes, installerAttaques } from "./attaques.js";
 import { enrager } from "./fuite.js";
 import { finDeCombat } from "./finDeCombat.js";
-import { ATTAQUES_FORME_FINALE, PHASE_FINALE, installerFormeFinale, pvMinimum, choisirAttaque, pvDePhase, appliquerFormeFinale } from "./formeFinale.js";
+import { PV_PHASE_3, ATTAQUES_FORME_FINALE, PHASE_FINALE, installerFormeFinale, pvMinimum, choisirAttaque, pvDePhase, appliquerFormeFinale } from "./formeFinale.js";
 
 // Les réglages du boss final, une entrée par phase (voir BASE dans boss.js pour la signification de chaque valeur). Il est dur dès la phase 1.
 // La 4e entrée est la forme finale : seuls « charge » (annonces plus courtes) et « periodeMouvement » comptent, ses attaques sont dans attaquesUltimes.js.
@@ -50,9 +50,9 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
         pvMinimum,
         choisirAttaque,
         pvDePhase, // la forme finale a ses propres PV
-        // La phase 3 commence avec TOUS les PV du boss, qu'on y arrive en continuant le combat ou en reprenant après une mort (pvPleinsApresMort) : avant, on y arrivait avec
+        // La phase 3 commence avec TOUS ses PV (91 : 130 moins 30 %), qu'on y arrive en continuant le combat ou en reprenant après une mort (pvPleinsApresMort) : avant, on y arrivait avec
         // 45 PV seulement et le boss ne devenait « normal » (130 PV) qu'après la première mort.
-        pvDebutPhase: (phase) => (phase === 2 ? 130 : undefined),
+        pvDebutPhase: (phase) => (phase === 2 ? PV_PHASE_3 : undefined),
         etiquettePhase: (phase) => (phase === PHASE_FINALE ? "FORME FINALE" : "PHASE " + (phase + 1)),
         apresApparition(scene, boss) { if (boss.phase === PHASE_FINALE) appliquerFormeFinale(scene, boss); }, // le robot est mort contre la forme finale : elle revient telle quelle
         finDeCombat // à 0 PV : fausse fin (phases 1 à 3) ou vraie fin (forme finale), voir finDeCombat.js

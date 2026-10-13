@@ -67,7 +67,7 @@
   Mesuré dans le jeu : une fois les rayons figés, il faut parcourir 52 px en médiane (104 au plus) pour être à l'abri ; avec une réaction de 250 ms le robot a le temps d'en faire 76 (93 % des cas), sans réaction 141 (100 %).
 - **Bug corrigé** : la barre de vie du boss, juste après le soin de l'entrée en phase 3, était ramenée à 35 % une fraction de seconde plus tard par l'animation du dernier coup (alors que le boss avait 130 PV). Elle reste pleine, avec ses deux traits.
 - **Bug corrigé** : la phase 3 commençait avec 45 PV quand on y arrivait en continuant le combat, mais avec 130 PV après une mort (`pvPleinsApresMort`) : le boss ne devenait « normal » qu'après la
-  première mort. Maintenant la phase 3 commence toujours avec tous ses PV (130) : il se soigne en y entrant (`pvDebutPhase`).
+  première mort. Maintenant la phase 3 commence toujours avec tous ses PV : il se soigne en y entrant (`pvDebutPhase`). Ses PV sont ensuite passés de 130 à **91** (moins 30 %, `PV_PHASE_3` dans `formeFinale.js`) ; la barre de vie se règle sur les PV de la phase (`boss.pvMax`).
 - **Touche de test** : F5 lance le dernier combat et déclenche tout de suite la fausse fin (dissolution du boss, faux panthéon, fissure de l'écran), puis la forme finale (F5 ne recharge donc plus la page).
 - **Non vérifié** : si la forme finale est « faisable mais extrêmement dure » : elle est mesurée (attaques, durées, PV), pas jouée.
 
