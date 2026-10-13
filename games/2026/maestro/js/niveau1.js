@@ -1207,7 +1207,7 @@ export default class niveau1 extends Phaser.Scene {
     this.porte.anims.play("porte_ouvre"); // la porte s'ouvre
     this.iconeFragment.clearTint();
     this.texteFragment.setText("1 / 1");
-    this.afficherMessage("Parchemin récupéré ! La porte de sortie est ouverte.", 4000);
+    this.afficherMessage("Partition récupérée ! La porte de sortie est ouverte.", 4000);
   }
 
   franchirPorte() {
