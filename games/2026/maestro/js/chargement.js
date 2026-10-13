@@ -99,6 +99,10 @@ export default class chargement extends Phaser.Scene {
       frameHeight: 32 // 96 px de haut / 3 lignes : avec 24 les images étaient coupées
     });
 
+    // ---- Musiques (en .m4a, plus légères que le .mp3 ; une seule piste par niveau) ----
+    this.load.audio("musique_niveau1", "./assets/musique_niveau1.m4a");
+    this.load.audio("musique_accueil", "./assets/musique_chinoise.m4a"); // accueil, choix du mode, lobby
+
     // ---- Divers ----
     this.load.image("img_partition", "./assets/partition.png");
     this.load.spritesheet("porte_sortie", "./assets/porte_sortie.png", {

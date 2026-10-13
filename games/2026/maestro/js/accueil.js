@@ -54,6 +54,13 @@ export default class accueil extends Phaser.Scene {
     this.respiration = null;
     this.majSelection();
 
+    // La musique d'accueil (en boucle, coupée quand on quitte l'écran)
+    if (this.cache.audio.exists("musique_accueil")) {
+      this.musique = this.sound.add("musique_accueil", { loop: true, volume: 0.4 });
+      this.musique.play();
+      this.events.once("shutdown", () => this.musique.stop());
+    }
+
     // Le panneau d'information (caché tant qu'on n'a pas appuyé sur CONTROLS / CREDITS)
     this.panneau = this.creerPanneau();
   }

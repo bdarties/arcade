@@ -106,6 +106,17 @@ export default class lobby extends Phaser.Scene {
     this.creerPersonnages();
     this.creerCamera();
     this.creerInterface();
+    this.demarrerMusique();
+  }
+
+  // La musique du lobby : en boucle, coupée dès qu'on quitte la scène
+  demarrerMusique() {
+    if (this.cache.audio.exists("musique_accueil") == false) {
+      return;
+    }
+    this.musique = this.sound.add("musique_accueil", { loop: true, volume: 0.4 });
+    this.musique.play();
+    this.events.once("shutdown", () => this.musique.stop());
   }
 
   // --------------------------------------------------------------------------

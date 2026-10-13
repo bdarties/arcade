@@ -69,6 +69,7 @@ export default class niveau1 extends Phaser.Scene {
     this.listeTubas = TUBAS;
     this.listeCristaux = CRISTAUX;
     this.numeroNiveau = 1; // son numéro dans la progression (voir progression.js)
+    this.musiqueNiveau = "musique_niveau1"; // la piste jouée pendant ce niveau (chargée dans chargement.js)
     this.messageVictoire = "Niveau 1 terminé !";
     this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie";
   }
@@ -126,6 +127,7 @@ export default class niveau1 extends Phaser.Scene {
     this.afficherMessage(this.texteCommandes(), 7000);
     this.afficherObjectif();
     this.installerSurveillance();
+    this.demarrerMusique();
   }
 
   // --------------------------------------------------------------------------
@@ -194,6 +196,16 @@ export default class niveau1 extends Phaser.Scene {
         }
       }
     });
+  }
+
+  // La musique du niveau : elle tourne en boucle et s'arrête dès qu'on quitte la scène
+  demarrerMusique() {
+    if (this.cache.audio.exists(this.musiqueNiveau) == false) {
+      return; // pas de musique chargée : le niveau reste jouable sans
+    }
+    this.musique = this.sound.add(this.musiqueNiveau, { loop: true, volume: 0.45 });
+    this.musique.play();
+    this.events.once("shutdown", () => this.musique.stop()); // on coupe la musique en quittant le niveau
   }
 
   // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface
