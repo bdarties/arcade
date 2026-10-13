@@ -45,18 +45,22 @@ export default class histoire extends Phaser.Scene {
     this.indexDialogue = 0;
     this.estEnTrainDEcrire = false; // Empêche le saut de texte pendant l'animation
     this.timerEcriture = null;
+    this.texteComplet = '';         // Le texte de l'étape, déjà découpé en lignes (voir afficherEtapeActuelle)
     this.choixFait = false;         // Phase 1 (choix du mode) pas encore terminée
 
     // 2. Image d'illustration (cachée tant que les dialogues n'ont pas commencé)
     this.cadreImage = this.add.image(640, 380, '').setVisible(false);
 
-    // 3. Zone de texte (centrée au milieu-bas : x=640, y=520)
-    this.texteAffiche = this.add.text(640, 520, '', {
+    // 3. Zone de texte.
+    // Pour un vrai effet machine à écrire, le texte doit être ALIGNÉ À GAUCHE et accroché
+    // par son coin haut-gauche (setOrigin(0, 0)) : chaque lettre garde alors sa place.
+    // x = 140 car (1280 - 1000) / 2 = 140 : le bloc de 1000 px de large reste centré à l'écran.
+    this.texteAffiche = this.add.text(140, 520, '', {
       fontSize: '28px',
       fill: '#ffffff',
-      align: 'center',
+      align: 'left',
       wordWrap: { width: 1000 } // Élargi à 1000px pour l'écran de 1280px
-    }).setOrigin(0.5, 0);
+    }).setOrigin(0, 0);
 
     // Indicatif tout en bas : caché tant que le joueur n'a pas choisi son mode
     this.texteIndication = this.add.text(640, 670, "Appuie sur un bouton ou clique pour continuer...", {
@@ -183,6 +187,13 @@ export default class histoire extends Phaser.Scene {
       this.cadreImage.setVisible(false);
     }
 
+    // --- DÉCOUPAGE EN LIGNES AVANT D'ÉCRIRE ---
+    // getWrappedText() demande à Phaser de découper le texte COMPLET en lignes
+    // (selon la largeur wordWrap), puis on recolle les lignes avec des retours à la ligne.
+    // Ainsi chaque mot est déjà à sa place dès la première lettre : plus aucun mot
+    // ne saute à la ligne pendant la frappe. (trim() enlève l'espace au début du texte)
+    this.texteComplet = this.texteAffiche.getWrappedText(etape.texte.trim()).join('\n');
+
     // --- EFFET MACHINE À ÉCRIRE (LETTRE PAR LETTRE) ---
     this.texteAffiche.setText(''); // Reset du texte
     this.estEnTrainDEcrire = true;
@@ -192,7 +203,7 @@ export default class histoire extends Phaser.Scene {
     }
 
     let indexLettre = 0;
-    const texteComplet = etape.texte;
+    const texteComplet = this.texteComplet;
 
     // Timer déclenché toutes les 30 millisecondes par lettre
     this.timerEcriture = this.time.addEvent({
@@ -214,12 +225,10 @@ export default class histoire extends Phaser.Scene {
     // On ignore clics et Espace tant que le mode n'est pas choisi
     if (!this.choixFait) return;
 
-    const etapeActuelle = this.dialogues[this.indexDialogue];
-
     // Si le joueur clique pendant que le texte s'écrit : affiche tout immédiatement
     if (this.estEnTrainDEcrire) {
       this.timerEcriture.remove();
-      this.texteAffiche.setText(etapeActuelle.texte);
+      this.texteAffiche.setText(this.texteComplet);
       this.estEnTrainDEcrire = false;
       return;
     }
