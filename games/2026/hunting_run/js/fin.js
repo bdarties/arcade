@@ -1,4 +1,5 @@
-import { ECRANS } from "./maps.js";
+import { ECRANS, ETATS_PARTIE } from "./maps.js";
+import { jouer } from "./sons.js";
 
 export default class fin extends Phaser.Scene {
   constructor() {
@@ -13,6 +14,7 @@ export default class fin extends Phaser.Scene {
 
   create() {
     this.cameras.main.fadeIn(500);
+    jouer(this, "victoire");
     this.parti = false;
     this.pret = false; // évite de quitter l'écran tout de suite si le bouton est encore appuyé
     this.time.delayedCall(1000, () => (this.pret = true));
@@ -60,8 +62,8 @@ export default class fin extends Phaser.Scene {
   retour() {
     if (!this.pret || this.parti) return;
     this.parti = true;
-    this.registry.remove("finPartie"); // le timer repartira de zéro à la prochaine partie
-    this.registry.remove("cle");
+    jouer(this, "valider");
+    ETATS_PARTIE.forEach((k) => this.registry.remove(k)); // timer, clé et énigmes repartent de zéro
     this.cameras.main.fadeOut(400, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("accueil"));
   }
