@@ -105,12 +105,15 @@ export function coupDEpee(scene) { // LE coup : le souffle de la lame qui fend l
 }
 
 // Une sortie FORTE : un compresseur qui écrase les pics, pour qu'une addition de sons très puissants sonne énorme sans saturer les haut-parleurs.
-function sortieForte(c, volume) {
+// `seuil` : à partir de quel niveau (dB) le compresseur écrase ; `final` : un gain APRÈS le compresseur (le compresseur rend le niveau peu sensible au volume d'entrée).
+function sortieForte(c, volume, final = 1, seuil = -14) {
     const compresseur = c.createDynamicsCompressor();
-    compresseur.threshold.value = -14; compresseur.knee.value = 8; compresseur.ratio.value = 7; compresseur.attack.value = 0.002; compresseur.release.value = 0.25;
+    compresseur.threshold.value = seuil; compresseur.knee.value = 8; compresseur.ratio.value = 7; compresseur.attack.value = 0.002; compresseur.release.value = 0.25;
     const gain = c.createGain();
     gain.gain.value = volume * volumeEffets();
-    gain.connect(compresseur).connect(c.destination);
+    const sortieFinale = c.createGain();
+    sortieFinale.gain.value = final;
+    gain.connect(compresseur).connect(sortieFinale).connect(c.destination);
     return gain;
 }
 
@@ -122,7 +125,7 @@ function courbeSaturation(c) { // une courbe qui écrase les pics : elle ajoute 
 
 export function impact(scene) { // l'IMPACT : un boum très grave et saturé, un coup sec, un claquement, un fracas métallique, un long grondement
     const c = contexte(scene); if (!c) return;
-    const sortieImpact = sortieForte(c, 1.6), t = c.currentTime + 0.005; // (mesuré hors ligne : pic sous 0 dBFS, 19 dB plus fort que la fanfare sur les 300 premières ms)
+    const sortieImpact = sortieForte(c, 1.35, 0.9), t = c.currentTime + 0.005; // (mesuré hors ligne : pic sous 0 dBFS, 19 dB plus fort que la fanfare sur les 300 premières ms)
     const boum = c.createOscillator(), gainBoum = c.createGain(), saturation = c.createWaveShaper();
     boum.type = "sine"; saturation.curve = courbeSaturation(c); saturation.oversample = "2x";
     boum.frequency.setValueAtTime(130, t); boum.frequency.exponentialRampToValueAtTime(26, t + 1.1);
@@ -147,4 +150,40 @@ export function verre(scene) { // des craquements de verre : une rafale de petit
         souffle(c, sortieVerre, "bandpass", f, f * 0.6, debut, 0.03 + Math.random() * 0.05, 0.6 + Math.random() * 0.9);
     }
     souffle(c, sortieVerre, "highpass", 1800, 7000, t, 0.25, 1.0); // et l'éclat de la fêlure principale
+}
+
+// Le CRI du boss, juste avant le coup d'épée : un grognement très grave qui monte en hurlement. Une voix (deux dents-de-scie désaccordées + une note une octave plus bas)
+// dont la hauteur grimpe, un trémolo rapide (le grondement), trois filtres « formants » qui glissent (la bouche qui s'ouvre), de la distorsion, et du souffle (la rage).
+export function cri(scene, duree = 1.05) {
+    const c = contexte(scene); if (!c) return;
+    const sortieCri = sortieForte(c, 0.75, 0.38, -2), t = c.currentTime + 0.02, fin = t + duree;
+    const glisser = (parametre, a, b, d) => { parametre.setValueAtTime(a, t); parametre.exponentialRampToValueAtTime(b, t + duree * 0.55); parametre.exponentialRampToValueAtTime(d, fin); };
+    const voix = c.createGain(); // l'entrée de la voix : les trois oscillateurs s'y additionnent
+    [["sawtooth", 0, 1, [66, 92, 330]], ["sawtooth", 17, 0.8, [66, 92, 330]], ["square", 0, 0.5, [33, 46, 165]]].forEach(([type, detune, volume, [f0, f1, f2]]) => {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = type; o.detune.value = detune; g.gain.value = volume;
+        glisser(o.frequency, f0, f1, f2);
+        o.connect(g).connect(voix); o.start(t); o.stop(fin + 0.05);
+    });
+    const tremolo = c.createGain(); tremolo.gain.value = 0.62; // le grondement : le volume vibre 30 fois par seconde
+    const lfo = c.createOscillator(), profondeur = c.createGain(); lfo.frequency.value = 30; profondeur.gain.value = 0.38;
+    lfo.connect(profondeur).connect(tremolo.gain); lfo.start(t); lfo.stop(fin + 0.05);
+    const gorge = c.createGain(); // la sortie des formants
+    [[350, 850, 1], [900, 1500, 0.8], [2200, 2900, 0.5]].forEach(([debut, fin2, volume]) => { // la bouche s'ouvre : chaque formant glisse vers l'aigu
+        const filtre = c.createBiquadFilter(), g = c.createGain();
+        filtre.type = "bandpass"; filtre.Q.value = 7; g.gain.value = volume;
+        filtre.frequency.setValueAtTime(debut, t); filtre.frequency.exponentialRampToValueAtTime(fin2, fin);
+        voix.connect(filtre).connect(g).connect(gorge);
+    });
+    voix.connect(tremolo); // un peu de voix brute aussi, pour le grave
+    const brute = c.createGain(); brute.gain.value = 0.55; tremolo.connect(brute).connect(gorge);
+    const distorsion = c.createWaveShaper(); distorsion.curve = courbeSaturation(c); distorsion.oversample = "2x";
+    const enveloppe = c.createGain(); // l'intensité : un grognement qui s'installe, puis le hurlement, et une coupure nette juste avant le coup
+    enveloppe.gain.setValueAtTime(0.0001, t);
+    enveloppe.gain.exponentialRampToValueAtTime(0.5, t + duree * 0.18);
+    enveloppe.gain.exponentialRampToValueAtTime(0.85, t + duree * 0.78);
+    enveloppe.gain.exponentialRampToValueAtTime(1.5, t + duree * 0.96);
+    enveloppe.gain.linearRampToValueAtTime(0, fin + 0.02);
+    gorge.connect(distorsion).connect(enveloppe).connect(sortieCri);
+    souffle(c, sortieCri, "bandpass", 1500, 4200, t + duree * 0.25, duree * 0.75, 0.6); // le souffle rauque qui monte avec le hurlement
 }

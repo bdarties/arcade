@@ -6,7 +6,7 @@
 import classement from "../partie1/scenes/classement.js";
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon } from "../partie1/systemes/sons.js";
-import { fanfare, battements, montee, coupDEpee, impact, verre } from "./synth.js";
+import { fanfare, battements, montee, coupDEpee, impact, verre, cri } from "./synth.js";
 
 const LARGEUR = 1280, HAUTEUR = 720;
 const TEINTE_FINALE = 0x9a7cff; // le violet de la forme finale (voir formeFinale.js)
@@ -81,11 +81,12 @@ export default class fauxPantheon extends classement {
         this.sound.stopAll(); // la musique du niveau s'arrête net
         battements(this);
         this.time.delayedCall(950, () => battements(this));
-        montee(this, 1500);
+        montee(this, 1600);
+        this.time.delayedCall(520, () => { cri(this, 1.05); this.cameras.main.shake(1060, 0.007); }); // le CRI du monstre, qui finit juste avant le coup ; l'écran tremble sous sa voix
         const voile = this.add.rectangle(LARGEUR / 2, HAUTEUR / 2, LARGEUR, HAUTEUR, 0x000000, 0).setDepth(80);
         this.tweens.add({ targets: voile, fillAlpha: 0.5, duration: 1500, ease: "Quad.In" });
         this.cameras.main.zoomTo(1.06, 1500, "Quad.easeIn"); // l'écran se rapproche lentement
-        this.time.delayedCall(1560, () => this.coup(voile));
+        this.time.delayedCall(1620, () => this.coup(voile));
     }
 
     // ---- 3. LE COUP D'ÉPÉE : la lame traverse l'écran en un clin d'œil, puis l'impact ----

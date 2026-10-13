@@ -24,7 +24,7 @@ const haut = (scene) => scene.cameras.main.worldView.y + 12; // le haut de l'éc
 const ANGLE_METEORE = 0.5; // rad, par rapport à la verticale : la pente des météores
 const VITESSE_METEORE = 560;
 const ECHELLE_METEORE = 0.32; // la taille d'un météore : son corps fait 26 px, à peine plus que le robot (20 px de large). Avant 0,42 (34 px) et 10 météores par volée
-const NOMBRE_METEORES = 12, ECART_METEORES = 105; // plus nombreux et plus serrés pour compenser : il y a toujours un trou de plus de 55 px entre deux trajectoires
+const NOMBRE_METEORES = 15, ECART_METEORES = 82; // très serrés : entre deux trajectoires il ne reste qu'un trou d'environ 26 px pour un robot de 20 px de large : il faut être précis
 
 function lignesMeteores(scene, sens) { // 10 trajectoires parallèles, avec leur trait d'annonce
     const y = haut(scene);
@@ -70,9 +70,10 @@ function trous() { // trois trous : chacun à 280 px au moins du précédent (at
 // ---------------------------------------------------------------------------------------------
 // Horloge
 // ---------------------------------------------------------------------------------------------
-const VITESSE_HORLOGE = 1.15; // rad/s
+const VITESSE_HORLOGE = 0.95; // rad/s (1,15 avant : plus lente, donc plus facile à esquiver)
+const EPAISSEUR_HORLOGE = 26; // px, l'épaisseur des lames (34 pour les lasers du boss)
 const DUREE_HORLOGE = 2200; // ms, dormants compris (1,75 s de lames actives)
-const GRACE_HORLOGE = 450; // ms pendant lesquels les lames sont dormantes à leur apparition (voir poserRayonTournant)
+const GRACE_HORLOGE = 550; // ms pendant lesquels les lames sont dormantes à leur apparition (voir poserRayonTournant)
 const DISTANCE_PIVOT = 380; // le pivot est choisi à au moins cette distance (horizontale) du robot : la lame ne tourne jamais autour de lui
 const DEGAGEMENT_DEPART = 150; // et les lames démarrent à au moins 150 px du robot si c'est possible
 
@@ -168,7 +169,7 @@ export function installerAttaquesUltimes() { // à appeler une fois, avant la cr
             annonce.reperes.forEach((r) => r.destroy());
             jouerSonSurLeTemps(scene, "dash");
             scene.cameras.main.shake(200, 0.006);
-            [0, 1, 2, 3].forEach((k) => poserRayonTournant(scene, { ox: annonce.ox, oy: annonce.oy, angle: annonce.depart + k * Math.PI / 2, balayage: annonce.sens * VITESSE_HORLOGE, duree: DUREE_HORLOGE, grace: GRACE_HORLOGE }));
+            [0, 1, 2, 3].forEach((k) => poserRayonTournant(scene, { ox: annonce.ox, oy: annonce.oy, angle: annonce.depart + k * Math.PI / 2, balayage: annonce.sens * VITESSE_HORLOGE, duree: DUREE_HORLOGE, grace: GRACE_HORLOGE, epaisseur: EPAISSEUR_HORLOGE }));
         }
     };
     ATTAQUES.etau = {
