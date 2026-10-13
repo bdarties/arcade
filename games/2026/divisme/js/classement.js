@@ -1,3 +1,5 @@
+import { BORNE, creerTouches, uneTouchePressee } from "./outils.js";
+
 export default class classement extends Phaser.Scene {
   // constructeur de la classe
   constructor() {
@@ -36,5 +38,27 @@ export default class classement extends Phaser.Scene {
       this.scene.start("menu"); // on retourne au menu.js
     });
 
+
+    // --- RETOUR AU MENU AVEC LES BOUTONS DE LA BORNE ---
+
+    this.pret = false;   // faux pendant 0,5 s : on ignore l'appui qui nous a amenés ici
+
+    this.time.delayedCall(500, () => {
+      this.pret = true;
+    });
+
+    this.touchesRetour = creerTouches(this, BORNE.j1.boutons.concat(BORNE.j2.boutons));
+
+  }
+
+  // update() est appelée environ 60 fois par seconde
+  update() {
+
+    // On lit TOUJOURS les touches, pour "consommer" les appuis
+    const retour = uneTouchePressee(this.touchesRetour);
+
+    if (retour && this.pret) {
+      this.scene.start("menu");
     }
+  }
 }

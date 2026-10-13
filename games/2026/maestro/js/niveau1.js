@@ -27,6 +27,9 @@ const HAUTEUR_MONDE = 736;
 const COULEUR_FOND = 0x090d17; // couleur de fond de la carte (réglée dans Tiled)
 const OPACITE_FOND = 0.42; // opacité de l'image de fond (propriété fond_opacite de la carte)
 const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner plus que ça (pour rester à l'écran)
+// Mur de lumière : empêche d'atteindre le parchemin en sautant depuis la plateforme de droite
+// (sol_14). Sans lui, on pourrait se passer des passerelles fantômes, donc du Détective.
+const MUR_LUMIERE = { x: 1664, y: 100, largeur: 16, hauteur: 246 };
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
@@ -38,15 +41,33 @@ const NOTES = [
 
 // La carte Tiled ne place pas d'ennemis : on les place ici (positions en pixels)
 const TUBAS = [{ x: 1900, solY: 620, xMin: 1820, xMax: 1990 }]; // sur la grande plateforme du bas, entre les 2 échelles
+// Chaque cristal a une COULEUR (= une note). Seule l'onde de la même note le détruit ;
+// une autre note ne fait que l'étourdir un instant.
 const CRISTAUX = [
-  { x: 700, y: 250 },
-  { x: 1000, y: 340 },
-  { x: 1620, y: 380 }
+  { x: 700, y: 250, note: 0 }, // Do (rouge)
+  { x: 1000, y: 340, note: 1 }, // Mi (bleu)
+  { x: 1620, y: 380, note: 2 } // Sol (doré)
 ];
 
 export default class niveau1 extends Phaser.Scene {
-  constructor() {
-    super({ key: "niveau1" });
+  // niveau2.js « hérite » de cette classe : il reprend toutes les mécaniques (héros, lampe, ondes, ennemis, vies)
+  // et ne redéfinit que ce qui change (la carte, les objets à ramasser, les textes). On lui passe donc sa clé.
+  constructor(cle = "niveau1") {
+    super({ key: cle });
+  }
+
+  // --------------------------------------------------------------------------
+  //  Ce qui change d'un niveau à l'autre (niveau2.js redéfinit cette méthode)
+  // --------------------------------------------------------------------------
+  definirNiveau() {
+    this.largeurMonde = LARGEUR_MONDE;
+    this.hauteurMonde = HAUTEUR_MONDE;
+    this.couleurFond = COULEUR_FOND;
+    this.listeTubas = TUBAS;
+    this.listeCristaux = CRISTAUX;
+    this.messageVictoire = "Niveau 1 terminé ! Direction le niveau 2...";
+    this.niveauSuivant = "niveau2";
+    this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie";
   }
 
   // ==========================================================================
@@ -68,6 +89,7 @@ export default class niveau1 extends Phaser.Scene {
   // ==========================================================================
   create() {
     // create() est rappelée à chaque (re)lancement : on remet tout à zéro
+    this.definirNiveau();
     this.mode = this.registry.get("mode") || "solo"; // "solo" ou "duo" (choisi dans choix_mode)
     this.fini = false; // vrai quand le niveau est gagné ou perdu
     this.fragmentRecupere = false;
@@ -79,10 +101,10 @@ export default class niveau1 extends Phaser.Scene {
 
     // La gravité de CE niveau (les autres scènes du gabarit gardent la leur)
     this.physics.world.gravity.y = REGLAGES.gravite;
-    this.physics.world.setBounds(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE);
+    this.physics.world.setBounds(0, 0, this.largeurMonde, this.hauteurMonde);
     // (gauche, droite, haut, bas) : le bas du monde ne bloque pas, on peut tomber dans le vide
     this.physics.world.setBoundsCollision(true, true, true, false);
-    this.cameras.main.setBackgroundColor(COULEUR_FOND);
+    this.cameras.main.setBackgroundColor(this.couleurFond);
 
     this.creerTexturesDeSecours();
     this.creerCarte();
@@ -94,6 +116,42 @@ export default class niveau1 extends Phaser.Scene {
     this.creerInterface();
 
     this.afficherMessage(this.texteCommandes(), 7000);
+    this.afficherObjectif();
+  }
+
+  // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface
+  afficherObjectif() {
+    const texte = this.add
+      .text(640, 48, this.objectif, {
+        fontFamily: POLICE,
+        fontSize: "17pt",
+        fontStyle: "bold",
+        color: "#ffe9a8",
+        align: "center",
+        stroke: "#000000",
+        strokeThickness: 5,
+        backgroundColor: "#000000aa",
+        padding: { x: 14, y: 8 }
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+    this.tweens.add({ targets: texte, alpha: 0, delay: 8000, duration: 1500 });
+  }
+
+  // Un panneau d'indication posé dans le décor (lisible sur n'importe quel fond)
+  ajouterIndice(x, y, texte) {
+    const style = {
+      fontFamily: POLICE,
+      fontSize: "13pt",
+      color: "#ffe9a8",
+      align: "center",
+      stroke: "#000000",
+      strokeThickness: 4,
+      backgroundColor: "#000000aa", // fond sombre semi-transparent pour bien lire sur le décor
+      padding: { x: 10, y: 6 }
+    };
+    this.add.text(x, y, texte, style).setOrigin(0.5).setDepth(6);
   }
 
   // --------------------------------------------------------------------------
@@ -136,12 +194,12 @@ export default class niveau1 extends Phaser.Scene {
     const tuilesComplements = this.textures.exists("ts_complements")
       ? this.carte.addTilesetImage("coulisses_complements", "ts_complements")
       : null;
-    this.avecTuiles = tuilesPlateformes != null && tuilesComplements != null;
+    // Chaque jeu d'images est indépendant : s'il manque, on dessine un décor de secours à la place
+    this.avecTuilesPlateformes = tuilesPlateformes != null;
+    this.avecTuilesComplements = tuilesComplements != null;
 
     this.creerFond();
-    if (this.avecTuiles == true) {
-      this.creerCalquesDeTuiles([tuilesPlateformes, tuilesComplements]);
-    }
+    this.creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements);
 
     // ---- Les objets de la carte ----
     const objetsDe = (calque) => this.carte.getObjectLayer(calque).objects;
@@ -151,9 +209,12 @@ export default class niveau1 extends Phaser.Scene {
     // Plateformes solides (calque "collisions")
     objetsDe("collisions").forEach((objet) => this.ajouterPlateforme(objet));
 
+    // Le mur de lumière (invisible pour la physique, un faisceau doré pour le joueur)
+    this.creerMurDeLumiere();
+
     // Échelles : on garde le point où le personnage se tient en haut et en bas (= dessus des plateformes)
     this.echelles = deType("echelle").map((objet) => {
-      if (this.avecTuiles == false) {
+      if (this.avecTuilesComplements == false) {
         this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3);
       }
       return {
@@ -186,22 +247,14 @@ export default class niveau1 extends Phaser.Scene {
         .setDepth(4);
     });
 
-    // Deux panneaux d'indication posés dans le décor
-    const style = {
-      fontFamily: POLICE,
-      fontSize: "13pt",
-      color: "#ffe9a8",
-      align: "center",
-      stroke: "#000000",
-      strokeThickness: 4,
-      backgroundColor: "#000000aa", // fond sombre semi-transparent pour bien lire sur le décor
-      padding: { x: 10, y: 6 }
-    };
-    this.add
-      .text(960, 255, "Passerelles fantômes !\nDétective : allume la lampe (B) et oriente-la (haut / bas)", style)
-      .setOrigin(0.5)
-      .setDepth(6);
-    this.add.text(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !", style).setOrigin(0.5).setDepth(6);
+    // Panneaux d'indication posés dans le décor
+    this.ajouterIndice(
+      960,
+      255,
+      "Passerelles fantômes !\nDétective : éclaire-les avec la lampe (B, haut / bas pour orienter)\nElles restent en place une fois révélées"
+    );
+    this.ajouterIndice(330, 150, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
+    this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !");
   }
 
   // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
@@ -219,27 +272,46 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
-  // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche
-  creerCalquesDeTuiles(tuiles) {
-    this.carte.createLayer("structure", tuiles).setDepth(1).setAlpha(0.65);
-    this.carte.createLayer("plateformes_tuiles", tuiles).setDepth(2);
-    this.carte.createLayer("echelles", tuiles).setDepth(3);
-    this.carte.createLayer("decorations", tuiles).setDepth(4);
-    // Les passerelles fantômes : chaque tuile aura son propre alpha (voir afficherFantome)
-    this.calque_passerelles = this.carte.createLayer("passerelles_temporaires", tuiles).setDepth(5);
-    this.calque_passerelles.forEachTile((tuile) => {
-      tuile.alpha = 0; // invisibles tant qu'elles ne sont pas éclairées
-    });
+  // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche.
+  // Chaque calque n'utilise qu'UN des deux jeux d'images : on ne crée que ceux dont l'image est présente.
+  creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements) {
+    // Calques dessinés avec coulisses_complements.png : la structure et les échelles
+    if (tuilesComplements != null) {
+      this.carte.createLayer("structure", tuilesComplements).setDepth(1).setAlpha(0.65);
+      this.carte.createLayer("echelles", tuilesComplements).setDepth(3);
+    }
+    // Calques dessinés avec plateformes-coulisses-grid-50.png : plateformes, décors, passerelles
+    if (tuilesPlateformes != null) {
+      this.carte.createLayer("plateformes_tuiles", tuilesPlateformes).setDepth(2);
+      this.carte.createLayer("decorations", tuilesPlateformes).setDepth(4);
+      // Les passerelles fantômes : chaque tuile aura son propre alpha (voir afficherFantome)
+      this.calque_passerelles = this.carte.createLayer("passerelles_temporaires", tuilesPlateformes).setDepth(5);
+      this.calque_passerelles.forEachTile((tuile) => {
+        tuile.alpha = 0; // invisibles tant qu'elles ne sont pas éclairées
+      });
+    }
   }
 
   // Une plateforme solide = un rectangle invisible avec un corps statique (qui ne bouge pas)
   ajouterPlateforme(objet) {
     const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height);
     this.groupe_plateformes.add(zone); // ajouter au groupe statique lui donne un corps solide
-    if (this.avecTuiles == false) {
+    if (this.avecTuilesPlateformes == false) {
       // décor de secours : on dessine la plateforme en bois
       this.add.tileSprite(zone.x, zone.y, objet.width, objet.height, "tex_bois").setDepth(2);
     }
+  }
+
+  // Un mur qui ne laisse passer personne : on le dessine comme un faisceau de projecteur
+  creerMurDeLumiere() {
+    const m = MUR_LUMIERE;
+    this.groupe_murs = this.physics.add.staticGroup();
+    this.groupe_murs.add(this.add.zone(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur));
+    const faisceau = this.add
+      .rectangle(m.x + m.largeur / 2, m.y + m.hauteur / 2, m.largeur, m.hauteur, 0xffe9a0, 0.22)
+      .setDepth(6)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: faisceau, alpha: 0.08, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   // Une passerelle fantôme : solide seulement quand la lampe l'éclaire
@@ -251,7 +323,7 @@ export default class niveau1 extends Phaser.Scene {
     zone.eclaireJusqua = 0; // reste solide jusqu'à cet instant (ms)
     zone.alphaVisuel = 0; // 0 = invisible, 1 = bien visible (monte et descend en douceur)
 
-    if (this.avecTuiles == true) {
+    if (this.avecTuilesPlateformes == true) {
       // les tuiles de la passerelle dessinées dans Tiled : la surface + une rangée au-dessus et une en dessous
       zone.tuiles = [];
       for (let colonne = objet.x / 16; colonne < (objet.x + objet.width) / 16; colonne++) {
@@ -324,8 +396,8 @@ export default class niveau1 extends Phaser.Scene {
     this.groupe_cristaux = this.physics.add.group({ allowGravity: false }); // les cristaux flottent
     this.groupe_ondes_ennemies = this.physics.add.group({ allowGravity: false }); // ondes du Tuba
 
-    TUBAS.forEach((t) => this.creerTuba(t.x, t.solY, t.xMin, t.xMax));
-    CRISTAUX.forEach((c) => this.creerCristal(c.x, c.y));
+    this.listeTubas.forEach((t) => this.creerTuba(t.x, t.solY, t.xMin, t.xMax));
+    this.listeCristaux.forEach((c) => this.creerCristal(c.x, c.y, c.note));
   }
 
   creerTuba(x, solY, xMin, xMax) {
@@ -343,13 +415,16 @@ export default class niveau1 extends Phaser.Scene {
     tuba.prochaineOnde = this.time.now + REGLAGES.tuba.ondeToutesMs;
   }
 
-  creerCristal(x, y) {
+  creerCristal(x, y, note) {
     const cristal = this.groupe_cristaux.create(x, y, "cristal_idle");
     cristal.setDepth(9);
     cristal.setCollideWorldBounds(true);
     cristal.body.setCircle(20, 12, 16); // hitbox ronde
     cristal.play("cristal_idle");
-    cristal.pv = REGLAGES.cristal.pv; // points de vie : 2 ondes pour le détruire
+    cristal.pv = REGLAGES.cristal.pv; // points de vie : 1 onde de la bonne note suffit
+    cristal.note = NOTES[note].nom; // la note qui le détruit ("do", "mi" ou "sol")
+    cristal.couleur = parseInt(NOTES[note].couleur.replace("#", ""), 16); // teinte du cristal
+    cristal.setTint(cristal.couleur);
     cristal.etourdiJusqua = 0;
     cristal.mort = false;
   }
@@ -389,6 +464,7 @@ export default class niveau1 extends Phaser.Scene {
       return perso.enEchelle != true;
     });
     this.physics.add.collider(this.groupe_tubas, this.groupe_plateformes);
+    this.physics.add.collider(this.persos, this.groupe_murs);
 
     // Les passerelles fantômes ne sont solides que si elles sont éclairées
     this.physics.add.collider(this.persos, this.groupe_fantomes, null, function (perso, plateforme) {
@@ -410,7 +486,11 @@ export default class niveau1 extends Phaser.Scene {
     });
     this.physics.add.overlap(this.persos, this.groupe_ondes_ennemies, this.ondeEnnemieTouche, null, this);
 
-    // Ramasser le parchemin, franchir la porte
+    this.collisionsObjets();
+  }
+
+  // Ramasser le parchemin, franchir la porte (niveau2.js remplace le parchemin par des lampes)
+  collisionsObjets() {
     this.physics.add.overlap(this.persos, this.partition, this.ramasserFragment, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
   }
@@ -419,9 +499,9 @@ export default class niveau1 extends Phaser.Scene {
   //  Caméra : solo = suit le perso actif · duo = suit le milieu des deux joueurs
   // --------------------------------------------------------------------------
   creerCamera() {
-    this.cameras.main.setBounds(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE);
+    this.cameras.main.setBounds(0, 0, this.largeurMonde, this.hauteurMonde);
     // Une "cible" invisible que la caméra suit ; on la déplace à chaque image
-    this.cible_camera = this.add.zone(this.cantatrice.x, HAUTEUR_MONDE / 2, 10, 10);
+    this.cible_camera = this.add.zone(this.cantatrice.x, this.hauteurMonde / 2, 10, 10);
     this.cameras.main.startFollow(this.cible_camera, true, 0.08, 0.08);
     this.cameras.main.fadeIn(500, 0, 0, 0);
   }
@@ -432,20 +512,19 @@ export default class niveau1 extends Phaser.Scene {
   creerInterface() {
     const fixe = (objet) => objet.setScrollFactor(0).setDepth(100);
 
-    // Cœurs en haut à gauche
-    this.coeurs = [];
-    for (let i = 0; i < this.viesMax; i++) {
-      this.coeurs.push(fixe(this.add.image(32 + i * 36, 30, "tex_coeur")));
-    }
+    // Barre de vie en haut à gauche : l'image de la barre est rouge partout, et un rectangle
+    // de la couleur du fond de la barre cache la partie "vide" (il grandit quand on perd des vies)
+    fixe(this.add.image(10, 8, "img_barre_vie").setOrigin(0, 0));
+    this.videBarre = fixe(this.add.rectangle(10 + 231, 8 + 35, 0, 8, 0x041e48).setOrigin(1, 0));
 
     // Note choisie par la Cantatrice
     this.texteNote = fixe(
-      this.add.text(18, 56, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 66, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
     );
 
     // Batterie de la lampe du Détective
     this.texteLampe = fixe(
-      this.add.text(18, 86, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
     );
     this.barreBatterie = fixe(this.add.graphics());
 
@@ -675,6 +754,7 @@ export default class niveau1 extends Phaser.Scene {
     onde.setDepth(8);
     onde.setScale(1.5);
     onde.setFlipX(sens < 0);
+    onde.note = NOTES[this.noteActuelle].nom; // pour savoir quel cristal elle peut détruire
     onde.play("onde_" + NOTES[this.noteActuelle].nom); // la couleur dépend de la note choisie
     onde.body.setSize(22, 18);
     onde.setVelocityX(sens * REGLAGES.onde.vitesse);
@@ -776,10 +856,13 @@ export default class niveau1 extends Phaser.Scene {
         const toutPres = this.distanceAuRectangle(centre.x, centre.y, passerelle.rect) <= REGLAGES.lampe.rayonProche;
         if (dansLaTache || toutPres) {
           passerelle.eclaireJusqua = temps + REGLAGES.lampe.persistanceMs;
+          if (REGLAGES.lampe.passerellesFixes == true) {
+            passerelle.revelee = true; // révélée une fois : elle ne disparaîtra plus
+          }
         }
       }
-      // lampe éteinte (ou batterie vide) : la passerelle disparaît tout de suite
-      const eclairee = lampe.allumee == true && temps < passerelle.eclaireJusqua;
+      // sinon : lampe éteinte (ou batterie vide) = la passerelle disparaît tout de suite
+      const eclairee = passerelle.revelee == true || (lampe.allumee == true && temps < passerelle.eclaireJusqua);
       passerelle.setData("allumee", eclairee);
 
       // elle apparaît / disparaît en douceur
@@ -878,7 +961,7 @@ export default class niveau1 extends Phaser.Scene {
       cristal.setTint(0x8899ff);
       return;
     }
-    cristal.clearTint();
+    cristal.setTint(cristal.couleur); // il reprend sa couleur après l'étourdissement
 
     const cible = this.persoLePlusProche(cristal);
     const distance = Phaser.Math.Distance.Between(cristal.x, cristal.y, cible.x, cible.y);
@@ -906,13 +989,19 @@ export default class niveau1 extends Phaser.Scene {
     }
     onde.destroy();
     if (ennemi.pv !== undefined) {
-      this.blesserCristal(ennemi); // le cristal perd un point de vie
+      this.blesserCristal(ennemi, onde.note); // détruit seulement si c'est la bonne note
     } else {
       this.etourdir(ennemi, REGLAGES.onde.etourdissementMs); // le tuba est étourdi
     }
   }
 
-  blesserCristal(cristal) {
+  blesserCristal(cristal, note) {
+    if (note != cristal.note) {
+      // mauvaise note : il est juste étourdi un court instant
+      this.etourdir(cristal, REGLAGES.cristal.etourdissementMauvaiseNoteMs);
+      this.afficherMessage("Mauvaise note ! Ce cristal est " + cristal.note.toUpperCase() + " (P pour changer de note)", 2500);
+      return;
+    }
     cristal.pv -= 1;
     if (cristal.pv <= 0) {
       cristal.mort = true;
@@ -1001,27 +1090,43 @@ export default class niveau1 extends Phaser.Scene {
   // Un personnage passe sous la ligne de chute de la carte
   verifierChutes() {
     this.persos.forEach((perso) => {
+      this.memoriserPositionSure(perso);
       if (this.fini == false && perso.body.bottom > this.yChute) {
         this.tomber(perso);
       }
     });
   }
 
-  // Tombé dans le vide : -1 cœur, et on réapparaît près de son partenaire
+  // On retient le dernier endroit où le personnage s'est tenu sur une plateforme SOLIDE
+  // (pas une passerelle fantôme, qui peut disparaître) : c'est là qu'il réapparaîtra s'il tombe.
+  memoriserPositionSure(perso) {
+    const aTerre = perso.body.blocked.down || perso.body.touching.down;
+    if (aTerre == false || perso.enEchelle == true) {
+      return;
+    }
+    const corps = perso.body;
+    const sol = this.groupe_plateformes.getChildren().find((plateforme) => {
+      const p = plateforme.body;
+      return Math.abs(p.top - corps.bottom) < 3 && corps.center.x > p.left && corps.center.x < p.right;
+    });
+    if (sol === undefined) {
+      return; // il se tient sur une passerelle fantôme : on garde l'ancienne position
+    }
+    // on reste à 24 px du bord de la plateforme pour ne pas retomber tout de suite
+    const x = Phaser.Math.Clamp(corps.center.x, sol.body.left + 24, sol.body.right - 24);
+    perso.positionSure = { x: x, y: perso.y };
+  }
+
+  // Tombé dans le vide : -1 cœur, et on réapparaît à SA dernière position sûre
+  // (jamais à l'emplacement de l'autre personnage, qui peut être en l'air ou près d'un danger)
   tomber(perso) {
     if (this.perdreUnCoeur() == false) {
       return;
     }
-    const partenaire = perso == this.cantatrice ? this.detective : this.cantatrice;
-    let x = partenaire.x;
-    let y = partenaire.y - 20;
-    if (partenaire.body.bottom > this.yChute - 40) {
-      // le partenaire est lui aussi en train de tomber : retour au départ
-      x = this.departs.j1.x;
-      y = this.departs.j1.y - 40;
-    }
+    const depart = perso == this.cantatrice ? this.departs.j1 : this.departs.j2;
+    const sure = perso.positionSure !== undefined ? perso.positionSure : { x: depart.x, y: depart.y - 40 };
     this.lacherEchelle(perso);
-    perso.setPosition(x, y);
+    perso.setPosition(sure.x, sure.y);
     perso.setVelocity(0, 0);
     perso.invincibleJusqua = this.time.now + REGLAGES.vies.invincibiliteMs;
     this.faireClignoter(perso);
@@ -1075,9 +1180,10 @@ export default class niveau1 extends Phaser.Scene {
       this.jouerAnimation(perso, perso.nom + "_idle");
     });
     this.physics.pause();
-    this.cameras.main.fadeOut(700, 0, 0, 0);
+    this.afficherMessage(this.messageVictoire, 2000);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.scene.start("niveau_termine");
+      this.scene.start(this.niveauSuivant); // la victoire mène directement au niveau suivant
     });
   }
 
@@ -1105,23 +1211,31 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
+  // Duo : la caméra vise le milieu des deux joueurs.
+  // Solo : elle vise le personnage actif, mais tant que l'autre personnage reste à l'écran elle
+  // le cadre aussi (utile pour voir la lumière du Détective pendant que la Cantatrice saute).
+  // Quand ils s'éloignent, la caméra glisse doucement vers le personnage actif seul.
   mettreAJourCamera() {
-    let x;
+    const milieu = (this.cantatrice.x + this.detective.x) / 2;
+    let x = milieu;
     if (this.mode == "solo") {
-      x = this.actif.x;
-    } else {
-      x = (this.cantatrice.x + this.detective.x) / 2;
+      const autre = this.actif == this.cantatrice ? this.detective : this.cantatrice;
+      const ecart = Math.abs(this.actif.x - autre.x);
+      // poids 0 = on cadre les deux ; poids 1 = on ne suit que le personnage actif
+      const poids = Phaser.Math.Clamp((ecart - 700) / (ECART_MAX_DUO - 700), 0, 1);
+      x = Phaser.Math.Linear(milieu, this.actif.x, poids);
     }
-    this.cible_camera.setPosition(x, HAUTEUR_MONDE / 2);
+    // la hauteur du niveau tient presque dans l'écran : la caméra ne bouge qu'à l'horizontale
+    this.cible_camera.setPosition(x, this.hauteurMonde / 2);
   }
 
   // --------------------------------------------------------------------------
   //  Interface
   // --------------------------------------------------------------------------
   majCoeurs() {
-    this.coeurs.forEach((coeur, i) => {
-      coeur.setTexture(i < this.vies ? "tex_coeur" : "tex_coeur_vide");
-    });
+    // la partie rouge va de x = 68 à x = 231 dans l'image (163 px) : on cache la fraction perdue
+    const perdu = 1 - Math.max(this.vies, 0) / this.viesMax;
+    this.videBarre.setSize(163 * perdu, 8); // setSize (et pas .width) pour que le dessin change vraiment
   }
 
   majNote() {
@@ -1133,9 +1247,9 @@ export default class niveau1 extends Phaser.Scene {
     // Barre de batterie : jaune, puis rouge quand elle est faible
     const faible = this.lampe.batterie <= REGLAGES.lampe.seuilClignote;
     this.barreBatterie.clear();
-    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 88, 154, 18);
-    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 90, 150 * (this.lampe.batterie / 100), 14);
-    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 88, 154, 18);
+    this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18);
+    this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14);
+    this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18);
 
     // Solo : on met en avant les informations du personnage actif
     if (this.mode == "solo") {

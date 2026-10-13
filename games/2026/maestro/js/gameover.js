@@ -1,7 +1,7 @@
 import { creerClavierMenu } from "./controles.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
-const SCENE_RETOUR = "accueil";
+const SCENE_RETOUR = "lobby"; // après un Game Over on réapparaît au lobby (spawn)
 
 export default class gameover extends Phaser.Scene {
   constructor() {
@@ -17,7 +17,7 @@ export default class gameover extends Phaser.Scene {
 
     // Le texte clignote doucement pour inviter à appuyer
     const consigne = this.add
-      .text(640, 680, "Bouton A / Entrée : retour à l'accueil", {
+      .text(640, 680, "Bouton A / Entrée : retour au lobby", {
         fontFamily: POLICE,
         fontSize: "16pt",
         color: "#e8d9b0",

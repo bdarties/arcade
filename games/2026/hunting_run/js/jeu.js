@@ -151,9 +151,10 @@ export default class jeu extends Phaser.Scene {
     const clavier = this.input.keyboard;
     const nb = this.registry.get("nbJoueurs") || 1; // choisi dans le menu (1 ou 2)
 
-    // contrôles de la borne : J1 = joystick flèches + bouton A (I) ; J2 = joystick Z/Q/S/D + bouton A (R)
+    // contrôles de la borne : J1 = joystick flèches + bouton A (I) + bouton D = saut (K) ; J2 = joystick Z/Q/S/D + bouton A (R) + bouton D = saut (F)
+    // le joystick vers le haut (up) sert UNIQUEMENT à monter aux échelles, le saut a sa propre touche
     const reglages = [
-      { teinte: null, decalage: nb > 1 ? -20 : 0, touches: { ...clavier.createCursorKeys(), action: clavier.addKey(K.I) } },
+      { teinte: null, decalage: nb > 1 ? -20 : 0, touches: { ...clavier.createCursorKeys(), action: clavier.addKey(K.I), saut: clavier.addKey(K.K) } },
       {
         teinte: 0x66aaff,
         decalage: 20,
@@ -162,7 +163,8 @@ export default class jeu extends Phaser.Scene {
           down: clavier.addKey(K.S),
           left: clavier.addKey(K.Q),
           right: clavier.addKey(K.D),
-          action: clavier.addKey(K.R)
+          action: clavier.addKey(K.R),
+          saut: clavier.addKey(K.F)
         }
       }
     ];
@@ -695,7 +697,7 @@ export default class jeu extends Phaser.Scene {
       sprite.anims.play(this.anim(j, "anim_face"));
     }
 
-    if (!j.surEchelle && c.up.isDown && (corps.blocked.down || j.surEscalier)) {
+    if (!j.surEchelle && c.saut.isDown && (corps.blocked.down || j.surEscalier)) {
       sprite.setVelocityY(PERSO.saut);
     }
   }
