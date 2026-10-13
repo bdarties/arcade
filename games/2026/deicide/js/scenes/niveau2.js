@@ -8,6 +8,7 @@ import { objetsDe } from "../systemes/chargement.js";
 import { VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import { preparerVide, majVide } from "../mecanismes/vide.js";
 import { preparerFaisceaux, majFaisceaux } from "../mecanismes/faisceaux.js";
+import { montrerAstuceDash } from "../systemes/guide.js"; // rappel du dash (bouton E)
 import { preparerPoursuite, majPoursuite, finirPoursuite } from "../ennemis/poursuite.js";
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
@@ -17,6 +18,7 @@ function creerNiveau2(scene) { // appelée une fois, à la fin du create du nive
   const fin = objetsDe(scene.carte, "fin")[0]; // le point d'arrivée posé dans Tiled ; sinon, 100 px avant le bord droit de la map
   scene.xFin = fin ? fin.x : scene.carte.widthInPixels - 100;
   preparerPoursuite(scene);
+  montrerAstuceDash(scene); // le dash est indispensable ici : on le rappelle une fois
 }
 
 function majNiveau2(scene) { // appelée à chaque image

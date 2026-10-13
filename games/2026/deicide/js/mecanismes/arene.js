@@ -134,7 +134,7 @@ function casserMurDroit(scene) { // le mur éclate : gros éclats de pierre, fla
     const fleches = [0, 1, 2].map((i) => scene.add.text(1050 + i * 62, hauteur - 130, ">", { fontFamily: "monospace", fontSize: "88px", color: "#ffd9a0", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setDepth(100));
     // elles clignotent l'une après l'autre : ça « court » vers la droite
     fleches.forEach((f, i) => scene.tweens.add({ targets: f, alpha: { from: 0.15, to: 1 }, duration: 260, delay: i * 130, yoyo: true, repeat: -1, repeatDelay: 260 }));
-    const texte = scene.add.text(640, 90, "FUIS  >>>", { fontFamily: "monospace", fontSize: "48px", color: "#ffb4a8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    const texte = scene.add.text(640, 90, "FUIS  >>>\nBOUTON E : DASH", { fontFamily: "monospace", fontSize: "48px", align: "center", color: "#ffb4a8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     scene.tweens.add({ targets: texte, scale: { from: 1, to: 1.12 }, duration: 320, yoyo: true, repeat: -1 });
     scene.elementsFuite = [lumiere, texte, ...fleches]; // supprimés quand on quitte l'arène
     scene.fuiteOuverte = true; // verifierArene surveille maintenant la sortie
