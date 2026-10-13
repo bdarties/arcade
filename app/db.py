@@ -1,9 +1,12 @@
+import logging
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Tuple
 
 from .config import Config
+
+logger = logging.getLogger(__name__)
 
 
 def get_db_path() -> Path:
@@ -68,22 +71,44 @@ def add_score(game_id: str, player_name: str, score: int) -> bool:
                 VALUES (?, ?, ?)
                 ''', (game_id, player_name, score))
 
-                # Si plus de 10 scores, supprimer le plus bas
+                # Si plus de 10 scores, supprimer le plus bas.
+                #
+                # On cible une ligne par son id plutot que par "WHERE score =
+                # MIN(...) LIMIT 1" : SQLite n'accepte LIMIT sur un DELETE que
+                # s'il a ete compile avec SQLITE_ENABLE_UPDATE_DELETE_LIMIT, ce
+                # que le module sqlite3 de Python ne fait pas. L'ancienne requete
+                # levait donc une OperationalError, avalee par le except
+                # ci-dessous : des qu'un jeu atteignait 10 scores, l'INSERT
+                # repartait en rollback et PLUS AUCUN score ne pouvait etre
+                # enregistre, pas meme un record. Le sous-SELECT, lui, a le droit
+                # d'utiliser LIMIT.
+                #
+                # Le tri secondaire sur id departage deux scores egaux : sans lui
+                # la ligne supprimee serait choisie arbitrairement. A egalite, on
+                # retire la plus ancienne.
                 if count >= 10:
                     cursor.execute('''
-                    DELETE FROM high_scores 
-                    WHERE game_id = ? 
-                    AND score = (
-                        SELECT MIN(score) 
-                        FROM high_scores 
+                    DELETE FROM high_scores
+                    WHERE id = (
+                        SELECT id
+                        FROM high_scores
                         WHERE game_id = ?
+                        ORDER BY score ASC, id ASC
+                        LIMIT 1
                     )
-                    LIMIT 1
-                    ''', (game_id, game_id))
+                    ''', (game_id,))
 
                 conn.commit()
                 return True
         except sqlite3.Error:
+            # Sans cette trace, une erreur SQL etait indiscernable d'un score
+            # simplement trop faible pour entrer au classement : les deux cas
+            # renvoyaient False en silence. C'est ce qui a rendu le bug ci-dessus
+            # invisible pendant des semaines.
+            logger.exception(
+                "Echec de l'enregistrement du score (game_id=%s, player_name=%s, score=%s)",
+                game_id, player_name, score,
+            )
             return False
 
     return False
