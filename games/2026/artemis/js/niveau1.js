@@ -21,6 +21,7 @@ const STAMINA_MAX = 100;
 // équilibrage : ~0,6 pierre par caillou cassé (cf. pierres.js), 14 cailloux par niveau, la salle safe est rare
 // -> quelques dizaines de pierres entre deux salles : à 5 PV par pierre, ça couvre un à deux barres de vie, pas plus
 const PV_PAR_PIERRE = 5;
+const ECHELLE_STAMINA = 1.5; // taille de la barre de stamina à l'écran (la barre de vie reste à 2) : 96x16 -> 144x24
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
 const ZOOM_CAMERA = 1.5; // zoom maximal (joueurs proches ou solo) ; la caméra HUD n'est pas zoomée, cf. creerCameraHud
@@ -296,10 +297,11 @@ export default class niveau1 extends Phaser.Scene {
   creerHud(j) {
     const a_droite = j.definition.numero === 2;
     j.barre_vie = fct.creerBarre(this, 0, 20, "sprite_barre_vie");
-    j.barre_stamina = fct.creerBarre(this, 0, 60, "sprite_barre_stamina");
+    j.barre_stamina = fct.creerBarre(this, 0, 60, "sprite_barre_stamina", ECHELLE_STAMINA);
     const x_barres = a_droite ? this.scale.width - 132 - j.barre_vie.displayWidth : 132;
     j.barre_vie.setX(x_barres);
-    j.barre_stamina.setX(x_barres);
+    // la barre de stamina, plus petite, reste alignée du côté de la bulle (donc à droite pour le joueur 2)
+    j.barre_stamina.setX(a_droite ? x_barres + j.barre_vie.displayWidth - j.barre_stamina.displayWidth : x_barres);
     // équipement actuel en grand, suivant en petit (en bas de la grande, du côté des barres il s'arrête avant elles)
     const x_bulle = a_droite ? this.scale.width - 56 : 56;
     j.bulles = fct.creerBullesEquipement(this, x_bulle, 56, EQUIPEMENTS, j.equipement, a_droite ? -1 : 1, j.definition.icones);

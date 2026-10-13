@@ -119,10 +119,10 @@ const NB_FRAMES_BARRE = 11; // frame 0 = vide, frame 10 = pleine (10 segments)
 const ECHELLE_BARRE = 2; // 96x16 -> 192x32 à l'écran (entier : le pixel art reste net)
 
 // crée une barre fixée à l'écran (elle ne suit pas la caméra)
-export function creerBarre(scene, x, y, cle) {
+export function creerBarre(scene, x, y, cle, echelle = ECHELLE_BARRE) {
     return scene.add.sprite(x, y, cle, NB_FRAMES_BARRE - 1)
         .setOrigin(0, 0)
-        .setScale(ECHELLE_BARRE)
+        .setScale(echelle)
         .setScrollFactor(0)
         .setDepth(PROFONDEUR.hud);
 }
