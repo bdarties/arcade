@@ -23,40 +23,55 @@ const LAMPES_REQUISES = 3; // lampes à ramasser pour ouvrir la porte
 
 // Positions [x, y] des 7 lampes : 4 sur la route du haut, 3 sur la route du bas
 const POSITIONS_LAMPES = [
-  [780, 258], [1020, 258], [1350, 226], [1560, 258], // route du haut
-  [1040, 514], [1230, 418], [1580, 500] // route du bas (les lampes du milieu flottent au-dessus des plateformes mobiles)
+  [730, 210], [1020, 258], [1300, 236], [1560, 258], // route du haut (au-dessus des plateformes mobiles)
+  [1040, 514], [1260, 418], [1580, 500] // route du bas
 ];
+
+// Pour AÉRER le niveau : des plateformes de la carte sont supprimées (elles étaient trop serrées), dont l'escalier ;
+// une seule est remplacée, plus loin. (x, y, largeur, hauteur en pixels)
+const PLATEFORMES_RETIREES = [
+  { x: 256, y: 320, largeur: 160, hauteur: 64 }, // collée au palier de l'échelle
+  { x: 448, y: 320, largeur: 160, hauteur: 160 } // l'escalier (5 petites marches)
+];
+const PLATEFORMES_AJOUTEES = [{ x: 380, y: 320, largeur: 160 }]; // x, y = coin haut gauche
 
 // Plateformes MOBILES. Ce sont les VRAIES plateformes de la carte (même dessin) : on retire la plateforme fixe
 // de la carte, on copie ses tuiles, et on les fait aller et venir grâce à un tween.
 //  origine = coin haut gauche de la plateforme d'origine dans la carte (largeur × hauteur en pixels)
 //  x = nouvelle position de départ · dx, dy = distance parcourue · dureeMs = temps d'un aller simple
 const PLATEFORMES_MOBILES = [
-  { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2400 }, // haut
-  { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 2200 }, // haut
-  { origine: { x: 928, y: 544 }, largeur: 160, hauteur: 64, x: 928, dx: 70, dy: 0, dureeMs: 2600 }, // bas
-  { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 2000 } // bas : verticale
+  // route du haut
+  { origine: { x: 640, y: 288 }, largeur: 160, hauteur: 64, x: 650, dx: 0, dy: -60, dureeMs: 2300 }, // monte et descend
+  { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2400 }, // va et vient
+  { origine: { x: 1216, y: 256 }, largeur: 160, hauteur: 64, x: 1216, dx: 0, dy: 70, dureeMs: 2500 }, // monte et descend
+  { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 2200 }, // va et vient
+  // route du bas
+  { origine: { x: 352, y: 544 }, largeur: 160, hauteur: 64, x: 352, dx: 0, dy: -50, dureeMs: 2400 }, // première marche : monte et descend
+  { origine: { x: 640, y: 480 }, largeur: 160, hauteur: 64, x: 640, dx: 0, dy: -60, dureeMs: 2600 }, // monte et descend
+  { origine: { x: 928, y: 544 }, largeur: 160, hauteur: 64, x: 928, dx: 70, dy: 0, dureeMs: 2600 }, // va et vient
+  { origine: { x: 1216, y: 448 }, largeur: 160, hauteur: 64, x: 1216, dx: 80, dy: 0, dureeMs: 2300 }, // va et vient
+  { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 2000 } // monte et descend
 ];
 
 // ---- La VOIE HAUTE : un parcours en hauteur, facultatif, qui mène à une lampe bonus (+1 cœur) ----
 //  1. un TAMBOUR posé sur une plateforme fait rebondir très haut (plus haut qu'un saut normal) ;
 //  2. des plateformes fixes en hauteur ;
 //  3. des PLANCHES FRAGILES entre elles : elles tombent peu après qu'on a marché dessus, puis reviennent.
-const TAMBOURS = [{ x: 280, y: 320 }]; // x = centre, y = dessus de la plateforme sur laquelle il est posé
+const TAMBOURS = [{ x: 176, y: 384 }]; // x = centre, y = dessus de la plateforme sur laquelle il est posé
 const FORCE_TAMBOUR = -760; // vitesse de rebond (un saut normal : -520)
 const LARGEUR_PLATEFORME_HAUTE = 160;
 const LARGEUR_PLANCHE = 96;
 const PLATEFORMES_HAUTES = [
-  { x: 340, y: 170 }, // x, y = coin haut gauche (160 px de large, comme le modèle)
-  { x: 800, y: 170 }
+  { x: 300, y: 170 }, // x, y = coin haut gauche (160 px de large)
+  { x: 832, y: 170 }
 ];
 const PLANCHES_FRAGILES = [
-  { x: 550, y: 170 },
+  { x: 520, y: 170 },
   { x: 676, y: 170 }
 ]; // x, y = coin haut gauche (96 px de large)
 const DELAI_CHUTE_MS = 500; // temps entre le premier contact et la chute de la planche
 const DELAI_RETOUR_MS = 3500; // temps avant qu'elle revienne
-const LAMPE_VOIE_HAUTE = { x: 880, y: 130 };
+const LAMPE_VOIE_HAUTE = { x: 910, y: 130 };
 
 // Ennemis en plus : ce niveau est plus dur que le niveau 1
 const TUBAS = [
@@ -74,7 +89,7 @@ const ZONE_SOMBRE = { x: 1000, y: 0, largeur: 300, hauteur: 260 };
 
 // Cristaux colorés : note 0 = Do (rouge), 1 = Mi (bleu), 2 = Sol (doré)
 const CRISTAUX = [
-  { x: 760, y: 190, note: 0 },
+  { x: 600, y: 240, note: 0 },
   { x: 1180, y: 400, note: 1 },
   { x: 1700, y: 220, note: 2 },
   { x: 1420, y: 360, note: 0 } // un de plus au milieu du niveau
@@ -120,12 +135,9 @@ const DECOR = [
   { nom: "lanterne2", x: 1860, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lampadaire", x: 760, y: 640, ancre: "bas", profondeur: 2, lueur: true },
   { nom: "lampadaire", x: 1780, y: 640, ancre: "bas", profondeur: 2, lueur: true },
-  { nom: "barriere", x: 560, y: 640, ancre: "bas", profondeur: 2 },
-  { nom: "caisse", x: 650, y: 640, ancre: "bas", profondeur: 2 },
   { nom: "caisse", x: 1960, y: 640, ancre: "bas", profondeur: 2 },
-  { nom: "vase", x: 400, y: 640, ancre: "bas", profondeur: 2 },
   { nom: "vase", x: 1760, y: 640, ancre: "bas", profondeur: 2 },
-  { nom: "vase", x: 380, y: 320, ancre: "bas", profondeur: 2 },
+  { nom: "vase", x: 500, y: 320, ancre: "bas", profondeur: 2 },
   { nom: "pagode", x: 1836, y: 232, ancre: "bas", profondeur: 2 }
 ];
 
@@ -184,10 +196,13 @@ export default class niveau2 extends niveau1 {
     const calque = carte.createLayer("calque_plateformes", tuiles).setVisible(false); // invisible : on lit seulement ses tuiles
     this.calquePlateformes = calque;
 
-    // On enlève de la carte les plateformes fixes à remplacer par des plateformes mobiles (collisions)
-    PLATEFORMES_MOBILES.forEach((m) => {
-      for (let colonne = m.origine.x / TAILLE_TUILE; colonne < (m.origine.x + m.largeur) / TAILLE_TUILE; colonne++) {
-        for (let ligne = m.origine.y / TAILLE_TUILE; ligne < (m.origine.y + m.hauteur) / TAILLE_TUILE; ligne++) {
+    // On enlève de la carte les plateformes fixes à remplacer par des plateformes mobiles, et celles qui étaient trop serrées
+    const aRetirer = PLATEFORMES_RETIREES.concat(
+      PLATEFORMES_MOBILES.map((m) => ({ x: m.origine.x, y: m.origine.y, largeur: m.largeur, hauteur: m.hauteur }))
+    );
+    aRetirer.forEach((r) => {
+      for (let colonne = r.x / TAILLE_TUILE; colonne < (r.x + r.largeur) / TAILLE_TUILE; colonne++) {
+        for (let ligne = r.y / TAILLE_TUILE; ligne < (r.y + r.hauteur) / TAILLE_TUILE; ligne++) {
           calque.removeTileAt(colonne, ligne);
         }
       }
@@ -215,8 +230,8 @@ export default class niveau2 extends niveau1 {
     this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une lampe BONUS (+1 cœur)");
     this.ajouterIndice(1840, 110, "La porte s'ouvre quand tu as " + LAMPES_REQUISES + " lampes");
     this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
-    this.ajouterIndice(330, 262, "Tambour : saute dessus pour rebondir très haut !");
-    this.ajouterIndice(640, 108, "Voie haute : planches fragiles, ne traîne pas !");
+    this.ajouterIndice(190, 330, "Tambour : saute dessus pour rebondir très haut !");
+    this.ajouterIndice(600, 108, "Voie haute : planches fragiles, ne traîne pas !");
 
     this.creerPlateformesMobiles();
     this.creerVoieHaute();
@@ -281,8 +296,11 @@ export default class niveau2 extends niveau1 {
         this.add.image(d.x, centreY, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setScale(0.55).setAlpha(0.35).setDepth(d.profondeur + 0.1);
       }
     });
-    // l'escalier du début de la route du milieu : un seul dessin (la carte en fait 5 petites marches)
-    this.add.image(448, 320, "decor2", "escalier").setOrigin(0, 0).setDisplaySize(160, 128).setDepth(3);
+    // les plateformes ajoutées (fixes) : une zone solide + le dessin
+    PLATEFORMES_AJOUTEES.forEach((p) => {
+      this.ajouterPlateforme({ x: p.x, y: p.y, width: p.largeur, height: TAILLE_TUILE });
+      this.dessinerPlateforme(p.x, p.y, p.largeur);
+    });
   }
 
   // Une zone invisible avec un corps qui ne bouge pas quand un héros le pousse
@@ -303,6 +321,7 @@ export default class niveau2 extends niveau1 {
     PLATEFORMES_MOBILES.forEach((m, i) => {
       const plateforme = this.creerCorps(m.x, m.origine.y, m.largeur, m.hauteur);
       this.groupe_mobiles.add(plateforme);
+      plateforme.unSens = true;
       plateforme.body.setImmovable(true);
       plateforme.body.setAllowGravity(false);
       const dessin = this.dessinerPlateforme(m.x, m.origine.y, m.largeur);
@@ -346,6 +365,7 @@ export default class niveau2 extends niveau1 {
     PLANCHES_FRAGILES.forEach((f) => {
       const planche = this.creerCorps(f.x, f.y, LARGEUR_PLANCHE, 32);
       this.groupe_fragiles.add(planche);
+      planche.unSens = true;
       planche.body.setImmovable(true);
       planche.body.setAllowGravity(false);
       planche.dessin = this.dessinerPlateforme(f.x, f.y, LARGEUR_PLANCHE);
@@ -472,6 +492,7 @@ export default class niveau2 extends niveau1 {
   ajouterPlateforme(objet) {
     const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height);
     this.groupe_plateformes.add(zone);
+    zone.unSens = objet.y < 640; // sauf le sol et la scène : on traverse les plateformes par le dessous
   }
 
   // --------------------------------------------------------------------------
@@ -517,13 +538,9 @@ export default class niveau2 extends niveau1 {
   collisionsObjets() {
     // Tambours (rebond) et planches fragiles
     this.physics.add.overlap(this.persos, this.groupe_tambours, this.rebondirSurTambour, null, this);
-    this.physics.add.collider(this.persos, this.groupe_fragiles, this.planchePietinee, function (perso) {
-      return perso.enEchelle != true;
-    }, this);
+    this.physics.add.collider(this.persos, this.groupe_fragiles, this.planchePietinee, (perso, plateforme) => this.peutMarcherSur(perso, plateforme), this);
     // Les héros marchent sur les plateformes mobiles (sauf s'ils sont sur une échelle)
-    this.physics.add.collider(this.persos, this.groupe_mobiles, null, function (perso) {
-      return perso.enEchelle != true;
-    });
+    this.physics.add.collider(this.persos, this.groupe_mobiles, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
     this.physics.add.overlap(this.persos, this.groupe_lampes, this.ramasserLampe, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
   }
