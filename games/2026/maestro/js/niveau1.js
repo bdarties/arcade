@@ -21,6 +21,7 @@
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau } from "./controles.js";
 import { enregistrerVictoire, NIVEAUX } from "./progression.js";
+import { jouerMusique, arreterMusique } from "./musique.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
 const LARGEUR_MONDE = 2176;
@@ -198,14 +199,11 @@ export default class niveau1 extends Phaser.Scene {
     });
   }
 
-  // La musique du niveau : elle tourne en boucle et s'arrête dès qu'on quitte la scène
+  // La musique du niveau : celle du menu s'arrête, celle du niveau démarre et s'arrête en quittant le niveau
   demarrerMusique() {
-    if (this.cache.audio.exists(this.musiqueNiveau) == false) {
-      return; // pas de musique chargée : le niveau reste jouable sans
-    }
-    this.musique = this.sound.add(this.musiqueNiveau, { loop: true, volume: 0.45 });
-    this.musique.play();
-    this.events.once("shutdown", () => this.musique.stop()); // on coupe la musique en quittant le niveau
+    arreterMusique(this);
+    jouerMusique(this, this.musiqueNiveau, 0.45);
+    this.events.once("shutdown", () => arreterMusique(this));
   }
 
   // La phrase d'objectif du niveau : en haut de l'écran au début, puis elle s'efface

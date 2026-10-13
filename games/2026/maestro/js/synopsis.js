@@ -1,4 +1,5 @@
 import { creerClavierMenu } from "./controles.js";
+import { jouerMusique } from "./musique.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 const DELAI_LETTRE_MS = 35;
@@ -19,6 +20,7 @@ export default class synopsis extends Phaser.Scene {
     // La scène peut être rejouée : chaque visite recommence au premier paragraphe.
     this.paragraphe = 0;
     this.enTransition = false;
+    jouerMusique(this, "musique_accueil", 0.4); // toujours la même piste
     this.minuteur = null;
     this.lignes = [];
     this.clavier = creerClavierMenu(this);

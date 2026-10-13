@@ -17,6 +17,7 @@
 
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau } from "./controles.js";
+import { jouerMusique } from "./musique.js";
 import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
 
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
@@ -109,14 +110,9 @@ export default class lobby extends Phaser.Scene {
     this.demarrerMusique();
   }
 
-  // La musique du lobby : en boucle, coupée dès qu'on quitte la scène
+  // La musique du lobby : la même piste que l'accueil, sans coupure (voir musique.js)
   demarrerMusique() {
-    if (this.cache.audio.exists("musique_accueil") == false) {
-      return;
-    }
-    this.musique = this.sound.add("musique_accueil", { loop: true, volume: 0.4 });
-    this.musique.play();
-    this.events.once("shutdown", () => this.musique.stop());
+    jouerMusique(this, "musique_accueil", 0.4);
   }
 
   // --------------------------------------------------------------------------
