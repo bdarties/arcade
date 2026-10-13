@@ -56,6 +56,7 @@ export function preparerLanternesVivantes(scene) {
         // les ailes battent
         scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 });
     }
+    scene.maxLanternes = undefined; // (la scène est réutilisée après une mort : on repart du maximum normal)
     const groupe = scene.physics.add.group({ allowGravity: false });
     scene.lanternesVivantes = groupe; // (personnage.js s'en sert pour la visée auto)
     if (scene.groupe_plateformes) scene.physics.add.collider(groupe, scene.groupe_plateformes); // elle ne traverse pas les murs
@@ -93,7 +94,7 @@ function placeApparition(scene) {
 // fait apparaître une lanterne vivante (renvoie null s'il y en a déjà trop ou s'il n'y a pas de place)
 export function faireApparaitre(scene) {
     const groupe = scene.lanternesVivantes;
-    if (!groupe || groupe.countActive() >= MAX_VIVANTES) return null;
+    if (!groupe || groupe.countActive() >= (scene.maxLanternes ?? MAX_VIVANTES)) return null;
     const place = placeApparition(scene);
     if (!place) return null;
     const lanterne = groupe.create(place.x, place.y, "lanterne_vivante", 0);
