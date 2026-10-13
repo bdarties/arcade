@@ -29,7 +29,7 @@ export default class histoire extends Phaser.Scene {
         imageKey: 'illustration_lettre_brise'
       },
       {
-        texte: " « Une pierre, deux coups : je suis le Maestro ! Et à présent, vous allez faire partie de ma troupe de marionettes. » ",
+        texte: " « D'une pierre, deux coups : je suis le Maestro ! Et à présent, vous allez faire partie de ma troupe de marionettes. » ",
         imageKey: 'illustration_deux'
       },
       {
