@@ -1,4 +1,4 @@
-// niveau1.js : le niveau 1 : on monte la tour (la map fait 1280 x 6400 px). Il se termine par l'arène du Soldat de la Lumière (mecanismes/arene.js).
+// niveau1.js : le niveau 1 : on monte la tour (la map fait 1280 x 6400 px). Il se termine par l'arène du Dieu de la Lumière (mecanismes/arene.js).
 // Tout le fonctionnement (robot, ennemis, lumière, pause, mort) est dans niveau.js : ici il n'y a que ce qui est propre à ce niveau.
 import niveau from "./niveau.js";
 import { verifierArene } from "../mecanismes/arene.js";
@@ -10,6 +10,7 @@ const CONFIG_NIVEAU1 = {
   musique: "musique_niveau", // la musique du niveau
   salles: SALLES_NIVEAU1, // les salles de combat fermées (voir mecanismes/salles.js)
   arene: verifierArene, // appelée à chaque image : ferme l'arène du boss quand le robot y arrive
+  departArene: { x: 300, y: 760 }, // où le robot réapparaît s'il meurt contre le boss : dans l'arène, pas en bas de la tour (voir niveau.js, mourir)
   teleportBoss: { x: 300, y: 760 } // touche F8 (test) : téléporte le robot dans l'arène du boss
 };
 

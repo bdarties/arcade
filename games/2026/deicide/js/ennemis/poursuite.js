@@ -1,4 +1,4 @@
-// poursuite.js : la poursuite du niveau 2 : le Soldat de la Lumière enragé court après le robot
+// poursuite.js : la poursuite du niveau 2 : le Dieu de la Lumière enragé court après le robot
 // Deux dangers : (1) un MUR DE LUMIÈRE qui avance de gauche à droite à vitesse constante : un peu moins vite que la course du robot (260
 // px/s), mais il
 // rattrape celui qui s'arrête ou rate un saut ; le dash sert à reprendre de l'avance. S'il touche le robot : -1 PV et le mur recule un peu.
@@ -127,7 +127,7 @@ function majColonne(scene, c) {
         const b = scene.player.body;
         if (!c.touche && !scene.mort && b.center.x + b.halfWidth * 0.6 > c.x - 36 && b.center.x - b.halfWidth * 0.6 < c.x + 36) {
             c.touche = true; // un seul coup par rayon
-            scene.blesserJoueur(1, "Foudroyé par le Soldat enragé");
+            scene.blesserJoueur(1, "Foudroyé par le Dieu enragé");
         }
         if (scene.time.now >= c.fin) { c.rayon.destroy(); c.etat = "finie"; }
     }

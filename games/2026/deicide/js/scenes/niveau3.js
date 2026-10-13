@@ -1,5 +1,5 @@
-// niveau3.js : l'arène du dernier combat : le Soldat de la Lumière enragé, version 2 (plus fort que dans l'arène du niveau 1)
-// Une seule salle, de la taille de l'écran (assets/maps/arene_dieu.json, générée par outils/generer_niveaux.py), comme l'arène du Soldat en haut
+// niveau3.js : l'arène du dernier combat : le Dieu de la Lumière enragé, version 2 (plus fort que dans l'arène du niveau 1)
+// Une seule salle, de la taille de l'écran (assets/maps/arene_dieu.json, générée par outils/generer_niveaux.py), comme l'arène du Dieu en haut
 // du niveau 1. Le boss apparaît dès qu'on arrive (voir boss.js, profil "soldat2"). Sa mort arrête le chrono et ouvre le classement.
 import niveau from "./niveau.js";
 import { faireApparaitreBoss } from "../ennemis/boss.js";
@@ -10,7 +10,7 @@ function lancerArene(scene) { // appelée à chaque image : au premier appel, fi
     if (scene.areneLancee) return;
     scene.areneLancee = true;
     const camera = scene.cameras.main;
-    camera.stopFollow(); // la caméra cadre toute l'arène : le sol se trouve à 688 px du haut de l'écran, comme dans l'arène du Soldat
+    camera.stopFollow(); // la caméra cadre toute l'arène : le sol se trouve à 688 px du haut de l'écran, comme dans l'arène du Dieu
     camera.setScroll(0, HAUT_DU_SOL - 688);
     scene.areneSolY = HAUT_DU_SOL; // le sol : les colonnes de lumière du boss tombent jusque-là
     scene.areneCentreX = 640; // le milieu de l'arène : le boss flotte autour

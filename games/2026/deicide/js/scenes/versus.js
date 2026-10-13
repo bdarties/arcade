@@ -49,7 +49,7 @@ export default class versus extends Phaser.Scene {
     const [depart2] = objetsDe(carte, "depart2");
     this.joueurs = [
       creerPersonnage(this, depart1.x, depart1.y),
-      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G", porte: "T" } })
+      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G" } })
     ];
     this.joueurs[1].regardeGauche = true; // le joueur 2 regarde vers le joueur 1
     this.claviers = [

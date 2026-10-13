@@ -1,4 +1,4 @@
-// niveau2.js : le niveau 2, horizontal : une fuite. Le Soldat de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
+// niveau2.js : le niveau 2, horizontal : une fuite. Le Dieu de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
 // C'est le même niveau que le niveau 1 (voir niveau.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled
 // (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
