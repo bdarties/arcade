@@ -57,8 +57,8 @@ const PROFILS = {
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
         attaques: [
             ["orbes", "colonne", "pluie", "orbes", "balayage", "colonne", "orbes", "lanternes"], // beaucoup d'orbes et de lasers, lanternes 1 fois sur 8
-            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "spirale", "lanternes"],
-            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "spirale", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
+            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "spirale", "geysers", "lanternes"],
+            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "spirale", "geysers", "geysers", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
         ]
     }
 };
@@ -83,6 +83,7 @@ const ATTAQUES = {
     balayage: { charge: 900, apres: 600 },
     nova: { charge: 560, apres: 900 },
     pique: { charge: 720, apres: 1250 },
+    geysers: { charge: 800, apres: 1500 }, // (dernier boss, phases 2 et 3 : voir lancerGeysers)
     spirale: { charge: 700, apres: 2500 } // (dernier boss, phases 2 et 3 : voir lancerSpirale)
 };
 
@@ -222,7 +223,7 @@ function lancerAttaque(scene, boss, nom) {
     boss.play("boss_charge");
     // (durées arrondies à des croches : tout reste en rythme avec la musique) // (phase 3 dure : l'attaque dure plus longtemps pour laisser
     // partir la deuxième salve d'orbes)
-    const apres = quantifier(ATTAQUES[nom].apres + (rude(boss) ? (nom === "orbes" && rude(boss).salves > 1 ? 350 * (rude(boss).salves - 1) + 150 : nom === "colonne" && rude(boss).balayage ? 1200 : 0) : 0));
+    const apres = quantifier(ATTAQUES[nom].apres + (rude(boss) ? (nom === "orbes" && rude(boss).salves > 1 ? 350 * (rude(boss).salves - 1) + 150 : nom === "colonne" && rude(boss).balayage ? 1200 : nom === "geysers" && boss.phase === 2 ? 1100 : 0) : 0));
     // phase 3 dure : l'attaque est annoncée 30 % plus vite, il faut réagir plus vite. Pas moins : le trait de la colonne suit le robot 0,5 s puis
     // se fige (voir zone) ; si l'annonce durait moins, la colonne tomberait avant de se figer, pile sur le robot, impossible à éviter
     const charge = quantifier(ATTAQUES[nom].charge * (rude(boss) ? rude(boss).charge : 1));
@@ -261,6 +262,7 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         return { xs, reperes, haut };
     }
     // le trait suit le robot puis se fige : le boss plongera là
+    if (nom === "geysers") return { zones: xsGeysers(boss).map((x) => geyser(scene, x)) }; // des petits traits de lumière posés sur le sol
     if (nom === "pique") return { zones: [zone(scene, { x: joueur.x, y: (boss.y + 40 + sol) / 2, w: 64, h: sol - boss.y - 40, trait: { w: 8, h: sol - boss.y - 40 }, suit: true, degats: false })] };
     return {};
 }
@@ -285,6 +287,7 @@ function executer(scene, boss, nom, annonce, valide) {
     else if (nom === "nova") lancerNova(scene, boss, valide);
     else if (nom === "pique") piquer(scene, boss, annonce);
     else if (nom === "spirale") lancerSpirale(scene, boss, valide);
+    else if (nom === "geysers") lancerGeysers(scene, boss, annonce, valide);
 }
 
 // une orbe de lumière : le même halo que l'orbe du mage (ennemis.js), doré
@@ -334,6 +337,28 @@ function invoquerLanternes(scene, boss, valide) {
     const nombre = rude(boss) ? 2 : [2, 2, 4][boss.phase]; // dernier boss : seulement 2 lanternes, à toutes les phases
     for (let i = 0; i < nombre; i++) scene.time.delayedCall(i * 250, () => { if (valide()) invoquerLanterne(scene); });
     effets.eclats(scene, boss.x, boss.y - 30, ECLATS_OR[0], 12, ECLATS_OR[1]);
+}
+
+// Les geysers (dernier boss, phases 2 et 3) : des jets de lumière qui sortent du sol. Chacun est annoncé par un petit trait posé sur le sol, puis ils jaillissent
+// en vague d'un côté à l'autre. Un jet est court (HAUT_GEYSER) : on les évite en sautant par-dessus ou en montant sur une plateforme (à plus de 120 px du sol).
+// En phase 3, une deuxième vague décalée jaillit juste après, pile entre les jets de la première : plus d'espace au sol, il faut sauter ou monter.
+const HAUT_GEYSER = 120;
+function geyser(scene, x) { return zone(scene, { x, y: scene.areneSolY - HAUT_GEYSER / 2, w: 56, h: HAUT_GEYSER, trait: { w: 8, h: HAUT_GEYSER } }); }
+function xsGeysers(boss, milieux = false) { // les positions des jets sur toute la largeur de l'arène (milieux : entre les jets de la première vague)
+    const nombre = boss.phase === 2 ? 8 : 6;
+    const pas = 1060 / (nombre - 1);
+    return Array.from({ length: milieux ? nombre - 1 : nombre }, (_, i) => Math.round(110 + pas * (i + (milieux ? 0.5 : 0))));
+}
+function lancerGeysers(scene, boss, annonce, valide) {
+    const sens = Phaser.Math.RND.pick([1, -1]); // la vague part de la gauche ou de la droite
+    const jaillir = (zones, ecart, direction) => [...zones].sort((a, b) => direction * (a.x - b.x)).forEach((z, i) => scene.time.delayedCall(i * ecart, () => { if (valide()) declencher(scene, z); }));
+    jaillir(annonce.zones, 110, sens);
+    if (boss.phase !== 2) return;
+    scene.time.delayedCall(800, () => { // deuxième vague, entre les jets de la première, annoncée 0,55 s avant
+        if (!valide()) return;
+        const zones = xsGeysers(boss, true).map((x) => geyser(scene, x));
+        scene.time.delayedCall(550, () => { if (valide()) jaillir(zones, 90, -sens); else zones.forEach(detruireZone); }); // la deuxième vague va dans l'autre sens
+    });
 }
 
 // La spirale (dernier boss, phases 2 et 3) : le boss tourne sur lui-même en crachant 3 bras d'orbes. Les bras tournent dans un sens, puis à la moitié
