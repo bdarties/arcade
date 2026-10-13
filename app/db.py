@@ -1,7 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .config import Config
 
@@ -42,7 +42,37 @@ def init_db():
         ON high_scores(game_id, score DESC)
         ''')
 
+        # Espace de stockage JSON libre, un par jeu (nom du répertoire du jeu)
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS game_data (
+            game_id VARCHAR(100) PRIMARY KEY,
+            data TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
+
         conn.commit()
+
+def get_game_data(game_id: str) -> Optional[str]:
+    """Retourne le JSON (texte) stocké pour un jeu, ou None s'il n'y en a pas."""
+    with _get_connection() as conn:
+        row = conn.execute(
+            'SELECT data FROM game_data WHERE game_id = ?', (game_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+
+def set_game_data(game_id: str, data: str) -> None:
+    """Crée ou remplace le JSON (texte) d'un jeu."""
+    with _get_connection() as conn:
+        conn.execute('''
+        INSERT INTO game_data (game_id, data, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(game_id) DO UPDATE SET
+            data = excluded.data, updated_at = CURRENT_TIMESTAMP
+        ''', (game_id, data))
+        conn.commit()
+
 
 def add_score(game_id: str, player_name: str, score: int) -> bool:
     """
