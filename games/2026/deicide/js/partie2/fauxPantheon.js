@@ -6,7 +6,7 @@
 import classement from "../partie1/scenes/classement.js";
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon } from "../partie1/systemes/sons.js";
-import { fanfare, battements, montee, coupDEpee, impact } from "./synth.js";
+import { fanfare, battements, montee, coupDEpee, impact, verre } from "./synth.js";
 
 const LARGEUR = 1280, HAUTEUR = 720;
 const TEINTE_FINALE = 0x9a7cff; // le violet de la forme finale (voir formeFinale.js)
@@ -103,25 +103,69 @@ export default class fauxPantheon extends classement {
         });
     }
 
-    // L'impact : tout se passe en même temps. Un flash, un coup de zoom, un tremblement violent, une onde de choc, une gerbe d'étincelles. Puis un bref arrêt sur image.
+    // L'impact : tout se passe en même temps, et c'est ÉNORME. Un flash blanc, un coup de zoom, un tremblement violent, une onde de choc, une gerbe d'étincelles, le boum du coup
+    // et les craquements du verre : l'écran SE FISSURE à partir de la lame (les fissures restent sur l'écran, et dans les deux moitiés quand il se brise). Un temps d'arrêt, puis il est tranché.
     impactCoup(lame, voile) {
         impact(this);
+        verre(this);
         const camera = this.cameras.main;
-        camera.flash(260, 255, 255, 255);
-        camera.shake(900, 0.045);
-        camera.zoomTo(1.16, 55, "Quad.easeOut"); // le coup de zoom de l'impact
+        camera.flash(340, 255, 255, 255);
+        camera.shake(1300, 0.07); // un tremblement très violent
+        camera.zoomTo(1.24, 50, "Quad.easeOut"); // le coup de zoom de l'impact...
+        this.time.delayedCall(110, () => camera.zoomTo(1.0, 330, "Quad.easeOut")); // ...qui revient en rebondissant
         const centre = LIGNE[Math.floor(POINTS * 0.5)];
-        const onde = this.add.graphics().setDepth(102).setBlendMode(Phaser.BlendModes.ADD); // l'onde de choc : un anneau qui grandit et s'amincit
-        const anneau = { rayon: 20, epaisseur: 26, alpha: 1 };
-        this.tweens.add({ targets: anneau, rayon: 820, epaisseur: 2, alpha: 0, duration: 700, ease: "Cubic.Out",
-            onUpdate: () => { onde.clear().lineStyle(anneau.epaisseur * 1.8, 0xffd45c, anneau.alpha * 0.35).strokeCircle(centre.x, centre.y, anneau.rayon).lineStyle(anneau.epaisseur, 0xffffff, anneau.alpha).strokeCircle(centre.x, centre.y, anneau.rayon); },
-            onComplete: () => onde.destroy() });
+        // l'onde de choc : deux anneaux qui grandissent et s'amincissent
+        [0, 90].forEach((retard, i) => {
+            const onde = this.add.graphics().setDepth(102).setBlendMode(Phaser.BlendModes.ADD);
+            const anneau = { rayon: 20, epaisseur: 30 - i * 8, alpha: 1 };
+            this.tweens.add({ targets: anneau, rayon: 900, epaisseur: 2, alpha: 0, duration: 760, delay: retard, ease: "Cubic.Out",
+                onUpdate: () => { onde.clear().lineStyle(anneau.epaisseur * 1.8, 0xffd45c, anneau.alpha * 0.35).strokeCircle(centre.x, centre.y, anneau.rayon).lineStyle(anneau.epaisseur, 0xffffff, anneau.alpha).strokeCircle(centre.x, centre.y, anneau.rayon); },
+                onComplete: () => onde.destroy() });
+        });
         const etincelles = this.add.particles(0, 0, "pixel", {
-            speed: { min: 250, max: 1000 }, angle: { min: 0, max: 360 }, gravityY: 800, lifespan: { min: 350, max: 1100 }, scale: { start: 3.2, end: 0 },
+            speed: { min: 250, max: 1100 }, angle: { min: 0, max: 360 }, gravityY: 800, lifespan: { min: 350, max: 1200 }, scale: { start: 3.4, end: 0 },
             alpha: { start: 1, end: 0 }, tint: [0xfff2c0, 0xffd45c, 0xffffff], blendMode: "ADD", emitting: false
         }).setDepth(103);
-        for (let i = 4; i < POINTS - 4; i += 2) etincelles.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 3);
-        this.time.delayedCall(170, () => this.trancher(lame, voile, etincelles)); // un temps d'arrêt : on voit la lame figée dans l'écran
+        for (let i = 4; i < POINTS - 4; i += 2) etincelles.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 4);
+        this.fissurer(lame);
+        this.time.delayedCall(560, () => this.trancher(lame, voile, etincelles)); // les fissures se propagent sous le tremblement, puis l'écran est tranché
+    }
+
+    // Le réseau de fissures : de chaque point de la lame partent des fêlures brisées, qui s'étendent en 0,3 s. Elles sont dessinées sur l'écran (donc dans la photo qui sera coupée).
+    fissurer(lame) {
+        const graphique = this.add.graphics().setDepth(101);
+        const fissures = [];
+        const branche = (x, y, angle, longueur, generation) => { // une fêlure : une ligne brisée qui peut se diviser
+            const points = [{ x, y }];
+            let a = angle;
+            for (let reste = longueur; reste > 0;) {
+                const pas = Phaser.Math.Between(26, 70);
+                a += Phaser.Math.FloatBetween(-0.55, 0.55);
+                const dernier = points[points.length - 1];
+                points.push({ x: dernier.x + Math.cos(a) * pas, y: dernier.y + Math.sin(a) * pas });
+                reste -= pas;
+                if (generation < 2 && Math.random() < 0.22) branche(points[points.length - 1].x, points[points.length - 1].y, a + Phaser.Math.FloatBetween(-1.1, 1.1), reste * 0.8, generation + 1);
+            }
+            if (points.length >= 2) fissures.push({ points, epaisseur: Math.max(1.5, 5 - generation * 1.8) }); // (une branche trop courte n'a pas de segment)
+        };
+        for (let i = 6; i < POINTS - 6; i += 4) { // de nombreux points d'impact le long de la lame, des fêlures des deux côtés
+            const p = LIGNE[i], dx = LIGNE[i + 1].x - LIGNE[i - 1].x, dy = LIGNE[i + 1].y - LIGNE[i - 1].y, normale = Math.atan2(dy, dx) + Math.PI / 2;
+            branche(p.x, p.y, normale + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
+            branche(p.x, p.y, normale + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
+        }
+        const etat = { avancee: 0 };
+        this.tweens.add({ targets: etat, avancee: 1, duration: 320, ease: "Cubic.Out",
+            onUpdate: () => {
+                graphique.clear();
+                fissures.forEach(({ points, epaisseur }) => {
+                    const jusqua = Math.max(2, Math.floor(points.length * etat.avancee));
+                    [[epaisseur + 6, 0x000000, 0.55], [epaisseur + 2, 0xffd45c, 0.5], [epaisseur, 0xffffff, 1]].forEach(([largeur, couleur, alpha]) => { // un contour sombre, un reflet doré, un trait blanc
+                        graphique.lineStyle(largeur, couleur, alpha).beginPath().moveTo(points[0].x, points[0].y);
+                        for (let k = 1; k < jusqua; k++) graphique.lineTo(points[k].x, points[k].y);
+                        graphique.strokePath();
+                    });
+                });
+            } });
     }
 
     // ---- 4. L'ÉCRAN EST TRANCHÉ : une photo de l'écran est coupée le long de la courbe, et les deux moitiés s'écartent dans la lumière ----
@@ -153,6 +197,8 @@ export default class fauxPantheon extends classement {
             this.children.list.forEach((objet) => { if (objet !== haut && objet !== bas) objet.setVisible(false); });
             camera.setBackgroundColor("rgba(0,0,0,0)");
             camera.shake(1500, 0.022); // le tremblement continue pendant que l'écran s'ouvre
+            verre(this); // l'écran éclate : une nouvelle rafale de verre brisé
+            jouerSon(this, "ennemi_mort");
             // la lumière qui sort de la coupure, derrière les moitiés : une bande qui s'élargit en s'éteignant
             const lumiere = this.add.graphics().setDepth(105).setBlendMode(Phaser.BlendModes.ADD);
             const e = { largeur: 40, alpha: 1 };

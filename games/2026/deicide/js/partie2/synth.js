@@ -104,15 +104,47 @@ export function coupDEpee(scene) { // LE coup : le souffle de la lame qui fend l
     [3100, 4700, 6200, 7900, 9300].forEach((f, i) => note(c, sortieEpee, "sine", f * (1 + i * 0.002), t + 0.12, 1.5 - i * 0.18, 0.13)); // le tintement du métal
 }
 
-export function impact(scene) { // l'impact : un boum très grave, un claquement sec et un long grondement
+// Une sortie FORTE : un compresseur qui écrase les pics, pour qu'une addition de sons très puissants sonne énorme sans saturer les haut-parleurs.
+function sortieForte(c, volume) {
+    const compresseur = c.createDynamicsCompressor();
+    compresseur.threshold.value = -14; compresseur.knee.value = 8; compresseur.ratio.value = 7; compresseur.attack.value = 0.002; compresseur.release.value = 0.25;
+    const gain = c.createGain();
+    gain.gain.value = volume * volumeEffets();
+    gain.connect(compresseur).connect(c.destination);
+    return gain;
+}
+
+function courbeSaturation(c) { // une courbe qui écrase les pics : elle ajoute des harmoniques et donne du mordant au boum grave
+    const n = 1024, courbe = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; courbe[i] = Math.tanh(x * 3.2); }
+    return courbe;
+}
+
+export function impact(scene) { // l'IMPACT : un boum très grave et saturé, un coup sec, un claquement, un fracas métallique, un long grondement
     const c = contexte(scene); if (!c) return;
-    const sortieImpact = sortie(c, 1), t = c.currentTime + 0.01;
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.6);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1.6, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-    o.connect(g).connect(sortieImpact); o.start(t); o.stop(t + 1);
-    souffle(c, sortieImpact, "highpass", 700, 4000, t, 0.12, 1.3); // le claquement
-    souffle(c, sortieImpact, "lowpass", 260, 40, t, 2.2, 0.9); // le grondement qui s'éteint
-    souffle(c, sortieImpact, "bandpass", 1500, 300, t + 0.05, 0.5, 0.5); // les éclats
+    const sortieImpact = sortieForte(c, 1.6), t = c.currentTime + 0.005; // (mesuré hors ligne : pic sous 0 dBFS, 19 dB plus fort que la fanfare sur les 300 premières ms)
+    const boum = c.createOscillator(), gainBoum = c.createGain(), saturation = c.createWaveShaper();
+    boum.type = "sine"; saturation.curve = courbeSaturation(c); saturation.oversample = "2x";
+    boum.frequency.setValueAtTime(130, t); boum.frequency.exponentialRampToValueAtTime(26, t + 1.1);
+    gainBoum.gain.setValueAtTime(0.0001, t); gainBoum.gain.exponentialRampToValueAtTime(1.8, t + 0.008); gainBoum.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+    boum.connect(saturation).connect(gainBoum).connect(sortieImpact); boum.start(t); boum.stop(t + 1.4);
+    const coup = c.createOscillator(), gainCoup = c.createGain(); // le « thud » : le corps du coup, plus haut que le boum
+    coup.type = "triangle"; coup.frequency.setValueAtTime(220, t); coup.frequency.exponentialRampToValueAtTime(48, t + 0.22);
+    gainCoup.gain.setValueAtTime(0.0001, t); gainCoup.gain.exponentialRampToValueAtTime(1.5, t + 0.006); gainCoup.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    coup.connect(gainCoup).connect(sortieImpact); coup.start(t); coup.stop(t + 0.4);
+    souffle(c, sortieImpact, "highpass", 500, 5000, t, 0.16, 2.2); // le claquement sec
+    souffle(c, sortieImpact, "bandpass", 2600, 350, t + 0.01, 0.7, 1.4); // le fracas métallique
+    souffle(c, sortieImpact, "lowpass", 340, 36, t, 3.2, 1.6); // le grondement qui s'éteint
+    souffle(c, sortieImpact, "bandpass", 900, 120, t + 0.02, 1.0, 1.1); // le souffle de l'onde de choc
+}
+
+export function verre(scene) { // des craquements de verre : une rafale de petits claquements aigus répartis sur une demi-seconde
+    const c = contexte(scene); if (!c) return;
+    const sortieVerre = sortieForte(c, 1.1), t = c.currentTime + 0.02;
+    for (let i = 0; i < 34; i++) {
+        const debut = t + Math.pow(Math.random(), 1.6) * 0.65; // plus serrés au début
+        const f = 2500 + Math.random() * 6500;
+        souffle(c, sortieVerre, "bandpass", f, f * 0.6, debut, 0.03 + Math.random() * 0.05, 0.6 + Math.random() * 0.9);
+    }
+    souffle(c, sortieVerre, "highpass", 1800, 7000, t, 0.25, 1.0); // et l'éclat de la fêlure principale
 }
