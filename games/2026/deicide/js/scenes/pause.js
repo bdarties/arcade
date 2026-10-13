@@ -35,10 +35,8 @@ const CREDITS = [
 
 // Ouvre le menu pause quand on appuie sur Échap ou X. À appeler dans le create() d'un niveau.
 export function preparerPause(niveau) {
-    const toucheZ = niveau.input.keyboard.addKey("Z", false); // Z + X = reset (raccourcis.js) : dans ce cas X n'ouvre pas la pause
     TOUCHES_PAUSE.forEach((touche) => niveau.input.keyboard.on("keydown-" + touche, (evenement) => {
         if (evenement.repeat) return; // touche maintenue : le navigateur répète l'appui, on ne rouvre pas la pause en boucle
-        if (toucheZ.isDown) return; // Z est maintenu : c'est le combo de reset, pas une demande de pause
         if (niveau.mort || niveau.partieFinie) return; // le robot meurt ou la partie est finie : pas de pause
         if (niveau.scene.isPaused()) return; // déjà en pause
         niveau.scene.launch("pause", { origine: niveau.scene.key }); // ouvre le menu par-dessus le niveau
@@ -82,7 +80,7 @@ export default class pause extends Phaser.Scene {
         this.add.rectangle(640, 360, 760, 560, FOND_PANNEAU, 0.95).setStrokeStyle(3, CADRE);
         this.titre = this.add.text(640, 130, "PAUSE", { fontFamily: POLICE, fontSize: "44px", color: TEXTE }).setOrigin(0.5);
         this.aide = this.add.text(640, 604, "", { fontFamily: POLICE, fontSize: "15px", color: ATTENUE }).setOrigin(0.5);
-        this.add.text(640, 624, "Recommencer la partie : maintenir SELECT + START pendant 1,5 s", { fontFamily: POLICE, fontSize: "13px", color: ATTENUE }).setOrigin(0.5);
+        this.add.text(640, 624, "Recommencer la partie : maintenir C + F pendant 1,5 s", { fontFamily: POLICE, fontSize: "13px", color: ATTENUE }).setOrigin(0.5);
         this.dessin = this.add.graphics(); // les cases des curseurs
         this.lignes = []; // les textes de la page affichée (détruits quand on change de page)
 

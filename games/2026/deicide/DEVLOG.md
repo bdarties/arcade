@@ -15,8 +15,8 @@
 
 ## Raccourcis de la borne (`systemes/raccourcis.js`)
 - Les boutons physiques sont nommés A à F ; ils envoient I, O, P, K, L et ; : **C = P** et **F = ;**. Les deux boutons du centre sont select (Z) et start (X).
-- **Z + X maintenus 1,5 s** : retour à l'écran d'accueil (reset pour le joueur suivant). **C + F maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
-- Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X ouvre la pause, sauf si Z est déjà maintenu.
+- **C + F maintenus 1,5 s** (P et ; au clavier, la touche M en AZERTY) : retour à l'écran d'accueil (reset pour le joueur suivant). **Z + B maintenus 1,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
+- Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X (start) ouvre la pause.
 
 ## Le son des combats de boss
 - **Musique plus forte** : le metal passe de 0,2 à 0,42 de volume de base (le niveau est à 0,3 avec un morceau plus doux) ; le réglage « Musique » du menu pause la baisse toujours.
