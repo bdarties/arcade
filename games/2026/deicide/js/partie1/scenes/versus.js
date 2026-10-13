@@ -6,7 +6,7 @@
 // Joueur 1 : flèches, I (saut), K (tir), L (dash). Joueur 2 : Q Z D S (ou A W D S), R (saut), F (tir), G (dash) : les mêmes boutons que ceux de la borne
 // (voir gpio2keys.py).
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js";
-import { jouerSon, musiqueDeScene, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
+import { jouerSon, musiqueDeScene, chargerMusiqueBoss, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { objetsDe } from "../systemes/chargement.js";
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
@@ -24,6 +24,10 @@ const POLICE = "monospace";
 export default class versus extends Phaser.Scene {
   constructor() {
     super({ key: "versus" });
+  }
+
+  preload() {
+    chargerMusiqueBoss(this); // la musique du boss n'est pas chargée au lancement (voir sons.js) : le 1 contre 1 en a besoin tout de suite
   }
 
   init(donnees) { // donnees : { manche, victoires } à partir de la 2e manche

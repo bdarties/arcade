@@ -9,7 +9,7 @@ const DUREE = 7000; // ms pendant lesquelles un message reste affiché
 const STYLE = { fontFamily: "monospace", fontSize: "26px", fontStyle: "bold", color: "#e7e0e9", stroke: "#000000", strokeThickness: 6, align: "center" };
 
 // un message en haut de l'écran : il apparaît après `delai` ms, reste DUREE ms, puis s'efface
-function message(scene, texte, delai) {
+export function message(scene, texte, delai) {
   scene.time.delayedCall(delai, () => {
     const t = scene.add.text(640, 150, texte, STYLE).setOrigin(0.5).setScrollFactor(0).setDepth(100).setAlpha(0);
     scene.tweens.add({ targets: t, alpha: 1, duration: 600 }); // il apparaît en fondu
@@ -23,11 +23,4 @@ export function montrerGuide(scene) {
   scene.registry.set("guideVu", true);
   message(scene, "MONTE LA TOUR ET BATS LE DIEU DE LA LUMIÈRE\nLE PLUS VITE POSSIBLE", 0);
   message(scene, "WALL JUMP : CONTRE UN MUR, APPUIE SUR LE BOUTON A\nPOUR REBONDIR ET MONTER", DUREE + 600);
-}
-
-// Le rappel du dash, au début du niveau 2 (la fuite) : là, le dash est indispensable pour franchir les trous.
-export function montrerAstuceDash(scene) {
-  if (scene.registry.get("astuceDashVue")) return;
-  scene.registry.set("astuceDashVue", true);
-  message(scene, "BOUTON E : DASH\nPOUR FRANCHIR LES TROUS ET ÉCHAPPER À LA LUMIÈRE", 0);
 }

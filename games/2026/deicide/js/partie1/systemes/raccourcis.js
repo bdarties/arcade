@@ -4,34 +4,31 @@
 // DEUX BOUTONS MAINTENUS 0,5 s (une barre en bas de l'écran se remplit) :
 //   - C + F (P et ;)           : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
 //                                l'accueil ou l'écran de fin : retour à l'accueil. La borne n'est pas relancée.
-//   - Z + B (select J1 + select J2) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
 // C et F sont les boutons 3 et 6 du joueur 1 : ils envoient P et ; (voir gpio2keys.py). Sur un clavier AZERTY, la touche ; est la touche M :
-// on reconnaît donc ; par sa position (evenement.code "Semicolon"), pas par la lettre. Z est le select J1 et B le select J2 : Z et B ne servent
-// à rien d'autre dans le jeu. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
-// un appui par accident.
+// on reconnaît donc ; par sa position (evenement.code "Semicolon"), pas par la lettre. Les touches du robot sont I, K, L et O : cette combinaison
+// ne se déclenche pas en jouant, et la durée évite un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
-//   - F9 : lance directement le niveau 2
-//   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
+//   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/testsBorne.js)
 const COMBOS = [
-    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // P (bouton C) et ; (bouton F)
-    { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
+    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)
 ];
 const DUREE = 500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 120; // ms avant d'afficher la barre (un appui très court ne montre rien)
 const CODES = COMBOS.flatMap((combo) => combo.touches);
 const identifiant = (evenement) => (evenement.code === "Semicolon" ? "Semicolon" : evenement.keyCode); // la touche ; (ou M en AZERTY) par sa position, les autres par leur code
 
-function arreterToutesLesScenes(jeu) {
+export function arreterToutesLesScenes(jeu) {
     jeu.sound.stopAll(); // coupe la musique
     jeu.scene.getScenes(false).forEach((scene) => jeu.scene.stop(scene.scene.key)); // arrête toutes les scènes (niveau, pause, classement...)
 }
 
 // vrai si cette scène tourne ou est en pause (le niveau reste « en pause » sous le menu pause)
 function enCours(jeu, cle) {
-    const systeme = jeu.scene.getScene(cle).sys;
-    return systeme.isActive() || systeme.isPaused();
+    const scene = jeu.scene.getScene(cle);
+    if (!scene) return false; // cette scène n'existe pas (la partie 2 n'est pas installée)
+    return scene.sys.isActive() || scene.sys.isPaused();
 }
 
 // recommence la partie en cours : une partie solo repart du début du niveau 1, un 1 contre 1 repart à 0 - 0. Depuis l'accueil ou l'écran de fin,
@@ -44,36 +41,15 @@ function reinitialiser(jeu) {
     else jeu.scene.start(versus ? "versus" : "menu");
 }
 
-function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
+export function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.js
     jeu.registry.set("chrono", 0);
     jeu.registry.set("score", 0);
     jeu.registry.set("morts", 0);
     jeu.registry.set("chronoActif", true);
     jeu.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
-    jeu.registry.set("astuceDashVue", false);
+    jeu.registry.set("numeroPartie", (jeu.registry.get("numeroPartie") ?? 0) + 1); // une partie de plus (sert aux conseils qui ne s'affichent qu'une fois par partie)
     jeu.registry.set("reprendreAuBoss", false); // pas de reprise dans l'arène : on repart du bas de la tour
-}
-
-function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Dieu ; ensuite (ou depuis le niveau 2) : dans l'arène du dernier combat
-    const actives = jeu.scene.getScenes(true).map((scene) => scene.scene.key);
-    const courante = actives.find((cle) => ["niveau1", "niveau2", "niveau3"].includes(cle));
-    if (courante === "niveau3") return; // déjà dans le dernier combat
-    if (courante === "niveau1" && !jeu.scene.getScene("niveau1").areneLancee) { // le niveau 1 en cours : on téléporte le robot dans l'arène
-        if (actives.includes("pause")) { jeu.scene.stop("pause"); jeu.scene.resume("niveau1"); } // on ferme la pause d'abord
-        const niveau = jeu.scene.getScene("niveau1");
-        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
-        niveau.player.body.setVelocity(0, 0);
-        return;
-    }
-    arreterToutesLesScenes(jeu);
-    if (courante) { jeu.scene.start("niveau3"); return; } // arène du Dieu déjà faite, ou niveau 2 : on passe au dernier combat
-    nouvellePartie(jeu); // depuis l'accueil ou le classement : nouvelle partie directement dans l'arène du Dieu
-    jeu.scene.start("niveau1");
-    jeu.scene.getScene("niveau1").events.once(Phaser.Scenes.Events.CREATE, () => {
-        const niveau = jeu.scene.getScene("niveau1");
-        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
-    });
 }
 
 // ---- touches de test F8, F9 et F10 (TEMPORAIRES) ----
@@ -85,24 +61,9 @@ function teleporterRobot(jeu) { // F8 : chaque niveau indique où dans sa config
     });
 }
 
-function lancerNiveau2(jeu) { // F9 : une partie qui commence directement au niveau 2
-    arreterToutesLesScenes(jeu); // (coupe aussi la musique)
-    nouvellePartie(jeu);
-    jeu.scene.start("niveau2");
-}
-
-function lancerPhase3(jeu) { // F10 : une partie qui commence directement à la phase 3 du dernier boss
-    arreterToutesLesScenes(jeu);
-    nouvellePartie(jeu);
-    jeu.registry.set("phaseBoss", { profil: "soldat2", phase: 2, pv: 130 }); // la reprise de boss.js fait le reste : phase 3, tous les PV (130 = pv du profil soldat2)
-    jeu.scene.start("niveau3");
-}
-
 export function activerRaccourcis(jeu) {
     window.addEventListener("keydown", (evenement) => { // les touches de test
         if (evenement.key === "F8") teleporterRobot(jeu);
-        if (evenement.key === "F9") { evenement.preventDefault(); lancerNiveau2(jeu); }
-        if (evenement.key === "F10") { evenement.preventDefault(); lancerPhase3(jeu); }
     });
 
     const enfoncees = new Set(); // les touches de combo actuellement maintenues
@@ -120,12 +81,21 @@ export function activerRaccourcis(jeu) {
     boite.append(texte, fond);
     document.body.appendChild(boite);
 
+    // Après un reset les boutons sont encore enfoncés : le clavier répète alors la touche (un « keydown » toutes les 30 ms), et le combo repartait aussitôt,
+    // sans fin (un reset toutes les 0,5 s tant qu'on tient les boutons : le jeu redémarrait en boucle et restait figé sur la borne). Ce verrou
+    // l'empêche : après un reset il faut RELÂCHER tous les boutons avant de pouvoir en déclencher un autre.
+    let verrou = false;
+
     function annuler() { combo = null; boite.style.display = "none"; }
 
     window.addEventListener("keydown", (evenement) => {
+        // Un vrai appui commence toujours par un « keydown » qui n'est pas une répétition. Si les boutons étaient DÉJÀ enfoncés quand la page s'est chargée
+        // (au lancement du jeu sur la borne), le navigateur ne voit que des répétitions : on les ignore, sinon le reset se déclencherait tout seul.
+        if (evenement.repeat) return;
         const touche = identifiant(evenement);
         if (!CODES.includes(touche)) return;
         enfoncees.add(touche);
+        if (verrou) return; // un reset vient d'avoir lieu : on attend que tout soit relâché
         const trouve = COMBOS.find((c) => c.touches.every((code) => enfoncees.has(code))); // les deux touches d'un combo sont enfoncées ensemble
         if (trouve && combo === null) { combo = trouve; debut = performance.now(); }
     });
@@ -133,16 +103,17 @@ export function activerRaccourcis(jeu) {
         const touche = identifiant(evenement);
         if (!CODES.includes(touche)) return;
         enfoncees.delete(touche);
+        if (verrou && enfoncees.size === 0) verrou = false; // tout est relâché : un nouveau reset est possible
         if (combo && !combo.touches.every((code) => enfoncees.has(code))) annuler(); // un des deux boutons est relâché : on annule
     });
-    window.addEventListener("blur", () => { enfoncees.clear(); annuler(); }); // la page perd le focus : on oublie les touches
+    window.addEventListener("blur", () => { enfoncees.clear(); verrou = false; annuler(); }); // la page perd le focus : on oublie les touches
 
     setInterval(() => { // vérifie la durée et met la barre à jour
         if (combo === null) return;
         const maintenu = performance.now() - debut;
         if (maintenu >= DUREE) {
             const action = combo.action;
-            enfoncees.clear();
+            verrou = true; // (les touches restent dans « enfoncees » : elles sont toujours physiquement enfoncées)
             annuler();
             action(jeu);
             return;

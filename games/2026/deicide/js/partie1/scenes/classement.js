@@ -47,6 +47,13 @@ const cs = (ms) => Math.min(CS_MAX, Math.max(0, Math.round(ms / 10)));
 function empaqueter(tempsNetMs, tempsBrutMs, morts) { // ce qu'on envoie à l'API (entier)
     return (CS_MAX - cs(tempsNetMs)) * 100000000 + (CS_MAX - cs(tempsBrutMs)) * 100 + (MORTS_MAX - Math.min(MORTS_MAX, morts));
 }
+// Le tri du panthéon : le temps net le plus COURT en haut ; à égalité le temps total le plus court, puis le moins de morts. (Un ancien score n'a ni temps total
+// ni morts : il passe après les autres à temps net égal.) On trie nous-mêmes, au lieu de se fier à l'ordre de la base : elle trie sur le nombre brut, qui
+// ne range pas les anciens scores et les nouveaux dans le bon ordre.
+function comparer(a, b) {
+    const sinon = (v) => (v === null || v === undefined ? Infinity : v);
+    return a.net - b.net || sinon(a.brut) - sinon(b.brut) || sinon(a.morts) - sinon(b.morts);
+}
 function deballer(score) { // ce qu'on affiche : { net, brut, morts } (brut et morts sont null pour un ancien score, qui ne gardait que le temps net)
     if (score < 100000000) return { net: SCORE_BASE - score, brut: null, morts: null }; // ancien format : 10 000 000 - temps net en ms
     return { net: (CS_MAX - Math.floor(score / 100000000)) * 10, brut: (CS_MAX - (Math.floor(score / 100) % 1000000)) * 10, morts: MORTS_MAX - (score % 100) };
@@ -291,9 +298,9 @@ export default class classement extends Phaser.Scene {
 
     decider() { // la séquence est finie et le classement chargé : saisie du nom ou simple affichage
         if (!this.sequenceFinie || !this.apiPrete || this.etape !== "intro") return;
-        const score = empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts);
-        const dernier = this.tableau[this.tableau.length - 1];
-        const nouveauRecord = Boolean(this.api) && (this.tableau.length < 10 || score > dernier.score); // à égalité on ne passe pas devant
+        const mien = deballer(empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts));
+        const pire = this.tableau.map((l) => deballer(l.score)).sort(comparer).pop(); // le dernier du panthéon : le temps le plus long
+        const nouveauRecord = Boolean(this.api) && (this.tableau.length < 10 || comparer(mien, pire) < 0); // à égalité on ne passe pas devant
         this.pret = false;
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
         if (nouveauRecord) this.ouvrirChoix();
@@ -424,10 +431,9 @@ export default class classement extends Phaser.Scene {
 
     lignesTableau() { // les 10 lignes à afficher : le top 10 de la borne, avec la ligne du joueur glissée à sa place pendant la saisie
         const mien = deballer(empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts)); // mes chiffres, arrondis comme dans la base
-        const reel = this.tableau.map((l) => ({ nom: String(l.player), ...deballer(l.score), score: l.score }));
+        const reel = this.tableau.map((l) => ({ nom: String(l.player), ...deballer(l.score) })).sort(comparer); // le temps le plus court en premier
         if (this.etape === "saisie") {
-            const monScore = empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts);
-            const i = reel.findIndex((l) => l.score < monScore); // à égalité parfaite, le joueur passe derrière
+            const i = reel.findIndex((l) => comparer(mien, l) < 0); // à égalité parfaite, le joueur passe derrière
             reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), ...mien, moi: true });
         } else if (this.nomJoueur) {
             const moi = reel.find((l) => l.nom === this.nomJoueur && l.net === mien.net && l.brut === mien.brut && l.morts === mien.morts);

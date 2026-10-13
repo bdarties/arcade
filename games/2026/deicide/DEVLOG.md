@@ -15,7 +15,7 @@
 
 ## Raccourcis de la borne (`systemes/raccourcis.js`)
 - Les boutons physiques sont nommés A à F ; ils envoient I, O, P, K, L et ; : **C = P** et **F = ;**. Les deux boutons du centre sont select (Z) et start (X).
-- **C + F maintenus 0,5 s** (P et ; au clavier, la touche M en AZERTY) : retour à l'écran d'accueil (reset pour le joueur suivant). **Z + B maintenus 0,5 s** : aller directement au boss (raccourci de test, à retirer avant la borne).
+- **C + F maintenus 0,5 s** (P et ; au clavier, la touche M en AZERTY) : retour à l'écran d'accueil (reset pour le joueur suivant). (Le raccourci de test Z + B, qui allait directement au boss, a été supprimé le 13/10 ; il reste les touches F8, F9 et F10.)
 - Le robot n'utilise que I, K, L et O : aucun de ces raccourcis ne se déclenche en jouant. X (start) ouvre la pause.
 
 ## Le son des combats de boss
@@ -33,6 +33,37 @@
 - **Stats** : le panneau de gauche montre le temps total (réel, sans rien retirer), le nombre de morts, les points, le bonus, puis le temps net. Le tableau montre pour chaque joueur le temps net (celui qui classe), le temps total et les morts.
 - **Pourquoi un score « empaqueté »** : l'API de la borne ne stocke que le jeu, le nom et UN entier par score, et on ne doit pas modifier `app/` (code partagé). On range donc trois chiffres dans l'entier : `(999999 - temps net en cs) x 100 000 000 + (999999 - temps total en cs) x 100 + (99 - morts)`. Le temps net pèse le plus : le tri de la borne (plus grand en tête) classe comme avant, puis le temps total le plus court, puis le moins de morts. Le plus gros nombre fait environ 1e14, sous la limite des entiers de JavaScript (9e15). Les anciens scores (10 000 000 - temps net en ms) sont reconnus (ils sont plus petits que 1e8) et affichés sans temps total ni morts.
 - **Morts** : `registry "morts"`, remis à 0 au lancement d'une partie (menu.js, raccourcis.js), +1 à chaque `mourir()` de niveau.js.
+
+## Le jeu en deux parties : js/partie1 et js/partie2 (13/10)
+- **Pourquoi** : pour pouvoir expliquer le jeu à l'oral jusqu'à la fin du 1er boss, sans que la suite (la fuite, le dernier combat) ne se mélange au code à présenter.
+  `js/partie1` est un jeu complet, qui s'arrête quand le Dieu de la Lumière est vaincu (le joueur choisit alors d'enregistrer son temps dans le panthéon).
+  `js/partie2` est la suite, jouée seulement si le joueur répond OUI au choix du panthéon.
+- **Ce qui est dans la partie 2** : le niveau 2 (la fuite : `poursuite.js`, `vide.js`, `faisceaux.js`), le mur qui se brise et le Dieu qui s'enrage (`fuite.js`), le niveau 3 et le
+  boss final (`niveau3.js`, `bossFinal.js`), ses attaques en plus (`attaques.js` : lasers, geysers, spirale, piqué), sa musique (`musique.js`), un conseil (`astuce.js`) et les
+  touches de test F9 et F10 (`testsBorne.js`). Tout le reste est dans la partie 1, y compris le choix du panthéon et le robot « en boule ».
+- **Comment la partie 2 se branche sans modifier la partie 1** : la partie 1 expose des tables et des listes, la partie 2 y ajoute ses éléments au démarrage (`installerPartie2()`).
+  `PROFILS` et `ATTAQUES` (moteur des boss) : le boss final est un profil de plus, ses attaques sont des attaques de plus. `MUSIQUES_BOSS` : sa musique, son tempo et sa
+  tonalité. `CHARGEMENTS_SUPPLEMENTAIRES` : ses cartes. `EXTENSIONS_NIVEAU1` : la fuite après le boss. Le boss du niveau 1 a un champ `suite` : la partie 2 y met la fonction
+  qui fait s'enrager le Dieu ; sans elle, la réponse OUI termine simplement la partie.
+- **Le moteur du boss a été rendu générique** (`partie1/ennemis/boss.js`) : avant, le même fichier mélangeait les deux boss avec des « si c'est le dernier boss ». Maintenant les
+  réglages de chaque phase sont dans `BASE` (boss 1) ou dans le profil (`reglages`), et les attaques sont une table de `{ charge, apres, annoncer, executer }`.
+- **Rien n'a changé dans le jeu** (vérifié) : un script lance chacune des 35 attaques des deux boss (chaque phase) avant et après la séparation et compare le nombre d'orbes,
+  de zones de lumière, de lasers, le piqué et la durée : 0 écart. Le parcours complet (niveau 1, boss, choix, fuite, niveau 2, niveau 3, boss final, panthéon), le reset à 0,5 s dans huit situations
+  et les touches F9 et F10 donnent les mêmes résultats. La partie 1 a aussi été testée SEULE (sans le dossier partie2) : le jeu va jusqu'au choix du panthéon, OUI et NON mènent à l'écran de fin.
+
+## Optimisation de la borne et reset (13/10)
+- **Reset C + F (0,5 s)** : il remet tout à zéro, quelle que soit la situation (pause, arène, choix du panthéon, fuite, mort en cours, niveau 2 ou 3) : plus de boss, mur de l'arène refermé, ennemis revenus (21), chrono, score et morts à 0. Vérifié par un script qui provoque chaque situation puis le reset.
+- **Fuites corrigées** (mesurées avec un script, avant/après) : (1) les clignotements « sans fin » des traits d'annonce du boss restaient actifs après la destruction de leurs objets : jusqu'à 212 animations qui montaient sans jamais redescendre pendant un combat, maintenant 23 au plus (`effets.clignoter`) ; (2) chaque nouvelle partie laissait un son de plus et des écouteurs d'événements en mémoire (1 son et 3 écouteurs par reset, 6 par mort) : une borne allumée toute la journée en accumulait des milliers, maintenant 1 son et 71 écouteurs en permanence ; (3) l'arène oubliait mal ses repères à la nouvelle partie.
+- **Le reset ne peut plus se déclencher tout seul** (constaté après un gel de la borne au lancement, juste après la fusion qui avait raccourci le reset à 0,5 s) : quand deux boutons sont maintenus, le navigateur répète la touche toutes les 30 ms. Avant, le reset repartait aussitôt après s'être fait (12 redémarrages en 4 s avec les boutons tenus), et si les boutons C et F étaient déjà enfoncés pendant le chargement (le navigateur ne voit alors que des répétitions), le jeu redémarrait en boucle (5 changements d'écran en 2 s). Maintenant : les répétitions de touche sont ignorées (seul un vrai nouvel appui compte) et un verrou impose de relâcher tous les boutons après un reset. Mesuré avant/après avec un script.
+- **Mémoire au lancement** : toute la musique était décodée d'un coup au démarrage (117 s de son = 41 Mo en mémoire, le Raspberry Pi 3 n'a que 1 Go). La musique du boss (21 Mo) est maintenant chargée en arrière-plan une fois le niveau 1 lancé (elle est prête bien avant l'arène), et celle du dernier boss (21 Mo de plus) seulement à l'arrivée au dernier combat. Au lancement : 20 Mo de musique au lieu de 41 Mo, 62 Mo auparavant avec la nouvelle musique. Si le joueur arrive à l'arène avant la fin du chargement, la musique démarre dès qu'elle est prête.
+- **Ce qui est déjà léger** (mesuré) : le processeur du jeu (moins de 1 % sur un Mac, même avec toutes les attaques du boss), la surface dessinée (1,5 à 4 fois l'écran), les textures (23 Mo, stables après des dizaines de morts).
+- **Non vérifié** : tout ça est mesuré sur un Mac, pas sur le Raspberry Pi.
+
+## Le robot « en boule » (`personnage/boule.js`)
+- **Règle** : immobile plus d'1 seconde (aucune touche tenue, aucune action en cours, au sol, vitesse horizontale nulle), le robot est « en boule » : il garde sa pose d'attente et clignote, et il est invulnérable à tous les dégâts. Il en sort dès qu'il bouge, saute, tire ou dashe.
+- **Exception** : les rayons du boss le blessent quand même (colonnes, balayage, geysers, lasers) ainsi que le mur de lumière de la fuite (sinon on laisserait passer le mur en restant immobile). `blesserJoueur(degats, cause, perce)` : `perce` vaut vrai pour ces rayons.
+- **Piège rencontré** : au sol le robot rebondit un tout petit peu en permanence (rebond de 0,2) : sa vitesse verticale n'est jamais nulle, donc on ne la teste pas.
+- Vérifié par script : en boule, plus aucun coup des orbes, de la nova, de la spirale ni du piqué ; les colonnes, le balayage et les lasers blessent toujours.
 
 ## Le mode 1 contre 1 (`versus.js`)
 - **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.

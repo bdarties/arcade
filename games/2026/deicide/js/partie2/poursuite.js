@@ -5,9 +5,9 @@
 // (2) le BOSS lui-même, qui vole derrière le robot et lance des orbes, des pluies d'orbes et des colonnes de lumière devant lui.
 // Le boss est le même que celui de l'arène (boss.js : mêmes feuilles d'images, mêmes orbes), mais ses attaques sont posées par rapport au robot et à
 // l'écran, pas à une arène fixe.
-import { creerOrbe, creerAnimations } from "./boss.js";
-import * as effets from "../systemes/effets.js";
-import { jouerSonSurLeTemps, surLeTemps, quantifier } from "../systemes/sons.js";
+import { creerOrbe, creerAnimations } from "../partie1/ennemis/boss.js";
+import * as effets from "../partie1/systemes/effets.js";
+import { jouerSonSurLeTemps, surLeTemps, quantifier } from "../partie1/systemes/sons.js";
 
 const VITESSE_MUR_DEBUT = 232; // px/s au départ : la marche du robot est à 260...
 const VITESSE_MUR_FIN = 264; // ...et à la fin de la fuite le mur va un peu plus vite que la marche : il faut dasher pour ne pas être rattrapé
@@ -56,7 +56,7 @@ export function majPoursuite(scene) { // à appeler dans update()
 
     // le mur touche le robot
     if (!scene.mort && joueur.body.left < p.mur.x + LARGEUR_MUR / 2) {
-        scene.blesserJoueur(1, "Rattrapé par le mur de lumière");
+        scene.blesserJoueur(1, "Rattrapé par le mur de lumière", true); // (le mur de la fuite blesse même un robot en boule : sinon on le laisserait passer)
         scene.cameras.main.shake(200, 0.01);
         p.mur.x = joueur.x - RECUL_APRES_COUP; // le mur recule, sinon il toucherait le robot à chaque image
     }
@@ -96,7 +96,7 @@ function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, deva
     const xs = [170, 340, 510, 680].map((d) => Math.round(scene.player.x + d + Phaser.Math.Between(-30, 30)));
     const reperes = xs.map((x) => {
         const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-        scene.tweens.add({ targets: r, alpha: 0.15, duration: 100, yoyo: true, repeat: -1 });
+        effets.clignoter(scene, r, { alpha: 0.15, duration: 100 });
         return r;
     });
     scene.time.delayedCall(750, () => {
@@ -109,7 +109,7 @@ function annoncerColonne(scene, p) { // un trait clignotant sur toute la hauteur
     const hauteur = scene.carte.heightInPixels;
     const x = Math.round(scene.player.x + 300);
     const trait = scene.add.rectangle(x, hauteur / 2, 8, hauteur, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: trait, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 });
+    effets.clignoter(scene, trait, { alpha: { from: 0.15, to: 0.6 }, duration: 110 });
     p.colonnes.push({ x, trait, etat: "annonce", fin: 0, rayon: null, touche: false, allumage: scene.time.now + 900 });
 }
 
@@ -127,7 +127,7 @@ function majColonne(scene, c) {
         const b = scene.player.body;
         if (!c.touche && !scene.mort && b.center.x + b.halfWidth * 0.6 > c.x - 36 && b.center.x - b.halfWidth * 0.6 < c.x + 36) {
             c.touche = true; // un seul coup par rayon
-            scene.blesserJoueur(1, "Foudroyé par le Dieu enragé");
+            scene.blesserJoueur(1, "Foudroyé par le Dieu enragé", true); // (un rayon blesse même un robot en boule)
         }
         if (scene.time.now >= c.fin) { c.rayon.destroy(); c.etat = "finie"; }
     }

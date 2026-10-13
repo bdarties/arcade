@@ -15,7 +15,8 @@ import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction 
 import { creerHud } from "../personnage/hud.js";
 import * as ennemis from "../ennemis/ennemis.js";
 import * as lumiere from "../mecanismes/lumiere.js";
-import { jouerSon, musiqueDeScene } from "../systemes/sons.js"; // bruitages et musique
+import { jouerSon, musiqueDeScene, chargerMusiqueBoss, chargerMusiqueBossEnArrierePlan } from "../systemes/sons.js"; // bruitages et musique
+import { majBoule } from "../personnage/boule.js"; // le robot immobile se met en boule
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js";
@@ -39,6 +40,7 @@ export default class niveau extends Phaser.Scene {
 
   preload() { // tous les assets sont normalement déjà chargés par le menu (voir menu.js) ; sinon ils se chargent ici
     chargerJeu(this);
+    if (this.cfg.musique === "musique_boss_boucle") chargerMusiqueBoss(this); // le niveau 2 joue la musique du boss dès le début
   }
 
   // Le create suit toujours le même ordre : les étapes plus bas ont besoin de ce que les précédentes ont créé.
@@ -66,6 +68,8 @@ export default class niveau extends Phaser.Scene {
     // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
     effets.preparerEffets(this);
     this.reprendreAuBoss(); // si le robot est mort contre le boss : on le remet dans l'arène
+    (this.cfg.extensions || []).forEach((extension) => extension(this)); // ce que la partie 2 ajoute à ce niveau (voir niveau1.js) : la fuite après le boss
+    chargerMusiqueBossEnArrierePlan(this); // la musique du boss, décodée pendant qu'on joue (pas au lancement : voir sons.js)
   }
 
   // La carte : les calques de tuiles, les collisions, la taille du monde et de la caméra. Renvoie la carte (les points d'apparition en sont
@@ -102,6 +106,7 @@ export default class niveau extends Phaser.Scene {
     fondGris();
     this.events.on(Phaser.Scenes.Events.WAKE, fondGris); // scene.switch endort et réveille les scènes sans refaire create
     this.events.on(Phaser.Scenes.Events.SLEEP, fondNoir);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.events.off(Phaser.Scenes.Events.WAKE, fondGris); this.events.off(Phaser.Scenes.Events.SLEEP, fondNoir); }); // (ils s'empilaient à chaque nouvelle partie)
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, fondNoir);
     return carte;
   }
@@ -161,17 +166,17 @@ export default class niveau extends Phaser.Scene {
   // L'état de départ du niveau. Phaser réutilise la même scène quand on rejoue : tout ce qui change pendant la partie doit être remis ici.
   remettreAZero() {
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
-    // sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
-    this.fuiteOuverte = false;
     this.murDroit = null; // le mur de droite de l'arène du Dieu (pas encore posé)
-    this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée)
+    this.areneSolY = undefined; // les repères de l'arène (posés quand elle se lance, voir arene.js) : oubliés à chaque nouvelle partie
+    this.areneCentreX = undefined;
     this.zonesBoss = []; // les zones de lumière dangereuses du boss : colonnes, balayage (voir boss.js)
     // instant jusqu'auquel le robot ne peut pas être blessé (le répit de réapparition est posé à la première image, voir update : l'horloge
     // n'est pas encore à jour dans create)
     this.invincibleJusqua = 0;
     this.graceAPoser = true;
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
+    this.immobileDepuis = null; // l'instant où le robot s'est arrêté (voir boule.js)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
   }
 
@@ -190,14 +195,17 @@ export default class niveau extends Phaser.Scene {
     }
     lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
+    majBoule(this); // immobile plus d'une seconde : le robot se met en boule (invulnérable, sauf aux rayons du boss)
     ennemis.majEnnemis(this);
     verifierSalles(this); // ferme une salle de combat quand le joueur y entre, l'ouvre quand tous les ennemis sont morts
     this.cfg.arene(this); // si le joueur arrive en haut, on ferme l'arène
     lumiere.majVoile(this);
   }
 
-  blesserJoueur(degats, cause) {
+  // perce : vrai pour les rayons du boss (colonnes, balayage, geysers, lasers) et le mur de lumière de la fuite : ils blessent même un robot en boule
+  blesserJoueur(degats, cause, perce = false) {
     if (this.mort || this.partieFinie) return; // un robot qui meurt ne prend plus de coups (et la partie finie, plus rien ne blesse)
+    if (this.player.enBoule && !perce) return; // en boule : invulnérable (et le coup ne déclenche pas l'invincibilité d'une seconde)
     // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
     if (this.time.now < this.invincibleJusqua) return;
     this.invincibleJusqua = this.time.now + DUREE_INVINCIBLE;

@@ -3,13 +3,13 @@
 // (assets/maps/niveau2.json, voir assets/maps/LISEZ-MOI.md) : trous à franchir en dashant (vide.js), faisceaux de lumière à traverser au bon moment
 // (faisceaux.js), ennemis, et le mur de lumière + le boss qui poursuivent (poursuite.js).
 // Arriver au bout de la map mène à l'arène du dernier combat (niveau3.js).
-import niveau from "./niveau.js";
-import { objetsDe } from "../systemes/chargement.js";
-import { VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js";
-import { preparerVide, majVide } from "../mecanismes/vide.js";
-import { preparerFaisceaux, majFaisceaux } from "../mecanismes/faisceaux.js";
-import { montrerAstuceDash } from "../systemes/guide.js"; // rappel du dash (bouton E)
-import { preparerPoursuite, majPoursuite, finirPoursuite } from "../ennemis/poursuite.js";
+import niveau from "../partie1/scenes/niveau.js";
+import { objetsDe } from "../partie1/systemes/chargement.js";
+import { VOLUME_MUSIQUE_BOSS } from "../partie1/systemes/sons.js";
+import { preparerVide, majVide } from "./vide.js";
+import { preparerFaisceaux, majFaisceaux } from "./faisceaux.js";
+import { montrerAstuceDash } from "./astuce.js"; // rappel du dash (bouton E)
+import { preparerPoursuite, majPoursuite, finirPoursuite } from "./poursuite.js";
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
   preparerVide(scene);
