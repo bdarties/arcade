@@ -34,6 +34,23 @@
 - **Pourquoi un score « empaqueté »** : l'API de la borne ne stocke que le jeu, le nom et UN entier par score, et on ne doit pas modifier `app/` (code partagé). On range donc trois chiffres dans l'entier : `(999999 - temps net en cs) x 100 000 000 + (999999 - temps total en cs) x 100 + (99 - morts)`. Le temps net pèse le plus : le tri de la borne (plus grand en tête) classe comme avant, puis le temps total le plus court, puis le moins de morts. Le plus gros nombre fait environ 1e14, sous la limite des entiers de JavaScript (9e15). Les anciens scores (10 000 000 - temps net en ms) sont reconnus (ils sont plus petits que 1e8) et affichés sans temps total ni morts.
 - **Morts** : `registry "morts"`, remis à 0 au lancement d'une partie (menu.js, raccourcis.js), +1 à chaque `mourir()` de niveau.js.
 
+## Le jeu en deux parties : js/partie1 et js/partie2 (13/10)
+- **Pourquoi** : pour pouvoir expliquer le jeu à l'oral jusqu'à la fin du 1er boss, sans que la suite (la fuite, le dernier combat) ne se mélange au code à présenter.
+  `js/partie1` est un jeu complet, qui s'arrête quand le Dieu de la Lumière est vaincu (le joueur choisit alors d'enregistrer son temps dans le panthéon).
+  `js/partie2` est la suite, jouée seulement si le joueur répond OUI au choix du panthéon.
+- **Ce qui est dans la partie 2** : le niveau 2 (la fuite : `poursuite.js`, `vide.js`, `faisceaux.js`), le mur qui se brise et le Dieu qui s'enrage (`fuite.js`), le niveau 3 et le
+  boss final (`niveau3.js`, `bossFinal.js`), ses attaques en plus (`attaques.js` : lasers, geysers, spirale, piqué), sa musique (`musique.js`), un conseil (`astuce.js`) et les
+  touches de test F9 et F10 (`testsBorne.js`). Tout le reste est dans la partie 1, y compris le choix du panthéon et le robot « en boule ».
+- **Comment la partie 2 se branche sans modifier la partie 1** : la partie 1 expose des tables et des listes, la partie 2 y ajoute ses éléments au démarrage (`installerPartie2()`).
+  `PROFILS` et `ATTAQUES` (moteur des boss) : le boss final est un profil de plus, ses attaques sont des attaques de plus. `MUSIQUES_BOSS` : sa musique, son tempo et sa
+  tonalité. `CHARGEMENTS_SUPPLEMENTAIRES` : ses cartes. `EXTENSIONS_NIVEAU1` : la fuite après le boss. Le boss du niveau 1 a un champ `suite` : la partie 2 y met la fonction
+  qui fait s'enrager le Dieu ; sans elle, la réponse OUI termine simplement la partie.
+- **Le moteur du boss a été rendu générique** (`partie1/ennemis/boss.js`) : avant, le même fichier mélangeait les deux boss avec des « si c'est le dernier boss ». Maintenant les
+  réglages de chaque phase sont dans `BASE` (boss 1) ou dans le profil (`reglages`), et les attaques sont une table de `{ charge, apres, annoncer, executer }`.
+- **Rien n'a changé dans le jeu** (vérifié) : un script lance chacune des 35 attaques des deux boss (chaque phase) avant et après la séparation et compare le nombre d'orbes,
+  de zones de lumière, de lasers, le piqué et la durée : 0 écart. Le parcours complet (niveau 1, boss, choix, fuite, niveau 2, niveau 3, boss final, panthéon), le reset à 0,5 s dans huit situations
+  et les touches F9 et F10 donnent les mêmes résultats. La partie 1 a aussi été testée SEULE (sans le dossier partie2) : le jeu va jusqu'au choix du panthéon, OUI et NON mènent à l'écran de fin.
+
 ## Optimisation de la borne et reset (13/10)
 - **Reset C + F (0,5 s)** : il remet tout à zéro, quelle que soit la situation (pause, arène, choix du panthéon, fuite, mort en cours, niveau 2 ou 3) : plus de boss, mur de l'arène refermé, ennemis revenus (21), chrono, score et morts à 0. Vérifié par un script qui provoque chaque situation puis le reset.
 - **Fuites corrigées** (mesurées avec un script, avant/après) : (1) les clignotements « sans fin » des traits d'annonce du boss restaient actifs après la destruction de leurs objets : jusqu'à 212 animations qui montaient sans jamais redescendre pendant un combat, maintenant 23 au plus (`effets.clignoter`) ; (2) chaque nouvelle partie laissait un son de plus et des écouteurs d'événements en mémoire (1 son et 3 écouteurs par reset, 6 par mort) : une borne allumée toute la journée en accumulait des milliers, maintenant 1 son et 71 écouteurs en permanence ; (3) l'arène oubliait mal ses repères à la nouvelle partie.

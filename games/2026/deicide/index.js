@@ -5,11 +5,11 @@
 import { compteurImages, regulerCadence } from "./js/partie1/systemes/optimisation.js";
 import menu from "./js/partie1/scenes/menu.js";
 import niveau1 from "./js/partie1/scenes/niveau1.js";
-import { installerPartie2, scenesPartie2 } from "./js/partie2/index.js"; // la suite du jeu (fuite, dernier combat) : à retirer pour s'arrêter à la fin du 1er boss
+import { installerPartie2, scenesPartie2, activerTestsPartie2 } from "./js/partie2/index.js"; // la suite du jeu (fuite, dernier combat) : à retirer pour s'arrêter à la fin du 1er boss
 import versus from "./js/partie1/scenes/versus.js"; // le mode 1 contre 1
 import pantheon from "./js/partie1/scenes/pantheon.js"; // choix « entrer dans le panthéon » avant la phase 2 du dernier boss
 import pause from "./js/partie1/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
-import { activerRaccourcis } from "./js/partie1/systemes/raccourcis.js"; // reset de la borne (Z + X maintenus) et touches de test (F8, F9, F10, Z + B)
+import { activerRaccourcis } from "./js/partie1/systemes/raccourcis.js"; // reset de la borne (C + F maintenus) et touches de test (F8, Z + B)
 import classement from "./js/partie1/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
@@ -85,5 +85,6 @@ export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton 
 // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 game.config.idGame = "deicide";
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
-activerRaccourcis(game); // Z + X maintenus 1,5 s : remet le jeu à zéro sans relancer la borne
+activerRaccourcis(game); // C + F (P et ;) maintenus 0,5 s : remet le jeu à zéro sans relancer la borne
+activerTestsPartie2(game); // F9 et F10 (test : niveau 2, phase 3 du dernier boss) : à retirer avec la partie 2
 compteurImages(game); // F3 affiche le nombre d'images par seconde (pour mesurer sur la borne)

@@ -68,6 +68,7 @@ export default class niveau extends Phaser.Scene {
     // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
     effets.preparerEffets(this);
     this.reprendreAuBoss(); // si le robot est mort contre le boss : on le remet dans l'arène
+    (this.cfg.extensions || []).forEach((extension) => extension(this)); // ce que la partie 2 ajoute à ce niveau (voir niveau1.js) : la fuite après le boss
     chargerMusiqueBossEnArrierePlan(this); // la musique du boss, décodée pendant qu'on joue (pas au lancement : voir sons.js)
   }
 
@@ -165,10 +166,7 @@ export default class niveau extends Phaser.Scene {
   // L'état de départ du niveau. Phaser réutilise la même scène quand on rejoue : tout ce qui change pendant la partie doit être remis ici.
   remettreAZero() {
     this.areneLancee = false; // le combat contre le boss n'a pas encore commencé
-    // sans cette remise à zéro, après avoir fini le jeu on était envoyé directement au niveau 2 en arrivant en haut (arene.js)
-    this.fuiteOuverte = false;
     this.murDroit = null; // le mur de droite de l'arène du Dieu (pas encore posé)
-    this.elementsFuite = []; // les flèches et le texte « FUIS » (pas encore affichés)
     this.boss = null; // le boss n'existe pas encore (arene.js le crée)
     this.areneSolY = undefined; // les repères de l'arène (posés quand elle se lance, voir arene.js) : oubliés à chaque nouvelle partie
     this.areneCentreX = undefined;

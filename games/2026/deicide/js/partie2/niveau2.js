@@ -8,7 +8,7 @@ import { objetsDe } from "../partie1/systemes/chargement.js";
 import { VOLUME_MUSIQUE_BOSS } from "../partie1/systemes/sons.js";
 import { preparerVide, majVide } from "./vide.js";
 import { preparerFaisceaux, majFaisceaux } from "./faisceaux.js";
-import { montrerAstuceDash } from "../partie1/systemes/guide.js"; // rappel du dash (bouton E)
+import { montrerAstuceDash } from "./astuce.js"; // rappel du dash (bouton E)
 import { preparerPoursuite, majPoursuite, finirPoursuite } from "./poursuite.js";
 
 function creerNiveau2(scene) { // appelée une fois, à la fin du create du niveau
