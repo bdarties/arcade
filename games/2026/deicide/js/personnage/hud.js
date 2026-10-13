@@ -82,14 +82,15 @@ const LETTRES = {
 };
 
 // --- aide des touches : une plaque sous le chrono, une ligne par action (la ou les touches, puis le mot).
+// Ce sont les noms des boutons de la borne (A à F, voir gpio2keys.py) : A = touche I (saut), D = touche K (tir), E = touche L (dash).
 // Pour changer une touche : modifier sa ligne ici ET la touche dans personnage.js (addKeys) ou dans les niveaux.
 // Les noms "gauche", "droite", "haut", "bas" dessinent une flèche ; les autres noms sont des lettres de LETTRES.
 const TOUCHES = [
     { touches: ["gauche", "droite"], mot: "BOUGER" },
     { touches: ["haut", "bas"], mot: "VISER" },
-    { touches: ["I"], mot: "SAUT" },
-    { touches: ["K"], mot: "TIR" },
-    { touches: ["L"], mot: "DASH" }
+    { touches: ["A"], mot: "SAUT" },
+    { touches: ["D"], mot: "TIR" },
+    { touches: ["E"], mot: "DASH" }
 ];
 const FLECHES = {
     gauche: ["..#..", ".##..", "#####", ".##..", "..#.."],

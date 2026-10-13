@@ -82,7 +82,7 @@ export default class pause extends Phaser.Scene {
         this.add.rectangle(640, 360, 760, 560, FOND_PANNEAU, 0.95).setStrokeStyle(3, CADRE);
         this.titre = this.add.text(640, 130, "PAUSE", { fontFamily: POLICE, fontSize: "44px", color: TEXTE }).setOrigin(0.5);
         this.aide = this.add.text(640, 604, "", { fontFamily: POLICE, fontSize: "15px", color: ATTENUE }).setOrigin(0.5);
-        this.add.text(640, 624, "Recommencer la partie : maintenir Z + X pendant 1,5 s", { fontFamily: POLICE, fontSize: "13px", color: ATTENUE }).setOrigin(0.5);
+        this.add.text(640, 624, "Recommencer la partie : maintenir SELECT + START pendant 1,5 s", { fontFamily: POLICE, fontSize: "13px", color: ATTENUE }).setOrigin(0.5);
         this.dessin = this.add.graphics(); // les cases des curseurs
         this.lignes = []; // les textes de la page affichée (détruits quand on change de page)
 
@@ -120,7 +120,7 @@ export default class pause extends Phaser.Scene {
         this.page = "menu";
         this.vider();
         this.titre.setText("PAUSE");
-        this.aide.setText("HAUT/BAS : choisir   GAUCHE/DROITE : régler   I : valider   X : reprendre");
+        this.aide.setText("HAUT/BAS : choisir   GAUCHE/DROITE : régler   A : valider   START : reprendre");
         this.lignesMenu().forEach((ligne, i) => {
             const y = 220 + i * 62; // une ligne tous les 62 px
             const choisie = i === this.choix;
