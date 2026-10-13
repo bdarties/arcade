@@ -93,6 +93,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     boss.body.setImmovable(true);
     boss.body.setSize(34, 90).setOffset(59, 22); // la hitbox est le corps de l'ange, sans les ailes
     boss.setScale(profil.echelle).setDepth(51).setAlpha(0);
+    if (scene.player) scene.player.setDepth(52); // le robot passe DEVANT le boss quand ils se chevauchent (le boss est à 51, au-dessus du voile d'ombre à 50 ; sans ça le robot, à 0, passait derrière)
     // la teinte revient après chaque flash (voir effets.flash) // au-dessus du voile d'ombre (50) : c'est lui la lumière
     if (profil.teinte) { boss.setTint(profil.teinte); boss.teinteBase = profil.teinte; }
     boss.play("boss_idle");
