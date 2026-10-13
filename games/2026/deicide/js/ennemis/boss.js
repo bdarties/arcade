@@ -56,9 +56,9 @@ const PROFILS = {
         pauses: [1250, 900, 220], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
         attaques: [
-            ["orbes", "colonne", "pluie", "orbes", "balayage", "colonne", "orbes", "lanternes"], // beaucoup d'orbes et de lasers, lanternes 1 fois sur 8
-            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "spirale", "geysers", "lanternes"],
-            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "spirale", "geysers", "geysers", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
+            ["orbes", "colonne", "pluie", "orbes", "balayage", "colonne", "lasers", "lanternes"], // beaucoup d'orbes et de lasers, lanternes 1 fois sur 8
+            ["orbes", "colonne", "balayage", "pluie", "nova", "colonne", "orbes", "balayage", "spirale", "geysers", "lasers", "lanternes"],
+            ["orbes", "orbes", "colonne", "balayage", "pluie", "colonne", "balayage", "nova", "pique", "spirale", "geysers", "geysers", "lasers", "lasers", "lanternes"] // beaucoup de lasers (colonne, balayage) et d'orbes, une seule entrée « lanternes » sur 10 (pas plus de nova : 120 orbes d'un coup, trop pour la borne)
         ]
     }
 };
@@ -84,6 +84,7 @@ const ATTAQUES = {
     nova: { charge: 560, apres: 900 },
     pique: { charge: 720, apres: 1250 },
     geysers: { charge: 800, apres: 1500 }, // (dernier boss, phases 2 et 3 : voir lancerGeysers)
+    lasers: { charge: 950, apres: 1000 }, // (voir preparerLasers)
     spirale: { charge: 700, apres: 2500 } // (dernier boss, phases 2 et 3 : voir lancerSpirale)
 };
 
@@ -134,6 +135,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     boss.jeton = 0; // numéro de l'attaque en cours : une attaque interrompue (changement de phase, mort) ne fait plus rien
     boss.pique = false; // vrai pendant un piqué (il ne flotte plus)
     scene.zonesBoss = [];
+    scene.lasersBoss = []; // les lasers qui partent du boss (voir lancerLasers)
 
     if (scene.textures.exists("halo_doux")) { // une lueur dorée derrière lui (la texture vient d'ennemis.js)
         const halo = scene.add.image(x, y, "halo_doux");
@@ -197,6 +199,7 @@ function majBoss(scene, boss, temps) {
     if (boss.halo) boss.halo.setPosition(boss.x, boss.y);
     if (boss.etat === "combat" && scene.time.now >= boss.prochaineAttaque) lancerAttaque(scene, boss, choisirAttaque(scene, boss));
     majZones(scene);
+    majLasers(scene, boss);
     if (boss.pique && !boss.piqueTouche && scene.physics.overlap(scene.player, boss)) { // le robot est sur la trajectoire du piqué
         boss.piqueTouche = true; // un seul coup par piqué
         scene.blesserJoueur(1, "Percuté par " + profil.cause);
@@ -262,6 +265,7 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         return { xs, reperes, haut };
     }
     // le trait suit le robot puis se fige : le boss plongera là
+    if (nom === "lasers") return { lasers: preparerLasers(scene, boss) }; // des traits fins qui partent du boss, le premier suit le robot
     if (nom === "geysers") return { zones: xsGeysers(boss).map((x) => geyser(scene, x)) }; // des petits traits de lumière posés sur le sol
     if (nom === "pique") return { zones: [zone(scene, { x: joueur.x, y: (boss.y + 40 + sol) / 2, w: 64, h: sol - boss.y - 40, trait: { w: 8, h: sol - boss.y - 40 }, suit: true, degats: false })] };
     return {};
@@ -269,6 +273,7 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
 
 function nettoyerAnnonce(annonce) { // l'attaque est annulée : on enlève ses traits d'avertissement
     (annonce.zones || []).forEach((z) => detruireZone(z));
+    (annonce.lasers || []).forEach(detruireLaser);
     (annonce.reperes || []).forEach((r) => r.destroy());
 }
 
@@ -287,6 +292,12 @@ function executer(scene, boss, nom, annonce, valide) {
     else if (nom === "nova") lancerNova(scene, boss, valide);
     else if (nom === "pique") piquer(scene, boss, annonce);
     else if (nom === "spirale") lancerSpirale(scene, boss, valide);
+    else if (nom === "lasers") {
+        const sens = Phaser.Math.RND.pick([1, -1]); // tous les rayons d'une attaque tournent dans le même sens
+        jouerSonSurLeTemps(scene, "dash");
+        scene.cameras.main.shake(200, 0.006);
+        annonce.lasers.forEach((laser) => declencherLaser(scene, boss, laser, sens));
+    }
     else if (nom === "geysers") lancerGeysers(scene, boss, annonce, valide);
 }
 
@@ -337,6 +348,70 @@ function invoquerLanternes(scene, boss, valide) {
     const nombre = rude(boss) ? 2 : [2, 2, 4][boss.phase]; // dernier boss : seulement 2 lanternes, à toutes les phases
     for (let i = 0; i < nombre; i++) scene.time.delayedCall(i * 250, () => { if (valide()) invoquerLanterne(scene); });
     effets.eclats(scene, boss.x, boss.y - 30, ECLATS_OR[0], 12, ECLATS_OR[1]);
+}
+
+// Les lasers (dernier boss, dès la phase 1) : des rayons qui partent du boss en éventail. Des traits fins annoncent chaque laser ; celui du milieu suit
+// le robot pendant 0,5 s puis se fige, les autres sont décalés de part et d'autre. Puis les rayons partent : en phases 2 et 3 ils BALAIENT en tournant
+// pendant qu'ils sont actifs, ce qui déplace les trous entre eux (il faut passer dans un trou qui bouge). Un seul coup par attaque.
+const LONGUEUR_LASER = 1700; // assez long pour traverser toute l'arène
+const EPAISSEUR_LASER = 34; // largeur du rayon, en px
+const LASERS = [ // par phase : décalage entre deux rayons (rad), nombre de rayons, vitesse de balayage (rad/s)
+    { ecart: 0.5, nombre: 3, balayage: 0 },
+    { ecart: 0.36, nombre: 5, balayage: 0.45 },
+    { ecart: 0.27, nombre: 7, balayage: 0.75 }
+];
+function preparerLasers(scene, boss) { // crée les traits d'annonce
+    const reglage = LASERS[boss.phase];
+    const lasers = Array.from({ length: reglage.nombre }, (_, i) => {
+        const decalage = (i - (reglage.nombre - 1) / 2) * reglage.ecart; // le rayon du milieu (décalage 0) vise le robot
+        const trait = scene.add.rectangle(boss.x, boss.y, LONGUEUR_LASER, 4, 0xfff2c0, 0.5).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+        scene.tweens.add({ targets: trait, alpha: 0.15, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
+        const laser = { decalage, trait, rayon: null, etat: "annonce", angle: 0, verrouJusqua: scene.time.now + 550, fin: 0, balayage: 0 };
+        laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + decalage;
+        return laser;
+    });
+    scene.lasersBoss.push(...lasers); // majLasers les met à jour à chaque image
+    return lasers;
+}
+function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne ensuite dans le sens donné : voir majLasers)
+    laser.trait.destroy();
+    laser.trait = null;
+    laser.etat = "rayon";
+    laser.fin = scene.time.now + 600;
+    laser.balayage = LASERS[boss.phase].balayage * sens;
+    laser.ox = boss.x; laser.oy = boss.y; // le rayon part de là où le boss était
+    laser.rayon = scene.add.rectangle(laser.ox, laser.oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(laser.angle);
+    scene.tweens.add({ targets: laser.rayon, alpha: 0, scaleY: 0.3, duration: 600, ease: "Quad.In" });
+}
+function detruireLaser(laser) {
+    if (laser.trait) laser.trait.destroy();
+    if (laser.rayon) laser.rayon.destroy();
+    laser.etat = "fini";
+}
+function majLasers(scene, boss) { // à chaque image : les traits suivent le boss et le robot, les rayons tournent et blessent
+    if (!scene.lasersBoss) return;
+    scene.lasersBoss = scene.lasersBoss.filter((l) => l.etat !== "fini");
+    scene.lasersBoss.forEach((laser) => {
+        if (laser.etat === "annonce") {
+            laser.trait.setPosition(boss.x, boss.y);
+            if (scene.time.now < laser.verrouJusqua) laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + laser.decalage;
+            laser.trait.setRotation(laser.angle);
+            return;
+        }
+        if (scene.time.now >= laser.fin) { detruireLaser(laser); return; }
+        laser.angle += laser.balayage * scene.game.loop.delta / 1000; // le balayage
+        laser.rayon.setRotation(laser.angle);
+        // le robot est-il dans le rayon ? distance de son centre à la demi-droite du laser
+        const b = scene.player.body;
+        const px = b.center.x - laser.ox, py = b.center.y - laser.oy;
+        const dx = Math.cos(laser.angle), dy = Math.sin(laser.angle);
+        const avance = Math.max(0, Math.min(LONGUEUR_LASER, px * dx + py * dy)); // le point du rayon le plus proche du robot
+        const distance = Math.hypot(px - dx * avance, py - dy * avance);
+        if (!laser.touche && distance < EPAISSEUR_LASER / 2 + 16) {
+            scene.lasersBoss.forEach((l) => { l.touche = true; }); // un seul coup par attaque
+            scene.blesserJoueur(1, "Foudroyé par " + profil.cause);
+        }
+    });
 }
 
 // Les geysers (dernier boss, phases 2 et 3) : des jets de lumière qui sortent du sol. Chacun est annoncé par un petit trait posé sur le sol, puis ils jaillissent
@@ -492,6 +567,8 @@ function nettoyerCombat(scene, boss) { // efface tout ce que le boss avait lanc�
     scene.tirsEnnemis.clear(true, true); // plus aucune orbe
     scene.zonesBoss.forEach((z) => detruireZone(z));
     scene.zonesBoss = [];
+    (scene.lasersBoss || []).forEach(detruireLaser);
+    scene.lasersBoss = [];
 }
 
 function changerDePhase(scene, boss, phase) {
