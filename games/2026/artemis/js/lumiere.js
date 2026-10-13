@@ -24,7 +24,7 @@ const INTENSITE_JOUEUR = 0.5; // 1 : la couleur normale de l'image au centre ; p
 const COULEUR_JOUEUR = 0xffe8cc; // blanc chaud
 
 // torche : NB_LUMIERES_TORCHE lumières réparties devant le joueur, de plus en plus larges et faibles en s'éloignant
-const NB_LUMIERES_TORCHE = 3;
+const NB_LUMIERES_TORCHE = 2; // 2 joueurs x (1 halo + 2 torche) = 6 : la limite maxLights de index.js
 const COULEUR_TORCHE = 0xffc88a; // orangé : la torche se détache du bleu nuit de l'ambiance
 const RAYON_TORCHE_PROCHE = 45; // px : rayon d'une lumière collée au joueur...
 const RAYON_TORCHE_PAR_PX = 0.5; // ... plus ce nombre de px de rayon par px de distance (le cône s'évase)
