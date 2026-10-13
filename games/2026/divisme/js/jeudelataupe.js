@@ -1,31 +1,50 @@
-import * as fct from "./fonctions.js";
 import {
-    BORNE,
+    COULEURS,
     COULEUR_J1,
     COULEUR_J2,
+    BORNE,
     VIES_MAX,
+    TAILLE,
+    POINTS,
+    MINIJEUX,
     css,
+    style,
+    creerEnTete,
+    creerTexteTemps,
+    majTemps,
     creerVies,
     retirerVie,
-    afficherResultat
-} from "./outils.js";
+    afficherResultat,
+    texteFlottant,
+    explosion,
+    lancerAmbiance,
+    jouerSon,
+    ouvrirRideau,
+    fermerRideau,
+    afficherConsigne,
+    compteARebours,
+    attendreContinuer,
+    enregistrerScore,
+    creerTouches,
+    uneTouchePressee
+} from "./fonctions.js";
 
 // ==============================
-// RÉGLAGES (à modifier pour équilibrer le jeu)
+// RÉGLAGES ( TODO : à modifier pour équilibrer le jeu après le test sur la borne)
 // ==============================
 
 // Pour tester ce mini-jeu SEUL, sans passer par histoire.js : écrire 1 ou 2.
 // En jeu normal : laisser null (le mode vient alors du registry, choisi dans histoire.js).
 const FORCER_MODE = null;
 
-// Scène lancée après ce mini-jeu (c'est le dernier : on va au classement).
-// Si elle n'existe pas, on retourne au menu.
-const SCENE_SUIVANTE = "classement";
+// Scène lancée après ce mini-jeu (c'est le dernier : l'écran de résultat final).
+// Si elle n'est pas déclarée dans le jeu, on retourne au menu.
+const SCENE_SUIVANTE = "resultat";
 
 // Durée de la manche, en secondes
 const DUREE_MANCHE = 20;
 
-// SOLO : nombre de points à atteindre pour ne pas perdre de vie
+// SOLO : nombre de points à atteindre pour que le mini-jeu compte comme RÉUSSI
 const OBJECTIF_SOLO = 15;
 
 // Rythme des apparitions : il ACCÉLÈRE au fil de la manche (début -> fin)
@@ -44,24 +63,20 @@ const TROUS_PAR_JOUEUR = 3;
 // (en mode 1 joueur, les deux jeux de touches marchent, comme dans le jeu de rythme)
 const TOUCHES = {
     j1_joystick: [BORNE.j1.gauche, BORNE.j1.bas, BORNE.j1.droite],
-    j1_boutons:  [BORNE.j1.boutons[0], BORNE.j1.boutons[1], BORNE.j1.boutons[2]],   // I O P
+    j1_boutons:  [BORNE.j1.boutons[0], BORNE.j1.boutons[1], BORNE.j1.boutons[2]],   // boutons A B C
     j2_joystick: [BORNE.j2.gauche, BORNE.j2.bas, BORNE.j2.droite],
-    j2_boutons:  [BORNE.j2.boutons[0], BORNE.j2.boutons[1], BORNE.j2.boutons[2]]    // R T Y
+    j2_boutons:  [BORNE.j2.boutons[0], BORNE.j2.boutons[1], BORNE.j2.boutons[2]]    // boutons A B C
 };
 
-
-// ==============================
-// VARIABLES
-// ==============================
-
-// Vies : variables du fichier, comme dans clicker.js
-var viesJ1 = VIES_MAX;
-var viesJ2 = VIES_MAX;
+// Ce que le joueur lit sous chaque trappe (sur la borne, les boutons s'appellent A B C)
+const ETIQUETTES = ["← / A", "↓ / B", "→ / C"];
 
 
 // ==============================
 // SCÈNE JEU DE LA TAUPE (version "bal des masques")
 // ==============================
+// "this.etat" : "attente" (consigne, compte à rebours) -> "jeu" -> "fin" (résultat affiché)
+// -> "sortie" (le rideau se ferme)
 
 export default class jeudelataupe extends Phaser.Scene {
 
@@ -86,6 +101,10 @@ export default class jeudelataupe extends Phaser.Scene {
         // Si la clé existe déjà dans le jeu, Phaser ne recharge pas le fichier.
         this.load.image("masque_content", "src/sprite/masque_content.png");
         this.load.image("masque_triste", "src/sprite/masque_triste.png");
+
+        // Sons de fin de manche (déjà chargés par le clicker : pas rechargés une 2e fois)
+        this.load.audio("harpe_glissando", "src/audio/harpe_glissando.wav");
+        this.load.audio("harpe_grave", "src/audio/harpe_grave.wav");
     }
 
 
@@ -99,53 +118,37 @@ export default class jeudelataupe extends Phaser.Scene {
         const mode = FORCER_MODE || this.registry.get("joueurs") || 1;
         this.nbJoueurs = mode === 2 ? 2 : 1;
 
-        // "attente" (rideau) -> "jeu" -> "fin" (résultat affiché) -> "sortie"
+        // Tout repart de zéro à chaque partie
         this.etat = "attente";
         this.tempsRestant = DUREE_MANCHE;
         this.timer = null;
+        this.viesJ1 = VIES_MAX;
+        this.viesJ2 = VIES_MAX;
 
         // Transition : le rideau s'ouvre
-        fct.ouvrirRideau(this, 800);
+        ouvrirRideau(this, 800);
 
 
         // ==============================
-        // FOND
+        // FOND ET AMBIANCE (comme dans le clicker)
         // ==============================
 
         if (this.textures.exists("taupe_bg")) {
-            this.add.image(640, 360, "taupe_bg");
+            this.add.image(640, 360, "taupe_bg").setDepth(-10);
         } else {
-            this.cameras.main.setBackgroundColor(0x10252B);
+            this.cameras.main.setBackgroundColor(COULEURS.NUIT);
         }
 
-
-        // ==============================
-        // STYLE DE TEXTE RÉUTILISABLE
-        // ==============================
-
-        this.style = (taille, options = {}) => ({
-            fontSize: taille,
-            color: "#ffffff",
-            fontStyle: "bold",
-            align: "center",
-            ...options
-        });
+        lancerAmbiance(this);
 
 
         // ==============================
-        // TEXTES COMMUNS
+        // EN-TÊTE (titre, consigne, temps) : identique dans tous les mini-jeux
         // ==============================
 
-        this.add.text(640, 50, "LE BAL DES MASQUES !", this.style("40px")).setOrigin(0.5);
+        creerEnTete(this, MINIJEUX.taupe.nom, "Frappe les masques joyeux, évite les tristes !");
 
-        this.texteTemps = this.add.text(640, 105, "Temps : " + this.tempsRestant, this.style("32px")).setOrigin(0.5);
-
-        this.add.text(
-            640,
-            150,
-            "Frappe les masques joyeux (+1), évite les tristes (-1) !",
-            this.style(this.nbJoueurs === 1 ? "28px" : "22px")
-        ).setOrigin(0.5);
+        this.texteTemps = creerTexteTemps(this, this.tempsRestant);
 
 
         // ==============================
@@ -159,11 +162,36 @@ export default class jeudelataupe extends Phaser.Scene {
         }
 
 
-        // ==============================
-        // LA MANCHE DÉMARRE QUAND LE RIDEAU EST OUVERT
-        // ==============================
+        // Consigne -> le joueur appuie -> compte à rebours -> la manche démarre
+        this.lancerIntro();
+    }
 
-        this.time.delayedCall(800, () => this.demarrerManche());
+
+    // ==============================
+    // INTRO : CONSIGNE PUIS COMPTE À REBOURS
+    // ==============================
+
+    lancerIntro() {
+
+        let lignes;
+
+        if (this.nbJoueurs === 1) {
+            lignes = [
+                "Des masques sortent des trappes. Frappe la trappe où un masque apparaît.",
+                "Joystick (gauche, bas, droite) ou boutons A, B, C : une touche par trappe.",
+                "Masque joyeux : +1. Masque triste : -1. Atteins " + OBJECTIF_SOLO + " points pour gagner !"
+            ];
+        } else {
+            lignes = [
+                "Les mêmes masques sortent chez les deux joueurs. Frappe la bonne trappe le plus vite possible.",
+                "Joystick (gauche, bas, droite) ou boutons A, B, C : une touche par trappe.",
+                "Masque joyeux : +1. Masque triste : -1. Le meilleur score gagne !"
+            ];
+        }
+
+        afficherConsigne(this, MINIJEUX.taupe.nom, lignes, () => {
+            compteARebours(this, () => this.demarrerManche());
+        });
     }
 
 
@@ -180,17 +208,16 @@ export default class jeudelataupe extends Phaser.Scene {
             220,                                 // largeur d'une trappe
             230,                                 // hauteur d'un masque sorti
             COULEUR_J1,
-            [TOUCHES.j1_joystick, TOUCHES.j1_boutons, TOUCHES.j2_joystick, TOUCHES.j2_boutons],
-            ["← / I", "↓ / O", "→ / P"]
+            [TOUCHES.j1_joystick, TOUCHES.j1_boutons, TOUCHES.j2_joystick, TOUCHES.j2_boutons]
         );
 
         this.plateaux = [plateau];
 
         // Score
-        plateau.texteScore = this.add.text(640, 205, this.libelleScore(plateau), this.style("36px")).setOrigin(0.5);
+        plateau.texteScore = this.add.text(640, 205, this.libelleScore(plateau), style(TAILLE.GRAND)).setOrigin(0.5);
 
         // Vies (masques)
-        this.masquesJ1 = creerVies(this, 640, 270, viesJ1);
+        this.masquesJ1 = creerVies(this, 640, 270, this.viesJ1);
     }
 
 
@@ -201,30 +228,30 @@ export default class jeudelataupe extends Phaser.Scene {
     creerDuo() {
 
         const plateau1 = this.creerPlateau(0, 320, 180, 150, 160, COULEUR_J1,
-            [TOUCHES.j1_joystick, TOUCHES.j1_boutons], ["← / I", "↓ / O", "→ / P"]);
+            [TOUCHES.j1_joystick, TOUCHES.j1_boutons]);
         const plateau2 = this.creerPlateau(1, 960, 180, 150, 160, COULEUR_J2,
-            [TOUCHES.j2_joystick, TOUCHES.j2_boutons], ["Q / R", "S / T", "D / Y"]);
+            [TOUCHES.j2_joystick, TOUCHES.j2_boutons]);
 
         this.plateaux = [plateau1, plateau2];
 
-        // Étiquettes et scores : texte blanc cerclé de la couleur du joueur
+        // Étiquettes et scores : texte clair cerclé de la couleur du joueur
         [
             { x: 320, nom: "JOUEUR 1", plateau: plateau1, couleur: COULEUR_J1 },
             { x: 960, nom: "JOUEUR 2", plateau: plateau2, couleur: COULEUR_J2 }
         ].forEach(infos => {
 
-            const contour = { stroke: css(infos.couleur), strokeThickness: 6 };
-
-            this.add.text(infos.x, 195, infos.nom, this.style("30px", contour)).setOrigin(0.5);
+            this.add.text(infos.x, 195, infos.nom,
+                style(TAILLE.NORMAL, css(COULEURS.CREME), css(infos.couleur))).setOrigin(0.5);
 
             infos.plateau.texteScore = this.add.text(
-                infos.x, 250, this.libelleScore(infos.plateau), this.style("44px", contour)
+                infos.x, 250, this.libelleScore(infos.plateau),
+                style(TAILLE.GRAND, css(COULEURS.CREME), css(infos.couleur))
             ).setOrigin(0.5);
         });
 
         // Vies (masques)
-        this.masquesJ1 = creerVies(this, 320, 310, viesJ1);
-        this.masquesJ2 = creerVies(this, 960, 310, viesJ2);
+        this.masquesJ1 = creerVies(this, 320, 310, this.viesJ1);
+        this.masquesJ2 = creerVies(this, 960, 310, this.viesJ2);
     }
 
 
@@ -232,7 +259,7 @@ export default class jeudelataupe extends Phaser.Scene {
     // CRÉATION D'UNE RANGÉE DE TRAPPES POUR UN JOUEUR
     // ==============================
 
-    creerPlateau(id, xCentre, ecart, largeurTrou, tailleMasque, couleur, jeuxTouches, etiquettes) {
+    creerPlateau(id, xCentre, ecart, largeurTrou, tailleMasque, couleur, jeuxTouches) {
 
         const y = 560; // hauteur des trappes
 
@@ -251,11 +278,11 @@ export default class jeudelataupe extends Phaser.Scene {
             const x = xCentre + (i - 1) * ecart;
 
             // La trappe : une ellipse sombre, au bord de la couleur du joueur
-            const ellipse = this.add.ellipse(x, y, largeurTrou, 52, 0x000000, 0.75)
+            const ellipse = this.add.ellipse(x, y, largeurTrou, 52, COULEURS.NUIT, 0.85)
                 .setStrokeStyle(6, couleur);
 
-            // La touche qui correspond à cette trappe
-            this.add.text(x, y + 50, etiquettes[i], this.style("24px")).setOrigin(0.5);
+            // Ce que le joueur doit appuyer pour cette trappe
+            this.add.text(x, y + 50, ETIQUETTES[i], style(TAILLE.PETIT)).setOrigin(0.5);
 
             plateau.trous.push({
                 x: x,
@@ -267,7 +294,7 @@ export default class jeudelataupe extends Phaser.Scene {
             });
 
             // Les touches de cette trappe (une ou deux, selon le mode)
-            plateau.touches.push(jeuxTouches.map(jeu => this.input.keyboard.addKey(jeu[i])));
+            plateau.touches.push(creerTouches(this, jeuxTouches.map(jeu => jeu[i])));
         }
 
         return plateau;
@@ -310,17 +337,7 @@ export default class jeudelataupe extends Phaser.Scene {
 
         this.tempsRestant--;
 
-        this.texteTemps.setText("Temps : " + this.tempsRestant);
-
-        // Les 5 dernières secondes : le temps devient rouge et "pulse"
-        if (this.tempsRestant <= 5) {
-            this.texteTemps.setColor("#ff6b6b");
-            this.tweens.add({
-                targets: this.texteTemps,
-                scale: { from: 1.4, to: 1 },
-                duration: 300
-            });
-        }
+        majTemps(this, this.texteTemps, this.tempsRestant);
 
         if (this.tempsRestant <= 0) {
             this.finDeManche();
@@ -465,7 +482,7 @@ export default class jeudelataupe extends Phaser.Scene {
             // Masque triste : pénalité
             plateau.score = Math.max(0, plateau.score - 1);
 
-            this.texteFlottant(x, y, "-1", 0xff6b6b);
+            texteFlottant(this, x, y, "-1", COULEURS.ROUGE_CLAIR);
             this.cameras.main.shake(150, 0.006);
 
         } else {
@@ -473,8 +490,8 @@ export default class jeudelataupe extends Phaser.Scene {
             // Masque joyeux : point
             plateau.score++;
 
-            this.texteFlottant(x, y, "+1", plateau.couleur);
-            this.etincelles(x, y, plateau.couleur);
+            texteFlottant(this, x, y, "+1", plateau.couleur);
+            explosion(this, x, y, 8, 130, 8);
         }
 
         this.rentrerMasque(trou);
@@ -514,60 +531,6 @@ export default class jeudelataupe extends Phaser.Scene {
 
 
     // ==============================
-    // EFFETS VISUELS
-    // ==============================
-
-    // "+1" ou "-1" qui monte et disparaît (texte blanc cerclé de la couleur donnée).
-    texteFlottant(x, y, texte, couleurContour) {
-
-        const objet = this.add.text(x, y, texte, this.style("48px", {
-            stroke: css(couleurContour),
-            strokeThickness: 8
-        })).setOrigin(0.5).setDepth(50);
-
-        this.tweens.add({
-            targets: objet,
-            y: y - 100,
-            alpha: 0,
-            duration: 700,
-            ease: "Cubic.easeOut",
-            onComplete: () => objet.destroy()
-        });
-    }
-
-
-    // Petite gerbe de particules qui part dans toutes les directions.
-    etincelles(x, y, couleur) {
-
-        const couleurs = [couleur, 0xC7AC72, 0xffffff];
-
-        for (let i = 0; i < 8; i++) {
-
-            const particule = this.add.circle(
-                x,
-                y,
-                Phaser.Math.Between(4, 8),
-                Phaser.Utils.Array.GetRandom(couleurs)
-            ).setDepth(50);
-
-            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            const distance = Phaser.Math.Between(60, 130);
-
-            this.tweens.add({
-                targets: particule,
-                x: x + Math.cos(angle) * distance,
-                y: y + Math.sin(angle) * distance,
-                alpha: 0,
-                scale: 0.3,
-                duration: 450,
-                ease: "Cubic.easeOut",
-                onComplete: () => particule.destroy()
-            });
-        }
-    }
-
-
-    // ==============================
     // FIN DE MANCHE
     // ==============================
 
@@ -588,22 +551,31 @@ export default class jeudelataupe extends Phaser.Scene {
 
 
         // ==============================
-        // SOLO : objectif atteint ou une vie perdue
+        // SOLO : objectif atteint (réussi) ou une vie perdue (raté)
         // ==============================
 
         if (this.nbJoueurs === 1) {
 
             const score = this.plateaux[0].score;
+            const points = score * POINTS.PAR_MASQUE;
+            const reussi = score >= OBJECTIF_SOLO;
 
-            if (score >= OBJECTIF_SOLO) {
+            // Les points s'ajoutent au score total, et "reussi" compte pour la victoire finale
+            enregistrerScore(this, "taupe", points, 0, reussi);
 
-                afficherResultat(this, "🎉 BRAVO ! 🎉", score + " points : objectif atteint !");
+            if (reussi) {
+
+                afficherResultat(this, "BRAVO !", score + " points : objectif atteint !  +" + points + " pts", undefined, true);
+                jouerSon(this, "harpe_glissando", { volume: 0.7 });
 
             } else {
 
-                viesJ1 = retirerVie(this, this.masquesJ1, viesJ1);
+                this.viesJ1 = retirerVie(this, this.masquesJ1, this.viesJ1);
 
-                afficherResultat(this, "Temps écoulé !", "🎭 Vie perdue ! (" + score + " / " + OBJECTIF_SOLO + ")", "#ff6b6b");
+                afficherResultat(this, "Temps écoulé !", "Vie perdue !  " + score + " / " + OBJECTIF_SOLO + "  +" + points + " pts", css(COULEURS.ROUGE_CLAIR));
+
+                jouerSon(this, "harpe_grave", { volume: 0.7 });
+                this.cameras.main.shake(200, 0.006);
             }
         }
 
@@ -617,60 +589,31 @@ export default class jeudelataupe extends Phaser.Scene {
             const score1 = this.plateaux[0].score;
             const score2 = this.plateaux[1].score;
 
+            enregistrerScore(this, "taupe", score1 * POINTS.PAR_MASQUE, score2 * POINTS.PAR_MASQUE);
+
             if (score1 > score2) {
 
-                viesJ2 = retirerVie(this, this.masquesJ2, viesJ2);
-
-                afficherResultat(this, "🏆 JOUEUR 1 GAGNE !", "🎭 Le Joueur 2 perd une vie !", "#ff6b6b");
+                this.viesJ2 = retirerVie(this, this.masquesJ2, this.viesJ2);
+                afficherResultat(this, "JOUEUR 1 GAGNE !", "Le joueur 2 perd une vie !", css(COULEURS.ROUGE_CLAIR), true);
+                jouerSon(this, "harpe_glissando", { volume: 0.7 });
 
             } else if (score2 > score1) {
 
-                viesJ1 = retirerVie(this, this.masquesJ1, viesJ1);
-
-                afficherResultat(this, "🏆 JOUEUR 2 GAGNE !", "🎭 Le Joueur 1 perd une vie !", "#ff6b6b");
+                this.viesJ1 = retirerVie(this, this.masquesJ1, this.viesJ1);
+                afficherResultat(this, "JOUEUR 2 GAGNE !", "Le joueur 1 perd une vie !", css(COULEURS.ROUGE_CLAIR), true);
+                jouerSon(this, "harpe_glissando", { volume: 0.7 });
 
             } else {
 
-                afficherResultat(this, "🤝 ÉGALITÉ !", score1 + " points   —   " + score2 + " points");
+                afficherResultat(this, "ÉGALITÉ !", score1 + " points   -   " + score2 + " points");
             }
         }
 
-        this.proposerSuite();
+        attendreContinuer(this, () => this.passerAuSuivant());
     }
 
 
-    // Après un court délai (pour que le joueur voie le résultat, même s'il martèle
-    // les touches), une touche ou un clic permet de continuer.
-    proposerSuite() {
-
-        this.time.delayedCall(1200, () => {
-
-            if (this.etat !== "fin") return;
-
-            const indication = this.add.text(
-                640,
-                480,
-                "Appuie sur une touche ou clique pour continuer",
-                this.style("20px", { color: "#cccccc" })
-            ).setOrigin(0.5).setDepth(61);
-
-            this.tweens.add({
-                targets: indication,
-                alpha: 0.3,
-                duration: 600,
-                yoyo: true,
-                repeat: -1
-            });
-
-            const suite = () => this.passerAuSuivant();
-
-            this.input.keyboard.once("keydown", suite);
-            this.input.once("pointerdown", suite);
-        });
-    }
-
-
-    // Fermeture du rideau, puis passage à la scène suivante.
+    // Fermeture du rideau, puis passage à la scène suivante (le résultat final).
     passerAuSuivant() {
 
         // Garde-fou : touche ET clic sur la même frame ne lancent qu'une seule transition
@@ -678,9 +621,10 @@ export default class jeudelataupe extends Phaser.Scene {
 
         this.etat = "sortie";
 
+        // Si la scène "resultat" n'est pas déclarée dans le jeu, on retourne au menu
         const cible = this.scene.get(SCENE_SUIVANTE) ? SCENE_SUIVANTE : "menu";
 
-        fct.fermerRideau(this, 800, () => this.scene.start(cible));
+        fermerRideau(this, 800, () => this.scene.start(cible));
     }
 
 
@@ -691,17 +635,15 @@ export default class jeudelataupe extends Phaser.Scene {
     update() {
 
         // On lit les touches TOUJOURS (même hors partie), sinon un appui fait
-        // pendant l'attente serait compté plus tard. toucher() ignore ce qui
+        // pendant la consigne serait compté plus tard. toucher() ignore ce qui
         // n'est pas pendant la partie.
         this.plateaux.forEach(plateau => {
 
             plateau.touches.forEach((touchesDeLaTrappe, index) => {
 
-                touchesDeLaTrappe.forEach(touche => {
-                    if (Phaser.Input.Keyboard.JustDown(touche)) {
-                        this.toucher(plateau, index);
-                    }
-                });
+                if (uneTouchePressee(touchesDeLaTrappe)) {
+                    this.toucher(plateau, index);
+                }
             });
         });
     }

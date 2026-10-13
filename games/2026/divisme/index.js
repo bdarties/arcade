@@ -9,6 +9,8 @@ import clicker from "./js/clicker.js";
 import jeuderythme from "./js/jeuderythme.js";
 import jeudelataupe from "./js/jeudelataupe.js";
 
+import resultat from "./js/resultat.js";
+
 // configuration générale du jeu
 var config = {
   width: 1280, // largeur en pixels
@@ -30,7 +32,7 @@ var config = {
       debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [menu, classement, credits, clicker, jeuderythme, jeudelataupe, histoire],
+  scene: [menu, classement, credits, clicker, jeuderythme, jeudelataupe, histoire, resultat],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
