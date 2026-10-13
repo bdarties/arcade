@@ -16,3 +16,14 @@ export function montrerGuide(scene) {
   // puis il s'efface tout seul, et le texte est détruit
   scene.time.delayedCall(DUREE_BUT, () => scene.tweens.add({ targets: but, alpha: 0, duration: 500, onComplete: () => but.destroy() }));
 }
+
+// Le rappel du dash, au début du niveau 2 (la fuite) : là, le dash est indispensable pour franchir les trous. Le bouton E de la borne est la
+// touche L (voir personnage.js). Une seule fois par partie, comme le but.
+export function montrerAstuceDash(scene) {
+  if (scene.registry.get("astuceDashVue")) return;
+  scene.registry.set("astuceDashVue", true);
+  const astuce = scene.add.text(640, 150, "BOUTON E : DASH\nPOUR FRANCHIR LES TROUS ET ÉCHAPPER À LA LUMIÈRE", STYLE_BUT)
+    .setOrigin(0.5).setScrollFactor(0).setDepth(100).setAlpha(0);
+  scene.tweens.add({ targets: astuce, alpha: 1, duration: 600 });
+  scene.time.delayedCall(DUREE_BUT, () => scene.tweens.add({ targets: astuce, alpha: 0, duration: 500, onComplete: () => astuce.destroy() }));
+}
