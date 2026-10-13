@@ -23,8 +23,45 @@ const LAMPES_REQUISES = 3; // lampes à ramasser pour ouvrir la porte
 
 // Positions [x, y] des 7 lampes : 4 sur la route du haut, 3 sur la route du bas
 const POSITIONS_LAMPES = [
-  [780, 258], [1070, 258], [1350, 226], [1620, 258], // route du haut
-  [1085, 514], [1230, 418], [1620, 514] // route du bas
+  [780, 258], [1020, 258], [1350, 226], [1560, 258], // route du haut
+  [1040, 514], [1230, 418], [1580, 500] // route du bas (les lampes du milieu flottent au-dessus des plateformes mobiles)
+];
+
+// Plateformes MOBILES. Ce sont les VRAIES plateformes de la carte (même dessin) : on retire la plateforme fixe
+// de la carte, on copie ses tuiles, et on les fait aller et venir grâce à un tween.
+//  origine = coin haut gauche de la plateforme d'origine dans la carte (largeur × hauteur en pixels)
+//  x = nouvelle position de départ · dx, dy = distance parcourue · dureeMs = temps d'un aller simple
+const PLATEFORMES_MOBILES = [
+  { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2400 }, // haut
+  { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 2200 }, // haut
+  { origine: { x: 928, y: 544 }, largeur: 160, hauteur: 64, x: 928, dx: 70, dy: 0, dureeMs: 2600 }, // bas
+  { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 2000 } // bas : verticale
+];
+
+// ---- La VOIE HAUTE : un parcours en hauteur, facultatif, qui mène à une lampe bonus (+1 cœur) ----
+//  1. un TAMBOUR posé sur une plateforme fait rebondir très haut (plus haut qu'un saut normal) ;
+//  2. des plateformes fixes en hauteur ;
+//  3. des PLANCHES FRAGILES entre elles : elles tombent peu après qu'on a marché dessus, puis reviennent.
+const TAMBOURS = [{ x: 280, y: 320 }]; // x = centre, y = dessus de la plateforme sur laquelle il est posé
+const FORCE_TAMBOUR = -760; // vitesse de rebond (un saut normal : -520)
+const LARGEUR_PLATEFORME_HAUTE = 160;
+const LARGEUR_PLANCHE = 96;
+const PLATEFORMES_HAUTES = [
+  { x: 340, y: 170 }, // x, y = coin haut gauche (160 px de large, comme le modèle)
+  { x: 800, y: 170 }
+];
+const PLANCHES_FRAGILES = [
+  { x: 550, y: 170 },
+  { x: 676, y: 170 }
+]; // x, y = coin haut gauche (96 px de large)
+const DELAI_CHUTE_MS = 500; // temps entre le premier contact et la chute de la planche
+const DELAI_RETOUR_MS = 3500; // temps avant qu'elle revienne
+const LAMPE_VOIE_HAUTE = { x: 880, y: 130 };
+
+// Ennemis en plus : ce niveau est plus dur que le niveau 1
+const TUBAS = [
+  { x: 600, solY: 640, xMin: 470, xMax: 780 }, // sur le sol de départ
+  { x: 1900, solY: 640, xMin: 1760, xMax: 2000 } // sur le sol d'arrivée
 ];
 
 // La lampe bonus, tout en haut, et les deux passerelles fantômes qui y mènent (x, y = coin haut gauche)
@@ -39,7 +76,8 @@ const ZONE_SOMBRE = { x: 1000, y: 0, largeur: 300, hauteur: 260 };
 const CRISTAUX = [
   { x: 760, y: 190, note: 0 },
   { x: 1180, y: 400, note: 1 },
-  { x: 1700, y: 220, note: 2 }
+  { x: 1700, y: 220, note: 2 },
+  { x: 1420, y: 360, note: 0 } // un de plus au milieu du niveau
 ];
 
 // Les échelles de la carte (2 tuiles de large chacune) : x = milieu, haut / bas = hauteur des pieds en haut et en bas
@@ -58,6 +96,39 @@ const DEPART_J2 = { x: 170, y: 640 };
 const PORTE = { x: 1836, solY: 288 }; // la porte se pose sur la plateforme d'arrivée
 const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
 
+// Le DÉCOR : des éléments dessinés (planche d'images decor_niveau2.png) posés à la main dans le niveau.
+//  nom = nom de l'image · x, y = position · ancre : "bas" (posé sur le sol, y = le bas de l'objet) ou "haut" (suspendu, y = le haut)
+//  profondeur : plus c'est grand, plus c'est devant (les plateformes sont à 3, les héros à 10) · lueur : petite lumière orangée
+const VOILE_FOND = 0.4; // opacité du voile noir posé sur le fond (0 = aucun, 1 = noir total)
+
+const DECOR = [
+  { nom: "paravent", x: 340, y: 640, ancre: "bas", profondeur: 0.7 },
+  { nom: "pilier", x: 880, y: 640, ancre: "bas", profondeur: 0.9 },
+  { nom: "pilier", x: 1700, y: 640, ancre: "bas", profondeur: 0.9 },
+  { nom: "rideau", x: 100, y: 640, ancre: "bas", profondeur: 0.95 },
+  { nom: "rideau", x: 2080, y: 640, ancre: "bas", profondeur: 0.95 },
+  { nom: "banniere", x: 520, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "banniere", x: 1260, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "banniere", x: 1900, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "banniere2", x: 260, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "banniere2", x: 880, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "banniere2", x: 1600, y: 0, ancre: "haut", profondeur: 1 },
+  { nom: "lanterne", x: 700, y: 0, ancre: "haut", profondeur: 1, lueur: true },
+  { nom: "lanterne", x: 1100, y: 0, ancre: "haut", profondeur: 1, lueur: true },
+  { nom: "lanterne", x: 1500, y: 0, ancre: "haut", profondeur: 1, lueur: true },
+  { nom: "lanterne2", x: 420, y: 0, ancre: "haut", profondeur: 1, lueur: true },
+  { nom: "lanterne2", x: 1860, y: 0, ancre: "haut", profondeur: 1, lueur: true },
+  { nom: "lampadaire", x: 760, y: 640, ancre: "bas", profondeur: 2, lueur: true },
+  { nom: "lampadaire", x: 1780, y: 640, ancre: "bas", profondeur: 2, lueur: true },
+  { nom: "barriere", x: 560, y: 640, ancre: "bas", profondeur: 2 },
+  { nom: "caisse", x: 650, y: 640, ancre: "bas", profondeur: 2 },
+  { nom: "caisse", x: 1960, y: 640, ancre: "bas", profondeur: 2 },
+  { nom: "vase", x: 400, y: 640, ancre: "bas", profondeur: 2 },
+  { nom: "vase", x: 1760, y: 640, ancre: "bas", profondeur: 2 },
+  { nom: "vase", x: 380, y: 320, ancre: "bas", profondeur: 2 },
+  { nom: "pagode", x: 1836, y: 232, ancre: "bas", profondeur: 2 }
+];
+
 export default class niveau2 extends niveau1 {
   constructor() {
     super("niveau2"); // la clé de la scène
@@ -68,7 +139,9 @@ export default class niveau2 extends niveau1 {
   // --------------------------------------------------------------------------
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    this.load.image("fond_theatre", "./assets/map2_sombre.jpg");
+    this.load.image("fond_theatre", "./assets/map2_sombre.jpg"); // fond : le théâtre d'ombres chinoises (le dragon)
+    this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
+    this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
     this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json");
   }
@@ -78,7 +151,7 @@ export default class niveau2 extends niveau1 {
     this.largeurMonde = LARGEUR_MONDE;
     this.hauteurMonde = HAUTEUR_MONDE;
     this.couleurFond = 0x05070f;
-    this.listeTubas = []; // pas de Tuba dans ce niveau
+    this.listeTubas = TUBAS; // deux Tubas dans ce niveau
     this.listeCristaux = CRISTAUX;
     this.messageVictoire = "Niveau 2 terminé ! Retour au lobby...";
     this.niveauSuivant = "lobby";
@@ -96,30 +169,40 @@ export default class niveau2 extends niveau1 {
     this.avecTuilesPlateformes = false; // les passerelles fantômes utilisent le dessin de secours
 
     this.add.image(0, 0, "fond_theatre").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0);
+    // un léger voile sombre sur le fond : il reste visible, mais les plateformes et les héros ressortent mieux
+    this.add.rectangle(0, 0, LARGEUR_MONDE, HAUTEUR_MONDE, 0x000008, VOILE_FOND).setOrigin(0, 0).setDepth(0.5);
 
-    // Les calques, du plus loin au plus proche : les noms doivent être identiques à ceux de Tiled
+    // La carte Tiled ne sert plus qu'à deux choses : les ÉCHELLES (dessin) et les PLATEFORMES (leurs positions).
+    // Tout le reste du décor est dessiné avec les images rouges (voir poserDecor).
     const carte = this.add.tilemap("carte_theatre");
     const tuiles = carte.addTilesetImage("tileset_maestro", "tuiles_theatre");
-    const noms = [
-      "calque_background",
-      "calque_background2", // contient les échelles
-      "calque_background2_bis",
-      "Calque_deco",
-      "Calque_deco_bis",
-      "Calque_deco_ter",
-      "calque_plateformes"
-    ];
-    noms.forEach((nom, i) => carte.createLayer(nom, tuiles).setDepth(1 + i * 0.5));
+    const calqueEchelles = carte.createLayer("calque_background2", tuiles).setDepth(3);
+    calqueEchelles.forEachTile((tuile) => {
+      const estEchelle = tuile.properties != null && tuile.properties.estEchelle == true;
+      tuile.visible = estEchelle; // on ne garde que les tuiles d'échelle
+    });
+    const calque = carte.createLayer("calque_plateformes", tuiles).setVisible(false); // invisible : on lit seulement ses tuiles
+    this.calquePlateformes = calque;
 
+    // On enlève de la carte les plateformes fixes à remplacer par des plateformes mobiles (collisions)
+    PLATEFORMES_MOBILES.forEach((m) => {
+      for (let colonne = m.origine.x / TAILLE_TUILE; colonne < (m.origine.x + m.largeur) / TAILLE_TUILE; colonne++) {
+        for (let ligne = m.origine.y / TAILLE_TUILE; ligne < (m.origine.y + m.hauteur) / TAILLE_TUILE; ligne++) {
+          calque.removeTileAt(colonne, ligne);
+        }
+      }
+    });
+
+    this.poserDecor();
     this.creerSolidesDepuisLesTuiles(carte);
-    PALIERS.forEach((palier) => this.ajouterPlateforme(palier));
+    PALIERS.forEach((palier) => {
+      this.ajouterPlateforme(palier);
+      this.dessinerPlateforme(palier.x, palier.y, palier.width);
+    });
     this.echelles = ECHELLES;
 
     // Zone sombre + passerelles fantômes qui mènent à la lampe bonus
-    this.add
-      .rectangle(ZONE_SOMBRE.x, ZONE_SOMBRE.y, ZONE_SOMBRE.largeur, ZONE_SOMBRE.hauteur, 0x000008, 0.55)
-      .setOrigin(0, 0)
-      .setDepth(4);
+    this.creerOmbre();
     PASSERELLES.forEach((passerelle) => this.ajouterFantome(passerelle));
 
     // Ce que le niveau 1 attend de la carte
@@ -131,6 +214,203 @@ export default class niveau2 extends niveau1 {
     this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
     this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une lampe BONUS (+1 cœur)");
     this.ajouterIndice(1840, 110, "La porte s'ouvre quand tu as " + LAMPES_REQUISES + " lampes");
+    this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
+    this.ajouterIndice(330, 262, "Tambour : saute dessus pour rebondir très haut !");
+    this.ajouterIndice(640, 108, "Voie haute : planches fragiles, ne traîne pas !");
+
+    this.creerPlateformesMobiles();
+    this.creerVoieHaute();
+  }
+
+  // --------------------------------------------------------------------------
+  //  Le dessin : plateformes et décor rouges
+  // --------------------------------------------------------------------------
+  // Dessine une plateforme de la largeur voulue avec les images rouges. Une grande plateforme est découpée en
+  // plusieurs morceaux ; pour chaque morceau on choisit l'image dont la largeur est la plus proche.
+  // Renvoie un « conteneur » : un groupe d'images qu'on peut déplacer d'un coup (tween, tremblement…).
+  dessinerPlateforme(x, y, largeur) {
+    const images = [
+      { nom: "plat_long", largeur: 268 },
+      { nom: "plat_moy", largeur: 161 },
+      { nom: "plat_mid", largeur: 130 },
+      { nom: "plat_pet", largeur: 88 },
+      { nom: "console", largeur: 42 }
+    ];
+    const conteneur = this.add.container(x, y).setDepth(3);
+    const morceaux = Math.max(1, Math.ceil(largeur / 270)); // jamais plus de 270 px par morceau
+    const largeurMorceau = largeur / morceaux;
+    for (let i = 0; i < morceaux; i++) {
+      // l'image la plus proche de la largeur à couvrir
+      let choisie = images[0];
+      images.forEach((image) => {
+        if (Math.abs(image.largeur - largeurMorceau) < Math.abs(choisie.largeur - largeurMorceau)) {
+          choisie = image;
+        }
+      });
+      const dessin = this.add.image(i * largeurMorceau, 0, "decor2", choisie.nom).setOrigin(0, 0);
+      dessin.setDisplaySize(largeurMorceau, dessin.height); // on étire un peu en largeur, jamais en hauteur
+      conteneur.add(dessin);
+    }
+    return conteneur;
+  }
+
+  // La zone sombre : un voile noir aux bords FLOUS (dessiné sur un canvas avec un flou), pour qu'elle se fonde dans le décor
+  creerOmbre() {
+    const marge = 60;
+    const l = ZONE_SOMBRE.largeur + marge * 2;
+    const h = ZONE_SOMBRE.hauteur + marge * 2;
+    if (this.textures.exists("tex_ombre") == false) {
+      const toile = this.textures.createCanvas("tex_ombre", l, h);
+      const ctx = toile.getContext();
+      ctx.filter = "blur(26px)";
+      ctx.fillStyle = "rgba(0, 0, 10, 0.78)";
+      ctx.fillRect(marge, marge, ZONE_SOMBRE.largeur, ZONE_SOMBRE.hauteur);
+      toile.refresh();
+    }
+    this.add.image(ZONE_SOMBRE.x - marge, ZONE_SOMBRE.y - marge, "tex_ombre").setOrigin(0, 0).setDepth(4);
+  }
+
+  // Pose tous les éléments de décor de la liste DECOR (bannières, lanternes, piliers, rideaux, vases…)
+  poserDecor() {
+    DECOR.forEach((d) => {
+      const image = this.add.image(d.x, d.y, "decor2", d.nom);
+      image.setOrigin(0.5, d.ancre == "bas" ? 1 : 0).setDepth(d.profondeur);
+      if (d.lueur == true) {
+        // petite lueur orangée autour de la lanterne (même texture que la lampe du Détective)
+        const centreY = d.ancre == "bas" ? d.y - image.height * 0.8 : d.y + image.height * 0.45;
+        this.add.image(d.x, centreY, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setScale(0.55).setAlpha(0.35).setDepth(d.profondeur + 0.1);
+      }
+    });
+    // l'escalier du début de la route du milieu : un seul dessin (la carte en fait 5 petites marches)
+    this.add.image(448, 320, "decor2", "escalier").setOrigin(0, 0).setDisplaySize(160, 128).setDepth(3);
+  }
+
+  // Une zone invisible avec un corps qui ne bouge pas quand un héros le pousse
+  creerCorps(x, y, largeur, hauteur) {
+    const zone = this.add.zone(x + largeur / 2, y + hauteur / 2, largeur, hauteur);
+    this.physics.add.existing(zone);
+    zone.body.setAllowGravity(false);
+    zone.body.setImmovable(true);
+    return zone;
+  }
+
+  // --------------------------------------------------------------------------
+  //  Plateformes mobiles
+  // --------------------------------------------------------------------------
+  creerPlateformesMobiles() {
+    this.groupe_mobiles = this.physics.add.group({ allowGravity: false, immovable: true });
+    this.mobiles = [];
+    PLATEFORMES_MOBILES.forEach((m, i) => {
+      const plateforme = this.creerCorps(m.x, m.origine.y, m.largeur, m.hauteur);
+      this.groupe_mobiles.add(plateforme);
+      plateforme.body.setImmovable(true);
+      plateforme.body.setAllowGravity(false);
+      const dessin = this.dessinerPlateforme(m.x, m.origine.y, m.largeur);
+      // Le tween déplace EN MÊME TEMPS le corps (physique) et le dessin : de sa position de départ jusqu'à +dx / +dy,
+      // puis retour, à l'infini
+      this.tweens.add({
+        targets: [plateforme, dessin],
+        x: "+=" + m.dx,
+        y: "+=" + m.dy,
+        duration: m.dureeMs,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+      plateforme.dernierX = plateforme.x;
+      plateforme.dernierY = plateforme.y;
+      this.mobiles.push(plateforme);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  //  La voie haute : tambours, plateformes en hauteur, planches fragiles
+  // --------------------------------------------------------------------------
+  creerVoieHaute() {
+    // Plateformes fixes en hauteur : une zone solide (donc « plateforme sûre » pour le respawn) + le dessin de la carte
+    PLATEFORMES_HAUTES.forEach((p) => {
+      this.ajouterPlateforme({ x: p.x, y: p.y, width: LARGEUR_PLATEFORME_HAUTE, height: TAILLE_TUILE });
+      this.dessinerPlateforme(p.x, p.y, LARGEUR_PLATEFORME_HAUTE);
+    });
+
+    // Tambours : un petit décor + une zone de détection (physique statique)
+    this.groupe_tambours = this.physics.add.staticGroup();
+    TAMBOURS.forEach((t) => {
+      const tambour = this.groupe_tambours.create(t.x, t.y - 38, "decor2", "tambour");
+      tambour.setDepth(4);
+      tambour.refreshBody();
+    });
+
+    // Planches fragiles : des corps qui peuvent être désactivés puis réactivés
+    this.groupe_fragiles = this.physics.add.group({ allowGravity: false, immovable: true });
+    PLANCHES_FRAGILES.forEach((f) => {
+      const planche = this.creerCorps(f.x, f.y, LARGEUR_PLANCHE, 32);
+      this.groupe_fragiles.add(planche);
+      planche.body.setImmovable(true);
+      planche.body.setAllowGravity(false);
+      planche.dessin = this.dessinerPlateforme(f.x, f.y, LARGEUR_PLANCHE);
+      planche.tombe = false; // vrai dès que quelqu'un a marché dessus (elle est « en train de tomber »)
+    });
+  }
+
+  // Un héros qui marche sur une planche fragile : elle tremble, tombe, puis revient
+  planchePietinee(perso, planche) {
+    const dessus = perso.body.bottom <= planche.body.top + 8;
+    if (planche.tombe == true || dessus == false) {
+      return;
+    }
+    planche.tombe = true;
+    const x0 = planche.dessin.x;
+    this.tweens.add({ targets: planche.dessin, x: x0 + 2, duration: 50, yoyo: true, repeat: 4 }); // elle tremble
+    this.time.delayedCall(DELAI_CHUTE_MS, () => {
+      planche.body.enable = false; // plus solide : les héros tombent
+      this.tweens.add({ targets: planche.dessin, alpha: 0.15, duration: 200 });
+    });
+    this.time.delayedCall(DELAI_CHUTE_MS + DELAI_RETOUR_MS, () => {
+      planche.dessin.x = x0;
+      planche.body.enable = true;
+      planche.tombe = false;
+      this.tweens.add({ targets: planche.dessin, alpha: 1, duration: 300 });
+    });
+  }
+
+  // Un héros qui TOMBE sur un tambour rebondit très haut
+  rebondirSurTambour(perso, tambour) {
+    const surLeDessus = perso.body.velocity.y > 0 && perso.body.bottom < tambour.body.top + 16;
+    if (surLeDessus == false || perso.enEchelle == true) {
+      return;
+    }
+    perso.setVelocityY(FORCE_TAMBOUR);
+    this.tweens.add({ targets: tambour, scaleY: 0.7, duration: 70, yoyo: true }); // le tambour s'écrase un instant
+  }
+
+  // Un héros posé sur une plateforme mobile doit être EMPORTÉ avec elle, sinon la plateforme glisse sous ses pieds
+  emporterLesHeros() {
+    this.mobiles.forEach((plateforme) => {
+      const dx = plateforme.x - plateforme.dernierX;
+      const dy = plateforme.y - plateforme.dernierY;
+      this.persos.forEach((perso) => {
+        const corps = perso.body;
+        const surLaPlateforme =
+          Math.abs(corps.bottom - plateforme.body.top) < 6 &&
+          corps.right > plateforme.body.left &&
+          corps.left < plateforme.body.right &&
+          corps.velocity.y >= 0;
+        if (surLaPlateforme == true && perso.enEchelle == false) {
+          perso.x += dx;
+          perso.y += dy;
+        }
+      });
+      plateforme.dernierX = plateforme.x;
+      plateforme.dernierY = plateforme.y;
+    });
+  }
+
+  update(temps, delta) {
+    super.update(temps, delta);
+    if (this.fini == false) {
+      this.emporterLesHeros();
+    }
   }
 
   // Les tuiles marquées « estSolide » dans Tiled deviennent des rectangles invisibles solides.
@@ -168,12 +448,23 @@ export default class niveau2 extends niveau1 {
     });
 
     blocs.forEach((b) => {
-      this.ajouterPlateforme({
-        x: b.debut * TAILLE_TUILE,
-        y: b.ligneDebut * TAILLE_TUILE,
-        width: (b.fin - b.debut + 1) * TAILLE_TUILE,
-        height: (b.ligneFin - b.ligneDebut + 1) * TAILLE_TUILE
-      });
+      const x = b.debut * TAILLE_TUILE;
+      const y = b.ligneDebut * TAILLE_TUILE;
+      const largeur = (b.fin - b.debut + 1) * TAILLE_TUILE;
+      this.ajouterPlateforme({ x: x, y: y, width: largeur, height: (b.ligneFin - b.ligneDebut + 1) * TAILLE_TUILE });
+
+      // Le dessin : seulement pour le DESSUS d'une plateforme (pas pour les rangées en dessous) et pas pour
+      // les marches de l'escalier (dessiné en un seul morceau dans poserDecor)
+      let tuileAuDessus = false;
+      for (let colonne = b.debut; colonne <= b.fin; colonne++) {
+        if (estSolide(b.ligneDebut - 1, colonne) == true) {
+          tuileAuDessus = true;
+        }
+      }
+      const estUneMarche = largeur <= 32 && x >= 448 && x < 608 && y >= 320 && y < 480;
+      if (tuileAuDessus == false && estUneMarche == false) {
+        this.dessinerPlateforme(x, y, largeur);
+      }
     });
   }
 
@@ -200,11 +491,15 @@ export default class niveau2 extends niveau1 {
     this.groupe_lampes = this.physics.add.group({ allowGravity: false });
     POSITIONS_LAMPES.forEach((position) => this.ajouterLampe(position[0], position[1], false));
     this.ajouterLampe(LAMPE_BONUS.x, LAMPE_BONUS.y, true);
+    this.ajouterLampe(LAMPE_VOIE_HAUTE.x, LAMPE_VOIE_HAUTE.y, true); // 2e lampe bonus, au bout de la voie haute
 
     // La porte de sortie (même image que le niveau 1), fermée au début
-    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie", 0);
+    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie_rouge", 0);
     this.porte.setDepth(3);
     this.porteOuverte = false;
+    if (this.anims.exists("porte_ouvre_rouge") == false) {
+      this.anims.create({ key: "porte_ouvre_rouge", frames: this.anims.generateFrameNumbers("porte_sortie_rouge", { start: 0, end: 5 }), frameRate: 8, repeat: 0 });
+    }
   }
 
   ajouterLampe(x, y, bonus) {
@@ -220,6 +515,15 @@ export default class niveau2 extends niveau1 {
 
   // Ramasser les lampes, franchir la porte
   collisionsObjets() {
+    // Tambours (rebond) et planches fragiles
+    this.physics.add.overlap(this.persos, this.groupe_tambours, this.rebondirSurTambour, null, this);
+    this.physics.add.collider(this.persos, this.groupe_fragiles, this.planchePietinee, function (perso) {
+      return perso.enEchelle != true;
+    }, this);
+    // Les héros marchent sur les plateformes mobiles (sauf s'ils sont sur une échelle)
+    this.physics.add.collider(this.persos, this.groupe_mobiles, null, function (perso) {
+      return perso.enEchelle != true;
+    });
     this.physics.add.overlap(this.persos, this.groupe_lampes, this.ramasserLampe, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this);
   }
@@ -239,7 +543,7 @@ export default class niveau2 extends niveau1 {
     this.texteFragment.setText(Math.min(this.lampesRamassees, LAMPES_REQUISES) + " / " + LAMPES_REQUISES);
     if (this.lampesRamassees == LAMPES_REQUISES) {
       this.porteOuverte = true;
-      this.porte.anims.play("porte_ouvre"); // la porte s'ouvre
+      this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre
       this.iconeFragment.clearTint();
       this.afficherMessage("Assez de lampes ! La porte est ouverte, rejoins-la en haut à droite.", 4000);
     } else if (this.lampesRamassees < LAMPES_REQUISES) {
