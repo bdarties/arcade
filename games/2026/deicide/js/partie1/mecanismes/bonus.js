@@ -5,7 +5,7 @@
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
 import { volumeEffets } from "../systemes/sons.js"; // le bip suit le réglage des bruitages
 import { textePoints, clignoter } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
-import { PV_MAX_BARRE } from "../personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
+import { PV_MAX_BARRE } from "../personnage/barre_de_vie.js"; // nombre de cellules de la barre (le maximum de PV)
 
 const CHANCE_PV = 0.3; // 30 % de chances qu'un ennemi tué laisse un PV
 const ECHELLE = 4; // la croix fait 9 x 9 pixels : 36 px à l'écran

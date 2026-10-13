@@ -168,7 +168,7 @@ export function plaque(scene, w, h, creux = true) { // renvoie la clé de la tex
 // ---------------------------------------------------------------------------------------------
 
 export default class classement extends Phaser.Scene {
-    constructor(cle = "classement") { super({ key: cle }); } // (la partie 2 en fait un faux écran de victoire : voir partie2/fauxPantheon.js)
+    constructor(cle = "classement") { super({ key: cle }); } // (la partie 2 en fait un faux écran de victoire : voir partie2/faux_pantheon.js)
 
     init(donnees) { // reçoit les données passées par scene.start
         this.tempsBrutMs = donnees.tempsBrutMs ?? 0;

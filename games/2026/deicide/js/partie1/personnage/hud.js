@@ -1,4 +1,4 @@
-// HUD du joueur : barre de vie (barreDeVie.js), jauge de dash, score et chrono.
+// HUD du joueur : barre de vie (barre_de_vie.js), jauge de dash, score et chrono.
 //
 // Tout est dessiné pixel par pixel avec la palette du Bot Wheel, comme la barre de vie. Le reste est
 // fabriqué en code au moment de creerHud (aucune image en plus à charger).
@@ -16,10 +16,10 @@
 //   quand le score change     : this.hud.ajouterScore(100) / this.hud.majScore(n)
 //   pour repartir de 00:00    : this.hud.reinitialiserChrono()
 
-import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE, ECHELLE_HUD, HAUTEUR_BARRE } from "./barreDeVie.js";
+import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE, ECHELLE_HUD, HAUTEUR_BARRE } from "./barre_de_vie.js";
 import { rechargeDash } from "./personnage.js";
 
-const ECHELLE = ECHELLE_HUD; // le HUD est plus gros que le robot (x2) pour rester lisible : on le règle dans barreDeVie.js
+const ECHELLE = ECHELLE_HUD; // le HUD est plus gros que le robot (x2) pour rester lisible : on le règle dans barre_de_vie.js
 const ECHELLE_TOUCHES = 2; // l'aide des touches, à droite, est plus petite que le reste du HUD
 const MARGE = 24; // écart avec les bords de l'écran
 const ECART = 10; // espace entre deux éléments empilés

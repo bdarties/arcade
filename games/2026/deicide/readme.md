@@ -7,7 +7,7 @@ Plateformer « ombre et lumière » (Phaser 3.60) — SAÉ borne d'arcade. Le ro
 ```
 index.html, index.js    le point de départ : la configuration du jeu et la liste des scènes
 game.json               la fiche du jeu pour le portail de la borne
-assets/                 images, sons et cartes Tiled (maps/ : voir LISEZ-MOI.md pour dessiner un niveau)
+assets/                 images, sons et cartes Tiled (maps/ : voir lisez-moi.md pour dessiner un niveau)
 outils/                 scripts Python qui fabriquent des cartes (niveau 2 d'exemple, arènes)
 js/
   partie1/              le jeu JUSQU'À LA FIN DU 1er BOSS : un jeu complet, qui s'arrête à la défaite du Dieu de la Lumière
@@ -20,9 +20,9 @@ js/
   partie2/              la SUITE, après la réponse OUI au choix du panthéon (facultative, voir « La partie 2 » plus bas)
     niveau2.js, niveau3.js, vide.js, faisceaux.js, poursuite.js   la fuite (niveau 2) et l'arène du dernier combat (niveau 3)
     fuite.js            le Dieu s'enrage, brise le mur de l'arène, le robot fuit vers le niveau 2
-    bossFinal.js, attaques.js   le boss du dernier combat et ses attaques en plus (lasers, geysers, spirale, piqué)
-    formeFinale.js, finDeCombat.js, fauxPantheon.js   la fausse fin (faux écran de victoire qui se fissure) et la forme finale du boss (phase 4)
-    musique.js, astuce.js, testsBorne.js   la musique du dernier combat, un conseil, les touches de test F9 et F10
+    boss_final.js, attaques.js   le boss du dernier combat et ses attaques en plus (lasers, geysers, spirale, piqué)
+    forme_finale.js, fin_de_combat.js, faux_pantheon.js   la fausse fin (faux écran de victoire qui se fissure) et la forme finale du boss (phase 4)
+    musique.js, astuce.js, tests_borne.js   la musique du dernier combat, un conseil, les touches de test F9 et F10
 ```
 
 Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour comprendre le jeu, lis dans cet ordre : `index.js`, `js/partie1/scenes/niveau.js` (comment un niveau se construit), `personnage/personnage.js`, puis les scènes une par une.
@@ -32,7 +32,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 - **ajouter un niveau** : copier `js/partie2/niveau2.js`, changer la clé de scène et la config (carte, musique, départ), charger la carte dans `js/partie2/index.js` (chargerPartie2), ajouter la scène dans `scenesPartie2`.
 - **poser un ennemi** : dans Tiled, ajouter un point sur le calque `archer`, `mage` ou `orc` de la carte (pas de code à écrire).
 - **ajouter une salle de combat** : ajouter un bloc dans `SALLES_NIVEAU1` de `js/partie1/mecanismes/salles.js` (les numéros de ligne sont ceux de la carte dans Tiled).
-- **changer la difficulté d'un boss** : les PV, les pauses et les attaques du boss du niveau 1 sont dans `PROFILS`, en haut de `js/partie1/ennemis/boss.js` ; celles du boss final sont dans `js/partie2/bossFinal.js`.
+- **changer la difficulté d'un boss** : les PV, les pauses et les attaques du boss du niveau 1 sont dans `PROFILS`, en haut de `js/partie1/ennemis/boss.js` ; celles du boss final sont dans `js/partie2/boss_final.js`.
 - **régler la poursuite du niveau 2** : les vitesses et les délais sont les constantes en haut de `js/partie2/poursuite.js`.
 
 ## Commandes
@@ -49,7 +49,7 @@ Touches de test, à retirer avant la borne : F4 (l'écran de victoire), F8 (tél
 
 ## Les explications des choix
 
-Le fichier `DEVLOG.md` explique pourquoi chaque chose est faite ainsi.
+Le fichier `devlog.md` explique pourquoi chaque chose est faite ainsi.
 
 ## La partie 2 (facultative)
 
@@ -61,4 +61,4 @@ par quelques tables que la partie 1 expose : `PROFILS` et `ATTAQUES` (les boss e
 Pour que le jeu s'arrête à la fin du 1er boss, il suffit de retirer de `index.js` les lignes qui parlent de la partie 2 (`installerPartie2`, `scenesPartie2`, `activerTestsPartie2`) :
 la réponse OUI mène alors directement à l'écran de fin. Les fichiers de la partie 2 peuvent rester dans le dossier, ils ne sont plus chargés.
 
-Numéro de version : v1, v2... affiché en bas à droite du menu, augmenté de 1 à chaque pull request : `python3 outils/version.py` puis commiter `js/version.js` (voir DEVLOG.md).
+Numéro de version : v1, v2... affiché en bas à droite du menu, augmenté de 1 à chaque pull request : `python3 outils/version.py` puis commiter `js/version.js` (voir devlog.md).

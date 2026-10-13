@@ -4,7 +4,7 @@ import { traineeDash } from "../systemes/effets.js"; // copies fantômes derriè
 // Personnage principal : le robot "Bot Wheel"
 //
 // Les images du Bot Wheel sont des bandes verticales : chaque frame fait 117 x 26 pixels
-// et les frames sont empilées les unes sous les autres (assets/Spritesheet/Player/Bot Wheel/).
+// et les frames sont empilées les unes sous les autres (assets/spritesheet/player/bot_wheel/).
 // Le robot n'occupe qu'un petit morceau de la frame (le reste sert aux effets : poussière, tir, gaz).
 // Du coup l'ancrage du sprite et la hitbox sont réglés à la main (voir ANIMATIONS) :
 // c'est ce qui permet de retourner le robot à gauche sans qu'il "saute" de côté.
@@ -28,7 +28,7 @@ import { traineeDash } from "../systemes/effets.js"; // copies fantômes derriè
 // Les balles sont rangées dans scene.tirsJoueur (le groupe est créé au premier tir s'il n'existe pas)
 // et s'arrêtent sur scene.groupe_plateformes quand la scène en a un.
 
-const DOSSIER = "./assets/Spritesheet/Player/Bot Wheel/";
+const DOSSIER = "./assets/spritesheet/player/bot_wheel/";
 const PREFIXE = "botwheel_"; // évite les conflits avec les autres textures / animations du jeu
 const LARGEUR = 117; // taille d'une frame dans les bandes
 const HAUTEUR = 26;
@@ -37,7 +37,7 @@ const CENTRE_X = 23; // colonne du centre du torse dans la frame (quand le robot
 const ECHELLE = 2; // le robot est petit : on l'agrandit x2 (pixel art)
 const FPS = 10; // le fichier aseprite donne 100 ms par image pour toutes les animations
 const VITESSE = 260; // vitesse de marche (300 avant : un peu trop rapide)
-export const VITESSE_JOUEUR = VITESSE; // (lanterneVivante.js s'en sert : une lanterne vivante va à la moitié de cette vitesse)
+export const VITESSE_JOUEUR = VITESSE; // (lanterne_vivante.js s'en sert : une lanterne vivante va à la moitié de cette vitesse)
 const BONUS_VITESSE_BOOST = 0.1; // +10 % de vitesse de marche par niveau de boost (le boost vient des lanternes vivantes, voir boost.js)
 const DELAI_RAFALE = 70; // ms entre deux balles d'une rafale (chaque niveau de boost ajoute une balle à chaque tir)
 const SAUT = 600; // vitesse de décollage : avec 1000 de gravité à la montée, il monte d'environ 180 px comme avant, mais en 0,6 s au lieu de 1,1 s
@@ -63,8 +63,8 @@ const PORTEE_AUTO = 700; // distance max (en px) à laquelle la visée auto cher
 const ANGLE_AUTO = 80; // écart max (en degrés) avec l'horizontale : presque tout ce qui est à gauche ou à droite du robot, même très haut ou très bas
 const DUREE_REGARD_TIR = 250; // ms pendant lesquelles le robot reste tourné vers l'ennemi visé, même si on tient l'autre flèche
 const BOUCHE = { x: 40, y: 10 }; // où naît la balle dans la frame de tir : le centre de la boule de flash du canon
-// Les visées vers le haut et le bas (bande "shoot aim.png") ont été fabriquées à partir de "shoot without FX.png" et
-// "shoot FX.png" : le fusil et les poings sont tournés de 45° ou 90° autour du poing avant, la flamme les suit, le haut
+// Les visées vers le haut et le bas (bande "shoot_aim.png") ont été fabriquées à partir de "shoot_without_fx.png" et
+// "shoot_fx.png" : le fusil et les poings sont tournés de 45° ou 90° autour du poing avant, la flamme les suit, le haut
 // du torse est refait. Leurs frames sont plus hautes (117 x 58) car la flamme dépasse du dessin d'origine :
 // 16 lignes ajoutées au-dessus du robot et 16 en dessous.
 const HAUTEUR_VISEE = 58;
@@ -103,19 +103,19 @@ const CORPS_MORT = { y: 14, w: 10, h: 11 }; // robot à terre
 //   recul            : vitesse vers le haut (px/s) que le tir donne au robot (aucun par défaut)
 const VISEE = { hauteur: HAUTEUR_VISEE, haut: MARGE_HAUT_VISEE, repeat: 0, corps: CORPS_DEBOUT, debut: tirer };
 const ANIMATIONS = {
-    repos: { fichier: "static idle.png", images: [0], repeat: -1, corps: CORPS_REPOS },
-    marche: { fichier: "move with FX.png", images: serie(8), repeat: -1, corps: CORPS_DEBOUT },
+    repos: { fichier: "static_idle.png", images: [0], repeat: -1, corps: CORPS_REPOS },
+    marche: { fichier: "move_with_fx.png", images: serie(8), repeat: -1, corps: CORPS_DEBOUT },
     // pas d'anim de saut dans la feuille : on fige une image de la marche, sans la poussière
-    saut: { fichier: "move without FX.png", images: [3], repeat: -1, corps: CORPS_DEBOUT },
+    saut: { fichier: "move_without_fx.png", images: [3], repeat: -1, corps: CORPS_DEBOUT },
     // PAS d'animation de mur dans les feuilles : en attendant, la roue qui tourne (bande "saut") joue en accéléré. Pour une vraie pose,
     // remplacer bande par fichier et images.
     mur: { bande: "saut", images: serie(8), repeat: -1, fps: 20, corps: CORPS_DEBOUT },
     reveil: { fichier: "wake.png", images: serie(5), repeat: 0, corps: CORPS_DEBOUT, bloquant: true },
     charge: { fichier: "charge.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT },
-    tir: { fichier: "shoot with FX.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT, debut: tirer },
-    // les 4 autres visées partagent une seule bande, "shoot aim.png" (4 images par visée, retournées pour viser à gauche)
+    tir: { fichier: "shoot_with_fx.png", images: serie(4), repeat: 0, corps: CORPS_DEBOUT, debut: tirer },
+    // les 4 autres visées partagent une seule bande, "shoot_aim.png" (4 images par visée, retournées pour viser à gauche)
     // bouche = où se trouve le centre de la flamme dans la frame (calculé comme BOUCHE, en suivant la rotation du canon)
-    tir_haut_diag: { ...VISEE, fichier: "shoot aim.png", images: [0, 1, 2, 3], visee: { x: DIAGONALE, y: -DIAGONALE }, bouche: { x: 38, y: 14 } },
+    tir_haut_diag: { ...VISEE, fichier: "shoot_aim.png", images: [0, 1, 2, 3], visee: { x: DIAGONALE, y: -DIAGONALE }, bouche: { x: 38, y: 14 } },
     tir_haut: { ...VISEE, bande: "tir_haut_diag", images: [4, 5, 6, 7], visee: { x: 0, y: -1 }, bouche: { x: 27, y: 10 } },
     tir_bas_diag: { ...VISEE, bande: "tir_haut_diag", images: [8, 9, 10, 11], visee: { x: DIAGONALE, y: DIAGONALE }, bouche: { x: 40, y: 42 }, recul: RECUL_BAS_DIAG },
     tir_bas: { ...VISEE, bande: "tir_haut_diag", images: [12, 13, 14, 15], visee: { x: 0, y: 1 }, bouche: { x: 29, y: 48 }, recul: RECUL_BAS },
@@ -135,8 +135,8 @@ export function chargerPersonnage(scene) {
     for (const [nom, anim] of Object.entries(ANIMATIONS)) {
         if (anim.fichier) bande(nom, anim.fichier, anim.hauteur);
     }
-    bande("dash_robot", "GAS dash with FX.png"); // le robot (sa dernière image est sans fumée)
-    bande("dash_fumee", "GAS dash FX.png"); // la fumée seule
+    bande("dash_robot", "gas_dash_with_fx.png"); // le robot (sa dernière image est sans fumée)
+    bande("dash_fumee", "gas_dash_fx.png"); // la fumée seule
 }
 
 // à appeler dans create() de la première scène : crée les animations à partir des bandes (et les textures de la balle et du dash)
@@ -466,7 +466,7 @@ function chercherCible(joueur, x, y) {
     if (scene.ennemis) scene.ennemis.getChildren().forEach(ennemi => { if (ennemi.etat !== "mort") essayer(ennemi); });
     // les lanternes qui ne sont pas encore éteintes
     if (scene.lanternes) scene.lanternes.getChildren().forEach(lanterne => { if (!lanterne.eteinte) essayer(lanterne); });
-    // les lanternes vivantes (voir lanterneVivante.js)
+    // les lanternes vivantes (voir lanterne_vivante.js)
     if (scene.lanternesVivantes) scene.lanternesVivantes.getChildren().forEach(lanterne => { if (lanterne.active) essayer(lanterne); });
     // le boss (voir boss.js)
     if (scene.boss && scene.boss.active && (scene.boss.etat === "combat" || scene.boss.etat === "attaque")) essayer(scene.boss);

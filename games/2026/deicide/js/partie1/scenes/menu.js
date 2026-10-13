@@ -16,7 +16,7 @@ const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLO
 const TOUCHES_JOUEUR2 = ["R", "T", "Y", "F", "G", "H", "N"];
 
 // Le robot de l'image est un Bot Wheel dessiné avec des pixels de 10,4 px (mesuré sur l'image). Pour que la flamme du tir
-// tombe pile au bout de son canon, on pose les images de "shoot FX.png" avec la même taille de pixel.
+// tombe pile au bout de son canon, on pose les images de "shoot_fx.png" avec la même taille de pixel.
 const PIXEL = 10.4; // taille d'un pixel du robot dans l'image du menu
 const CANON = { x: 330, y: 584 }; // le bout du canon du robot dans l'image
 // le centre de la flamme : 11,5 pixels devant le bout du canon (comme dans l'image du tir)
@@ -41,7 +41,7 @@ export default class menu extends Phaser.Scene {
     this.load.image("fond_menu", "./assets/images/menu/fond_menu.png"); // l'image du menu
     this.load.spritesheet("bouton_jouer", "./assets/images/menu/bouton_jouer.png", { frameWidth: 104, frameHeight: 44 }); // le bouton Jouer
     // la flamme du canon, seule (4 images)
-    this.load.spritesheet("menu_flamme_tir", "./assets/Spritesheet/Player/Bot Wheel/shoot FX.png", { frameWidth: 117, frameHeight: 26 });
+    this.load.spritesheet("menu_flamme_tir", "./assets/spritesheet/player/bot_wheel/shoot_fx.png", { frameWidth: 117, frameHeight: 26 });
     chargerJeu(this); // tout le reste du jeu
   }
 

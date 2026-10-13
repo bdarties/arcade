@@ -8,14 +8,14 @@ const DOSSIER = "./assets/sons/";
 
 export function chargerMusiqueDernierBoss(scene) {
     if (scene.cache.audio.exists("cri_boss")) return; // (déjà chargés : le niveau a déjà été joué)
-    scene.load.audio("cri_boss", [DOSSIER + "cri_boss.ogg", DOSSIER + "cri_boss.mp3"]); // le cri du boss quand il revient (fauxPantheon.js) : 2,5 s, 41 Ko
+    scene.load.audio("cri_boss", [DOSSIER + "cri_boss.ogg", DOSSIER + "cri_boss.mp3"]); // le cri du boss quand il revient (faux_pantheon.js) : 2,5 s, 41 Ko
     scene.load.audio("musique_boss2_intro", [DOSSIER + "musique_boss2_intro.ogg", DOSSIER + "musique_boss2_intro.mp3"]);
     scene.load.audio("musique_boss2_boucle", [DOSSIER + "musique_boss2_boucle.ogg", DOSSIER + "musique_boss2_boucle.mp3"]);
 }
 
 export function installerMusique() { // à appeler une fois, avant la création du jeu
     MUSIQUES_BOSS["2"] = {
-        volume: 0.18, // 7 dB plus forte que la musique du premier boss (mesure en LUFS, voir DEVLOG.md) : volume de base plus bas
+        volume: 0.18, // 7 dB plus forte que la musique du premier boss (mesure en LUFS, voir devlog.md) : volume de base plus bas
         // un battement = 531 ms. Son pas est la double-croche (133 ms) : plus fin que la croche (265 ms), pour garder les annonces d'attaque courtes tout en restant en rythme
         pas: 60000 / 113 / 4,
         ton: 200, // un ton au-dessus de ré mineur : les bruitages accordés prennent +200 centièmes de ton

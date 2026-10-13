@@ -26,7 +26,7 @@ import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : régla
 import { preparerBonus } from "../mecanismes/bonus.js"; // les PV que lâchent les ennemis
 import { montrerGuide } from "../systemes/guide.js"; // le but, affiché une fois au début de la partie
 import { preparerBoost } from "../mecanismes/boost.js"; // le boost du robot (rafale, vitesse, reflet)
-import { preparerLanternesVivantes } from "../ennemis/lanterneVivante.js"; // les lanternes ailées qui donnent le boost
+import { preparerLanternesVivantes } from "../ennemis/lanterne_vivante.js"; // les lanternes ailées qui donnent le boost
 
 const PV_DEPART = 5; // PV du robot au début d'un niveau
 const DUREE_GRACE = 2500; // ms d'invincibilité quand le niveau (re)commence : réapparaître ne doit pas coûter un PV tout de suite
