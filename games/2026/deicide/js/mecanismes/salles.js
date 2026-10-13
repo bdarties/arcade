@@ -148,16 +148,16 @@ function ouvrirSalle(scene, salle) { // le dernier ennemi est mort : la sortie s
 // d'un coup sur lui (startFollow le fait sans transition), elle descendrait puis remonterait quand il va vers la sortie. On lui laisse donc
 // une « zone morte » autour du milieu de la salle (la caméra
 // ne bouge que si le robot en sort), puis on la rétrécit en douceur : la caméra revient se centrer sur le robot sans à-coup.
-function reprendreCamera(scene) {
+export function reprendreCamera(scene) { // (exportée pour pouvoir la tester seule)
     const camera = scene.cameras.main;
-    const zone = { l: 520, h: 560 }; // taille de la zone morte, en px
+    const zone = { l: 400, h: 260 }; // taille de la zone morte, en px (plus petite qu'avant : la caméra ne reste plus longtemps en dessous du robot)
     // startFollow (et setDeadzone quand la caméra suit déjà) place la caméra d'un coup sur le robot : c'était le saut brutal. On retient où
     // elle est...
     const { scrollX, scrollY } = camera;
     const milieuX = camera.midPoint.x;
     const milieuY = camera.midPoint.y;
     camera.setDeadzone(zone.l, zone.h); // (la zone morte d'abord, tant que la caméra ne suit rien : elle ne saute pas)
-    camera.startFollow(scene.player, false, 0.1, 0.1);
+    camera.startFollow(scene.player, false, 0.22, 0.22); // suit vite (0,1 avant : la caméra traînait sous le robot qui montait)
     camera.midPoint.set(milieuX, milieuY);
     camera.setScroll(scrollX, scrollY); // ...et on la remet là : elle rejoindra le robot en douceur
     // La zone morte se rétrécit quand le robot se rapproche du milieu de l'écran (il est monté vers la sortie), et au pire après 5 s. Elle
@@ -165,15 +165,15 @@ function reprendreCamera(scene) {
     const debut = scene.time.now;
     let retrait = false;
     const majCamera = () => {
-        const proche = Math.abs(scene.player.y - camera.midPoint.y) < 90;
-        if (!retrait && (proche || scene.time.now - debut > 5000)) retrait = true;
-        if (retrait) { zone.l *= 0.92; zone.h *= 0.92; }
+        const proche = Math.abs(scene.player.y - camera.midPoint.y) < 140;
+        if (!retrait && (proche || scene.time.now - debut > 1500)) retrait = true;
+        if (retrait) { zone.l *= 0.85; zone.h *= 0.85; }
         if (zone.l < 6) { // la zone est presque nulle : on la retire, le suivi du niveau reprend (le robot est déjà au centre)
             scene.events.off(Phaser.Scenes.Events.UPDATE, majCamera);
             camera.setDeadzone();
             // le suivi redevient « collé » au robot petit à petit (lerp de 0,1 à 1) : passer d'un coup à 1 faisait un petit à-coup
             const rampe = () => {
-                const lerp = Math.min(1, camera.lerp.x + 0.08);
+                const lerp = Math.min(1, camera.lerp.x + 0.15);
                 camera.setLerp(lerp, lerp);
                 if (lerp >= 1) scene.events.off(Phaser.Scenes.Events.UPDATE, rampe);
             };

@@ -1,7 +1,7 @@
 // raccourcis.js : les raccourcis clavier et borne : le reset (qui reste dans le jeu fini) et les raccourcis de test (à retirer avant la borne).
 // Appelé une fois par index.js (activerRaccourcis).
 //
-// DEUX BOUTONS MAINTENUS 1,5 s (une barre en bas de l'écran se remplit) :
+// DEUX BOUTONS MAINTENUS 0,5 s (une barre en bas de l'écran se remplit) :
 //   - C + F (P et ;)           : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
 //                                l'accueil ou l'écran de fin : retour à l'accueil. La borne n'est pas relancée.
 //   - Z + B (select J1 + select J2) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
@@ -18,8 +18,8 @@ const COMBOS = [
     { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // P (bouton C) et ; (bouton F)
     { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
 ];
-const DUREE = 1500; // ms à maintenir les deux boutons
-const DEBUT_AFFICHAGE = 300; // ms avant d'afficher la barre (un appui très court ne montre rien)
+const DUREE = 500; // ms à maintenir les deux boutons
+const DEBUT_AFFICHAGE = 120; // ms avant d'afficher la barre (un appui très court ne montre rien)
 const CODES = COMBOS.flatMap((combo) => combo.touches);
 const identifiant = (evenement) => (evenement.code === "Semicolon" ? "Semicolon" : evenement.keyCode); // la touche ; (ou M en AZERTY) par sa position, les autres par leur code
 
