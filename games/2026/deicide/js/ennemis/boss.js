@@ -45,12 +45,12 @@ const PROFILS = {
     soldat: {
         // à 0 PV il ne meurt pas : il s'enrage, le mur de l'arène se brise et on fuit vers le niveau 2 (voir arene.js et poursuite.js) ;
         // plus court que l'ancien boss final : 2 phases seulement
+        pantheon: true, // à 0 PV, le joueur choisit : continuer (fuite du niveau 2, dernier combat) ou arrêter la partie ici (voir proposerPantheon)
         pv: 80, seuils: [50, -1], echelle: ECHELLE, teinte: null, nom: "DIEU DE LA LUMIÈRE", cause: "le Dieu de la Lumière", points: 1000, enrage: true,
         pauses: [2000, 1500, 1500],
         attaques: [["orbes", "colonne", "pluie", "lanternes"], ["orbes", "colonne", "pluie", "lanternes", "balayage", "nova"], []]
     },
     soldat2: { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
-        pantheon: true, // à la fin de la phase 1, le joueur choisit : continuer (phases 2 et 3) ou arrêter la partie (voir proposerPantheon)
         pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1750, 1300, 250], // des attaques beaucoup plus rapprochées : en phase 3, presque sans répit
         phase3Dure: true, // la phase 3 est bien plus dure (voir dure) : attaques annoncées plus vite, très peu de pause, plus d'orbes, orbes doublées, 7 colonnes
@@ -403,7 +403,7 @@ function majZones(scene) { // à chaque image
 function toucherBoss(scene, boss, tir) {
     tir.destroy();
     // intouchable en apparaissant, pendant un changement de phase, et mort
-    if (boss.etat === "apparition" || boss.etat === "transition" || boss.etat === "mort" || boss.etat === "enrage") return;
+    if (boss.etat === "apparition" || boss.etat === "transition" || boss.etat === "mort" || boss.etat === "enrage" || boss.etat === "choix" || boss.etat === "fin") return;
     boss.pv -= 1;
     effets.flash(boss, 0xffffff, 60); // il devient blanc 60 ms
     effets.eclats(scene, tir.x, tir.y, ECLATS_BLANC[0], 6, ECLATS_BLANC[1]);
@@ -411,7 +411,7 @@ function toucherBoss(scene, boss, tir) {
     gagnerPoints(scene, POINTS_PAR_TIR, boss.x, boss.y - 120);
     majBarre(scene, boss);
     // à 0 PV le Dieu du niveau 1 ne meurt pas : il s'enrage ; le dernier boss, lui, meurt
-    if (boss.pv <= 0) { if (profil.enrage) enrager(scene, boss); else mourir(scene, boss); return; }
+    if (boss.pv <= 0) { if (profil.enrage) { if (profil.pantheon) proposerPantheon(scene, boss); else enrager(scene, boss); } else mourir(scene, boss); return; }
     const phase = boss.pv <= profil.seuils[1] ? 2 : boss.pv <= profil.seuils[0] ? 1 : 0;
     if (phase > boss.phase) changerDePhase(scene, boss, phase);
 }
@@ -437,7 +437,6 @@ function changerDePhase(scene, boss, phase) {
     lacherPV(scene, 640, boss.y + 60); // une croix de soin tombe au milieu de l'arène
     const texte = scene.add.text(640, 120, "PHASE " + (phase + 1), { fontFamily: "monospace", fontSize: "28px", color: "#f5f0f8", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(104);
     scene.tweens.add({ targets: texte, alpha: 0, y: 100, duration: 1600, delay: 400, onComplete: () => texte.destroy() });
-    if (profil.pantheon && phase === 1) scene.time.delayedCall(900, () => proposerPantheon(scene, boss)); // l'éclair passe, puis le choix
     scene.time.delayedCall(DUREE_TRANSITION, () => {
         if (boss.etat !== "transition") return;
         boss.play("boss_idle");
@@ -446,16 +445,22 @@ function changerDePhase(scene, boss, phase) {
     });
 }
 
-// Fin de la phase 1 du dernier boss : « Si tu veux entrer dans le panthéon, affronte la mort » (scène pantheon.js, posée par-dessus le niveau).
+// Le Soldat est battu : « Si tu veux entrer dans le panthéon, affronte la mort » (scène pantheon.js, posée par-dessus le niveau).
+// OUI : il s'enrage et la suite commence (niveau 2, dernier combat). NON : la partie s'arrête ici.
 function proposerPantheon(scene, boss) {
-    if (boss.etat !== "transition" || scene.mort || scene.partieFinie) return; // le robot est mort ou la partie est finie entre-temps
-    scene.scene.launch("pantheon", { origine: scene.scene.key, refuser: () => refuserPantheon(scene, boss) });
-    scene.scene.pause(); // fige le niveau : boss, tirs et chrono attendent la réponse
+    nettoyerCombat(scene, boss);
+    boss.etat = "choix"; // intouchable, plus d'attaque
+    scene.cameras.main.flash(300, 255, 242, 192);
+    scene.time.delayedCall(900, () => { // l'éclair passe, puis le choix
+        if (scene.mort || scene.partieFinie) return; // le robot est mort ou la partie est finie entre-temps
+        scene.scene.launch("pantheon", { origine: scene.scene.key, accepter: () => enrager(scene, boss), refuser: () => refuserPantheon(scene, boss) });
+        scene.scene.pause(); // fige le niveau : le chrono attend la réponse
+    });
 }
 
-function refuserPantheon(scene, boss) { // NON : le combat s'arrête, la partie se termine (sans le bonus de mort du boss)
-    boss.etat = "fin"; // ni attaque ni fin de la transition : le boss ne fait plus rien
-    nettoyerCombat(scene, boss);
+function refuserPantheon(scene, boss) { // NON : la partie se termine ici (le boss est battu : il garde son bonus)
+    boss.etat = "fin"; // le boss ne fait plus rien
+    gagnerPoints(scene, profil.points, boss.x, boss.y - 120);
     boss.body.enable = false;
     if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true);
     musiqueNiveau(scene); // le metal s'arrête

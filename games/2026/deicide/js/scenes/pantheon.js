@@ -1,6 +1,6 @@
-// pantheon.js : le choix proposé quand le Dieu final passe en phase 2 : « Si tu veux entrer dans le panthéon, affronte la mort. »
+// pantheon.js : le choix proposé quand le Dieu du niveau 1 est battu : « Si tu veux entrer dans le panthéon, affronte la mort. »
 // Comme la pause, c'est une scène posée PAR-DESSUS le niveau : le niveau est figé (boss, chrono, tirs) pendant que le joueur choisit.
-// OUI : le combat reprend (phases 2 et 3). NON : la partie s'arrête là et on va au classement (voir boss.js, refuserPantheon).
+// OUI : la suite du jeu commence (le Dieu s'enrage, fuite du niveau 2). NON : la partie s'arrête là et on va au classement (voir boss.js, refuserPantheon).
 import { rattraperHorloge } from "./pause.js"; // pour que le niveau « ne sente pas » le temps passé à choisir
 
 const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // les mêmes que le menu pause
@@ -14,7 +14,7 @@ const CADRE = 0x5f4f6e;
 const FOND_PANNEAU = 0x15111a;
 
 const CHOIX = ["OUI", "NON"];
-const EXPLICATIONS = ["Le combat continue.", "La partie s'arrête ici."];
+const EXPLICATIONS = ["La suite du jeu commence.", "La partie s'arrête ici."];
 
 export default class pantheon extends Phaser.Scene {
     constructor() {
@@ -23,6 +23,7 @@ export default class pantheon extends Phaser.Scene {
 
     init(donnees) {
         this.origine = donnees.origine; // la clé du niveau figé derrière
+        this.accepter = donnees.accepter; // appelée si le joueur dit OUI
         this.refuser = donnees.refuser; // appelée si le joueur dit NON
         this.choix = 0; // OUI sélectionné au départ
         this.debut = 0;
@@ -65,6 +66,7 @@ export default class pantheon extends Phaser.Scene {
         niveau.input.keyboard.resetKeys(); // les touches relâchées pendant le choix n'ont pas été vues par le niveau
         this.scene.resume(this.origine);
         this.scene.stop(); // ferme le choix
-        if (this.choix === 1) this.refuser(); // NON : la partie s'arrête (le niveau a repris pour pouvoir lancer l'écran de fin)
+        if (this.choix === 0) this.accepter(); // OUI : la suite commence
+        else this.refuser(); // NON : la partie s'arrête (le niveau a repris pour pouvoir lancer l'écran de fin)
     }
 }
