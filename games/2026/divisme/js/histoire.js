@@ -158,7 +158,7 @@ export default class histoire extends Phaser.Scene {
 
     // Rappel du mode en haut de l'écran
     this.add.text(640, 40, nombre === 1 ? "Mode : Solo" : "Mode : 1v1", {
-      fontSize: '24px',
+      fontSize: '26px',
       fill: '#c8a20d'
     }).setOrigin(0.5);
 
