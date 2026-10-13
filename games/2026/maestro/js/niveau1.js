@@ -19,7 +19,7 @@
 // ============================================================================
 
 import { REGLAGES } from "./reglages.js";
-import { creerPanneau } from "./controles.js";
+import { creerPanneau, aideBorne, aideClavier } from "./controles.js";
 import { enregistrerVictoire, NIVEAUX } from "./progression.js";
 import { jouerMusique, arreterMusique } from "./musique.js";
 
@@ -34,6 +34,9 @@ const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner pl
 const MUR_LUMIERE = { x: 1664, y: 100, largeur: 16, hauteur: 246 };
 const MARGE_REPRISE = 96; // à la réapparition, le héros est au moins à 96 px du bord de sa plateforme (au milieu si elle est étroite)
 const FIGE_REPRISE_MS = 500; // et il est figé 0,5 s pour ne pas retomber avec une touche encore enfoncée
+const SEUIL_TIR_LAMPE_MS = 350; // au-delà de ce temps d'appui sur B, c'est un tir (et non un allumage de lampe)
+const CADENCE_ECLAT_MS = 600; // délai minimum entre deux éclats
+const COUT_ECLAT = 6; // % de batterie pour un éclat
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
@@ -70,6 +73,9 @@ export default class niveau1 extends Phaser.Scene {
     this.listeTubas = TUBAS;
     this.listeCristaux = CRISTAUX;
     this.numeroNiveau = 1; // son numéro dans la progression (voir progression.js)
+    // En SOLO, un seul corps : la Cantatrice se transforme en Détective (bouton D) pour révéler les plateformes.
+    // En duo, les deux joueurs restent séparés. (Le niveau 2 remet ce drapeau à false.)
+    this.formeUnique = true;
     this.musiqueNiveau = "musique_niveau1"; // la piste jouée pendant ce niveau (chargée dans chargement.js)
     this.messageVictoire = "Niveau 1 terminé !";
     this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie";
@@ -335,8 +341,8 @@ export default class niveau1 extends Phaser.Scene {
       255,
       "Passerelles fantômes !\nDétective : éclaire-les avec la lampe (B, haut / bas pour orienter)\nElles restent en place une fois révélées"
     );
-    this.ajouterIndice(330, 150, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
-    this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (B) et passe !");
+    this.ajouterIndice(330, 150, "Cristaux colorés !\nChoisis la note de la même couleur (bouton C) et tire (bouton B)");
+    this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (bouton B) et passe !");
   }
 
   // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
@@ -449,6 +455,9 @@ export default class niveau1 extends Phaser.Scene {
     this.detective = this.creerPersonnage("detective", this.departs.j2, touchesDetective);
     this.persos = [this.cantatrice, this.detective];
     this.actif = this.cantatrice; // en solo : le personnage qu'on contrôle en ce moment
+    if (this.formeUnique == true && this.mode == "solo") {
+      this.masquerCorps(this.detective); // un seul corps à la fois : le Détective attend sa transformation
+    }
 
     this.groupe_ondes = this.physics.add.group({ allowGravity: false }); // ondes de la Cantatrice
 
@@ -485,6 +494,7 @@ export default class niveau1 extends Phaser.Scene {
     perso.figeJusqua = 0; // après une réapparition : pas de contrôle avant cet instant (ms), sans animation de choc
     perso.tireJusqua = 0; // animation de tir / d'allumage en cours jusqu'à cet instant (ms)
     perso.dernierTir = -9999;
+    perso.dernierEclat = -9999; // dernier éclat du Détective (voir tirerEclat)
     return perso;
   }
 
@@ -635,7 +645,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Batterie de la lampe du Détective
     this.texteLampe = fixe(
-      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
+      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", fontStyle: "bold", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
     );
     this.barreBatterie = fixe(this.add.graphics());
 
@@ -643,7 +653,7 @@ export default class niveau1 extends Phaser.Scene {
     this.iconeFragment = fixe(this.add.image(1236, 44, "img_partition")).setDisplaySize(54, 54).setTint(0x444444);
     this.texteFragment = fixe(
       this.add
-        .text(1200, 44, "0 / 1", { fontFamily: POLICE, fontSize: "16pt", color: "#dfe6ff", stroke: "#000000", strokeThickness: 4 })
+        .text(1200, 44, "0 / 1", { fontFamily: POLICE, fontSize: "16pt", fontStyle: "bold", color: "#dfe6ff", stroke: "#000000", strokeThickness: 4 })
         .setOrigin(1, 0.5)
     );
 
@@ -653,6 +663,7 @@ export default class niveau1 extends Phaser.Scene {
         .text(640, 676, "", {
           fontFamily: POLICE,
           fontSize: "14pt",
+          fontStyle: "bold",
           color: "#ffffff",
           align: "center",
           stroke: "#000000",
@@ -681,7 +692,11 @@ export default class niveau1 extends Phaser.Scene {
       this.changerDePerso();
     }
 
-    this.persos.forEach((perso) => this.gererPersonnage(perso, temps, delta));
+    this.persos.forEach((perso) => {
+      if (perso.body.enable == true) {
+        this.gererPersonnage(perso, temps, delta); // un corps caché (solo, niveau 1) ne bouge pas
+      }
+    });
     this.mettreAJourLampe(temps, delta);
     this.actualiserFantomes(temps);
 
@@ -695,6 +710,23 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.mettreAJourCamera();
     this.mettreAJourInterface(temps);
+    this.verifierSonPartition();
+  }
+
+  // Le chœur s'élève quand un personnage s'approche de la partition (une fois par approche)
+  verifierSonPartition() {
+    const partition = this.partition;
+    const disponible = partition && partition.active && partition.body && partition.body.enable && this.partitionActive !== false && this.partitionPrise !== true && this.fragmentRecupere !== true;
+    if (!disponible) {
+      return;
+    }
+    const plusProche = Math.min(...this.persos.map((perso) => Phaser.Math.Distance.Between(perso.x, perso.y, partition.x, partition.y)));
+    if (plusProche < 200 && this.sonPartitionJoue !== true) {
+      this.sonPartitionJoue = true;
+      this.sound.play("son_partition", { volume: 0.6 });
+    } else if (plusProche > 320) {
+      this.sonPartitionJoue = false; // on s'éloigne : le chœur pourra rejouer à la prochaine approche
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -875,17 +907,21 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   pouvoirDetective(perso, temps, delta) {
-    // Bouton B : allumer / éteindre la lampe
-    if (this.toucheAppuyee(perso, "B")) {
-      if (this.lampe.allumee == true) {
-        this.lampe.allumee = false;
-      } else if (this.lampe.batterie > 0) {
-        this.lampe.allumee = true;
-        this.lampe.angle = 0; // on repart avec la lampe à l'horizontale
-        perso.tireJusqua = temps + 500;
-        perso.anims.play("detective_shoot"); // le faisceau de la lampe apparaît dans l'animation
-      } else {
-        this.afficherMessage("Batterie vide ! Appuie sur le bouton C pour recharger", 2500);
+    // Bouton B : un APPUI COURT allume / éteint la lampe ; un appui MAINTENU plus de 0,35 s tire un éclat de lumière.
+    const bTenu = this.toucheEnfoncee(perso, "B");
+    if (bTenu == true && perso.appuiB === undefined) {
+      perso.appuiB = temps; // début de l'appui
+    }
+    if (bTenu == false && perso.appuiB !== undefined) {
+      const duree = temps - perso.appuiB;
+      perso.appuiB = undefined;
+      if (duree < SEUIL_TIR_LAMPE_MS) {
+        this.basculerLampe(perso, temps); // appui court : la lampe
+      }
+    }
+    if (bTenu == true && perso.appuiB !== undefined && temps - perso.appuiB >= SEUIL_TIR_LAMPE_MS) {
+      if (temps - perso.dernierEclat >= CADENCE_ECLAT_MS) {
+        this.tirerEclat(perso, temps); // appui maintenu : l'éclat, répété tant que le bouton est tenu
       }
     }
     // Bouton C : recharger la batterie (appuis répétés)
@@ -903,6 +939,42 @@ export default class niveau1 extends Phaser.Scene {
       }
       this.lampe.angle = Phaser.Math.Clamp(this.lampe.angle, -REGLAGES.lampe.angleMax, REGLAGES.lampe.angleMax);
     }
+  }
+
+  // Appui court : allume la lampe (si la batterie le permet) ou l'éteint
+  basculerLampe(perso, temps) {
+    if (this.lampe.allumee == true) {
+      this.lampe.allumee = false;
+    } else if (this.lampe.batterie > 0) {
+      this.lampe.allumee = true;
+      this.lampe.angle = 0; // on repart avec la lampe à l'horizontale
+      perso.tireJusqua = temps + 500;
+      perso.anims.play("detective_shoot"); // le faisceau de la lampe apparaît dans l'animation
+    } else {
+      this.afficherMessage("Batterie vide ! Appuie sur le bouton C pour recharger", 2500);
+    }
+  }
+
+  // Appui maintenu : un éclat de lumière qui part devant le Détective. Il ÉTOURDIT les cristaux et les Tubas
+  // (il ne les détruit pas : seules les notes détruisent les cristaux). Coûte un peu de batterie.
+  tirerEclat(perso, temps) {
+    if (this.lampe.batterie < COUT_ECLAT) {
+      this.afficherMessage("Pas assez de batterie pour un éclat : recharge avec C", 2000);
+      perso.dernierEclat = temps; // on ne répète pas le message à chaque image
+      return;
+    }
+    this.lampe.batterie -= COUT_ECLAT;
+    perso.dernierEclat = temps;
+    perso.tireJusqua = temps + 350;
+    perso.anims.play("detective_shoot");
+    const sens = perso.regardeADroite ? 1 : -1;
+    const eclat = this.groupe_ondes.create(perso.x + sens * 30, perso.y - 14, "onde");
+    eclat.setDepth(8).setScale(1.2).setFlipX(sens < 0).setTint(0xfff3b0);
+    eclat.note = "lumiere"; // pas une note : le cristal est seulement étourdi
+    eclat.play("onde_mi");
+    eclat.body.setSize(22, 18);
+    eclat.setVelocityX(sens * REGLAGES.onde.vitesse);
+    eclat.xDepart = eclat.x;
   }
 
   // Où pointe la lampe : origine (la main du Détective), direction, et centre de la tache de lumière
@@ -1007,11 +1079,49 @@ export default class niveau1 extends Phaser.Scene {
   //  Solo : changer de personnage
   // --------------------------------------------------------------------------
   changerDePerso() {
+    if (this.formeUnique == true && this.mode == "solo") {
+      this.transformer();
+      return;
+    }
     this.actif = this.actif == this.cantatrice ? this.detective : this.cantatrice;
     // petit flash blanc pour montrer qui est actif maintenant
     const nouveau = this.actif;
     nouveau.setTintFill(0xffffff);
     this.time.delayedCall(120, () => nouveau.clearTint());
+  }
+
+  // Solo, niveau 1 : la Cantatrice devient Détective (et redevient Cantatrice). Le corps garde sa place.
+  transformer() {
+    const ancien = this.actif;
+    const nouveau = ancien == this.cantatrice ? this.detective : this.cantatrice;
+    const x = ancien.x;
+    const y = ancien.y;
+    this.masquerCorps(ancien);
+    this.actif = nouveau;
+    nouveau.body.enable = true;
+    nouveau.setVisible(true);
+    nouveau.body.reset(x, y); // on remet la position à l'endroit du corps précédent
+    nouveau.setVelocity(0, 0); // et la vitesse à zéro : sinon le corps garde l'élan de l'ancien (saut, poussée)
+    nouveau.enEchelle = false;
+    nouveau.regardeADroite = ancien.regardeADroite;
+    nouveau.setFlipX(ancien.flipX);
+    nouveau.anims.play(nouveau.nom + "_idle");
+    if (nouveau == this.detective) {
+      this.lampe.angle = 0; // la lampe repart à l'horizontale
+    } else {
+      this.lampe.allumee = false; // la lampe ne peut exister que sous la forme du Détective
+    }
+    // effet de transformation : le nouveau corps grossit en rebondissant, flash blanc
+    nouveau.setTintFill(0xffffff);
+    this.time.delayedCall(140, () => nouveau.clearTint());
+    this.tweens.add({ targets: nouveau, scaleX: nouveau.scaleX * 1.25, scaleY: nouveau.scaleY * 1.25, duration: 120, yoyo: true });
+    this.afficherMessage(nouveau == this.detective ? "Transformation : Détective (lampe)" : "Transformation : Cantatrice (voix)", 1800);
+  }
+
+  // Cache un corps et le désactive (il ne bouge plus, ne tombe pas, ne touche rien)
+  masquerCorps(perso) {
+    perso.setVisible(false);
+    perso.body.enable = false;
   }
 
   // --------------------------------------------------------------------------
@@ -1118,6 +1228,10 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   blesserCristal(cristal, note) {
+    if (note == "lumiere") {
+      this.etourdir(cristal, REGLAGES.onde.etourdissementMs); // l'éclat du Détective étourdit, sans détruire
+      return;
+    }
     if (note != cristal.note) {
       // mauvaise note : il est juste étourdi un court instant
       this.etourdir(cristal, REGLAGES.cristal.etourdissementMauvaiseNoteMs);
@@ -1212,6 +1326,9 @@ export default class niveau1 extends Phaser.Scene {
   // Un personnage passe sous la ligne de chute de la carte
   verifierChutes() {
     this.persos.forEach((perso) => {
+      if (perso.body.enable == false) {
+        return; // corps caché
+      }
       this.memoriserPositionSure(perso);
       if (this.fini == false && perso.body.bottom > this.yChute) {
         this.tomber(perso);
@@ -1415,8 +1532,11 @@ export default class niveau1 extends Phaser.Scene {
 
   texteCommandes() {
     if (this.mode == "duo") {
-      return "J1 Cantatrice : flèches · I saut · O onde · P note\nJ2 Détective : ZQSD · R saut · T lampe (Z / S l'oriente) · Y recharge";
+      return aideBorne() + "\n" + aideClavier();
     }
-    return "Flèches · I saut · O onde / lampe · haut-bas oriente la lampe · P note / recharge · K changer de personnage";
+    if (this.formeUnique == true) {
+      return aideBorne() + "\n" + aideClavier() + "\nD (K au clavier) : se transformer (Cantatrice ↔ Détective)";
+    }
+    return aideBorne() + "\n" + aideClavier();
   }
 }

@@ -17,7 +17,7 @@ export default class gameover extends Phaser.Scene {
 
     // Le texte clignote doucement pour inviter à appuyer
     const consigne = this.add
-      .text(640, 680, "Bouton A / Entrée : retour au lobby", {
+      .text(640, 680, "Bouton A (borne) · Entrée (clavier) : retour au lobby", {
         fontFamily: POLICE,
         fontSize: "16pt",
         color: "#e8d9b0",

@@ -18,6 +18,7 @@
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau } from "./controles.js";
 import { jouerMusique } from "./musique.js";
+import { aideClavier } from "./controles.js";
 import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
 
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
@@ -393,13 +394,13 @@ export default class lobby extends Phaser.Scene {
       stroke: "#000000",
       strokeThickness: 5
     };
-    const consigne = this.mode == "solo" ? "LE LOBBY · Flèches : marcher · I : sauter · K : changer de personnage" : "LE LOBBY · J1 : flèches + I · J2 : ZQSD + R";
-    this.texteConsigne = this.add.text(640, 30, consigne, style).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    const consigne = "LE LOBBY · " + (this.mode == "solo" ? "joystick : marcher · A : sauter · D : changer" : "J1 : A sauter · J2 : A sauter") + "\n" + aideClavier();
+    this.texteConsigne = this.add.text(640, 30, consigne, { ...style, fontStyle: "bold" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.tweens.add({ targets: this.texteConsigne, alpha: 0, delay: 6000, duration: 1500 });
 
     // Message en bas de l'écran (ex : « cette porte n'est pas encore ouverte »)
     this.texteMessage = this.add
-      .text(640, 676, "", { ...style, fontSize: "14pt" })
+      .text(640, 676, "", { ...style, fontSize: "14pt", fontStyle: "bold" })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(100);

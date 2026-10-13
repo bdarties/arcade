@@ -168,6 +168,7 @@ export default class niveau2 extends niveau1 {
     this.listeTubas = TUBAS; // deux Tubas dans ce niveau
     this.listeCristaux = CRISTAUX;
     this.numeroNiveau = 2; // son numéro dans la progression (voir progression.js)
+    this.formeUnique = false; // au niveau 2, les deux personnages restent séparés (comme avant)
     this.musiqueNiveau = "musique_niveau2"; // la piste propre au niveau 2
     this.messageVictoire = "Niveau 2 terminé !";
     this.objectif = "OBJECTIF : ramasse " + NOTES_REQUISES + " notes de musique pour révéler la PARTITION,\npuis prends-la et franchis la porte en haut à droite";
@@ -230,8 +231,8 @@ export default class niveau2 extends niveau1 {
 
     // Panneaux d'indication
     this.ajouterIndice(250, 540, "Monte à l'échelle (haut)");
-    this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (P) et tire (O)");
-    this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (T)\npour atteindre une note dorée BONUS (+1 cœur)");
+    this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (bouton C) et tire (bouton B)");
+    this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (bouton B)\npour atteindre une note dorée BONUS (+1 cœur)");
     this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
     this.ajouterIndice(190, 330, "Tambour : saute dessus pour rebondir très haut !");
     this.ajouterIndice(600, 108, "Voie haute : planches fragiles, ne traîne pas !");

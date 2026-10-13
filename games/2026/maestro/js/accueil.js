@@ -5,7 +5,7 @@
 //  CONTROLS et CREDITS ouvrent un petit panneau ; un appui sur A / Entrée le ferme.
 // ============================================================================
 
-import { creerClavierMenu } from "./controles.js";
+import { creerClavierMenu, aideBorne, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";
 
 // La scène qui s'ouvre quand on appuie sur PLAY
@@ -22,10 +22,10 @@ const BOUTONS = [
 // Texte des deux panneaux
 const TEXTE_CONTROLS =
   "COMMANDES\n\n" +
-  "Joueur 1 · Cantatrice\n" +
-  "Flèches : bouger · I : sauter · O : onde · P : changer de note · K : changer de perso (solo)\n\n" +
-  "Joueur 2 · Détective\n" +
-  "Z Q S D : bouger (Z / S : orienter la lampe) · R : sauter · T : lampe · Y : recharger";
+  aideBorne() + "\n" +
+  "Boutons de la borne : joystick pour marcher · A sauter · B action · C note / recharge · D changer\n\n" +
+  aideClavier() + "\n" +
+  "J1 Cantatrice : B = onde, C = note · J2 Détective : B = lampe (appui court) / éclat (maintenir), C = recharger";
 const TEXTE_CREDITS =
   "CRÉDITS\n\n" +
   "MAESTRO — SAE 301, MMI Béziers\n\n" +
@@ -94,7 +94,7 @@ export default class accueil extends Phaser.Scene {
       })
       .setOrigin(0.5);
     const aide = this.add
-      .text(0, 145, "Bouton A / Entrée : retour", { fontFamily: POLICE, fontSize: "13pt", color: "#f5d97a" })
+      .text(0, 145, "Bouton A (borne) · Entrée (clavier) : retour", { fontFamily: POLICE, fontSize: "13pt", fontStyle: "bold", color: "#f5d97a" })
       .setOrigin(0.5);
     return this.add.container(640, 330, [fond, this.texteInfo, aide]).setDepth(10).setVisible(false);
   }

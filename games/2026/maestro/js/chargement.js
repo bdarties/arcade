@@ -103,6 +103,7 @@ export default class chargement extends Phaser.Scene {
     this.load.audio("musique_niveau1", "./assets/musique_niveau1.m4a"); // niveau 1 : le main theme
     this.load.audio("musique_niveau2", "./assets/musique_niveau2.m4a");   // niveau 2 : la piste « sonniveau1 »
     this.load.audio("musique_accueil", "./assets/musique_accueil_lobby.m4a"); // accueil, choix du mode, lobby
+    this.load.audio("son_partition", "./assets/son_partition.m4a"); // chœur qui s'élève quand on approche de la partition
 
     // ---- Divers ----
     this.load.image("img_partition", "./assets/partition.png");
