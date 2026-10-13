@@ -63,7 +63,7 @@ export function majButin(scene, secondes) {
 
     let proche = null;
     let distance = Infinity;
-    scene.joueurs.forEach((j) => {
+    scene.joueursEnJeu().forEach((j) => { // un joueur à terre ne ramasse rien
       const d = Phaser.Math.Distance.Between(objet.x, objet.base_y, j.sprite.body.center.x, j.sprite.body.center.y);
       if (d < distance) { distance = d; proche = j; }
     });

@@ -35,7 +35,7 @@ export default class gameover extends Phaser.Scene {
     this.add.text(this.scale.width / 2 - 40, 462, "x" + data.pierres, { fontFamily: fct.POLICES.bouton, fontSize: "26px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 6 })
       .setOrigin(0, 0.5);
 
-    const invite = this.add.text(this.scale.width / 2, 600, "Appuie sur un bouton pour revenir au menu", { fontFamily: fct.POLICES.texte, fontSize: "24px", color: "#BFC3CC", stroke: "#080D1C", strokeThickness: 5 })
+    const invite = this.add.text(this.scale.width / 2, 600, "Appuie sur le bouton " + fct.ETIQUETTES.frapper_tirer + " pour revenir au menu", { fontFamily: fct.POLICES.texte, fontSize: "24px", color: "#BFC3CC", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5)
       .setAlpha(0);
     this.time.delayedCall(DELAI_BOUTON, () => {

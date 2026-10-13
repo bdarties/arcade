@@ -12,6 +12,12 @@ const DIRECTIONS = ["down", "up", "right", "down_diagonal", "up_diagonal"];
 const VARIANTES_JOUEUR = ["", "_gun"];
 // coup de pioche : 3 directions seulement (les diagonales et la gauche réutilisent ces sprites, cf. niveau1.js)
 const DIRECTIONS_PIOCHE = ["down", "up", "right"];
+// biomes colorés : [nom, fichier du cristal] ; le tileset est assets/map/tileset_<nom>.png (cf. preload)
+const BIOMES_COLORES = [
+  ["bleu", "DarkBlueCrystal.png"],
+  ["vert", "GreenCrystal.png"],
+  ["violet", "PurpleCrystal.png"]
+];
 
 // définition de la classe "selection"
 export default class selection extends Phaser.Scene {
@@ -35,9 +41,10 @@ export default class selection extends Phaser.Scene {
     // map de test (export JSON de Tiled) et ses tilesets
     // le nom du tileset doit etre le meme que dans Tiled
     this.load.tilemapTiledJSON("map_test", "./assets/map/map_test.tmj");
-    this.load.image("tiles_decorative_cracks_floor", "./assets/map/decorative_cracks_floor.png");
-    this.load.image("tiles_decorative_cracks_walls", "./assets/map/decorative_cracks_walls.png");
-    this.load.image("tiles_walls_floor", "./assets/map/walls_floor.png");
+
+    // tilesets des niveaux générés, un par biome (13 x 5 tuiles : murs et sol, cf. generation.js) : "tiles_gris", "tiles_bleu", "tiles_vert", "tiles_violet"
+    this.load.image("tiles_gris", "./assets/map/tileset.png");
+    BIOMES_COLORES.forEach(([nom]) => this.load.image("tiles_" + nom, "./assets/map/tileset_" + nom + ".png"));
 
     // salle safe (map Tiled) et ses tilesets (cf. salle_safe.js)
     this.load.tilemapTiledJSON(salle_safe.CLE_MAP, salle_safe.FICHIER_MAP);
@@ -57,7 +64,9 @@ export default class selection extends Phaser.Scene {
     this.load.image("img_pierre_lunaire", "./assets/ui/pierre_lunaire.png");
 
     // cristaux décoratifs des niveaux (cf. cristaux.js) : 24 images de 38x39
+    // le jaune est celui du biome gris ; les autres : "sprite_cristal_bleu", "_vert", "_violet"
     this.load.spritesheet("sprite_cristal", "./assets/map/yellow_crystal.png", { frameWidth: 38, frameHeight: 39 });
+    BIOMES_COLORES.forEach(([nom, fichier_cristal]) => this.load.spritesheet("sprite_cristal_" + nom, "./assets/map/" + fichier_cristal, { frameWidth: 38, frameHeight: 39 }));
 
     // potions lâchées par les cailloux (cf. bonus.js) : frames de 16x16, animées
     ["heal", "vision", "vitesse"].forEach((nom) => {
@@ -196,6 +205,9 @@ export default class selection extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers("sprite_cristal"),
       frameRate: 10,
       repeat: -1
+    });
+    BIOMES_COLORES.forEach(([nom]) => {
+      this.anims.create({ key: "anim_cristal_" + nom, frames: this.anims.generateFrameNumbers("sprite_cristal_" + nom), frameRate: 10, repeat: -1 });
     });
 
     ["heal", "vision", "vitesse"].forEach((nom) => {

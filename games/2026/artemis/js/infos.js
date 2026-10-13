@@ -51,7 +51,7 @@ export default class infos extends Phaser.Scene {
     }
 
     // le contour garde la consigne lisible sur l'image des commandes
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur un bouton pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur le bouton " + fct.ETIQUETTES.frapper_tirer + " pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     this.touches = fct.JOUEURS.map((joueur) => fct.creerTouches(this, joueur.touches));
