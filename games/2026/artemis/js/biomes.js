@@ -15,6 +15,16 @@ export const BIOMES = [
   { nom: "violet", tileset: "tiles_violet", cristal: "sprite_cristal_violet", anim_cristal: "anim_cristal_violet", lumiere: 0xa878c8 }
 ];
 
+// les cailloux : quatre images par biome, dans assets/map (les deux dernières sont les cailloux lunaires à cristaux)
+// le biome gris n'a pas de suffixe ("caillou.png"), les autres finissent par leur nom ("caillou_bleu.png")
+const FICHIERS_CAILLOUX = ["caillou", "caillou2", "caillou_lune", "caillou_lune2"];
+
+// clé Phaser et fichier de chaque caillou d'un biome : { cle, fichier }
+export function cailloux(biome) {
+  const suffixe = biome.nom === "gris" ? "" : "_" + biome.nom;
+  return FICHIERS_CAILLOUX.map((nom, i) => ({ cle: "img_caillou_" + biome.nom + "_" + (i + 1), fichier: "./assets/map/" + nom + suffixe + ".png" }));
+}
+
 // le biome d'un niveau : on les enchaine dans l'ordre, puis on recommence
 export function biomeDuNiveau(niveau) {
   const rang = Math.floor((Math.max(niveau, 1) - 1) / NIVEAUX_PAR_BIOME);
