@@ -32,7 +32,9 @@ const CREDITS = [
     ["", "« Boss Battle #8 » et « #9 » (Metal) par nene (boss), CC0"],
     ["", "« Ending Scene » par nene (crédits de fin), CC0"],
     ["CRI DU BOSS", "« Aggressive Monster Roar » par yodguard (Pixabay)"],
-    ["MOTEUR", "Phaser 3.60"]
+    ["MOTEUR", "Phaser 3.60"],
+    ["REMERCIEMENTS", "Nerimen : pour les nombreuses pull requests acceptées"],
+    ["", "Momo : pour le beta test"]
 ];
 
 // Ouvre le menu pause quand on appuie sur Échap ou X. À appeler dans le create() d'un niveau.
@@ -150,7 +152,7 @@ export default class pause extends Phaser.Scene {
         const jeu = this.add.text(640, 190, "DEICIDE", { fontFamily: POLICE, fontSize: "30px", color: SELECTION }).setOrigin(0.5);
         this.lignes.push(jeu);
         CREDITS.forEach(([titre, texte], i) => {
-            const y = 245 + i * 31; // (31 px entre deux lignes : il y a 11 lignes, elles doivent tenir au-dessus de l'aide)
+            const y = 240 + i * 27; // (27 px entre deux lignes : il y a 13 lignes, elles doivent tenir au-dessus de l'aide)
             if (titre) this.lignes.push(this.add.text(290, y, titre, { fontFamily: POLICE, fontSize: "14px", color: ATTENUE }).setOrigin(0, 0.5));
             this.lignes.push(this.add.text(430, y, texte, { fontFamily: POLICE, fontSize: "16px", color: TEXTE }).setOrigin(0, 0.5));
         });

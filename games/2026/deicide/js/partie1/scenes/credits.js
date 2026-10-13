@@ -6,7 +6,7 @@ import { creerPolice, ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classeme
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js";
 
-const VOLUME_MUSIQUE_CREDITS = 0.38; // le volume de base de la musique des crédits (0,3 pour celle du niveau) ; le réglage « musique » du menu pause s'y applique
+const VOLUME_MUSIQUE_CREDITS = 0.6; // le volume de base de la musique des crédits (0,38 avant, trop faible ; 0,3 pour celle du niveau) ; le réglage « musique » du menu pause s'y applique
 const TOUCHES_SORTIR = ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"];
 const DELAI_AVANT_SORTIR = 1500; // ms : le joueur tient encore le bouton qui l'a amené ici
 const VITESSE = 75; // px par seconde
@@ -20,7 +20,8 @@ const SECTIONS = [
     { titre: "GRAPHISMES", lignes: ["ROBOT : PACK BOT WHEEL", "DECOR : DAWN OF THE GODS", "ENNEMIS : HUNTRESS 2, BRINGER OF DEATH, WIZARD"], echelle: 3 },
     { titre: "MUSIQUES", lignes: ["DARK SHRINE LOOP : QUBODUP ET YD", "BOSS BATTLE #8 ET #9 (METAL), ENDING SCENE : NENE"], echelle: 3 },
     { titre: "BRUITAGES", lignes: ["KENNEY, RUBBERDUCK, JAGGEDSTONE", "CRI DU BOSS : YODGUARD"], echelle: 3 },
-    { titre: "MOTEUR", lignes: ["PHASER 3.60"], echelle: 4 }
+    { titre: "MOTEUR", lignes: ["PHASER 3.60"], echelle: 4 },
+    { titre: "REMERCIEMENTS", lignes: ["NERIMEN : POUR LES NOMBREUSES PULL REQUESTS ACCEPTEES", "MOMO : POUR LE BETA TEST"], echelle: 3 }
 ];
 
 export default class credits extends Phaser.Scene {
