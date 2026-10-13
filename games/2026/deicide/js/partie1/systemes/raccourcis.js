@@ -4,18 +4,15 @@
 // DEUX BOUTONS MAINTENUS 0,5 s (une barre en bas de l'écran se remplit) :
 //   - C + F (P et ;)           : recommencer la partie en cours (nouvelle partie au début du niveau 1, ou nouveau 1 contre 1) ; depuis
 //                                l'accueil ou l'écran de fin : retour à l'accueil. La borne n'est pas relancée.
-//   - Z + B (select J1 + select J2) : aller directement au boss  (TEMPORAIRE, pour tester : à retirer avant la borne)
 // C et F sont les boutons 3 et 6 du joueur 1 : ils envoient P et ; (voir gpio2keys.py). Sur un clavier AZERTY, la touche ; est la touche M :
-// on reconnaît donc ; par sa position (evenement.code "Semicolon"), pas par la lettre. Z est le select J1 et B le select J2 : Z et B ne servent
-// à rien d'autre dans le jeu. Les touches du robot sont I, K, L et O : aucune de ces combinaisons ne se déclenche en jouant, et la durée évite
-// un appui par accident.
+// on reconnaît donc ; par sa position (evenement.code "Semicolon"), pas par la lettre. Les touches du robot sont I, K, L et O : cette combinaison
+// ne se déclenche pas en jouant, et la durée évite un appui par accident.
 //
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
 //   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/testsBorne.js)
 const COMBOS = [
-    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) }, // P (bouton C) et ; (bouton F)
-    { nom: "boss", touches: [90, 66], texte: "ALLER AU BOSS (TEST)", action: (jeu) => allerAuBoss(jeu) } // Z et B
+    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)
 ];
 const DUREE = 500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 120; // ms avant d'afficher la barre (un appui très court ne montre rien)
@@ -53,27 +50,6 @@ export function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.
     jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
     jeu.registry.set("numeroPartie", (jeu.registry.get("numeroPartie") ?? 0) + 1); // une partie de plus (sert aux conseils qui ne s'affichent qu'une fois par partie)
     jeu.registry.set("reprendreAuBoss", false); // pas de reprise dans l'arène : on repart du bas de la tour
-}
-
-function allerAuBoss(jeu) { // niveau 1 : dans l'arène du Dieu ; ensuite (ou depuis le niveau 2) : dans l'arène du dernier combat
-    const actives = jeu.scene.getScenes(true).map((scene) => scene.scene.key);
-    const courante = actives.find((cle) => ["niveau1", "niveau2", "niveau3"].includes(cle));
-    if (courante === "niveau3") return; // déjà dans le dernier combat
-    if (courante === "niveau1" && !jeu.scene.getScene("niveau1").areneLancee) { // le niveau 1 en cours : on téléporte le robot dans l'arène
-        if (actives.includes("pause")) { jeu.scene.stop("pause"); jeu.scene.resume("niveau1"); } // on ferme la pause d'abord
-        const niveau = jeu.scene.getScene("niveau1");
-        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
-        niveau.player.body.setVelocity(0, 0);
-        return;
-    }
-    arreterToutesLesScenes(jeu);
-    if (courante && jeu.scene.getScene("niveau3")) { jeu.scene.start("niveau3"); return; } // arène du Dieu déjà faite, ou niveau 2 : on passe au dernier combat (partie 2)
-    nouvellePartie(jeu); // depuis l'accueil ou le classement : nouvelle partie directement dans l'arène du Dieu
-    jeu.scene.start("niveau1");
-    jeu.scene.getScene("niveau1").events.once(Phaser.Scenes.Events.CREATE, () => {
-        const niveau = jeu.scene.getScene("niveau1");
-        niveau.player.setPosition(niveau.cfg.teleportBoss.x, niveau.cfg.teleportBoss.y);
-    });
 }
 
 // ---- touches de test F8, F9 et F10 (TEMPORAIRES) ----

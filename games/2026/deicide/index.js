@@ -9,7 +9,7 @@ import { installerPartie2, scenesPartie2, activerTestsPartie2 } from "./js/parti
 import versus from "./js/partie1/scenes/versus.js"; // le mode 1 contre 1
 import pantheon from "./js/partie1/scenes/pantheon.js"; // choix « entrer dans le panthéon » avant la phase 2 du dernier boss
 import pause from "./js/partie1/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
-import { activerRaccourcis } from "./js/partie1/systemes/raccourcis.js"; // reset de la borne (C + F maintenus) et touches de test (F8, Z + B)
+import { activerRaccourcis } from "./js/partie1/systemes/raccourcis.js"; // reset de la borne (C + F maintenus) et touche de test (F8)
 import classement from "./js/partie1/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
 const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).

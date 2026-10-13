@@ -1,4 +1,4 @@
-// testsBorne.js : les touches de test de la partie 2 (TEMPORAIRES, à retirer avant la borne). Elles complètent celles de partie1/systemes/raccourcis.js (F8, Z + B).
+// testsBorne.js : les touches de test de la partie 2 (TEMPORAIRES, à retirer avant la borne). Elles complètent celle de partie1/systemes/raccourcis.js (F8).
 //   - F9 : lance directement le niveau 2 (la fuite)
 //   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
 import { arreterToutesLesScenes, nouvellePartie } from "../partie1/systemes/raccourcis.js";
