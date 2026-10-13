@@ -1,6 +1,6 @@
 # Dessiner le niveau 2 dans Tiled
 
-Le jeu lit `assets/maps/niveau2.json`. Tant que tu n'as pas fait la tienne, c'est une map d'exemple (générée par `outils/generer_niveaux.py`) qui sert de modèle : ouvre `niveau2_genere.json` dans Tiled pour voir comment elle est faite.
+Le jeu lit `assets/maps/niveau2.json`. Pour voir comment une map est faite, ouvre `niveau2.json` (ou `niveau1.tmx`) dans Tiled.
 
 ## Étapes
 1. Dans Tiled : **Fichier → Nouveau → Nouvelle carte** (orthogonale, tuiles de **32 × 32**), ou plus simple : copie `niveau1.tmx` et vide ses calques (il a déjà les bons tilesets).

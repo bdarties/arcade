@@ -1,4 +1,4 @@
-// versus.js : le mode 1 contre 1, dans l'arène du début de la map 1 (assets/maps/arene_versus.json, générée par outils/generer_niveaux.py)
+// versus.js : le mode 1 contre 1, dans l'arène du début de la map 1 (assets/maps/arene_versus.json, fichier Tiled : le bas de la map 1)
 // Deux robots, la visée automatique de chacun vise l'autre (voir chercherCible dans personnage.js). 3 PV chacun par manche, au meilleur des
 // 3 manches :
 // le premier à gagner 2 manches gagne la partie. Chaque manche relance la scène (this.scene.restart) : tout repart propre, seuls les points

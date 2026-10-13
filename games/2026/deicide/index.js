@@ -1,5 +1,5 @@
 // index.js : le point de départ du jeu (chargé par index.html). Il règle Phaser (taille, physique, cadence d'images, rendu pour la borne),
-// donne la liste des scènes (les écrans du jeu, dans js/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
+// donne la liste des scènes (les écrans du jeu, dans js/partie1/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
 
 // les scènes du jeu et les outils
 import { compteurImages, regulerCadence } from "./js/partie1/systemes/optimisation.js";

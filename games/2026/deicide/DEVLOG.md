@@ -118,7 +118,7 @@
 
 ## Le mode 1 contre 1 (`versus.js`)
 - **Lancement** : un bouton « 1 V 1 » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
-- **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) découpées par `outils/generer_niveaux.py` : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
+- **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) (fichier `arene_versus.json`, qui était d'abord généré par un script Python, supprimé le 13/10/2026 : les maps sont maintenant de simples fichiers Tiled) : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
 - **Règles** : 3 PV par manche, au meilleur des 3 manches (le premier à 2 manches gagne). Chaque manche relance la scène (`scene.restart`) avec le score en paramètre : tout repart propre sans avoir à tout remettre à zéro à la main. 0,6 s d'invincibilité après un coup, pour qu'une rafale ne tue pas d'un coup.
 - **Réutilisation de `personnage.js`** : le code du robot visait un seul joueur. Trois petits changements : `creerPersonnage` accepte les touches et une teinte, chaque robot a son groupe de balles (`joueur.tirs`, pour savoir qui a tiré), et la visée automatique prend l'adversaire pour cible (`joueur.adversaire`) avec la même vérification de mur que pour les ennemis.
 - **Commandes** : J1 flèches + I (saut), K (tir), L (dash) ; J2 W A S D + R (saut), F (tir), G (dash) : les boutons de la borne (`gpio2keys.py`).
@@ -137,7 +137,7 @@
 - `endormirLesLoins` regarde aussi la distance horizontale (sinon tous les ennemis d'un niveau large dorment ou se réveillent d'un coup).
 
 ## Les maps sont générées
-- `outils/generer_niveaux.py` écrit `niveau2_genere.json` (une map d'exemple) à partir de colonnes et de longueurs de trous. Les fichiers sont des maps Tiled normales : on peut les rouvrir dans Tiled pour les retoucher.
+- (Ancien) un script Python écrivait `niveau2_genere.json` (une map d'exemple) et les arènes. Il a été supprimé le 13/10/2026 : les maps restent telles quelles, ce sont des fichiers Tiled qu'on retouche directement dans Tiled.
 - Si on change un trou, on relance le script : il vérifie que le niveau reste faisable.
 
 ## Les boss

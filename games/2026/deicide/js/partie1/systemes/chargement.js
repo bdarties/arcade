@@ -13,7 +13,7 @@ export function chargerJeu(scene) {
     chargerPersonnage(scene); // images du robot
     chargerHud(scene); // images du HUD
     scene.load.tilemapTiledJSON("carte_niveau1", "./assets/maps/niveau1.json"); // map du niveau 1 exportée depuis Tiled
-    // arène du 1 contre 1 : le bas de la map 1 (générée par outils/generer_niveaux.py)
+    // arène du 1 contre 1 : le bas de la map 1 (fichier Tiled)
     scene.load.tilemapTiledJSON("carte_versus", "./assets/maps/arene_versus.json");
     scene.load.image("tuiles_dawn", "./assets/maps/dawn_of_the_gods_ombre.png"); // tileset principal des maps
     scene.load.image("tuile_blanc", "./assets/maps/blanc.png"); // tuile blanche des maps
