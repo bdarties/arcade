@@ -24,12 +24,12 @@ const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de j
 
 // les couleurs du HUD (voir PAL dans personnage/hud.js) et de la lanterne (or)
 const PAL = { K: "#211924", a: "#251d2a", b: "#2f2535", c: "#372b3e", d: "#3f3249", m: "#5f4f6e", n: "#8a779b", L: "#ac98b6", W: "#e7e0e9", G: "#f5f0f8" };
-const OR = 0xffd45c;
+export const OR = 0xffd45c;
 const OR_SOMBRE = 0xc99a2e;
 const ROSE = 0xf4b6c2; // le rose pâle du projet : la ligne du joueur
-const CLAIR = 0xf5f0f8;
-const LAVANDE = 0xac98b6;
-const GRIS_VIOLET = 0x8a779b;
+export const CLAIR = 0xf5f0f8;
+export const LAVANDE = 0xac98b6;
+export const GRIS_VIOLET = 0x8a779b;
 
 function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes)
     const total = Math.floor(Math.min(Math.max(0, ms), TEMPS_MAX_MS) / 10); // en centièmes de seconde
@@ -74,7 +74,7 @@ const GLYPHES = {
 };
 const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
 
-function creerPolice(scene) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère
+export function creerPolice(scene) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère
     if (scene.textures.exists("police_fin")) return;
     const noms = Object.keys(GLYPHES);
     const texture = scene.textures.createCanvas("police_fin", noms.length * LARGEUR_CASE, 8);
@@ -92,7 +92,7 @@ function creerPolice(scene) { // dessine une seule fois toutes les lettres dans 
 }
 
 // écrit un texte (un groupe d'images, une par caractère). ancre : "centre", "gauche" ou "droite" par rapport à x. Les espaces sont vides.
-function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10 } = {}) {
+export function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10 } = {}) {
     const largeur = texte.length * LARGEUR_CASE * echelle;
     const x0 = ancre === "gauche" ? x : ancre === "droite" ? x - largeur : x - largeur / 2;
     const groupe = scene.add.container(0, 0).setDepth(profondeur);
@@ -113,7 +113,7 @@ function changerTexte(groupe, texte) { // remplace les caractères d'un texte de
 // Les plaques : la même construction que celles du HUD (contour sombre, filet clair en haut, ombre en bas, rivets, coins coupés)
 // ---------------------------------------------------------------------------------------------
 
-function plaque(scene, w, h, creux = true) { // renvoie la clé de la texture ; w et h sont en pixels du dessin (agrandis à l'écran)
+export function plaque(scene, w, h, creux = true) { // renvoie la clé de la texture ; w et h sont en pixels du dessin (agrandis à l'écran)
     const cle = "plaque_fin_" + w + "x" + h + (creux ? "c" : "");
     if (scene.textures.exists(cle)) return cle;
     const texture = scene.textures.createCanvas(cle, w, h);
