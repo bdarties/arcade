@@ -72,6 +72,8 @@ export default class menu extends Phaser.Scene {
     this.boutonDeux.fond.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
     const aide = this.add.text(640, 650, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
+    // le but du jeu, sous le titre
+    this.add.text(640, 275, "BUT : BATTRE LE DIEU DE LA LUMIÈRE", { fontFamily: "monospace", fontSize: "22px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 }); // il clignote doucement
 
     TOUCHES_JOUER.forEach((nom) => this.input.keyboard.addKey(nom).on("down", () => this.lancer()));
@@ -167,6 +169,7 @@ export default class menu extends Phaser.Scene {
     this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
     this.registry.set("score", 0); // le score aussi
     this.registry.set("vies", 3); // et les 3 vies (la valeur de VIES_DEPART dans hud.js)
+    this.registry.set("guideVu", false); // le guide (but et commandes) s'affichera au début de cette partie
     this.registry.set("chronoActif", true); // le chrono peut tourner (il a pu être arrêté par la partie précédente)
     this.bouton.play("bouton_jouer_clic");
     jouerSon(this, "porte"); // bruit de porte, comme quand on entre dans un niveau

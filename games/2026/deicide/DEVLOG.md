@@ -59,3 +59,8 @@
 ## Ce qui n'est pas mesuré
 - La durée réelle d'une partie (visée : environ 2 min 30 par niveau) : à chronométrer en jouant.
 - Les FPS sur la borne avec le niveau 2 (map de 8 960 px de large) : à vérifier avec F3.
+
+## Guide du joueur
+- **Pourquoi si peu ?** Le joueur doit comprendre le but sans que le jeu l'interrompe. Le but est écrit à l'accueil (« Battre le Dieu de la Lumière ») et affiché 7 s au début de la partie (`systemes/guide.js`), en fondu, sans pause ni blocage de touche.
+- **Pourquoi pas de rappel des commandes en plus ?** La légende du HUD (en haut à droite) les affiche déjà en permanence : un second rappel faisait doublon (essayé, puis retiré après capture d'écran).
+- **Une seule fois par partie** : un registre `guideVu` est remis à faux au lancement (`menu.js`), pour que le texte ne revienne pas après chaque mort.

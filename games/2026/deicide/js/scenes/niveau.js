@@ -22,6 +22,7 @@ import { chargerJeu, objetsDe } from "../systemes/chargement.js";
 import { preparerSalles, verifierSalles } from "../mecanismes/salles.js"; // salles de combat fermées
 import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : réglages et crédits
 import { preparerBonus } from "../mecanismes/bonus.js"; // les PV que lâchent les ennemis
+import { montrerGuide } from "../systemes/guide.js"; // le but, affiché une fois au début de la partie
 import { preparerBoost } from "../mecanismes/boost.js"; // le boost du robot (rafale, vitesse, reflet)
 import { preparerLanternesVivantes } from "../ennemis/lanterneVivante.js"; // les lanternes ailées qui donnent le boost
 
@@ -60,6 +61,7 @@ export default class niveau extends Phaser.Scene {
     preparerSalles(this, this.cfg.salles); // les salles de combat fermées (voir salles.js)
     if (this.cfg.creer) this.cfg.creer(this); // ce qui est propre à ce niveau (vide, faisceaux, poursuite...)
     preparerPause(this); // Échap ou X ouvre le menu pause
+    montrerGuide(this); // le but (une seule fois par partie, ils s'effacent seuls)
     // fabrique d'avance les « ! », « ? », « +100 » et les éclats (optimisation pour la borne : pas d'à-coup quand ils apparaissent)
     effets.preparerEffets(this);
   }
