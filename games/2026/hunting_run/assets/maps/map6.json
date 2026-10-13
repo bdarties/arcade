@@ -194,6 +194,80 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":7,
+         "name":"ennemis 2",
+         "objects":[
+                {
+                 "height":0,
+                 "id":2,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":614,
+                 "y":504
+                }, 
+                {
+                 "height":0,
+                 "id":3,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":718,
+                 "y":480
+                }, 
+                {
+                 "height":0,
+                 "id":5,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":74,
+                 "y":510
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":8,
+         "name":"ennemis 1",
+         "objects":[
+                {
+                 "height":0,
+                 "id":4,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":524,
+                 "y":538
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -227,8 +301,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":7,
- "nextobjectid":2,
+ "nextlayerid":9,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",
@@ -237,7 +311,7 @@
         {
          "columns":12,
          "firstgid":1,
-         "image":"..\/TuileDeJeu1.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu1.png",
          "imageheight":896,
          "imagewidth":384,
          "margin":0,
@@ -250,7 +324,7 @@
         {
          "columns":16,
          "firstgid":337,
-         "image":"..\/maps jeu 301\/TuileDeJeu2.png",
+         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu2.png",
          "imageheight":960,
          "imagewidth":512,
          "margin":0,
@@ -263,7 +337,7 @@
         {
          "columns":5,
          "firstgid":817,
-         "image":"..\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,
@@ -276,7 +350,7 @@
         {
          "columns":6,
          "firstgid":832,
-         "image":"..\/TuileDeJeu4.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu4.png",
          "imageheight":128,
          "imagewidth":192,
          "margin":0,

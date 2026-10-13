@@ -155,8 +155,6 @@ export default class music_fall extends Phaser.Scene {
     dessin.lineStyle(1, 0x6b4127);
 
     // une boucle : on fait un trait pour chaque centimètre
-    // cm commence à 0 (la ligne dorée) et monte de 1 en 1,
-    // tant qu'on n'a pas dépassé la hauteur de départ du perso
     for (var cm = 0; cm * PX_PAR_CM <= Y_LIGNE - Y_DEPART; cm++) {
 
       // la hauteur à l'écran de ce centimètre :

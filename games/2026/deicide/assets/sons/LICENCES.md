@@ -21,3 +21,5 @@ Les bruitages ont été découpés, avec un fondu de fin et un volume harmonisé
 | ennemi_mort.mp3 | creature_die_01 | [80 CC0 RPG SFX](https://opengameart.org/content/80-cc0-rpg-sfx) | rubberduck |
 | mage_incante.mp3 | magical_3 | [Magic Spell SFX](https://opengameart.org/content/magic-spell-sfx) | jaggedstone |
 | musique_niveau.ogg / .mp3 | Dark Shrine Loop | [Dark Shrine Loop](https://opengameart.org/content/dark-shrine-loop) | qubodup & yd |
+| musique_boss_intro.ogg / .mp3 | boss_battle_8_metal_opening | [Boss Battle #8 Metal](https://opengameart.org/content/boss-battle-8-metal) | nene |
+| musique_boss_boucle.ogg / .mp3 | boss_battle_8_metal_loop | [Boss Battle #8 Metal](https://opengameart.org/content/boss-battle-8-metal) | nene |

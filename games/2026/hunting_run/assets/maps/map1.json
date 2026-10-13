@@ -263,6 +263,139 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":9,
+         "name":"spawns",
+         "objects":[
+                {
+                 "height":0,
+                 "id":8,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":542,
+                 "y":560
+                }, 
+                {
+                 "height":0,
+                 "id":9,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1370,
+                 "y":270
+                }, 
+                {
+                 "height":0,
+                 "id":10,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1564,
+                 "y":556
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":10,
+         "name":"ennemis 1",
+         "objects":[
+                {
+                 "height":0,
+                 "id":14,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":681,
+                 "y":552
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":11,
+         "name":"ennemis 2",
+         "objects":[
+                {
+                 "height":0,
+                 "id":15,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1623,
+                 "y":259
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":12,
+         "name":"potion pouvoir",
+         "objects":[
+                {
+                 "height":0,
+                 "id":12,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1145,
+                 "y":259
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":13,
+         "name":"potion coeur",
+         "objects":[],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -296,8 +429,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":8,
+ "nextlayerid":14,
+ "nextobjectid":16,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",
@@ -306,7 +439,7 @@
         {
          "columns":12,
          "firstgid":1,
-         "image":"..\/..\/..\/maps jeu 301\/TuileDeJeu1.png",
+         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu1.png",
          "imageheight":896,
          "imagewidth":384,
          "margin":0,
@@ -319,7 +452,7 @@
         {
          "columns":5,
          "firstgid":337,
-         "image":"..\/..\/..\/maps jeu 301\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,
@@ -332,7 +465,7 @@
         {
          "columns":16,
          "firstgid":352,
-         "image":"..\/..\/..\/maps jeu 301\/TuileDeJeu2.png",
+         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu2.png",
          "imageheight":960,
          "imagewidth":512,
          "margin":0,

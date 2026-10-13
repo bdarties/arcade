@@ -7,7 +7,7 @@ import { style, styleTexte, panneauPresentation, fermerPanneau, creerMedaillon, 
 
 ////////////////////////////////// Réglages du mini-jeu ///////////////////////////////////////////////
 
-const JEU = infosJeu("piano_time_time"); //  Infos du mini-jeu récupérées dans jeux.js
+const JEU = infosJeu("piano_time"); //  Infos du mini-jeu récupérées dans jeux.js
 
 const X_PIANO_SOLO = [640];         // Mode SOLO = un piano au centre 
 const X_PIANO_DUO = [330, 950];     // Mode DUO = un piano de chaque coté
@@ -290,6 +290,7 @@ export default class piano_time extends Phaser.Scene {
   majHUD(j) {
     j.texteScore.setText(j.score);
     var multi = this.multiplicateur(j);
+    j.texteMulti.setText(multi > 1 ? "x" + multi : "");
     j.texteCombo.setText(j.combo > 1 ? j.combo + " combos" : "");
   }
   

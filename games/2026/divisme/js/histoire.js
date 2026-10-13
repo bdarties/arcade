@@ -9,31 +9,37 @@ export default class histoire extends Phaser.Scene {
     // Préchargement des images d'illustration
     this.load.image('illustration_un', 'src/bg/illustration_un.png');
     this.load.image('illustration_deux', 'src/bg/illustration_deux.png');
+    this.load.image('illustration_lettre', 'src/bg/illustration_lettre.png');
+    this.load.image('illustration_lettre_brise', 'src/bg/illustration_lettre_brise.png');
   }
 
   create() {
     // 1. Définition des étapes : texte + clé d'image associée (ou null)
     this.dialogues = [
       {
-        texte: "Le Maestro est un chef d'orchestre avec une renommée MONDIALE. Les places pour ses spectacles granduoses sont extrêmement convoitées.",
+        texte: "Le Maestro est un chef d'orchestre avec une renommée mondiale. Les places pour ses spectacles grandioses sont extrêmement convoitées.",
         imageKey: 'illustration_un'
       },
       {
-        texte: "Et il semblerait que VOUS aussi, grâce à eu invitation mystérieuse, avez gagné la chance de faire partie de ces spectateurs privilégiés...",
-        imageKey: null // Aucune image pour ce texte
+        texte: "Et il semblerait que vous aussi, grâce à une invitation mystérieuse, avez obtenu la chance de faire partie de ces spectateurs privilégiés...",
+        imageKey: 'illustration_lettre'
       },
       {
         texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
-        imageKey: null // Aucune image pour ce texte
+        imageKey: 'illustration_lettre_brise'
       },
       {
-        texte: " « Une pierre, deux coup : je suis le Maestro ! Et à présent, vous allez faire partie de ma troupe de marionettes. » ",
+        texte: " « Une pierre, deux coups : je suis le Maestro ! Et à présent, vous allez faire partie de ma troupe de marionettes. » ",
         imageKey: 'illustration_deux'
       },
       {
-        texte: " « Cependant, si vous réussissez à exceller dans les jeux que je vous ai concocté, Je vous laisserai à nouveau votre liberté. » ",
+        texte: " « Si vous réussissez à exceller dans les jeux que je vous ai préparés, Je vous laisserai à nouveau votre liberté. » ",
         imageKey: 'illustration_deux'
       }
+      //{
+      //  texte: "En arrivant à l'Opéra, vous vous rendez compte que personne d'autre que vous n'est présent sur place. A l'exception de...",
+      //  imageKey: null // Aucune image pour ce texte
+      //},
     ];
 
     this.indexDialogue = 0;
@@ -152,7 +158,7 @@ export default class histoire extends Phaser.Scene {
 
     // Rappel du mode en haut de l'écran
     this.add.text(640, 40, nombre === 1 ? "Mode : Solo" : "Mode : 1v1", {
-      fontSize: '24px',
+      fontSize: '26px',
       fill: '#c8a20d'
     }).setOrigin(0.5);
 

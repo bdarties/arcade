@@ -25,6 +25,7 @@ import {
     compteARebours,
     attendreContinuer,
     enregistrerScore,
+    reinitialiserScores,
     creerTouches,
     uneTouchePressee
 } from "./fonctions.js";
@@ -95,6 +96,10 @@ export default class clicker extends Phaser.Scene {
 
     create() {
 
+        // Le clicker est le PREMIER mini-jeu : une nouvelle partie commence,
+        // on efface donc les scores de la partie précédente.
+        reinitialiserScores(this);
+
         // Mode choisi dans histoire.js (1 joueur par défaut)
         this.nombreJoueurs = this.registry.get("joueurs") || 1;
 
@@ -129,9 +134,10 @@ export default class clicker extends Phaser.Scene {
         this.texteTemps = creerTexteTemps(this, this.tempsRestant);
 
         // Le Maestro (à droite en solo, au milieu en duo)
-        this.maestro = this.add.image(this.nombreJoueurs === 1 ? 1050 : 640, 450, "maestro");
+        this.maestro = this.add.image(this.nombreJoueurs === 1 ? 1050 : 640, 450, "maestro")
+            .setDepth(-1);   // derrière tous les textes et boutons (qui sont à 0), devant le fond (-10)
         hauteurFixe(this.maestro, 700);
-        this.echelleMaestro = this.maestro.scaleX;   // on mémorise sa taille normale
+        this.echelleMaestro = this.maestro.scaleX;
 
         // Mode 1 joueur ou 2 joueurs
         if (this.nombreJoueurs === 1) {
@@ -286,7 +292,7 @@ export default class clicker extends Phaser.Scene {
             .setStrokeStyle(6, COULEURS.DORE)
             .setInteractive({ useHandCursor: true });
 
-        this.texteBoutonJ1 = this.add.text(400, 470, "CLIQUE !", style(TAILLE.ENORME)).setOrigin(0.5);
+        this.texteBoutonJ1 = this.add.text(400, 470, "APPUYEZ !", style(TAILLE.ENORME)).setOrigin(0.5);
 
         // Touches : en solo, les boutons des DEUX côtés de la borne fonctionnent
         this.touchesJ1 = creerTouches(this, BORNE.j1.boutons.concat(BORNE.j2.boutons));
@@ -500,7 +506,8 @@ export default class clicker extends Phaser.Scene {
         // Points : 100 pour la réussite + un bonus par seconde restante
         const points = POINTS_REUSSITE + this.tempsRestant * POINTS_PAR_SECONDE_RESTANTE;
 
-        enregistrerScore(this, "clicker", points, 0);
+        // Le dernier paramètre (true) dit : "ce mini-jeu est RÉUSSI" (compté pour la victoire finale)
+        enregistrerScore(this, "clicker", points, 0, true);
 
         afficherResultat(this, "BRAVO !", "Fortissimo atteint !  +" + points + " pts", undefined, true);
 
@@ -532,7 +539,8 @@ export default class clicker extends Phaser.Scene {
             // Jauge pas pleine : une vie perdue, mais on garde les points du niveau atteint
             const points = Math.round(this.niveauJauge);
 
-            enregistrerScore(this, "clicker", points, 0);
+            // false = mini-jeu RATÉ (les points sont quand même ajoutés au score total)
+            enregistrerScore(this, "clicker", points, 0, false);
 
             this.viesJ1 = retirerVie(this, this.masquesJ1, this.viesJ1);
 
