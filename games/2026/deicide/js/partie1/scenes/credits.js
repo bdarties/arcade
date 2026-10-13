@@ -6,7 +6,7 @@ import { creerPolice, ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classeme
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js";
 
-const VOLUME_MUSIQUE_CREDITS = 0.6; // le volume de base de la musique des crédits (0,38 avant, trop faible ; 0,3 pour celle du niveau) ; le réglage « musique » du menu pause s'y applique
+const VOLUME_MUSIQUE_CREDITS = 1; // le volume de base de la musique des crédits : le maximum (0,38 puis 0,6 avant, trop faible face à la musique des boss : 0,42 et 0,18) ; 0,3 pour celle du niveau ; le réglage « musique » du menu pause s'y applique
 const TOUCHES_SORTIR = ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"];
 const DELAI_AVANT_SORTIR = 1500; // ms : le joueur tient encore le bouton qui l'a amené ici
 const VITESSE = 75; // px par seconde
