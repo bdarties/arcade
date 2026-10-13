@@ -73,6 +73,7 @@ export default class chargement extends Phaser.Scene {
 
     // ---- Écrans plein format ----
     this.load.image("img_accueil", "./assets/accueil.jpg");
+    this.load.image("img_synopsis", "./assets/synopsis.jpg");
     this.load.image("img_bouton_play", "./assets/bouton_play.png");
     this.load.image("img_bouton_controls", "./assets/bouton_controls.png");
     this.load.image("img_bouton_credits", "./assets/bouton_credits.png");
@@ -97,6 +98,11 @@ export default class chargement extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32 // 96 px de haut / 3 lignes : avec 24 les images étaient coupées
     });
+
+    // ---- Musiques (en .m4a, plus légères que le .mp3 ; une seule piste par niveau) ----
+    this.load.audio("musique_niveau1", "./assets/musique_main_theme.m4a"); // niveau 1 : le main theme
+    this.load.audio("musique_niveau2", "./assets/musique_niveau2.m4a");   // niveau 2 : la piste « sonniveau1 »
+    this.load.audio("musique_accueil", "./assets/musique_chinoise.m4a"); // accueil, choix du mode, lobby
 
     // ---- Divers ----
     this.load.image("img_partition", "./assets/partition.png");

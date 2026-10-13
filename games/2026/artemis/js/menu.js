@@ -55,7 +55,7 @@ export default class menu extends Phaser.Scene {
     this.choix = data?.choix ?? 0;
     this.majSelection();
 
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton " + fct.ETIQUETTES.frapper_tirer + " : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     // les touches des deux joueurs (cf. fonctions.js)
@@ -86,12 +86,11 @@ export default class menu extends Phaser.Scene {
       return;
     }
 
-    /* >>>>> AJOUT SON <<<<< */ son_accueil.stop();
     // nouvelle partie : on oublie les niveaux visités (le jeu garde en mémoire l'état de chaque niveau pour pouvoir y revenir)
     this.registry.set("niveaux", {});
     this.registry.set("pierres_lunaires", 0);
     this.registry.set("nb_joueurs", option.nb_joueurs);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("niveau1", { niveau: 1 }));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("synopsis"));
   }
 
   update() {

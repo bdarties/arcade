@@ -4,12 +4,12 @@ import { STATUE } from "./salle_safe.js";
 
 /***********************************************************************/
 /** OFFRANDE : à la statue de la salle safe, on offre des pierres lunaires en échange de PV et de stamina
-/** une bulle au-dessus de la statue indique qu'on peut donner ; bouton "interagir avec un objet" (O ou T)
+/** une bulle au-dessus de la statue indique qu'on peut donner ; bouton "interagir" (O ou T)
 /***********************************************************************/
 
 const PIERRES_MAX = 5; // pierres données au maximum par appui (pour ne pas appuyer 20 fois) ; on n'en donne pas plus que nécessaire
 const PORTEE = 56; // px : distance max entre le joueur et la statue pour que la bulle apparaisse
-const BULLE_Y = 118; // px : position (monde) de la bulle, au-dessus de la tête de la statue
+const BULLE_Y = STATUE.tete_y - 47; // px : position (monde) de la bulle, 47 px au-dessus de la tête de la statue
 const LARGEUR_BULLE = 104;
 const HAUTEUR_BULLE = 62;
 const DUREE_VOL = 440; // ms : la pierre vole du joueur vers la statue
@@ -47,10 +47,10 @@ function distanceStatue(x, y) {
   return Math.hypot(dx, dy);
 }
 
-// chaque image : affiche ou cache la bulle, et traite le bouton "objet" des joueurs proches
+// chaque image : affiche ou cache la bulle, et traite le bouton "interagir" des joueurs proches
 export function majOffrande(scene) {
   const o = scene.offrande;
-  const proches = scene.joueurs.filter((j) => distanceStatue(j.sprite.body.center.x, j.sprite.body.center.y) <= PORTEE);
+  const proches = scene.joueursEnJeu().filter((j) => distanceStatue(j.sprite.body.center.x, j.sprite.body.center.y) <= PORTEE);
 
   if ((proches.length > 0) !== o.affichee) {
     o.affichee = proches.length > 0;
@@ -64,20 +64,22 @@ export function majOffrande(scene) {
 
   // la bulle annonce le nombre de pierres qui partiraient (rouge : aucune pierre)
   const possedees = pierres.nombrePierres(scene);
-  const prevu = Math.max(1, Math.min(PIERRES_MAX, ...proches.map((j) => scene.pierresPourSoigner(j))));
+  const prevu = Math.max(1, Math.min(PIERRES_MAX, ...proches.map((j) => scene.pierresPourSoigner(scene.beneficiaireOffrande(j)))));
   o.cout.setText("x" + prevu);
   o.cout.setColor(possedees > 0 ? "#E8EBF0" : "#FF6B6B");
-  o.touches.setText(proches.map((j) => "[" + j.definition.touches.objet + "]").join(" "));
+  o.touches.setText("[" + fct.ETIQUETTES.interagir + "]");
 
   for (const j of proches) {
-    if (!Phaser.Input.Keyboard.JustDown(j.touches.objet)) continue;
-    const necessaires = scene.pierresPourSoigner(j);
+    if (!Phaser.Input.Keyboard.JustDown(j.touches.interagir)) continue;
+    // un coéquipier à terre est relevé en premier : l'offrande va à lui, la pierre part de celui qui donne
+    const beneficiaire = scene.beneficiaireOffrande(j);
+    const necessaires = scene.pierresPourSoigner(beneficiaire);
     const nombre = Math.min(PIERRES_MAX, necessaires, possedees);
     if (necessaires === 0) refuser(scene, j, "Déjà en forme !");
     else if (nombre === 0) refuser(scene, j, "Pas de pierre lunaire");
     else {
       pierres.retirerPierres(scene, nombre);
-      offrir(scene, j, nombre);
+      offrir(scene, j, beneficiaire, nombre);
     }
     break; // une offrande par image
   }
@@ -90,7 +92,8 @@ function refuser(scene, j, message) {
 }
 
 // la pierre vole du joueur vers la statue ; à l'arrivée un anneau de lumière part de la statue et le joueur est soigné
-function offrir(scene, j, nombre) {
+// (j donne la pierre, le bénéficiaire reçoit les PV : le même joueur, ou son coéquipier à terre)
+function offrir(scene, j, beneficiaire, nombre) {
   const arrivee = { x: STATUE.centre_x, y: STATUE.rect[1] + 40 };
   const pierre = scene.add.image(j.sprite.x, j.sprite.y - 12, "img_pierre_lunaire").setScale(1.5).setDepth(fct.PROFONDEUR.projectiles);
   scene.tweens.add({ targets: pierre, x: arrivee.x, duration: DUREE_VOL });
@@ -103,11 +106,11 @@ function offrir(scene, j, nombre) {
     onComplete: () => {
       pierre.destroy();
       anneau(scene, arrivee.x, arrivee.y);
-      const pv = scene.recevoirOffrande(j, nombre);
-      texteFlottant(scene, j, pv > 0 ? "+" + pv + " PV" : "Stamina !", "#8CE99A");
+      const pv = scene.recevoirOffrande(beneficiaire, nombre);
+      texteFlottant(scene, beneficiaire, pv > 0 ? "+" + pv + " PV" : "Stamina !", "#8CE99A");
       // le joueur s'illumine un instant
-      j.sprite.setTintFill(0xffd9df);
-      scene.time.delayedCall(140, () => j.sprite.active && j.sprite.clearTint());
+      beneficiaire.sprite.setTintFill(0xffd9df);
+      scene.time.delayedCall(140, () => beneficiaire.sprite.active && beneficiaire.sprite.clearTint());
     }
   });
 }

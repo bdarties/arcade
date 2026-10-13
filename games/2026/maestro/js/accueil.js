@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { creerClavierMenu } from "./controles.js";
+import { jouerMusique } from "./musique.js";
 
 // La scène qui s'ouvre quand on appuie sur PLAY
 const SCENE_SUIVANTE = "choix_mode";
@@ -53,6 +54,9 @@ export default class accueil extends Phaser.Scene {
     // Le bouton choisi "respire" pour montrer qu'on peut appuyer dessus
     this.respiration = null;
     this.majSelection();
+
+    // La musique d'accueil : elle continue sans coupure jusqu'au lobby (voir musique.js)
+    jouerMusique(this, "musique_accueil", 0.4);
 
     // Le panneau d'information (caché tant qu'on n'a pas appuyé sur CONTROLS / CREDITS)
     this.panneau = this.creerPanneau();

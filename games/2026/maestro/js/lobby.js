@@ -17,6 +17,8 @@
 
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau } from "./controles.js";
+import { jouerMusique } from "./musique.js";
+import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
 
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
 const LARGEUR_CARTE = 1024;
@@ -29,18 +31,21 @@ const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 const SOLIDES = [
   [0, 1434, 1024, 102], // le sol
   [0, 1328, 352, 32], // l'estrade de la porte 1 (« Les Coulisses »)
-  [352, 1328, 96, 16], // le bord droit de cette estrade
-  [720, 1321, 256, 39], // la marche devant la grille de la porte 3
-  [528, 1298, 160, 62], // le panneau bleu à droite de la billetterie
-  [350, 1282, 142, 20], // la plateforme du milieu (pied de la longue échelle)
-  [450, 1250, 102, 22], // la petite plateforme au-dessus
-  [608, 1201, 96, 47], // la petite plateforme suspendue (pied de l'échelle de droite)
-  [528, 1026, 160, 62], // le panneau bleu du haut
-  [336, 960, 208, 40], // la poutre en haut de la longue échelle
+  [400, 1234, 224, 16], // plateforme centrée sur x = 512, au pied de la longue échelle
+  [724, 1330, 300, 32], // le portail complet, contre le bord droit
+  [610, 1401, 14, 15], // les marches de l'escalier vers le portail
+  [624, 1386, 10, 30],
+  [634, 1371, 20, 45],
+  [654, 1354, 20, 62],
+  [674, 1342, 28, 74],
+  [702, 1330, 22, 86],
+  [10, 1076, 332, 12], // le dessus du rideau de la porte 1 est praticable
+  [0, 814, 192, 16], // la plateforme contre le bord gauche, au-dessus du rideau
+  [512, 974, 180, 16], // la poutre centrée sur l'arrivée de l'échelle (x = 602)
   [336, 752, 256, 32], // les plateformes qui mènent à la porte 2
-  [608, 752, 240, 80],
-  [240, 640, 160, 80],
-  [624, 592, 240, 48]
+  [624, 754, 224, 16], // bord doré de la plateforme sous l'échelle de droite
+  [624, 596, 240, 44], // dessus visible de la plateforme à l'arrivée de cette échelle
+  [350, 508, 270, 18] // la passerelle sous la porte 2 : sans elle, on ne pouvait pas se tenir devant
 ];
 
 // Les échelles dessinées dans la carte (calque "decor"). La carte Tiled ne les décrit pas : on les relève ici.
@@ -48,21 +53,21 @@ const SOLIDES = [
 // ajustée sur le dessus de la plateforme la plus proche, voir trouverEchelles).
 const ECHELLES = [
   { x: 221, haut: 1328, bas: 1440 }, // sous l'estrade de la porte 1 (« Les Coulisses »)
-  { x: 382, haut: 976, bas: 1281 }, // la longue échelle du milieu
-  { x: 642, haut: 1034, bas: 1210 }, // à droite de la billetterie
-  { x: 815, haut: 596, bas: 756 } // sous la porte 2 (« Les Ombres chinoises »)
+  { x: 602, haut: 974, bas: 1234 }, // du bord droit de la plateforme centrale au milieu de la poutre
+  { x: 174, haut: 814, bas: 1076 }, // du dessus du rideau à la plateforme supérieure gauche
+  { x: 814, haut: 596, bas: 754 } // sous la porte 2 (« Les Ombres chinoises »)
 ];
 
 // Où apparaissent les joueurs (x, et y du sol sur lequel ils se posent)
 const SPAWN = { x: 450, solY: 1434 };
 
 // Les 3 portes. x, y, largeur, hauteur = la zone (en pixels de la carte) où l'on peut l'utiliser.
-// scene = le niveau qu'elle lance (null = pas encore ouverte).
+// niveau = le numéro du niveau qu'elle ouvre (son nom, sa scène et son état viennent de progression.js).
 // Leur nom est déjà dessiné sur l'illustration du lobby : on affiche seulement une consigne quand on est devant.
 const PORTES = [
-  { nom: "1 — LES COULISSES", scene: "niveau1", x: 104, y: 1250, largeur: 168, hauteur: 184 },
-  { nom: "2 — LES OMBRES CHINOISES", scene: null, x: 400, y: 430, largeur: 224, hauteur: 130 },
-  { nom: "3 — LA GRANDE SCÈNE", scene: null, x: 760, y: 1160, largeur: 144, hauteur: 152 }
+  { niveau: 1, x: 104, y: 1250, largeur: 168, hauteur: 184 },
+  { niveau: 2, x: 400, y: 430, largeur: 224, hauteur: 130 },
+  { niveau: 3, x: 776, y: 1160, largeur: 192, hauteur: 170 }
 ];
 
 export default class lobby extends Phaser.Scene {
@@ -102,6 +107,12 @@ export default class lobby extends Phaser.Scene {
     this.creerPersonnages();
     this.creerCamera();
     this.creerInterface();
+    this.demarrerMusique();
+  }
+
+  // La musique du lobby : la même piste que l'accueil, sans coupure (voir musique.js)
+  demarrerMusique() {
+    jouerMusique(this, "musique_accueil", 0.4);
   }
 
   // --------------------------------------------------------------------------
@@ -168,6 +179,18 @@ export default class lobby extends Phaser.Scene {
       return meilleur;
     };
     this.echelles = ECHELLES.map((e) => ({ centreX: e.x, haut: caler(e.x, e.haut), bas: caler(e.x, e.bas) }));
+
+    // Les échelles ajoutées après coup ne sont pas dans l'illustration : on les dessine nous-mêmes
+    ECHELLES.forEach((e, i) => {
+      if (e.dessiner == true) {
+        const { haut, bas } = this.echelles[i];
+        const dessin = this.add.graphics().setDepth(4);
+        dessin.lineStyle(4, 0xc9a24a).lineBetween(e.x - 8, haut, e.x - 8, bas).lineBetween(e.x + 8, haut, e.x + 8, bas);
+        for (let y = haut + 12; y < bas; y += 18) {
+          dessin.lineBetween(e.x - 8, y, e.x + 8, y); // les barreaux
+        }
+      }
+    });
   }
 
   // Haut / bas du joystick devant une échelle pour s'y accrocher (même principe qu'au niveau 1)
@@ -231,13 +254,16 @@ export default class lobby extends Phaser.Scene {
   //  Les portes : une consigne apparaît quand un joueur est devant
   // --------------------------------------------------------------------------
   creerPortes() {
+    const deblocage = this.registry.get("deblocage"); // numéro du niveau qu'on vient de débloquer (ou null)
     this.portes = PORTES.map((porte) => {
-      const ouverte = porte.scene !== null;
+      const niveau = NIVEAUX.find((n) => n.numero == porte.niveau);
+      const centreX = porte.x + porte.largeur / 2;
+      const centreY = porte.y + porte.hauteur / 2;
       const texte = this.add
-        .text(porte.x + porte.largeur / 2, porte.y - 20, ouverte ? "Bouton B : entrer" : "Porte fermée · bientôt", {
+        .text(centreX, porte.y - 20, "", {
           fontFamily: POLICE,
           fontSize: "13pt",
-          color: ouverte ? "#ffe9a8" : "#aab4d8",
+          color: "#ffe9a8",
           align: "center",
           stroke: "#000000",
           strokeThickness: 4,
@@ -247,8 +273,63 @@ export default class lobby extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(6)
         .setAlpha(0); // invisible tant que personne n'est devant la porte
-      return { donnees: porte, zone: new Phaser.Geom.Rectangle(porte.x, porte.y, porte.largeur, porte.hauteur), texte: texte };
+      // un voile sombre + un cadenas sur la porte quand elle n'est pas ouverte
+      const voile = this.add.rectangle(centreX, centreY, porte.largeur, porte.hauteur, 0x000010, 0.62).setDepth(5);
+      const cadenas = this.add.graphics().setDepth(5.5);
+      cadenas.fillStyle(0xd4a94f).fillRoundedRect(centreX - 15, centreY - 2, 30, 24, 4);
+      cadenas.lineStyle(5, 0xd4a94f).beginPath().arc(centreX, centreY - 4, 10, Math.PI, 0, false).strokePath();
+      cadenas.fillStyle(0x3a2a10).fillCircle(centreX, centreY + 10, 3);
+      // le fragment de partition qui récompense ce niveau : éteint tant qu'il n'est pas gagné
+      const icone = this.add.image(centreX, porte.y - 64, "img_partition").setDisplaySize(46, 46).setDepth(6);
+
+      const objet = { donnees: porte, niveau: niveau, zone: new Phaser.Geom.Rectangle(porte.x, porte.y, porte.largeur, porte.hauteur), texte: texte, voile: voile, cadenas: cadenas, icone: icone };
+      if (deblocage == porte.niveau) {
+        // la porte vient d'être débloquée : on la montre d'abord verrouillée, puis le verrou disparaît
+        this.majPorte(objet, "verrouillee");
+        this.time.delayedCall(1100, () => {
+          this.majPorte(objet);
+          this.tweens.add({ targets: icone, scale: icone.scale * 1.5, duration: 350, yoyo: true, repeat: 2 });
+          this.cameras.main.flash(350, 255, 235, 170);
+          this.afficherMessage("Porte " + niveau.numero + " débloquée : " + niveau.nom + " !", 5000);
+          this.registry.set("deblocage", null);
+        });
+      } else {
+        this.majPorte(objet);
+      }
+      return objet;
     });
+  }
+
+  // L'état d'une porte : "terminee", "ouverte", "bientot" (ouverte mais niveau en construction) ou "verrouillee"
+  etatPorte(niveau) {
+    if (estTermine(this.registry, niveau.numero) == true) {
+      return "terminee";
+    }
+    if (estDebloque(this.registry, niveau.numero) == false) {
+      return "verrouillee";
+    }
+    return niveau.disponible == true ? "ouverte" : "bientot";
+  }
+
+  // Met à jour l'apparence d'une porte (texte, voile, cadenas, fragment) selon son état
+  majPorte(porte, etatForce) {
+    const etat = etatForce !== undefined ? etatForce : this.etatPorte(porte.niveau);
+    const messages = {
+      ouverte: "Bouton B : entrer",
+      terminee: "Terminée · Bouton B : rejouer",
+      bientot: "En construction · bientôt !",
+      verrouillee: "Verrouillée · termine le niveau " + (porte.niveau.numero - 1)
+    };
+    porte.etat = etat;
+    porte.texte.setText(messages[etat]).setColor(etat == "verrouillee" || etat == "bientot" ? "#aab4d8" : "#ffe9a8");
+    porte.voile.setVisible(etat == "verrouillee" || etat == "bientot").setAlpha(etat == "verrouillee" ? 0.62 : 0.4);
+    porte.cadenas.setVisible(etat == "verrouillee");
+    // le fragment : doré et lumineux si le niveau est terminé, gris et transparent sinon
+    if (etat == "terminee") {
+      porte.icone.clearTint().setAlpha(1);
+    } else {
+      porte.icone.setTint(0x6a7288).setAlpha(0.45);
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -323,6 +404,18 @@ export default class lobby extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
     this.messageJusqua = 0;
+
+    // En haut à droite : les fragments de partition trouvés, et le prochain objectif
+    const fixe = (objet) => objet.setScrollFactor(0).setDepth(100);
+    const termines = niveauxTermines(this.registry).length;
+    fixe(this.add.image(1228, 44, "img_partition")).setDisplaySize(46, 46);
+    fixe(this.add.text(1196, 44, "Fragments : " + termines + " / " + NIVEAUX.length, { ...style, fontSize: "14pt", color: "#ffe9a8" }).setOrigin(1, 0.5));
+    const suivant = prochainNiveau(this.registry);
+    let objectif = "Tous les niveaux sont terminés !";
+    if (suivant !== undefined) {
+      objectif = suivant.disponible == true ? "Prochain objectif : porte " + suivant.numero + " — " + suivant.nom : "Niveau " + suivant.numero + " : en construction";
+    }
+    fixe(this.add.text(1250, 82, objectif, { ...style, fontSize: "12pt", color: "#dfe6ff" }).setOrigin(1, 0.5));
   }
 
   // ==========================================================================
@@ -409,7 +502,7 @@ export default class lobby extends Phaser.Scene {
         if (Phaser.Geom.Rectangle.Contains(porte.zone, perso.x, perso.y)) {
           quelquUnDevant = true;
           if (controle == true && this.toucheAppuyee(perso, "B")) {
-            this.utiliserPorte(porte.donnees);
+            this.utiliserPorte(porte);
           }
         }
       });
@@ -419,12 +512,21 @@ export default class lobby extends Phaser.Scene {
   }
 
   utiliserPorte(porte) {
-    if (porte.scene === null) {
-      this.messageJusqua = this.time.now + 2500;
-      this.texteMessage.setText("Cette porte s'ouvrira plus tard : " + porte.nom);
+    if (porte.etat == "verrouillee") {
+      const precedent = NIVEAUX.find((n) => n.numero == porte.niveau.numero - 1);
+      this.afficherMessage("Porte verrouillée : termine d'abord le niveau " + precedent.numero + " (" + precedent.nom + ")", 3500);
       return;
     }
-    this.entrerDansLaPorte(porte.scene);
+    if (porte.etat == "bientot") {
+      this.afficherMessage("Le niveau " + porte.niveau.numero + " est en construction : reviens bientôt !", 3500);
+      return;
+    }
+    this.entrerDansLaPorte(porte.niveau.scene);
+  }
+
+  afficherMessage(texte, dureeMs) {
+    this.messageJusqua = this.time.now + dureeMs;
+    this.texteMessage.setText(texte);
   }
 
   // Zoom de la caméra + fondu au noir, puis le niveau

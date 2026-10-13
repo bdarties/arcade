@@ -71,6 +71,115 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":9,
+         "name":"ennemis 1",
+         "objects":[
+                {
+                 "height":0,
+                 "id":4,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":310,
+                 "y":268
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":10,
+         "name":"ennemis 2",
+         "objects":[
+                {
+                 "height":0,
+                 "id":6,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":678,
+                 "y":478
+                }, 
+                {
+                 "height":0,
+                 "id":7,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1462,
+                 "y":482
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":11,
+         "name":"potion pouvoir",
+         "objects":[
+                {
+                 "height":0,
+                 "id":9,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1076,
+                 "y":474
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":12,
+         "name":"potion coeur",
+         "objects":[
+                {
+                 "height":0,
+                 "id":5,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":684,
+                 "y":272
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351,
             351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351,
             351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351, 351,
@@ -289,8 +398,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":4,
+ "nextlayerid":13,
+ "nextobjectid":10,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",
@@ -299,7 +408,7 @@
         {
          "columns":12,
          "firstgid":1,
-         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu1.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu1.png",
          "imageheight":896,
          "imagewidth":384,
          "margin":0,
@@ -312,7 +421,7 @@
         {
          "columns":5,
          "firstgid":337,
-         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,
@@ -325,7 +434,7 @@
         {
          "columns":10,
          "firstgid":352,
-         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/maps jeu 301\/TuileDeJeu5.png",
+         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu5.png",
          "imageheight":320,
          "imagewidth":320,
          "margin":0,
@@ -338,7 +447,7 @@
         {
          "columns":6,
          "firstgid":452,
-         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu4.png",
+         "image":"..\/..\/..\/..\/TuileDeJeu4.png",
          "imageheight":128,
          "imagewidth":192,
          "margin":0,

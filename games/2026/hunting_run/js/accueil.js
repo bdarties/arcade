@@ -1,3 +1,5 @@
+import { jouer, chargerSons } from "./sons.js";
+
 // Écran d'accueil : fond + bouton Play, puis passage à l'écran de choix du mode (scène "menu")
 export default class accueil extends Phaser.Scene {
   constructor() {
@@ -9,6 +11,7 @@ export default class accueil extends Phaser.Scene {
     this.load.image("accueil_fond", "./assets/ui/accueil.png");
     this.load.image("play_hover", "./assets/ui/play-hover.png");
     this.load.audio("musique_demo", ["./assets/audio/demo.mp3"]);
+    chargerSons(this); // bruitages (une seule fois, ils restent en mémoire pour tout le jeu)
   }
 
   create() {
@@ -51,6 +54,7 @@ export default class accueil extends Phaser.Scene {
   lancer() {
     if (this.demarre) return;
     this.demarre = true;
+    jouer(this, "valider");
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("menu"));
   }

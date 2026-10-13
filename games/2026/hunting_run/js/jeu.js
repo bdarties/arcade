@@ -1,4 +1,6 @@
-import { PERSO, PERSO2, TUILES, MAPS, DEBUG, JOUEUR, CLE, ECRANS } from "./maps.js";
+import { PERSO, PERSO2, TUILES, MAPS, DEBUG, JOUEUR, CLE, ECRANS, HASARD, MURMURES, ENIGMES, POINTS, ETATS_PARTIE } from "./maps.js";
+import combat from "./combat.js"; // ennemis, tirs, laser, potions, PNJ
+import { jouer, chargerSons } from "./sons.js"; // bruitages
 
 // --- réglages de l'escalier ---
 const MARCHE_MAX = 40;
@@ -25,10 +27,12 @@ export default class jeu extends Phaser.Scene {
     super({ key: "jeu" });
   }
 
-  // data = { map: "map2", origine: "map1" }  (origine = map d'où l'on vient)
+  // data = { map: "map2", origine: "map1", hasard: false }
+  //   origine = map d'où l'on vient ; hasard = true si on arrive par une porte aléatoire
   init(data) {
     this.nomMap = (data && data.map) || "map1";
     this.origine = data && data.origine;
+    this.hasard = !!(data && data.hasard);
   }
 
   preload() {
@@ -59,6 +63,12 @@ export default class jeu extends Phaser.Scene {
     // image de la clé (chargée une seule fois)
     if (!this.textures.exists("cle")) this.load.image("cle", CLE.fichier);
 
+    // sons (fichiers de assets/sons/)
+    chargerSons(this);
+
+    // sprites des ennemis, PNJ, potions, boules (voir SPRITES dans maps.js)
+    this.chargerCombat();
+
     this.load.spritesheet(PERSO.cle, PERSO.fichier, {
       frameWidth: PERSO.frameWidth,
       frameHeight: PERSO.frameHeight
@@ -84,6 +94,7 @@ export default class jeu extends Phaser.Scene {
      *  MAP                   *
      *************************/
     const carte = this.make.tilemap({ key: this.nomMap });
+    this.carte = carte; // gardée pour lire les calques d'objets (ennemis, potions) dans combat.js
 
     // addTilesetImage("nom du tileset DANS TILED", "clé de l'image chargée")
     const tilesets = [];
@@ -119,6 +130,7 @@ export default class jeu extends Phaser.Scene {
       this.physics.add.existing(zone, true);
       zone.vers = p.vers;
       zone.cle = p.cle; // true : la porte est fermée à clé
+      zone.enigme = p.enigme; // nom d'un état à résoudre avant de pouvoir passer (ex : énigme de la Dame blanche)
       return zone;
     });
     this.indice = this.add
@@ -133,7 +145,12 @@ export default class jeu extends Phaser.Scene {
      *************************/
     // on apparaît devant la porte qui mène à la map d'où l'on vient.
     // Au lancement du jeu (pas de map d'origine), on apparaît au point de départ de la map (cfg.depart).
-    const porteDepart = cfg.portes.find((p) => p.vers === this.origine);
+    let porteDepart = cfg.portes.find((p) => p.vers === this.origine);
+    // arrivée par une porte aléatoire : on apparaît devant une des portes "hasard" de la map, tirée au sort
+    if (this.hasard) {
+      const possibles = cfg.portes.filter((p) => p.vers === "hasard");
+      if (possibles.length) porteDepart = Phaser.Utils.Array.GetRandom(possibles);
+    }
     let departX, departY;
     if (porteDepart) {
       departX = (porteDepart.x + 1) * 32;
@@ -154,7 +171,7 @@ export default class jeu extends Phaser.Scene {
     // contrôles de la borne : J1 = joystick flèches + bouton A (I) + bouton D = saut (K) ; J2 = joystick Z/Q/S/D + bouton A (R) + bouton D = saut (F)
     // le joystick vers le haut (up) sert UNIQUEMENT à monter aux échelles, le saut a sa propre touche
     const reglages = [
-      { teinte: null, decalage: nb > 1 ? -20 : 0, touches: { ...clavier.createCursorKeys(), action: clavier.addKey(K.I), saut: clavier.addKey(K.K) } },
+      { teinte: null, decalage: nb > 1 ? -20 : 0, touches: { ...clavier.createCursorKeys(), action: clavier.addKey(K.I), saut: clavier.addKey(K.K), attaque: clavier.addKey(K.O) } },
       {
         teinte: 0x66aaff,
         decalage: 20,
@@ -164,7 +181,8 @@ export default class jeu extends Phaser.Scene {
           left: clavier.addKey(K.Q),
           right: clavier.addKey(K.D),
           action: clavier.addKey(K.R),
-          saut: clavier.addKey(K.F)
+          saut: clavier.addKey(K.F),
+          attaque: clavier.addKey(K.G)
         }
       }
     ];
@@ -236,6 +254,13 @@ export default class jeu extends Phaser.Scene {
      *  CLÉ                   *
      *************************/
     this.creerCle();
+    this.boiteMessage = null;
+    this.minuteurMessage = null;
+    this.boutonSecret = null;
+    this.enigme = null;
+    this.creerPoints();
+    this.initCombat(plateformes); // ennemis, potions, PNJ
+    this.murmurer();
 
     /*************************
      *  TIMER (3 minutes)     *
@@ -289,6 +314,8 @@ export default class jeu extends Phaser.Scene {
       return { coeurs, vides, ko, dernierPv: -1 };
     });
 
+    this.initHudCombat();
+
     this.toucheRejouer = this.input.keyboard.addKeys({
       entree: Phaser.Input.Keyboard.KeyCodes.ENTER,
       espace: Phaser.Input.Keyboard.KeyCodes.SPACE
@@ -303,6 +330,7 @@ export default class jeu extends Phaser.Scene {
         if (e.key >= "1" && e.key <= "6") this.changerDeMap("map" + e.key, null);
         // tests de la barre de vie : 7 = -10 PV pour tous, 8 = +10 PV pour tous
         if (e.key === "9") this.finir(); // test : aller directement à l'écran de fin
+        if (e.key === "0") this.vivants().forEach((j) => this.donnerPouvoir(j)); // test : donne le pouvoir
         if (e.key === "7") this.vivants().forEach((j) => this.perdreVie(j, 10));
         if (e.key === "8") this.vivants().forEach((j) => this.soigner(j, 10));
       });
@@ -340,17 +368,253 @@ export default class jeu extends Phaser.Scene {
     return j.sheet2 ? nom + "_2" : nom;
   }
 
-  changerDeMap(destination, origine) {
+  changerDeMap(destination, origine, hasard = false) {
     if (this.enTransition || !MAPS[destination]) return;
     this.enTransition = true;
     this.cameras.main.fadeOut(250);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       if (this.perdu) return; // le temps s'est écoulé pendant le fondu : on reste sur "Tu as perdu"
-      this.scene.restart({ map: destination, origine: origine });
+      this.scene.restart({ map: destination, origine: origine, hasard: hasard });
     });
   }
 
-  // pose la clé dans la map si c'est la bonne map et qu'elle n'a pas encore été trouvée.
+  // tire au sort la map où mène une porte "hasard" (jamais la map actuelle, jamais une map interdite comme la map6)
+  destinationAleatoire() {
+    const candidates = Object.keys(MAPS).filter((m) => m !== this.nomMap && !HASARD.interdites.includes(m));
+    const poids = candidates.map((m) => (HASARD.poids && HASARD.poids[m]) ?? 1);
+    let tirage = Math.random() * poids.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < candidates.length; i++) {
+      tirage -= poids[i];
+      if (tirage <= 0) return candidates[i];
+    }
+    return candidates[candidates.length - 1];
+  }
+
+  // petit murmure d'ambiance quand on arrive par une porte aléatoire
+  murmurer() {
+    if (!this.hasard || Math.random() > 0.5) return;
+    this.message(Phaser.Utils.Array.GetRandom(MURMURES), 3000);
+  }
+
+  // affiche un texte en bas de l'écran pendant "duree" ms (remplace le message précédent)
+  message(texte, duree = 4500) {
+    if (this.boiteMessage) this.boiteMessage.destroy();
+    if (this.minuteurMessage) this.minuteurMessage.remove(false);
+    const boite = this.add
+      .text(this.scale.width / 2, this.scale.height - 40, texte, {
+        fontFamily: "Georgia, serif",
+        fontSize: "22px",
+        color: "#ffffff",
+        backgroundColor: "#000d",
+        padding: { x: 16, y: 10 },
+        align: "center",
+        wordWrap: { width: 820 }
+      })
+      .setOrigin(0.5, 1)
+      .setScrollFactor(0)
+      .setDepth(1100);
+    this.boiteMessage = boite;
+    this.minuteurMessage = this.time.delayedCall(duree, () => {
+      boite.destroy();
+      if (this.boiteMessage === boite) this.boiteMessage = null;
+    });
+  }
+
+  /*************************
+   *  POINTS D'INTERACTION  *
+   *************************/
+  // notes, miroir, bouton secret, cuvette : zones où l'on appuie sur A
+  creerPoints() {
+    this.points = [];
+    (POINTS[this.nomMap] || []).forEach((def) => {
+      const zone = this.add.zone((def.x + def.l / 2) * 32, (def.y + def.h / 2) * 32, def.l * 32, def.h * 32);
+      this.physics.add.existing(zone, true);
+      zone.def = def;
+      this.points.push(zone);
+      if (def.type === "bouton") this.creerBouton(def);
+    });
+  }
+
+  // le point est-il utilisable ? (le bouton secret n'existe qu'après le miroir)
+  pointActif(def) {
+    return !def.si || !!this.registry.get(def.si);
+  }
+
+  // dessine le petit bouton rouge secret (invisible tant que le miroir n'est pas résolu)
+  creerBouton(def) {
+    const x = def.bx * 32;
+    const y = def.by * 32;
+    const presse = !!this.registry.get("cle_revelee");
+    const lueur = this.add.circle(x, y, 14, presse ? 0x33aa33 : 0xff2222, 0.3).setDepth(60);
+    const bouton = this.add.circle(x, y, 7, presse ? 0x33aa33 : 0xcc1111).setStrokeStyle(2, 0x220000).setDepth(61);
+    this.boutonSecret = { lueur, bouton };
+    this.boutonSecret.visible = this.pointActif(def);
+    lueur.setVisible(this.boutonSecret.visible);
+    bouton.setVisible(this.boutonSecret.visible);
+    if (!presse) this.pulser();
+  }
+
+  pulser() {
+    if (!this.boutonSecret) return;
+    this.tweens.add({ targets: this.boutonSecret.lueur, alpha: 0.05, scale: 1.6, duration: 700, yoyo: true, repeat: -1 });
+  }
+
+  // le miroir vient d'être résolu : le bouton apparaît
+  afficherBouton() {
+    if (!this.boutonSecret) return;
+    const { lueur, bouton } = this.boutonSecret;
+    lueur.setVisible(true).setAlpha(0);
+    bouton.setVisible(true).setAlpha(0);
+    this.tweens.add({ targets: [lueur, bouton], alpha: { from: 0, to: 1 }, duration: 800 });
+    this.time.delayedCall(850, () => this.pulser());
+  }
+
+  // action du joueur j qui appuie sur A sur un point d'interaction
+  actionPoint(def, j) {
+    switch (def.type) {
+      case "note":
+        this.message(def.texte, 7500);
+        break;
+      case "enigme":
+        if (this.registry.get(ENIGMES[def.enigme].resolu)) this.message(def.deja, 4000);
+        else this.ouvrirEnigme(def.enigme, j);
+        break;
+      case "bouton":
+        if (this.registry.get("cle_revelee")) this.message(def.deja, 4000);
+        else this.ouvrirEnigme(def.enigme, j);
+        break;
+      case "pnj":
+        this.parler(def.pnj, j);
+        break;
+      case "toilettes":
+        if (!this.registry.get("cle_revelee")) this.message(def.texte, 6000);
+        else if (!this.registry.get("cle")) this.ramasserCle();
+        else this.message(def.vide, 3000);
+        break;
+    }
+  }
+
+  /*************************
+   *  ÉNIGMES               *
+   *************************/
+  ouvrirEnigme(id, joueur) {
+    this.couperLasers();
+    jouer(this, "page");
+    this.physics.world.pause(); // les ennemis s'arrêtent aussi pendant l'énigme
+    const e = ENIGMES[id];
+    const L = this.scale.width;
+    const H = this.scale.height;
+    const fixe = (o, prof) => o.setScrollFactor(0).setDepth(prof);
+    const police = { fontFamily: "Georgia, serif" };
+
+    const objets = [];
+    objets.push(fixe(this.add.rectangle(L / 2, H / 2, L, H, 0x000000, 0.85), 1500));
+    objets.push(fixe(this.add.rectangle(L / 2, H / 2, 900, 470, 0x140a12, 1).setStrokeStyle(3, 0x8a1c1c), 1501));
+    objets.push(fixe(this.add.text(L / 2, H / 2 - 195, e.titre, { ...police, fontSize: "30px", fontStyle: "italic", color: "#c9a24a" }).setOrigin(0.5), 1502));
+    objets.push(fixe(this.add.text(L / 2, H / 2 - 140, e.question, { ...police, fontSize: "24px", color: "#ffffff", align: "center", wordWrap: { width: 820 } }).setOrigin(0.5, 0), 1502));
+    const options = e.choix.map((c, i) =>
+      fixe(this.add.text(L / 2, H / 2 + 30 + i * 52, c, { ...police, fontSize: "28px" }).setOrigin(0.5), 1502)
+    );
+    const retour = fixe(this.add.text(L / 2, H / 2 + 175, "", { ...police, fontSize: "20px", color: "#ff6666" }).setOrigin(0.5), 1502);
+    objets.push(fixe(this.add.text(L / 2, H / 2 + 208, "Joystick : choisir     A : valider     Saut : fermer", { fontSize: "15px", color: "#999999" }).setOrigin(0.5), 1502));
+
+    this.enigme = { id, def: e, index: 0, joueur, objets: objets.concat(options, [retour]), options, retour };
+    // on vide les appuis "en retard" des touches pour ne pas valider/choisir par erreur à l'ouverture
+    this.joueurs.forEach((j) => {
+      const c = j.touches;
+      [c.left, c.right, c.up, c.down, c.saut].forEach((k) => Phaser.Input.Keyboard.JustDown(k));
+    });
+    this.majOptionsEnigme();
+  }
+
+  majOptionsEnigme() {
+    const en = this.enigme;
+    en.options.forEach((t, i) => {
+      t.setText((i === en.index ? "▶  " : "    ") + en.def.choix[i]);
+      t.setColor(i === en.index ? "#ffd24a" : "#bbbbbb");
+    });
+  }
+
+  fermerEnigme() {
+    if (!this.enigme) return;
+    this.enigme.objets.forEach((o) => o.destroy());
+    this.enigme = null;
+    if (!this.perdu) this.physics.world.resume();
+  }
+
+  // joystick : choisir la réponse, A : valider, saut : fermer
+  gererEnigme() {
+    const en = this.enigme;
+    const n = en.def.choix.length;
+    let dir = 0;
+    let valider = false;
+    let fermer = false;
+    this.vivants().forEach((j) => {
+      const c = j.touches;
+      const J = Phaser.Input.Keyboard.JustDown;
+      if (J(c.left)) dir = -1;
+      if (J(c.up)) dir = -1;
+      if (J(c.right)) dir = 1;
+      if (J(c.down)) dir = 1;
+      if (J(c.saut)) fermer = true;
+      if (j.appuiAction) {
+        valider = true;
+        en.joueur = j; // c'est ce joueur qui perdra de la vie s'il se trompe
+      }
+    });
+    if (fermer) {
+      jouer(this, "retour");
+      this.fermerEnigme();
+      return;
+    }
+    if (dir) {
+      jouer(this, "clic");
+      en.index = (en.index + dir + n) % n;
+      en.retour.setText("");
+      this.majOptionsEnigme();
+    }
+    if (!valider) return;
+
+    if (en.index === en.def.bonne) {
+      const id = en.id;
+      const def = en.def;
+      this.fermerEnigme();
+      this.registry.set(def.resolu, true);
+      jouer(this, "bonneReponse");
+      this.cameras.main.flash(350, 255, 255, 255);
+      if (id === "miroir") {
+        this.message(def.succes, 6000);
+        this.afficherBouton();
+      } else if (id === "bouton") {
+        this.revelerCle();
+      } else if (def.succes) {
+        this.message(def.succes, 6000); // ex : la Dame blanche ouvre la grande porte
+      }
+    } else {
+      en.retour.setText("Faux... le manoir s'agite.");
+      this.cameras.main.shake(250, 0.01);
+      this.perdreVie(en.joueur, en.def.degats);
+    }
+  }
+
+  // le bouton secret a été actionné : la chasse d'eau se déclenche et la clé remonte dans la cuvette
+  revelerCle() {
+    if (this.boutonSecret) {
+      this.boutonSecret.bouton.setFillStyle(0x33aa33);
+      this.boutonSecret.lueur.setFillStyle(0x33aa33, 0.3);
+    }
+    this.message("Clic... Un grondement monte des canalisations... CHHHHHH !\nQuelque chose brille au fond de la cuvette.", 6000);
+    this.cameras.main.shake(700, 0.006);
+    jouer(this, "clic");
+    this.time.delayedCall(300, () => jouer(this, "chasse"));
+    this.montrerCle(true);
+  }
+
+  /*************************
+   *  CLÉ                   *
+   *************************/
+
+  // pose la clé dans la cuvette (map5). Elle reste INVISIBLE tant que les énigmes ne sont pas résolues.
   // Quand la clé est trouvée, une petite icône s'affiche sous le timer.
   creerCle() {
     this.cleSprite = null;
@@ -364,20 +628,34 @@ export default class jeu extends Phaser.Scene {
       .image(CLE.x * 32, CLE.y * 32, "cle")
       .setOrigin(0.5, 1)
       .setScale(CLE.echelle)
-      .setDepth(50);
-    // la clé flotte doucement pour qu'on la remarque
-    this.tweens.add({
-      targets: this.cleSprite,
-      y: this.cleSprite.y - 6,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut"
-    });
+      .setDepth(50)
+      .setVisible(false);
+    // si la chasse d'eau a déjà été tirée (on est parti sans prendre la clé), elle est déjà là
+    if (this.registry.get("cle_revelee")) this.montrerCle(false);
+  }
+
+  // fait apparaître la clé dans la cuvette (anime = true : elle remonte doucement avec la chasse d'eau)
+  montrerCle(anime) {
+    const s = this.cleSprite;
+    if (!s) return;
+    const base = CLE.y * 32;
+    s.setVisible(true);
+    const flotter = () => {
+      this.tweens.add({ targets: s, y: base - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    };
+    if (anime) {
+      s.setAlpha(0);
+      s.y = base + 30;
+      this.tweens.add({ targets: s, alpha: 1, y: base, duration: 1200, ease: "Sine.easeOut", onComplete: flotter });
+    } else {
+      flotter();
+    }
   }
 
   ramasserCle() {
+    if (!this.cleSprite) return;
     this.registry.set("cle", true);
+    this.tweens.killTweensOf(this.cleSprite);
     this.cleSprite.destroy();
     this.cleSprite = null;
     this.afficherIconeCle();
@@ -392,6 +670,11 @@ export default class jeu extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000);
     this.time.delayedCall(2000, () => message.destroy());
+    jouer(this, "cle");
+    // INDICES : la clé ouvre la grande porte, cachée derrière la bibliothèque (des notes le rappellent dans chaque pièce)
+    this.time.delayedCall(2200, () =>
+      this.message("La clé est froide... Elle ouvre la GRANDE PORTE, derrière la bibliothèque.\nDes notes aux murs te guideront. Cherche l'échelle, tout en haut à droite.", 7500)
+    );
   }
 
   afficherIconeCle() {
@@ -423,9 +706,18 @@ export default class jeu extends Phaser.Scene {
     return null;
   }
 
+  // pourquoi une porte est fermée (null = ouverte)
+  raisonFermee(porte) {
+    if (porte.cle && !this.registry.get("cle")) return "Trouve la clé !";
+    if (porte.enigme && !this.registry.get(porte.enigme)) return "Parle à la Dame blanche !";
+    return null;
+  }
+
   // écran Game Over (image plein écran) + bouton pour rejouer
   afficherGameOver(raison = "Le temps est écoulé") {
     this.perdu = true;
+    this.couperLasers();
+    this.time.delayedCall(500, () => jouer(this, "gameOver"));
     this.perduPret = false; // évite de relancer tout de suite si le joueur appuie sur A au moment de mourir
     this.time.delayedCall(800, () => (this.perduPret = true));
     this.physics.pause();
@@ -501,14 +793,22 @@ export default class jeu extends Phaser.Scene {
   }
 
   // le joueur j perd des points de vie (appelle cette méthode depuis un ennemi, un piège...)
-  perdreVie(j, degats) {
+  // srcX (facultatif) : position de l'attaquant, pour repousser le joueur
+  perdreVie(j, degats, srcX) {
     if (j.mort || this.perdu || this.enTransition || this.time.now < (j.invulJusqua || 0)) return;
     const cle = "pv_" + j.num;
     const pv = Math.max(0, (this.registry.get(cle) ?? JOUEUR.pvMax) - degats);
     this.registry.set(cle, pv);
+    jouer(this, "degats"); // son hurt (fichier)
     if (pv <= 0) {
+      this.time.delayedCall(250, () => jouer(this, "mortJoueur"));
       this.joueurMort(j);
       return;
+    }
+    this.cameras.main.shake(120, 0.004);
+    if (srcX !== undefined) {
+      j.reculJusqua = this.time.now + 200; // repoussé : pas de contrôle un instant
+      j.sprite.setVelocity(j.sprite.x < srcX ? -190 : 190, -170);
     }
     j.invulJusqua = this.time.now + JOUEUR.invincibilite;
     j.sprite.setAlpha(0.4); // clignote pendant l'invincibilité
@@ -558,14 +858,13 @@ export default class jeu extends Phaser.Scene {
   }
 
   rejouer() {
-    this.registry.remove("finPartie"); // le timer repart à 3 minutes
-    this.registry.remove("cle"); // la clé est à retrouver
+    ETATS_PARTIE.forEach((k) => this.registry.remove(k)); // timer, clé et énigmes repartent de zéro
     this.registry.set("pv_1", JOUEUR.pvMax);
     this.registry.set("pv_2", JOUEUR.pvMax);
     this.scene.restart({ map: "map1" }); // retour au début de la première map
   }
 
-  update() {
+  update(time, delta) {
     // --- GAME OVER : on attend que le joueur relance ---
     if (this.perdu) {
       const relance =
@@ -593,6 +892,20 @@ export default class jeu extends Phaser.Scene {
       j.appuiAction = Phaser.Input.Keyboard.JustDown(j.touches.action) || (toucheE && j.num === 1);
     });
 
+    // --- DIALOGUE d'un PNJ ouvert : tout est figé ---
+    if (this.dialogue) {
+      this.vivants().forEach((j) => j.sprite.setVelocityX(0));
+      this.gererDialogue();
+      return;
+    }
+
+    // --- ÉNIGME ouverte : les joueurs sont figés, le temps continue de tourner ! ---
+    if (this.enigme) {
+      this.vivants().forEach((j) => j.sprite.setVelocityX(0));
+      this.gererEnigme();
+      return;
+    }
+
     if (this.enTransition) {
       this.vivants().forEach((j) => j.sprite.setVelocityX(0));
       return;
@@ -604,32 +917,49 @@ export default class jeu extends Phaser.Scene {
       const porte = this.portes.find((z) => this.physics.overlap(j.sprite, z));
       if (!porte) continue;
       if (!porteVisible) porteVisible = porte;
-      const fermee = porte.cle && !this.registry.get("cle"); // porte fermée à clé et clé pas encore trouvée
+      const fermee = !!this.raisonFermee(porte); // porte fermée à clé / énigme pas résolue
+      if (porte.vers && fermee && j.appuiAction) jouer(this, "verrou"); // porte fermée : clac !
       if (porte.vers && !fermee && j.appuiAction) {
+        jouer(this, "porte");
         if (porte.vers === "fin") this.finir(); // grande porte de la map6 : fin du jeu
+        else if (porte.vers === "hasard") this.changerDeMap(this.destinationAleatoire(), null, true); // on ne sait pas où elle mène !
         else this.changerDeMap(porte.vers, this.nomMap);
         return;
       }
     }
     if (porteVisible) {
-      const fermee = porteVisible.cle && !this.registry.get("cle");
-      this.indice.setText(fermee ? "Trouve la clé !" : "Appuie sur A");
+      const raison = this.raisonFermee(porteVisible);
+      const fermee = !!raison;
+      const mystere = porteVisible.vers === "hasard";
+      this.indice.setText(fermee ? raison : mystere ? "Appuie sur A... où mène-t-elle ?" : "Appuie sur A");
       this.indice.setColor(fermee ? "#ff8888" : "#ffffff");
     }
     this.indice.setVisible(!!(porteVisible && porteVisible.vers));
     if (porteVisible) this.indice.setPosition(porteVisible.x, porteVisible.y - 60);
 
-    // --- CLÉ : un joueur qui touche la clé la ramasse ---
-    if (this.cleSprite) {
-      const zoneCle = this.cleSprite.getBounds();
-      const touche = this.vivants().some((j) =>
-        Phaser.Geom.Intersects.RectangleToRectangle(j.sprite.getBounds(), zoneCle)
-      );
-      if (touche) this.ramasserCle();
+    // --- POINTS D'INTERACTION (notes, miroir, bouton secret, cuvette) : A devant ---
+    if (!porteVisible) {
+      let pointVisible = null;
+      for (const j of this.vivants()) {
+        const pt = this.points.find((z) => this.pointActif(z.def) && this.physics.overlap(j.sprite, z));
+        if (!pt) continue;
+        if (!pointVisible) pointVisible = pt;
+        if (j.appuiAction) {
+          this.actionPoint(pt.def, j);
+          return;
+        }
+      }
+      if (pointVisible) {
+        this.indice.setText("Appuie sur A").setColor("#ffffff").setVisible(true);
+        this.indice.setPosition(pointVisible.x, pointVisible.y - pointVisible.height / 2 - 10);
+      }
     }
 
     // --- DÉPLACEMENTS de chaque joueur ---
     this.vivants().forEach((j) => this.majJoueur(j));
+
+    // --- COMBAT : attaques, ennemis, potions, piques ---
+    this.majCombat(time, delta);
 
     // --- DUO : on empêche un joueur de sortir de l'écran ---
     if (this.vivants().length > 1) {
@@ -686,7 +1016,11 @@ export default class jeu extends Phaser.Scene {
     }
 
     // --- DÉPLACEMENTS ---
-    if (c.left.isDown) {
+    if (c.left.isDown) j.dir = -1; // sens du regard (pour frapper / tirer)
+    else if (c.right.isDown) j.dir = 1;
+    if (this.time.now < (j.reculJusqua || 0)) {
+      // repoussé par un coup : on ne contrôle pas pendant un court instant
+    } else if (c.left.isDown) {
       sprite.setVelocityX(-PERSO.vitesse);
       sprite.anims.play(this.anim(j, "anim_tourne_gauche"), true);
     } else if (c.right.isDown) {
@@ -699,6 +1033,13 @@ export default class jeu extends Phaser.Scene {
 
     if (!j.surEchelle && c.saut.isDown && (corps.blocked.down || j.surEscalier)) {
       sprite.setVelocityY(PERSO.saut);
+      if (this.time.now > (j.sautSonJusqua || 0)) {
+        jouer(this, "saut");
+        j.sautSonJusqua = this.time.now + 250; // évite de rejouer le son deux fois pour le même saut
+      }
     }
   }
 }
+
+// on ajoute les fonctions de combat (js/combat.js) à la scène
+Object.assign(jeu.prototype, combat);
