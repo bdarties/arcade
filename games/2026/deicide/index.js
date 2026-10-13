@@ -5,8 +5,7 @@
 import { compteurImages, regulerCadence } from "./js/partie1/systemes/optimisation.js";
 import menu from "./js/partie1/scenes/menu.js";
 import niveau1 from "./js/partie1/scenes/niveau1.js";
-import niveau2 from "./js/partie1/scenes/niveau2.js";
-import niveau3 from "./js/partie1/scenes/niveau3.js";
+import { installerPartie2, scenesPartie2 } from "./js/partie2/index.js"; // la suite du jeu (fuite, dernier combat) : à retirer pour s'arrêter à la fin du 1er boss
 import versus from "./js/partie1/scenes/versus.js"; // le mode 1 contre 1
 import pantheon from "./js/partie1/scenes/pantheon.js"; // choix « entrer dans le panthéon » avant la phase 2 du dernier boss
 import pause from "./js/partie1/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
@@ -64,7 +63,7 @@ const config = {
     // (voir optimisation.js)
     maxTextures: 4
   },
-  scene: [menu, niveau1, niveau2, niveau3, versus, classement, pause, pantheon], // la première scène (le menu) démarre toute seule
+  scene: [menu, niveau1, ...scenesPartie2, versus, classement, pause, pantheon], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
@@ -81,6 +80,7 @@ if (contexte) {
 }
 
 // création et lancement du jeu
+installerPartie2(); // branche la suite du jeu (ses maps à charger) avant de créer le jeu
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
 // identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
 game.config.idGame = "deicide";
