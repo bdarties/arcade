@@ -34,7 +34,7 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
     PROFILS.soldat.suite = enrager; // la suite du boss du niveau 1 : si le joueur répond OUI, il s'enrage et c'est la fuite
     PROFILS.soldat2 = { // le dernier combat : le même boss, enragé, bien plus fort que dans l'arène du niveau 1
         musique: "2", // « Boss Battle #9 » (voir musique.js) : le premier combat garde « Boss Battle #8 »
-        pv: 130, seuils: [90, 45], echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
+        pv: 176, seuils: [136, 91], // (176 = 40 + 45 + 91 : les phases 1 et 2 gardent leurs 40 et 45 PV d'avant, la phase 3 en a 91 ; plus aucun soin en cours de combat) echelle: 3.8, teinte: 0xff6a5a, nom: "DIEU DE LA LUMIÈRE ENRAGÉ", cause: "le Dieu enragé", points: 3000,
         pauses: [1250, 900, 220, 120], // des attaques beaucoup plus rapprochées : en phase 3 et en forme finale, presque sans répit
         pvPleinsApresMort: true, // si le robot meurt, le boss garde la phase atteinte mais repart avec TOUS ses PV
         reglages: DUR,
@@ -50,9 +50,9 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
         pvMinimum,
         choisirAttaque,
         pvDePhase, // la forme finale a ses propres PV
-        // La phase 3 commence avec TOUS ses PV (91 : 130 moins 30 %), qu'on y arrive en continuant le combat ou en reprenant après une mort (pvPleinsApresMort) : avant, on y arrivait avec
-        // 45 PV seulement et le boss ne devenait « normal » (130 PV) qu'après la première mort.
-        pvDebutPhase: (phase) => (phase === 2 ? PV_PHASE_3 : undefined),
+        // La phase 3 commence avec les 91 PV qu'il lui reste : le boss ne se soigne JAMAIS en changeant de phase (avant, il remontait à 91 PV au milieu du combat). Après une mort, il repart
+        // de la phase atteinte : en phase 3 avec ses 91 PV (pvApresMort), sinon avec tous ses PV (pvPleinsApresMort).
+        pvApresMort: (phase) => (phase === 2 ? PV_PHASE_3 : undefined),
         etiquettePhase: (phase) => (phase === PHASE_FINALE ? "FORME FINALE" : "PHASE " + (phase + 1)),
         apresApparition(scene, boss) { if (boss.phase === PHASE_FINALE) appliquerFormeFinale(scene, boss); }, // le robot est mort contre la forme finale : elle revient telle quelle
         finDeCombat // à 0 PV : fausse fin (phases 1 à 3) ou vraie fin (forme finale), voir finDeCombat.js

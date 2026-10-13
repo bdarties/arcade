@@ -174,3 +174,11 @@
 - **Phase 3 encore plus dure (2e passage) :** pause entre attaques 450 → 250 ms ; colonne et balayage deux fois plus fréquents dans la liste d'attaques ; orbes 480 px/s, pluie 450, nova 330 ; le boss se déplace plus vite (période 1,0 s au lieu de 1,45 s) ; le piqué plonge en 0,28 s au lieu de 0,34 s ; orbes détruites au bout de 3 s. Mesuré sur 25 s : 16-17 attaques (13 au départ).
 - **Ce que j'ai écarté :** doubler aussi la nova. Elle lance 5 anneaux de 24 orbes d'un coup ; doublée, on est monté à 103 orbes à l'écran, trop pour la borne (risque de ralentissement au-delà d'environ 48 d'après les mesures faites plus tôt). On double les attaques sans orbes à la place.
 - **Limite des mesures :** mon robot-joueur de test prend toujours environ 10 coups en 40 s : il est trop simple (il ne saute pas, n'utilise pas le dash) pour mesurer la différence entre deux réglages. La vraie mesure de difficulté, c'est de jouer la phase (touche de test F10).
+
+## Réglages du 13/10/2026 (forme finale et phase 3)
+- **Boss sans soin en cours de combat** : avant, il passait de 45 à 91 PV en entrant en phase 3 (`pvDebutPhase`). Maintenant sa vie totale est 176 (= 40 + 45 + 91 : les phases 1 et 2 gardent leur durée, la phase 3 en a 91), seuils 136 et 91, et rien ne le soigne. Après une mort, il repart avec 91 PV en phase 3 (`pvApresMort`).
+  Pourquoi : le soin visible ressemblait à un reset du boss ; on garde pourtant 91 PV en phase 3 quel que soit le chemin.
+- **Météores** : les traits d'annonce (lignes diagonales) ressemblaient à des lasers mais ne blessaient pas. À l'allumage, chaque ligne frappe maintenant (éclair de 0,15 s, un seul coup) avant que le météore la suive ; 11 lignes espacées de 112 px (15 de 82 avant).
+- **Horloge (laser circulaire)** : lancée seulement si le robot est à moins de 230 px du centre de l'arène (`possible`, vérifié aussi dans le tirage par défaut du moteur : `attaquePossible`) ; plus lente (0,7 rad/s), plus fine (20 px), dormante 0,75 s.
+- **Lanternes vivantes** : même cadence partout ; en forme finale une seule à la fois, et celles de l'animation sont effacées avant la phase 4.
+- **FPS de la fissure** : le réseau de fissures est dessiné sur deux canevas pendant la tension (14 ms), au coup on ne fait que les afficher (3 ms), au lieu de redessiner des centaines de lignes à chaque image.

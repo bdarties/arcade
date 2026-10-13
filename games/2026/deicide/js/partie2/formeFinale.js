@@ -3,7 +3,7 @@
 //  - il TIENT BON à 1 PV tant qu'il n'a pas lancé chacune de ses attaques au moins une fois : impossible de le finir sans les avoir toutes vues ;
 //  - sa forme finale (phase 4) : plus grand, violet, avec six attaques ENTIÈREMENT NOUVELLES (attaquesUltimes.js) et presque aucune pause.
 // La fausse fin qui précède la forme finale (le boss se dissout, le panthéon s'affiche, puis l'écran se fissure) est dans finDeCombat.js et fauxPantheon.js.
-import { changerDePhase, elementsBarre } from "../partie1/ennemis/boss.js";
+import { changerDePhase, elementsBarre, attaquePossible } from "../partie1/ennemis/boss.js";
 import { installerAttaquesUltimes } from "./attaquesUltimes.js";
 import { musiqueBoss } from "../partie1/systemes/sons.js";
 
@@ -29,7 +29,7 @@ export function choisirAttaque(scene, boss) {
     const requises = attaquesRequises(boss);
     if (!requises) return null;
     const dejaLa = scene.lanternesVivantes ? scene.lanternesVivantes.countActive() : 0;
-    const permis = (nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2); // (comme le moteur : pas de lanternes s'il y en a déjà deux)
+    const permis = (nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2) && attaquePossible(scene, boss, nom); // (comme le moteur : pas de lanternes s'il y en a déjà deux)
     const manquantes = requises.filter((nom) => !boss.faits.has(nom) && permis(nom));
     if (manquantes.length) return Phaser.Utils.Array.GetRandom(manquantes);
     if (boss.sacPhase !== boss.phase || !boss.sac || boss.sac.length === 0) { boss.sacPhase = boss.phase; boss.sac = Phaser.Utils.Array.Shuffle([...boss.profil.attaques[boss.phase]]); }
@@ -38,7 +38,7 @@ export function choisirAttaque(scene, boss) {
 }
 
 export const PV_PHASE_3 = 91; // les PV de la phase 3 : 130 moins 30 % (130 avant)
-export function pvDePhase(phase) { return phase === PHASE_FINALE ? PV_FINALE : phase === 2 ? PV_PHASE_3 : 130; }
+export function pvDePhase(phase) { return phase === PHASE_FINALE ? PV_FINALE : 176; } // la barre de vie des phases 1 à 3 est réglée sur le total (voir bossFinal.js)
 
 export function installerFormeFinale() { // à appeler une fois, avant la création du jeu
     installerAttaquesUltimes(); // les six attaques de la forme finale

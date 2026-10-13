@@ -24,7 +24,7 @@ const haut = (scene) => scene.cameras.main.worldView.y + 12; // le haut de l'éc
 const ANGLE_METEORE = 0.5; // rad, par rapport à la verticale : la pente des météores
 const VITESSE_METEORE = 560;
 const ECHELLE_METEORE = 0.32; // la taille d'un météore : son corps fait 26 px, à peine plus que le robot (20 px de large). Avant 0,42 (34 px) et 10 météores par volée
-const NOMBRE_METEORES = 15, ECART_METEORES = 82; // très serrés : entre deux trajectoires il ne reste qu'un trou d'environ 26 px pour un robot de 20 px de large : il faut être précis
+const NOMBRE_METEORES = 11, ECART_METEORES = 112; // (15 et 82 avant : les lignes étaient trop serrées, elles couvraient tout l'écran ; même largeur couverte) // très serrés : entre deux trajectoires il ne reste qu'un trou d'environ 26 px pour un robot de 20 px de large : il faut être précis
 
 function lignesMeteores(scene, sens) { // 10 trajectoires parallèles, avec leur trait d'annonce
     const y = haut(scene);
@@ -35,11 +35,36 @@ function lignesMeteores(scene, sens) { // 10 trajectoires parallèles, avec leur
         return { x, y, vx, vy, trait: tracer(scene, x, y, (scene.areneSolY - y) / Math.cos(ANGLE_METEORE), Math.atan2(vy, vx)) };
     });
 }
+// Quand une ligne s'allume, elle FRAPPE : un éclair le long de la trajectoire (annoncée par le trait) blesse le robot qui est resté dessus, puis le météore la suit.
+// (Avant, seuls les météores blessaient : les traits d'annonce, qui ressemblent à des lasers, ne faisaient rien.) Un seul coup par éclair.
+const EPAISSEUR_ECLAIR = 22; // px
+const DUREE_ECLAIR = 150; // ms
+function frapperLigne(scene, ligne, valide) {
+    const angle = Math.atan2(ligne.vy, ligne.vx);
+    const longueur = (scene.areneSolY - ligne.y) / Math.cos(ANGLE_METEORE) + 40;
+    const eclair = scene.add.rectangle(ligne.x, ligne.y, longueur, EPAISSEUR_ECLAIR, 0xffffff, 0.95).setOrigin(0, 0.5).setRotation(angle).setBlendMode(Phaser.BlendModes.ADD).setDepth(52);
+    scene.tweens.add({ targets: eclair, alpha: 0, scaleY: 0.3, duration: DUREE_ECLAIR, onComplete: () => eclair.destroy() });
+    let touche = false;
+    const fin = scene.time.now + DUREE_ECLAIR;
+    const verifier = scene.time.addEvent({ delay: 16, loop: true, callback: () => {
+        if (touche || scene.time.now >= fin || !valide()) { verifier.remove(); return; }
+        const b = scene.player.body;
+        const px = b.center.x - ligne.x, py = b.center.y - ligne.y;
+        const dx = Math.cos(angle), dy = Math.sin(angle);
+        const avance = Math.max(0, Math.min(longueur, px * dx + py * dy));
+        if (Math.hypot(px - dx * avance, py - dy * avance) < EPAISSEUR_ECLAIR / 2 + 10) { // 10 : la demi-largeur du robot
+            touche = true;
+            scene.blesserJoueur(1, "Foudroyé par " + scene.boss.profil.cause, true);
+        }
+    } });
+}
 function tirerMeteores(scene, lignes, valide) {
     jouerSonSurLeTemps(scene, "orbe");
     lignes.forEach((ligne, i) => scene.time.delayedCall(i * 90, () => { // en cascade, d'un bord à l'autre
         ligne.trait.destroy();
-        if (valide()) creerOrbe(scene, ligne.x, ligne.y, ligne.vx, ligne.vy).setScale(ECHELLE_METEORE); // un météore : une orbe fine
+        if (!valide()) return;
+        frapperLigne(scene, ligne, valide);
+        creerOrbe(scene, ligne.x, ligne.y, ligne.vx, ligne.vy).setScale(ECHELLE_METEORE); // un météore : une orbe fine
     }));
 }
 
@@ -75,6 +100,7 @@ const EPAISSEUR_HORLOGE = 20; // px, l'épaisseur des lames (34 pour les lasers 
 const DUREE_HORLOGE = 2300; // ms, dormants compris (1,55 s de lames actives)
 const GRACE_HORLOGE = 750; // ms pendant lesquels les lames sont dormantes à leur apparition (voir poserRayonTournant)
 const DISTANCE_PIVOT = 380; // le pivot est choisi à au moins cette distance (horizontale) du robot : la lame ne tourne jamais autour de lui
+const ZONE_CENTRE_HORLOGE = 230; // px de part et d'autre du centre de l'arène (x = 640) où le robot doit se trouver pour que l'horloge soit lancée
 const DEGAGEMENT_DEPART = 150; // et les lames démarrent à au moins 150 px du robot si c'est possible
 
 function distanceRayon(px, py, ox, oy, angle) { // distance d'un point à un rayon de 1700 px qui part de (ox, oy)
@@ -154,6 +180,7 @@ export function installerAttaquesUltimes() { // à appeler une fois, avant la cr
     };
     ATTAQUES.horloge = {
         charge: 900, apres: 2500,
+        possible: (scene) => Math.abs(scene.player.body.center.x - 640) <= ZONE_CENTRE_HORLOGE, // elle n'est lancée que si le robot est au centre de l'arène : ailleurs, le pivot (loin de lui) le coince contre un bord
         annoncer(scene) { // quatre traits en croix autour d'un pivot choisi LOIN du robot : l'angle de départ des lames
             const joueur = scene.player.body.center;
             const sens = Phaser.Math.RND.pick([1, -1]);

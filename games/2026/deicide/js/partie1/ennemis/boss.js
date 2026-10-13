@@ -40,6 +40,7 @@ const LARGEUR_BARRE = 520; // barre de vie du boss, en haut de l'écran
 // pvPleinsApresMort, pvDePhase(phase) (les PV d'une phase, s'ils ne sont pas profil.pv), pvMinimum(boss) (sous cette valeur le boss ne peut pas
 // descendre), choisirAttaque(scene, boss) (sa propre façon de tirer les attaques), apresApparition(scene, boss), etiquettePhase(phase),
 // pvDebutPhase(phase) (les PV du boss quand il ENTRE dans cette phase, ou rien : il garde ceux qu'il a).
+// pvApresMort(phase) (avec pvPleinsApresMort : les PV de repart dans cette phase, ou rien : tous ses PV).
 export const PROFILS = {
     soldat: {
         pantheon: true, // à 0 PV, le joueur choisit : arrêter la partie ici ou continuer (OUI : profil.suite, définie par la partie 2) (voir proposerPantheon)
@@ -100,7 +101,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
     // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir partie2/testsBorne.js)
     boss.pvMax = profil.pvDePhase ? profil.pvDePhase(phaseDepart) : profil.pv; // les PV de la phase de départ (la barre de vie se règle dessus)
-    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 || profil.pvPleinsApresMort ? boss.pvMax : profil.seuils[phaseDepart - 1]; // pvPleinsApresMort : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
+    boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 ? boss.pvMax : profil.pvPleinsApresMort ? (profil.pvApresMort && profil.pvApresMort(phaseDepart)) ?? boss.pvMax : profil.seuils[phaseDepart - 1]; // pvPleinsApresMort : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) ; puis choix, fin (ou ce que fait la partie 2)
     boss.phase = phaseDepart; // 0 ou 1 (2 pour un boss à 3 phases)
     if (reprise && reprise.pv !== undefined) scene.registry.set("phaseBoss", { profil: nomProfil, phase: phaseDepart }); // les PV donnés ne servent qu'une fois : après une mort, le boss reprend au seuil de sa phase
@@ -181,12 +182,18 @@ function majBoss(scene, boss, temps) {
     Object.values(ATTAQUES).forEach((def) => { if (def.maj) def.maj(scene, boss); }); // ce que certaines attaques font à chaque image
 }
 
+function attaquePossible(scene, boss, nom) { // une attaque peut exiger une situation (def.possible) : la lame qui tourne de l'horloge, par exemple, n'est esquivable que si le robot est au centre
+    const def = ATTAQUES[nom];
+    return !def || !def.possible || def.possible(scene, boss);
+}
+export { attaquePossible };
+
 function choisirAttaque(scene, boss) {
     if (boss.forcer) return boss.forcer; // TEST : boss.forcer = "balayage" (dans la console) lance toujours cette attaque
     if (profil.choisirAttaque) { const choix = profil.choisirAttaque(scene, boss); if (choix) return choix; } // un boss peut tirer ses attaques à sa façon (partie 2)
     // jamais deux fois la même de suite ; pas de lanternes s'il y en a déjà deux en l'air
     const dejaLa = scene.lanternesVivantes ? scene.lanternesVivantes.countActive() : 0;
-    const possibles = profil.attaques[boss.phase].filter((nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2));
+    const possibles = profil.attaques[boss.phase].filter((nom) => nom !== boss.derniereAttaque && !(nom === "lanternes" && dejaLa >= 2) && attaquePossible(scene, boss, nom));
     return Phaser.Utils.Array.GetRandom(possibles);
 }
 
