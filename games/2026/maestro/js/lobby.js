@@ -17,9 +17,8 @@
 // ============================================================================
 
 import { REGLAGES } from "./reglages.js";
-import { creerPanneau } from "./controles.js";
+import { creerPanneau, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";
-import { aideClavier } from "./controles.js";
 import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
 
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
@@ -182,17 +181,6 @@ export default class lobby extends Phaser.Scene {
     };
     this.echelles = ECHELLES.map((e) => ({ centreX: e.x, haut: caler(e.x, e.haut), bas: caler(e.x, e.bas) }));
 
-    // Les échelles ajoutées après coup ne sont pas dans l'illustration : on les dessine nous-mêmes
-    ECHELLES.forEach((e, i) => {
-      if (e.dessiner == true) {
-        const { haut, bas } = this.echelles[i];
-        const dessin = this.add.graphics().setDepth(4);
-        dessin.lineStyle(4, 0xc9a24a).lineBetween(e.x - 8, haut, e.x - 8, bas).lineBetween(e.x + 8, haut, e.x + 8, bas);
-        for (let y = haut + 12; y < bas; y += 18) {
-          dessin.lineBetween(e.x - 8, y, e.x + 8, y); // les barreaux
-        }
-      }
-    });
   }
 
   // Haut / bas du joystick devant une échelle pour s'y accrocher (même principe qu'au niveau 1)

@@ -6,7 +6,7 @@
 //  les cœurs, la caméra, les échelles, le mode solo et duo. Il ne redéfinit que ce qui change :
 //  la carte, les objets à ramasser et les textes.
 //
-//  OBJECTIF : ramasser 3 NOTES DE MUSIQUE (il y en a 7 sur le chemin) pour RÉVÉLER la PARTITION, la prendre,
+//  OBJECTIF : ramasser 3 NOTES DE MUSIQUE (il y en a 5 sur le chemin) pour RÉVÉLER la PARTITION, la prendre,
 //  puis franchir la PORTE en haut à droite.
 //
 //  - Les plateformes et les échelles sont lues dans la carte Tiled (propriétés estSolide / estEchelle).
@@ -25,10 +25,10 @@ const COULEURS_NOTES = [0xff6b7d, 0x62b0ff, 0xffd24a]; // Do (rouge), Mi (bleu),
 // La PARTITION à récupérer : posée sur la plateforme de la porte. Elle est visible dès le début mais « verrouillée ».
 const PARTITION = { x: 1745, y: 236 };
 
-// Positions [x, y] des 7 notes de musique : 4 sur la route du haut, 3 sur la route du bas
+// Positions [x, y] des 5 notes de musique : 3 sur la route du haut, 2 sur la route du bas
 const POSITIONS_NOTES = [
-  [730, 210], [1020, 258], [1300, 236], [1560, 258], // route du haut (au-dessus des plateformes mobiles)
-  [1040, 514], [1260, 418], [1580, 500] // route du bas
+  [730, 210], [1300, 236], [1560, 258], // route du haut (au-dessus des plateformes mobiles)
+  [1040, 514], [1260, 418] // route du bas
 ];
 
 // Pour AÉRER le niveau : des plateformes de la carte sont supprimées (elles étaient trop serrées), dont l'escalier ;
@@ -45,16 +45,16 @@ const PLATEFORMES_AJOUTEES = [{ x: 380, y: 320, largeur: 160 }]; // x, y = coin 
 //  x = nouvelle position de départ · dx, dy = distance parcourue · dureeMs = temps d'un aller simple
 const PLATEFORMES_MOBILES = [
   // route du haut
-  { origine: { x: 640, y: 288 }, largeur: 160, hauteur: 64, x: 650, dx: 0, dy: -60, dureeMs: 2300 }, // monte et descend
-  { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2400 }, // va et vient
-  { origine: { x: 1216, y: 256 }, largeur: 160, hauteur: 64, x: 1216, dx: 0, dy: 70, dureeMs: 2500 }, // monte et descend
-  { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 2200 }, // va et vient
+  { origine: { x: 640, y: 288 }, largeur: 160, hauteur: 64, x: 650, dx: 0, dy: -60, dureeMs: 1955 }, // monte et descend
+  { origine: { x: 928, y: 288 }, largeur: 160, hauteur: 64, x: 880, dx: 120, dy: 0, dureeMs: 2040 }, // va et vient
+  { origine: { x: 1216, y: 256 }, largeur: 160, hauteur: 64, x: 1216, dx: 0, dy: 70, dureeMs: 2125 }, // monte et descend
+  { origine: { x: 1472, y: 288 }, largeur: 160, hauteur: 64, x: 1440, dx: 80, dy: 0, dureeMs: 1870 }, // va et vient
   // route du bas
-  { origine: { x: 352, y: 544 }, largeur: 160, hauteur: 64, x: 352, dx: 0, dy: -50, dureeMs: 2400 }, // première marche : monte et descend
-  { origine: { x: 640, y: 480 }, largeur: 160, hauteur: 64, x: 640, dx: 0, dy: -60, dureeMs: 2600 }, // monte et descend
-  { origine: { x: 928, y: 544 }, largeur: 160, hauteur: 64, x: 928, dx: 70, dy: 0, dureeMs: 2600 }, // va et vient
-  { origine: { x: 1216, y: 448 }, largeur: 160, hauteur: 64, x: 1216, dx: 80, dy: 0, dureeMs: 2300 }, // va et vient
-  { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 2000 } // monte et descend
+  { origine: { x: 352, y: 544 }, largeur: 160, hauteur: 64, x: 352, dx: 0, dy: -50, dureeMs: 2040 }, // première marche : monte et descend
+  { origine: { x: 640, y: 480 }, largeur: 160, hauteur: 64, x: 640, dx: 0, dy: -60, dureeMs: 2210 }, // monte et descend
+  { origine: { x: 928, y: 544 }, largeur: 160, hauteur: 64, x: 928, dx: 70, dy: 0, dureeMs: 2210 }, // va et vient
+  { origine: { x: 1216, y: 448 }, largeur: 160, hauteur: 64, x: 1216, dx: 80, dy: 0, dureeMs: 1955 }, // va et vient
+  { origine: { x: 1472, y: 544 }, largeur: 160, hauteur: 64, x: 1500, dx: 0, dy: -70, dureeMs: 1700 } // monte et descend
 ];
 
 // ---- La VOIE HAUTE : un parcours en hauteur, facultatif, qui mène à une note dorée bonus (+1 cœur) ----
@@ -119,7 +119,6 @@ const LIGNE_DE_CHUTE = 720; // sous cette hauteur : on est tombé dans une fosse
 //  nom = nom de l'image · x, y = position · ancre : "bas" (posé sur le sol, y = le bas de l'objet) ou "haut" (suspendu, y = le haut)
 //  profondeur : plus c'est grand, plus c'est devant (les plateformes sont à 3, les héros à 10) · lueur : petite lumière orangée
 const DECOR = [
-  { nom: "paravent", x: 340, y: 640, ancre: "bas", profondeur: 0.7 },
   { nom: "pilier", x: 880, y: 640, ancre: "bas", profondeur: 0.9 },
   { nom: "pilier", x: 1700, y: 640, ancre: "bas", profondeur: 0.9 },
   { nom: "rideau", x: 100, y: 640, ancre: "bas", profondeur: 0.95 },
@@ -127,19 +126,16 @@ const DECOR = [
   { nom: "banniere", x: 520, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere", x: 1260, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere", x: 1900, y: 0, ancre: "haut", profondeur: 1 },
-  { nom: "banniere2", x: 260, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere2", x: 880, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "banniere2", x: 1600, y: 0, ancre: "haut", profondeur: 1 },
   { nom: "lanterne", x: 700, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lanterne", x: 1100, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lanterne", x: 1500, y: 0, ancre: "haut", profondeur: 1, lueur: true },
-  { nom: "lanterne2", x: 420, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lanterne2", x: 1860, y: 0, ancre: "haut", profondeur: 1, lueur: true },
   { nom: "lampadaire", x: 760, y: 640, ancre: "bas", profondeur: 2, lueur: true },
   { nom: "lampadaire", x: 1780, y: 640, ancre: "bas", profondeur: 2, lueur: true },
   { nom: "caisse", x: 1960, y: 640, ancre: "bas", profondeur: 2 },
   { nom: "vase", x: 1760, y: 640, ancre: "bas", profondeur: 2 },
-  { nom: "vase", x: 500, y: 320, ancre: "bas", profondeur: 2 },
   { nom: "pagode", x: 1836, y: 232, ancre: "bas", profondeur: 2 }
 ];
 
@@ -491,7 +487,7 @@ export default class niveau2 extends niveau1 {
   ajouterPlateforme(objet) {
     const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height);
     this.groupe_plateformes.add(zone);
-    zone.unSens = objet.y < 640; // sauf le sol et la scène : on traverse les plateformes par le dessous
+    zone.unSens = objet.y < 640; // tout ce qui est au-dessus du sol (y < 640) : on traverse par le dessous
   }
 
   // --------------------------------------------------------------------------

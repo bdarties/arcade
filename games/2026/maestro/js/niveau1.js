@@ -1142,7 +1142,7 @@ export default class niveau1 extends Phaser.Scene {
     nouveau.body.enable = true;
     nouveau.setVisible(true);
     nouveau.body.reset(x, y); // on remet la position à l'endroit du corps précédent
-    nouveau.setVelocity(0, 0); // et la vitesse à zéro : sinon le corps garde l'élan de l'ancien (saut, poussée)
+    nouveau.setVelocity(0, 0); // par sécurité : body.reset() remet déjà la vitesse à zéro, mais on le dit explicitement
     nouveau.enEchelle = false;
     nouveau.regardeADroite = ancien.regardeADroite;
     nouveau.setFlipX(ancien.flipX);
@@ -1197,7 +1197,7 @@ export default class niveau1 extends Phaser.Scene {
     tuba.setFlipX(tuba.sens < 0);
     this.jouerAnimation(tuba, "tuba_walk");
 
-    // Toutes les 3 secondes il lance une onde, mais seulement si un joueur est proche
+    // Toutes les 4 secondes (REGLAGES.tuba.ondeToutesMs) il lance une onde, mais seulement si un joueur est proche
     if (temps >= tuba.prochaineOnde && Math.abs(tuba.x - this.persoLePlusProche(tuba).x) < 650) {
       tuba.prochaineOnde = temps + REGLAGES.tuba.ondeToutesMs;
       tuba.attaqueJusqua = temps + 700;
