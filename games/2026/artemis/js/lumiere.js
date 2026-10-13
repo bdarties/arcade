@@ -102,11 +102,18 @@ function distanceMur(scene, joueur, portee) {
   return Math.max(distance, DISTANCE_MIN_TORCHE);
 }
 
+// d'où part la torche : le centre du sprite, un peu devant lui (la lampe est tenue devant le corps)
+// la hitbox du joueur est à ses pieds (15 px plus bas) : partir de là décalait tout le faisceau vers le bas
+const DECALAGE_TORCHE = 6; // px
+function origineTorche(joueur) {
+  return { x: joueur.sprite.x + joueur.regard.x * DECALAGE_TORCHE, y: joueur.sprite.y + joueur.regard.y * DECALAGE_TORCHE };
+}
+
 // la torche : les lumières se placent devant le joueur et s'arrêtent avant le mur ; éteinte, elles sont invisibles
 function majTorche(scene, joueur) {
   const portee = porteeTorche(joueur);
   const distance = distanceMur(scene, joueur, portee);
-  const centre = joueur.sprite.body.center;
+  const centre = origineTorche(joueur);
   joueur.lumieres_torche.forEach((lumiere, k) => {
     const allumee = joueur.torche_allumee;
     lumiere.visible = allumee;
@@ -324,16 +331,19 @@ const OPACITE_NOIR = 0.96; // 1 - luminosité ambiante : ce qu'aucune lumière n
 const RAYON_VISIBILITE_JOUEUR = 26; // px : un joueur reste toujours visible, même hors de toute lumière
 // le pinceau est plus large et plus clair que l'atténuation de Light2D : on le réduit pour éclairer la même zone
 const REGLAGE_DEGRADE = { rayon: 0.88, force: 1 };
-// la chaîne de la torche : position (part de la distance au premier mur) et intensité de chaque lumière
-// valeurs calculées pour que la lumière devant le joueur décroisse régulièrement de lui jusqu'à ~260 px, sans trou entre son halo
-// et la torche (la première lumière doit être proche du joueur) ni bosse entre les deux lumières
-const TORCHE_DEGRADE = [{ position: 0.2, intensite: 0.55 }, { position: 0.55, intensite: 0.3 }];
-const RAYON_TORCHE_DEGRADE = 100; // px : rayon d'une lumière collée au joueur...
-const RAYON_PAR_PX_DEGRADE = 0.3; // ... plus ce nombre de px de rayon par px de distance au joueur
+// le halo autour du joueur et la chaîne de lumières de la torche : position (part de la distance au premier mur) et intensité
+// de chaque lumière, de plus en plus larges et faibles. Valeurs calculées (recherche numérique) pour que, devant le joueur,
+// la lumière décroisse régulièrement jusqu'à ~260 px (ni trou, ni bosse) et que le faisceau s'élargisse comme un cône
+// (demi-largeur d'environ 55 px à 60 px du joueur, 110 px à 240 px)
+const HALO_JOUEUR_DEGRADE = { rayon: 84, force: 0.6 };
+const TORCHE_DEGRADE = [{ position: 0.1, intensite: 0.38 }, { position: 0.3, intensite: 0.31 }, { position: 0.6, intensite: 0.19 }];
+const RAYON_TORCHE_DEGRADE = 53; // px : rayon d'une lumière collée au joueur...
+const RAYON_PAR_PX_DEGRADE = 1.29; // ... plus ce nombre de px de rayon par px de distance au joueur (le cône s'évase)
 // teinte chaude : chaque lumière pose aussi une image colorée en mélange multiplicatif, sous le noir
 // (multiplier ne délave pas l'image, contrairement à une lueur additive) ; false : lumière neutre, un peu plus rapide
 const TEINTE_CHAUDE = true;
 const FORCE_TEINTE = 0.7; // part de l'intensité d'une lumière qui devient teinte (0 à 1)
+const ECHELLE_TEINTE = 0.7; // la teinte couvre une zone plus petite que la lumière (moins de pixels à mélanger : plus rapide)
 
 // l'image du pinceau, créée une seule fois pour tout le jeu : opacité (1 - t²)², t allant de 0 au centre à 1 au bord
 // (plus large au centre que (1 - t)² : les lumières de la torche se fondent en un faisceau continu au lieu de taches séparées)
@@ -379,20 +389,20 @@ function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) 
     return;
   }
   if (!scene.teintes[i]) scene.teintes[i] = scene.add.image(0, 0, "degrade_lumiere").setBlendMode(Phaser.BlendModes.MULTIPLY).setDepth(fct.PROFONDEUR.obscurite - 1);
-  scene.teintes[i].setPosition(x, y).setDisplaySize(rayon * 2, rayon * 2).setTint(couleur).setAlpha(Math.min(force * FORCE_TEINTE, 1)).setVisible(true);
+  scene.teintes[i].setPosition(x, y).setDisplaySize(rayon * 2 * ECHELLE_TEINTE, rayon * 2 * ECHELLE_TEINTE).setTint(couleur).setAlpha(Math.min(force * FORCE_TEINTE, 1)).setVisible(true);
 }
 
 // à appeler à chaque image : les mêmes lumières qu'avec Light2D (cf. majLight2D), en pinceaux
 function majDegrade(scene) {
   scene.nb_pinceaux = 0;
   scene.joueurs.forEach((j) => {
-    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_JOUEUR, INTENSITE_JOUEUR, COULEUR_JOUEUR);
+    pinceau(scene, j.sprite.x, j.sprite.y, HALO_JOUEUR_DEGRADE.rayon, HALO_JOUEUR_DEGRADE.force, COULEUR_JOUEUR);
     pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1, 0xffffff, false);
     if (!j.torche_allumee) return;
     // la torche : une chaîne de pinceaux devant le joueur, qui s'arrête avant le premier mur (comme avec Light2D)
     const portee = porteeTorche(j);
-    const distance = distanceMur(scene, j, portee);
-    const centre = j.sprite.body.center;
+    const distance = distanceMur(scene, j, portee); // mesurée depuis les pieds, comme les collisions
+    const centre = origineTorche(j);
     TORCHE_DEGRADE.forEach(({ position, intensite }) => {
       const d = distance * position;
       const rayon = (RAYON_TORCHE_DEGRADE + d * RAYON_PAR_PX_DEGRADE) * (0.5 + 0.5 * distance / portee); // moins large près d'un mur
