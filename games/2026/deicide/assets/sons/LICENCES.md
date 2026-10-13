@@ -29,3 +29,9 @@ Les bruitages ont été découpés, avec un fondu de fin et un volume harmonisé
 | Fichier | Son d'origine | Page | Auteur | Licence |
 |---|---|---|---|---|
 | cri_boss.ogg / .mp3 | « Aggressive Monster Roar » (le 2e des deux cris de l'enregistrement, découpé à 2,5 s avec un fondu de fin et un volume harmonisé) | [Pixabay](https://pixabay.com/sound-effects/) | yodguard | Pixabay Content License : utilisation libre, y compris commerciale, sans attribution obligatoire (celle-ci n'est pas CC0 comme les autres sons) |
+
+## La musique des crédits de fin
+
+| Fichier | Son d'origine | Page | Auteur | Licence |
+|---|---|---|---|---|
+| musique_credits.ogg / .mp3 | « Ending Scene » (version V3, mélange de rock/metal et d'orchestral ; passage de 54 s découpé de 44 s à 98 s, avec un fondu d'entrée et de sortie et un volume harmonisé) | [Ending Scene](https://opengameart.org/content/ending-scene) | nene | CC0 1.0 (domaine public) |

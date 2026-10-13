@@ -4,8 +4,9 @@
 // N'importe quel bouton (après 1,5 s) saute les crédits ; sinon la fin du défilé ramène à l'accueil toute seule.
 import { creerPolice, ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // la police pixel et les couleurs du jeu
 import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
-import { jouerSon, musiqueNiveau } from "../systemes/sons.js";
+import { jouerSon, musiqueDeScene } from "../systemes/sons.js";
 
+const VOLUME_MUSIQUE_CREDITS = 0.38; // le volume de base de la musique des crédits (0,3 pour celle du niveau) ; le réglage « musique » du menu pause s'y applique
 const TOUCHES_SORTIR = ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"];
 const DELAI_AVANT_SORTIR = 1500; // ms : le joueur tient encore le bouton qui l'a amené ici
 const VITESSE = 75; // px par seconde
@@ -17,7 +18,7 @@ const SECTIONS = [
     { titre: "UN JEU DE", lignes: ["THOMAS SIEGEL-BOISSIERE", "PAUL POUYADOUX", "MATHYS RIBES"], echelle: 5 },
     { titre: "SAE BORNE D'ARCADE", lignes: ["THEME : OMBRE ET LUMIERE"], echelle: 4 },
     { titre: "GRAPHISMES", lignes: ["ROBOT : PACK BOT WHEEL", "DECOR : DAWN OF THE GODS", "ENNEMIS : HUNTRESS 2, BRINGER OF DEATH, WIZARD"], echelle: 3 },
-    { titre: "MUSIQUES", lignes: ["DARK SHRINE LOOP : QUBODUP ET YD", "BOSS BATTLE #8 ET #9 (METAL) : NENE"], echelle: 3 },
+    { titre: "MUSIQUES", lignes: ["DARK SHRINE LOOP : QUBODUP ET YD", "BOSS BATTLE #8 ET #9 (METAL), ENDING SCENE : NENE"], echelle: 3 },
     { titre: "BRUITAGES", lignes: ["KENNEY, RUBBERDUCK, JAGGEDSTONE", "CRI DU BOSS : YODGUARD"], echelle: 3 },
     { titre: "MOTEUR", lignes: ["PHASER 3.60"], echelle: 4 }
 ];
@@ -25,11 +26,23 @@ const SECTIONS = [
 export default class credits extends Phaser.Scene {
     constructor() { super({ key: "credits" }); }
 
+    // La musique des crédits n'est PAS chargée avec le reste du jeu : décodée elle pèse 19 Mo en mémoire, et le Raspberry Pi de la borne en a peu. Elle se charge ici, à l'arrivée sur les crédits.
+    preload() {
+        this.load.setBaseURL(this.sys.game.config.baseURL); // (chaque scène a son propre chargeur : voir chargerJeu dans chargement.js)
+        this.load.audio("musique_credits", ["./assets/sons/musique_credits.ogg", "./assets/sons/musique_credits.mp3"]);
+    }
+
     create() {
         this.cameras.main.setBackgroundColor("#0e0e11");
         this.cameras.main.fadeIn(900, 0, 0, 0);
         creerPolice(this);
-        musiqueNiveau(this); // la musique du niveau continue (elle est déjà en train de jouer si on vient de l'écran du panthéon)
+        this.libererMemoire(); // les musiques des boss ne servent plus : on libère leur place avant la musique des crédits
+        musiqueDeScene(this, "musique_credits", VOLUME_MUSIQUE_CREDITS, false); // « Ending Scene V3 » de nene (CC0), 54 s, elle ne se répète pas : elle finit en fondu avec les crédits
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { // en quittant les crédits : la musique est libérée aussi (elle se rechargera à la prochaine fin)
+            const son = this.sound.get("musique_credits");
+            if (son) { son.stop(); son.destroy(); }
+            this.cache.audio.remove("musique_credits");
+        });
         this.sortie = false;
         this.phase = "titre"; // titre -> defile -> fin
         this.debut = this.time.now;
@@ -38,6 +51,14 @@ export default class credits extends Phaser.Scene {
         this.bords();
         this.input.keyboard.on("keydown", (evenement) => { if (!evenement.repeat && TOUCHES_SORTIR.includes(evenement.code) && this.time.now - this.debut > DELAI_AVANT_SORTIR) this.sortir(); });
         this.time.delayedCall(700, () => this.entree());
+    }
+
+    // Détruit les musiques des boss (et le cri) et les retire du cache : leurs ~42 Mo de son décodé sont rendus. Elles se rechargent toutes seules à la prochaine partie (niveau.js, partie2/musique.js).
+    libererMemoire() {
+        ["musique_boss_intro", "musique_boss_boucle", "musique_boss2_intro", "musique_boss2_boucle", "cri_boss"].forEach((cle) => {
+            this.sound.getAll(cle).forEach((son) => { son.stop(); son.destroy(); });
+            if (this.cache.audio.exists(cle)) this.cache.audio.remove(cle);
+        });
     }
 
     // ---- le décor : une lueur qui respire, des colonnes sur les bords, de la poussière qui monte ----
@@ -162,12 +183,14 @@ export default class credits extends Phaser.Scene {
         const invite = ecrire(this, 640, 640, "I  RETOUR A L'ACCUEIL", 3, { teinte: GRIS_VIOLET });
         invite.setDepth(40);
         this.tweens.add({ targets: invite, alpha: 0.3, duration: 650, yoyo: true, repeat: -1 });
-        this.time.delayedCall(7000, () => this.sortir());
+        this.time.delayedCall(10000, () => this.sortir()); // la fin de la musique (le calme) accompagne « FIN » : 10 s avant le retour automatique
     }
 
     sortir() {
         if (this.sortie) return;
         this.sortie = true;
+        const musique = this.sound.get("musique_credits"); // la musique s'éteint en fondu avec l'écran
+        if (musique) this.tweens.add({ targets: musique, volume: 0, duration: 650, onComplete: () => musique.stop() });
         this.cameras.main.fadeOut(700, 0, 0, 0);
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start("menu")); // retour à l'accueil, pour la partie suivante
     }

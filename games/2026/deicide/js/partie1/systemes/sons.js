@@ -128,10 +128,10 @@ export function musiqueNiveau(scene) { // remet la musique du niveau (à la mort
 }
 
 // à appeler dans le create d'une scène : sa musique joue à chaque fois qu'on y arrive
-export function musiqueDeScene(scene, nom, base = VOLUME_MUSIQUE) {
-    lancerMusique(scene, nom, base); // lance la musique tout de suite
+export function musiqueDeScene(scene, nom, base = VOLUME_MUSIQUE, boucle = true) {
+    lancerMusique(scene, nom, base, boucle); // lance la musique tout de suite (boucle : faux pour un morceau qui ne se répète pas, comme celui des crédits)
     // scene.switch endort et réveille les scènes sans refaire create : on relance la musique au réveil
-    const auReveil = () => lancerMusique(scene, nom, base);
+    const auReveil = () => lancerMusique(scene, nom, base, boucle);
     scene.events.on("wake", auReveil);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off("wake", auReveil)); // sans ça, chaque nouvelle partie ajoutait un écouteur de plus
 }
