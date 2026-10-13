@@ -222,7 +222,7 @@ const combat = {
         x: x + Math.cos(a) * d,
         y: y + Math.sin(a) * d,
         alpha: 0,
-        duration: 1000,
+        duration: 280,
         onComplete: () => p.destroy()
       });
     }
@@ -424,7 +424,7 @@ const combat = {
     s.disableBody(true, false);
     s.clearTint();
     this.tweens.add({
-      targets: s, alpha: 0, scaleX: s.scaleX * 1.3, scaleY: s.scaleY * 0.6, duration: 320,
+      targets: s, alpha: 0, scaleX: s.scaleX * 1.3, scaleY: s.scaleY * 0.6, duration: 1000,
       onComplete: () => s.destroy()
     });
     // parfois il laisse une potion rouge
