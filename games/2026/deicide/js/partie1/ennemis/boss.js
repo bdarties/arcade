@@ -412,7 +412,11 @@ export function changerDePhase(scene, boss, phase) {
     boss.phase = phase;
     boss.faits = new Set(); // on recompte les attaques lancées dans cette phase
     const pvDebut = profil.pvDebutPhase ? profil.pvDebutPhase(phase) : undefined;
-    if (pvDebut !== undefined) { boss.pv = pvDebut; boss.barre.plein.width = LARGEUR_BARRE * boss.pv / boss.pvMax; } // il se soigne en entrant dans la phase
+    if (pvDebut !== undefined) { // il se soigne en entrant dans la phase
+        boss.pv = pvDebut;
+        scene.tweens.killTweensOf(boss.barre.plein); // le rétrécissement du dernier coup (majBarre) ramènerait sinon la barre à sa valeur d'avant le soin
+        boss.barre.plein.width = LARGEUR_BARRE * boss.pv / boss.pvMax;
+    }
     scene.registry.set("phaseBoss", { profil: profil.cle, phase }); // si le robot meurt, il reprendra ici
     boss.etat = "transition"; // intouchable un instant
     boss.play("boss_charge");

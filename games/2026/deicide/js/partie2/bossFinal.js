@@ -2,7 +2,7 @@
 // réglé par un profil : plus de PV, trois phases, des attaques plus rapides et plus nombreuses, et des attaques en plus (attaques.js). Une 4e phase, la FORME FINALE
 // (formeFinale.js), arrive après une fausse fin (finDeCombat.js, fauxPantheon.js).
 // installerBossFinal() l'ajoute à la table des profils du moteur ; il y ajoute aussi la suite du boss du niveau 1 (profil.suite : la fuite).
-import { PROFILS } from "../partie1/ennemis/boss.js";
+import { PROFILS, ATTAQUES } from "../partie1/ennemis/boss.js";
 import { balayageApresColonnes, installerAttaques } from "./attaques.js";
 import { enrager } from "./fuite.js";
 import { finDeCombat } from "./finDeCombat.js";
@@ -14,12 +14,13 @@ const DUR = [
     { charge: 0.8, orbes: 8, ouverture: 85, vitesse: 410, salves: 1, pluie: 14, pluieVitesse: 430, colonnes: [-280, 280], balayage: false, nova: [18, 2, 280], lanternes: 2, periodeMouvement: 1200 },
     { charge: 0.75, orbes: 11, ouverture: 115, vitesse: 460, salves: 2, pluie: 18, pluieVitesse: 460, colonnes: [-240, 240, -480, 480], balayage: true, nova: [22, 3, 310], lanternes: 2, periodeMouvement: 1200 },
     { charge: 0.7, orbes: 14, ouverture: 135, vitesse: 510, salves: 3, pluie: 22, pluieVitesse: 490, colonnes: [-220, 220, -440, 440, -660, 660], balayage: true, nova: [24, 5, 350], lanternes: 2, periodeMouvement: 850 },
-    { charge: 0.7, orbes: 16, ouverture: 150, vitesse: 540, salves: 3, pluie: 26, pluieVitesse: 520, colonnes: [-190, 190, -380, 380, -570, 570, -760, 760], balayage: true, nova: [24, 5, 360], lanternes: 2, periodeMouvement: 700 }
+    { charge: 0.62, orbes: 16, ouverture: 150, vitesse: 540, salves: 3, pluie: 26, pluieVitesse: 520, colonnes: [-190, 190, -380, 380, -570, 570, -760, 760], balayage: true, nova: [24, 5, 360], lanternes: 2, periodeMouvement: 600 }
     // balayage : les colonnes sont suivies d'un balayage au sol (voir apresColonnes)
 ];
 
 // des ms en plus à la durée d'une attaque, pour que ses effets (salves suivantes, balayage après les colonnes, 2e vague de geysers) aient le temps de finir
 function dureeEnPlus(nom, boss) {
+    if (boss.phase === PHASE_FINALE) return -Math.round(ATTAQUES[nom].apres * 0.15); // la forme finale enchaîne ses attaques 15 % plus vite (annonces plus courtes aussi : charge 0,62)
     const r = DUR[boss.phase];
     if (nom === "orbes" && r.salves > 1) return 350 * (r.salves - 1) + 150;
     if (nom === "colonne" && r.balayage) return 1200;

@@ -2,7 +2,7 @@
 //   - F9 : lance directement le niveau 2 (la fuite)
 //   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (130 PV) pour avoir le temps de la tester
 //   - F5 : lance le dernier combat et déclenche tout de suite la fausse fin (le boss se dissout, le faux écran du panthéon, la fissure de l'écran), puis la phase 4
-//          (la forme finale, 100 PV). F5 ne recharge donc plus la page.
+//          (la forme finale, 130 PV). F5 ne recharge donc plus la page.
 import { arreterToutesLesScenes, nouvellePartie } from "../partie1/systemes/raccourcis.js";
 import { finDeCombat } from "./finDeCombat.js";
 

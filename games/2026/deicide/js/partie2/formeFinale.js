@@ -8,7 +8,7 @@ import { installerAttaquesUltimes } from "./attaquesUltimes.js";
 import { musiqueBoss } from "../partie1/systemes/sons.js";
 
 export const PHASE_FINALE = 3; // l'indice de la forme finale (les phases 1, 2 et 3 sont 0, 1 et 2)
-const PV_FINALE = 100; // les PV de la forme finale
+const PV_FINALE = 130; // les PV de la forme finale (100 avant : un peu plus de PV)
 const ECHELLE_FINALE = 4.8; // il a grossi (3,8 dans les phases 1 à 3)
 const TEINTE_FINALE = 0x9a7cff; // un violet : il n'est plus rouge
 export const ATTAQUES_FORME_FINALE = ["meteores", "rideaux", "horloge", "etau", "traque", "damier"]; // celles qu'il tire en forme finale : aucune ne sert avant (voir attaquesUltimes.js)

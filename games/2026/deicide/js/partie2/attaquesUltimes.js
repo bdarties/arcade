@@ -69,7 +69,7 @@ function trous() { // trois trous : chacun à 280 px au moins du précédent (at
 // Horloge
 // ---------------------------------------------------------------------------------------------
 const VITESSE_HORLOGE = 1.15; // rad/s
-const DUREE_HORLOGE = 3400; // ms
+const DUREE_HORLOGE = 2200; // ms (plus courte : 3,4 s avant)
 
 // ---------------------------------------------------------------------------------------------
 // Étau
@@ -131,7 +131,7 @@ export function installerAttaquesUltimes() { // à appeler une fois, avant la cr
         }
     };
     ATTAQUES.horloge = {
-        charge: 900, apres: 3700,
+        charge: 900, apres: 2500,
         annoncer(scene) { // quatre traits en croix autour du centre de l'arène : l'angle de départ des lames
             const ox = 640, oy = scene.areneSolY - 330, depart = Phaser.Math.FloatBetween(0, Math.PI / 2);
             const traits = [0, 1, 2, 3].map((k) => tracer(scene, ox, oy, 1700, depart + k * Math.PI / 2, 6));

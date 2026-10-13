@@ -36,20 +36,29 @@
 
 ## La fausse fin et la forme finale du dernier boss (13/10, partie 2)
 - **Déroulement** : quand le boss final tombe à 0 PV en phase 3, il se dissout comme pour une vraie victoire et l'écran du panthéon s'affiche (le vrai `classement.js`, avec sa
-  séquence de victoire, le chrono arrêté). Puis une fissure dorée part du tableau, l'écran vole en éclats (une capture de l'écran découpée en morceaux irréguliers qui tombent), et
-  derrière, le boss revient : il apparaît dans le fond, grossit et devient violet. Le combat reprend contre la **forme finale** (phase 4). Si on la bat, c'est la vraie fin et le vrai panthéon.
+  séquence de victoire, le chrono arrêté) : une fanfare, une pluie de confettis dorés, un long moment pour y croire. Puis le silence (la musique s'arrête), deux battements de cœur, l'écran qui s'assombrit
+  et se rapproche, un son qui monte... et un **énorme coup d'épée** : une lame courbe, effilée, avec un halo doré, traverse l'écran en 0,14 s ; flash blanc, onde de choc, gerbe d'étincelles,
+  tremblement violent, coup de zoom, arrêt sur image. L'écran est tranché en deux le long de la courbe : une capture de l'écran est découpée en deux moitiés qui s'écartent dans la lumière de la coupure,
+  et derrière, le boss revient : il apparaît dans le fond, grossit et devient violet. Le combat reprend contre la **forme finale** (phase 4). Si on la bat, c'est la vraie fin et le vrai panthéon.
+- **Les sons de cette scène sont synthétisés** (`partie2/synth.js`, API audio du navigateur, aucun fichier) : fanfare, battements, montée de tension, souffle de la lame + tintement du métal, impact (boum grave,
+  claquement, grondement). Ils suivent le réglage « bruitages ». Piège rencontré : les easings de caméra de Phaser s'écrivent « Quad.easeIn » (pas « Quad.In » comme pour les tweens).
 - **Comment** : `partie2/fauxPantheon.js` est une scène qui HÉRITE de `classement` (partie 1) : même écran, mais au lieu de proposer d'enregistrer le score elle déclenche la fissure.
   Elle est posée par-dessus le niveau 3, mis en pause, comme le menu pause ; l'horloge du niveau est rattrapée à la reprise. `finDeCombat.js` choisit entre fausse fin (phases 1 à 3) et vraie fin
   (forme finale). Le moteur du boss a seulement reçu des crochets facultatifs dans les profils (`pvDePhase`, `pvMinimum`, `choisirAttaque`, `apresApparition`, `etiquettePhase`, `pvDebutPhase`).
-- **La forme finale** (`formeFinale.js`) : 100 PV, plus grande (4,8 au lieu de 3,8), violette, presque sans pause (120 ms) et **six attaques entièrement nouvelles**, qui ne servent dans aucune
+- **La forme finale** (`formeFinale.js`) : 130 PV, plus grande (4,8 au lieu de 3,8), violette, des annonces plus courtes (charge 0,62) et des attaques enchaînées 15 % plus vite, et **six attaques entièrement nouvelles**, qui ne servent dans aucune
   autre phase (`attaquesUltimes.js`) : *météores* (orbes en diagonale, deux volées de sens opposés, annoncées par des traînées), *rideaux* (trois murs d'orbes qui tombent, le trou change de place et
-  est annoncé en haut de l'écran), *horloge* (quatre lames de lumière en croix qui tournent autour du centre de l'arène : sauter ou dasher au bon moment), *étau* (deux murs d'orbes arrivent des côtés avec une
+  est annoncé en haut de l'écran), *horloge* (quatre lames de lumière en croix qui tournent autour du centre de l'arène pendant 2,2 s : sauter ou dasher au bon moment), *étau* (deux murs d'orbes arrivent des côtés avec une
   fenêtre à une hauteur annoncée : sol, plateforme ou en l'air ; puis ils reviennent avec les hauteurs échangées), *traque* (six orbes qui tournent vers le robot, 1,9 rad/s au plus : on les sème en sautant ou en dashant)
   et *damier* (le sol s'allume par blocs de 160 px en alternance, trois fois de suite : une plateforme protège car les blocs font 118 px de haut). Elles sont toutes annoncées. Les phases 1 à 3 gardent les leurs.
   Si le robot meurt contre elle, le combat reprend directement en forme finale (registre `phaseBoss`), sans refaire la fausse fin.
 - **Moins de hasard en phase 3 et en forme finale** : le boss lance d'abord, au hasard, les attaques qu'il n'a pas encore faites, puis tire dans un « sac » mélangé (chaque attaque revient avant
   qu'une autre se répète). Et il TIENT BON à 1 PV tant qu'il n'a pas lancé chacune de ses attaques au moins une fois : un tir qui le toucherait à ce moment-là ne compte pas (ni PV, ni points).
   Impossible donc de le finir sans les avoir toutes vues.
+- **Lasers du boss rendus esquivables** (attaque « lasers », phases 1 à 3) : en phases 2 et 3 ils ne l'étaient jamais (0 % de situations esquivables, calculé par géométrie) : les rayons se figeaient 0,55 s après le début de
+  l'annonce mais tiraient 0,66 s après, soit 0,11 s pour réagir, et le boss continuait de flotter pendant l'annonce donc les rayons partaient d'un autre endroit que celui vu. Maintenant : les rayons se figent après 0,12 s,
+  le boss reste en place pendant qu'il canalise l'attaque, l'écart entre deux rayons garantit un trou d'au moins 190 px à la distance du robot, et le balayage est lent (0,1 et 0,15 rad/s au lieu de 0,45 et 0,75).
+  Mesuré dans le jeu : une fois les rayons figés, il faut parcourir 52 px en médiane (104 au plus) pour être à l'abri ; avec une réaction de 250 ms le robot a le temps d'en faire 76 (93 % des cas), sans réaction 141 (100 %).
+- **Bug corrigé** : la barre de vie du boss, juste après le soin de l'entrée en phase 3, était ramenée à 35 % une fraction de seconde plus tard par l'animation du dernier coup (alors que le boss avait 130 PV). Elle reste pleine, avec ses deux traits.
 - **Bug corrigé** : la phase 3 commençait avec 45 PV quand on y arrivait en continuant le combat, mais avec 130 PV après une mort (`pvPleinsApresMort`) : le boss ne devenait « normal » qu'après la
   première mort. Maintenant la phase 3 commence toujours avec tous ses PV (130) : il se soigne en y entrant (`pvDebutPhase`).
 - **Touche de test** : F5 lance le dernier combat et déclenche tout de suite la fausse fin (dissolution du boss, faux panthéon, fissure de l'écran), puis la forme finale (F5 ne recharge donc plus la page).

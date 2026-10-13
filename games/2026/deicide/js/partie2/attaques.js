@@ -22,17 +22,28 @@ const LONGUEUR_LASER = 1700; // assez long pour traverser toute l'arène
 const EPAISSEUR_LASER = 34; // largeur du rayon, en px
 const LASERS = [ // par phase : décalage entre deux rayons (rad), nombre de rayons, vitesse de balayage (rad/s)
     { ecart: 0.5, nombre: 3, balayage: 0 },
-    { ecart: 0.36, nombre: 5, balayage: 0.45 },
-    { ecart: 0.27, nombre: 7, balayage: 0.75 },
-    { ecart: 0.22, nombre: 9, balayage: 1.0 } // la forme finale
+    { ecart: 0.36, nombre: 5, balayage: 0.1 },
+    { ecart: 0.27, nombre: 7, balayage: 0.15 },
+    { ecart: 0.22, nombre: 9, balayage: 0.15 } // la forme finale (n'a pas cette attaque)
 ];
+// ESQUIVABLE : les rayons se figent 0,12 s après le début de l'annonce (avant : 0,55 s, il ne restait que 0,11 s pour bouger en phases 2 et 3) et il y a toujours un trou
+// d'au moins TROU px entre deux rayons à la distance du robot (l'écart des angles s'agrandit si le robot est près du boss). Le balayage est assez lent pour qu'on
+// puisse suivre le trou en marchant. Vérifié par un calcul de géométrie : une place sûre atteignable existe dans environ 99 % des situations (0 % avant en phases 2 et 3).
+const TROU = 190;
+const VERROU_LASERS = 120; // ms
+function ecartLasers(boss, scene, base) { // l'écart (rad) entre deux rayons voisins, à la distance actuelle du robot
+    const cible = scene.player.body.center;
+    const distance = Math.max(1, Math.hypot(cible.x - boss.x, cible.y - boss.y));
+    return Math.min(0.9, Math.max(base, TROU / distance));
+}
 function preparerLasers(scene, boss) { // crée les traits d'annonce
     const reglage = LASERS[boss.phase];
     const lasers = Array.from({ length: reglage.nombre }, (_, i) => {
-        const decalage = (i - (reglage.nombre - 1) / 2) * reglage.ecart; // le rayon du milieu (décalage 0) vise le robot
+        const rang = i - (reglage.nombre - 1) / 2; // 0 pour le rayon du milieu, qui vise le robot
+        const decalage = rang * ecartLasers(boss, scene, reglage.ecart);
         const trait = scene.add.rectangle(boss.x, boss.y, LONGUEUR_LASER, 4, 0xfff2c0, 0.5).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
         effets.clignoter(scene, trait, { alpha: 0.15, duration: 110 }); // il clignote : le danger est proche
-        const laser = { decalage, trait, rayon: null, etat: "annonce", angle: 0, verrouJusqua: scene.time.now + 550, fin: 0, balayage: 0 };
+        const laser = { rang, base: reglage.ecart, decalage, trait, rayon: null, etat: "annonce", angle: 0, verrouJusqua: scene.time.now + VERROU_LASERS, fin: 0, balayage: 0 };
         laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + decalage;
         return laser;
     });
@@ -69,7 +80,10 @@ function majLasers(scene, boss) { // à chaque image : les traits suivent le bos
     scene.lasersBoss.forEach((laser) => {
         if (laser.etat === "annonce") {
             laser.trait.setPosition(boss.x, boss.y);
-            if (scene.time.now < laser.verrouJusqua) laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + laser.decalage;
+            if (scene.time.now < laser.verrouJusqua) { // avant le verrouillage, le rayon suit le robot (et l'écart suit sa distance)
+                laser.decalage = laser.rang * ecartLasers(boss, scene, laser.base);
+                laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + laser.decalage;
+            }
             laser.trait.setRotation(laser.angle);
             return;
         }
@@ -155,13 +169,17 @@ function piquer(scene, boss, annonce) { // il plonge là où le trait s'est fig�
 export function installerAttaques() { // à appeler une fois, avant la création du jeu
     ATTAQUES.lasers = {
         charge: 950, apres: 1000,
-        annoncer: (scene, boss) => ({ lasers: preparerLasers(scene, boss) }), // des traits fins qui partent du boss, le premier suit le robot
+        annoncer(scene, boss) { // des traits fins qui partent du boss, le premier suit le robot
+            boss.enMouvement = true; // le boss RESTE EN PLACE pendant qu'il canalise ses lasers : sinon il flottait de plusieurs centaines de px entre le verrouillage des traits et le tir, et les rayons partaient d'un autre endroit que ce que le robot avait vu : impossible à esquiver
+            return { lasers: preparerLasers(scene, boss) };
+        },
         nettoyerAnnonce: (annonce) => annonce.lasers.forEach(detruireLaser),
         executer(scene, boss, annonce) {
             const sens = Phaser.Math.RND.pick([1, -1]); // tous les rayons d'une attaque tournent dans le même sens
             jouerSonSurLeTemps(scene, "dash");
             scene.cameras.main.shake(200, 0.006);
             annonce.lasers.forEach((laser) => declencherLaser(scene, boss, laser, sens));
+            scene.time.delayedCall(750, () => { boss.enMouvement = false; }); // les rayons sont finis (0,6 s) : il se remet à flotter
         },
         demarrer: (scene) => { scene.lasersBoss = []; }, // les lasers en cours (voir majLasers)
         maj: majLasers,
