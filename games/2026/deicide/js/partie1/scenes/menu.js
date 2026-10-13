@@ -1,4 +1,4 @@
-// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 2 JOUEURS (1 contre 1, voir versus.js)
+// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 1 V 1 (1 contre 1, voir versus.js)
 // C'est la première scène : elle charge tous les assets du jeu (avec une barre de chargement), puis attend qu'on appuie
 // sur un bouton. Le fond est l'image du menu (assets/images/menu/fond_menu.png, 1280 x 720). Le bouton Jouer est dans
 // assets/images/menu/bouton_jouer.png (15 images de 104 x 44 empilées : 0 = normal, 1 à 12 = survol animé, 13 et 14 = clic).
@@ -7,7 +7,7 @@
 import { chargerJeu } from "../systemes/chargement.js"; // charge tous les assets du jeu pendant que le menu s'affiche
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
-import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 2 JOUEURS » sur la dalle)
+import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];
@@ -62,17 +62,17 @@ export default class menu extends Phaser.Scene {
     this.bouton.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     this.bouton.on("pointerdown", () => this.lancer());
 
-    // le bouton « 2 JOUEURS » : la même dalle que « JOUER ». Haut / bas change de mode, un bouton valide celui qui
+    // le bouton « 1 V 1 » : la même dalle que « JOUER ». Haut / bas change de mode, un bouton valide celui qui
     // est choisi.
     this.mode = 1; // 1 = solo, 2 = 1 contre 1
     this.boutonDeux = this.creerBoutonDeux(640, 545);
-    this.indication = this.add.text(640, 626, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
+    this.indication = this.add.text(640, 640, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
     ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
     this.boutonDeux.dalle.on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
-    const aide = this.add.text(640, 668, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
+    const aide = this.add.text(640, 674, "APPUIE SUR UN BOUTON", { fontFamily: "monospace", fontSize: "22px", color: "#8a779b", stroke: "#000000", strokeThickness: 4 }).setOrigin(0.5);
     // le but du jeu, sous le titre
     this.add.text(640, 275, "BATS LE DIEU DE LA LUMIÈRE LE PLUS VITE POSSIBLE", { fontFamily: "monospace", fontSize: "22px", color: "#f4b6c2", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 }); // il clignote doucement
@@ -83,12 +83,12 @@ export default class menu extends Phaser.Scene {
     this.lance = false;
   }
 
-  creerBoutonDeux(x, y) { // la même dalle animée que « JOUER » : on cache son texte et on écrit « 2 JOUEURS » à la place (police pixel du jeu)
+  creerBoutonDeux(x, y) { // la même dalle animée que « JOUER » : on cache son texte et on écrit « 1 V 1 » à la place (police pixel du jeu)
     creerPolice(this);
     const dalle = this.add.sprite(x, y, "bouton_jouer", 1).setScale(4);
     dalle.play("bouton_jouer_survol");
     const cache = this.add.rectangle(x + 38, y + 6, 224, 52, 0x050505); // le fond sombre qui recouvre le mot « JOUER » (centre de la dalle : 52 / 22 sur l'image)
-    const texte = ecrire(this, x + 38, y + 8, "2 JOUEURS", 4, { profondeur: 0 });
+    const texte = ecrire(this, x + 38, y + 5, "1 V 1", 6, { profondeur: 0 });
     const voile = this.add.rectangle(x, y, 416, 176, 0x0e0e11, 0.6); // atténue la dalle quand elle n'est pas choisie (on n'utilise pas l'alpha : le mot « JOUER » transparaîtrait sous le cache)
     const groupe = this.add.container(0, 0, [dalle, cache, texte, voile]);
     dalle.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });

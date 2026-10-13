@@ -117,7 +117,7 @@
 - Vérifié par script : en boule, plus aucun coup des orbes, de la nova, de la spirale ni du piqué ; les colonnes, le balayage et les lasers blessent toujours.
 
 ## Le mode 1 contre 1 (`versus.js`)
-- **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
+- **Lancement** : un bouton « 1 V 1 » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
 - **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) découpées par `outils/generer_niveaux.py` : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
 - **Règles** : 3 PV par manche, au meilleur des 3 manches (le premier à 2 manches gagne). Chaque manche relance la scène (`scene.restart`) avec le score en paramètre : tout repart propre sans avoir à tout remettre à zéro à la main. 0,6 s d'invincibilité après un coup, pour qu'une rafale ne tue pas d'un coup.
 - **Réutilisation de `personnage.js`** : le code du robot visait un seul joueur. Trois petits changements : `creerPersonnage` accepte les touches et une teinte, chaque robot a son groupe de balles (`joueur.tirs`, pour savoir qui a tiré), et la visée automatique prend l'adversaire pour cible (`joueur.adversaire`) avec la même vérification de mur que pour les ennemis.
