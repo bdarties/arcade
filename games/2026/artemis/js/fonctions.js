@@ -48,6 +48,17 @@ export const TOUCHES_J2 = {
     interagir: "T"
 };
 
+// lettre inscrite sur chaque bouton de la borne (A B C en haut, D E F en bas) : c'est elle qu'on affiche à l'écran,
+// pas la touche du clavier ; les deux joueurs ont les mêmes lettres, aux mêmes endroits
+export const ETIQUETTES = {
+    pause: "A",
+    interagir: "B",
+    torche: "C",
+    frapper_tirer: "D",
+    sprint: "E",
+    changer_equipement: "F"
+};
+
 // crée les objets Phaser.Key à partir d'une table de touches : { haut: Key, bas: Key, ... }
 export function creerTouches(scene, touches) {
     return scene.input.keyboard.addKeys(touches);

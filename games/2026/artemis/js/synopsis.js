@@ -31,7 +31,7 @@ export default class synopsis extends Phaser.Scene {
     this.image = this.add.image(0, 0, this.pages[0]).setOrigin(0, 0);
     this.ajusterImage();
 
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Bouton : continuer", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Bouton " + fct.ETIQUETTES.frapper_tirer + " : continuer", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     // les touches des deux joueurs (cf. fonctions.js)

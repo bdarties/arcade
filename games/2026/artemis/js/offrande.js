@@ -67,7 +67,7 @@ export function majOffrande(scene) {
   const prevu = Math.max(1, Math.min(PIERRES_MAX, ...proches.map((j) => scene.pierresPourSoigner(scene.beneficiaireOffrande(j)))));
   o.cout.setText("x" + prevu);
   o.cout.setColor(possedees > 0 ? "#E8EBF0" : "#FF6B6B");
-  o.touches.setText(proches.map((j) => "[" + j.definition.touches.interagir + "]").join(" "));
+  o.touches.setText("[" + fct.ETIQUETTES.interagir + "]");
 
   for (const j of proches) {
     if (!Phaser.Input.Keyboard.JustDown(j.touches.interagir)) continue;

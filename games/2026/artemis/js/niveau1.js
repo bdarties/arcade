@@ -744,8 +744,7 @@ export default class niveau1 extends Phaser.Scene {
       }
 
       // indication : "[I] descendre" quand tout le monde est là, sinon "descendre 1/2"
-      const touches = en_jeu.map((j) => j.definition.touches.interagir).join(" / ");
-      this.compteur_echelle.setText(tous ? "[" + touches + "] " + p.verbe : p.verbe + " " + proches.length + "/" + en_jeu.length);
+      this.compteur_echelle.setText(tous ? "[" + fct.ETIQUETTES.interagir + "] " + p.verbe : p.verbe + " " + proches.length + "/" + en_jeu.length);
       this.compteur_echelle.setColor(p.couleur.texte);
       // la flèche oscille doucement, dans le sens du passage
       const oscillation = Math.sin(this.time.now / 180) * 3;
