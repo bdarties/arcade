@@ -4,9 +4,10 @@
 //  On y arrive en début de partie et après un Game Over (on y réapparaît au "spawn").
 //  Le lobby a 3 portes, une par niveau. Pour entrer dans une porte : se placer
 //  devant et appuyer sur le bouton B.
-//     1 — Les Coulisses (à gauche, au niveau du sol)  -> lance le niveau 1
-//     2 — Les Ombres chinoises (en haut)             -> pas encore ouverte
-//     3 — La Grande Scène (à droite, sur une marche) -> pas encore ouverte
+//     1 — Les Coulisses (à gauche, au niveau du sol)  -> toujours ouverte
+//     2 — Les Ombres chinoises (en haut)             -> s'ouvre quand le niveau 1 est terminé
+//     3 — La Grande Scène (à droite, sur une marche) -> « bientôt » (niveau pas encore fait)
+//  Les portes fermées affichent un cadenas (règles dans progression.js).
 //
 //  - Flèches (J1) ou ZQSD (J2) pour marcher, bouton A pour sauter
 //  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.

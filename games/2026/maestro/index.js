@@ -4,7 +4,6 @@ import accueil from "./js/accueil.js";
 import synopsis from "./js/synopsis.js";
 import choix_mode from "./js/choix_mode.js";
 import lobby from "./js/lobby.js";
-import selection from "./js/selection.js";
 import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
@@ -15,12 +14,11 @@ import gameover from "./js/gameover.js";
 var config = {
   width: 1280, // largeur en pixels
   height: 720, // hauteur en pixels
-   type: Phaser.AUTO,
+  type: Phaser.AUTO,
   scale: {
     mode: Phaser.Scale.FIT,
     parent: 'game-container',
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
   physics: {
     // définition des parametres physiques
@@ -42,7 +40,7 @@ var config = {
     powerPreference: "high-performance" // demande la carte graphique la plus puissante quand il y en a plusieurs
   },
   // la PREMIÈRE scène de la liste est celle qui démarre : "chargement", puis "accueil"
-  scene: [chargement, accueil, choix_mode, synopsis, lobby, selection, niveau1, niveau2, niveau3, niveau_termine, gameover],
+  scene: [chargement, accueil, choix_mode, synopsis, lobby, niveau1, niveau2, niveau3, niveau_termine, gameover],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
