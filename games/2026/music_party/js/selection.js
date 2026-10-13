@@ -1,23 +1,17 @@
-
-
-
-/////////////////////////////////PAGE DE SELECTION DES JEUXX a effacer//////////////////////////
-
-
-
-
 import { creerTouches, unJoueurAppuie } from "./controles.js";
 import { jouerSon, lancerMusique } from "./sons.js";
 import { JEUX } from "./jeux.js";
 import { style, styleTexte, fondAssombri, aideBas, OR } from "./interface.js";
 
-const X_CARTES = [205, 495];
-const Y_CARTE = 370;
-const LARGEUR_CARTE = 250;
-const HAUTEUR_CARTE = 440;
+// Les trois jeux occupent les cases 0, 1 et 2 de la grille.
+const X_COLONNES = [410, 870];
+const Y_LIGNES = [262, 512];
+// taille d'une vignette = taille du trou du cadre doré (on ne déforme pas le cadre)
+const LARGEUR = 420;
+const HAUTEUR = 202;
 
 // Sélection du mini-jeu (comme la scène "selection" du template, qui mène aux
-// niveaux) : joystick gauche / droite, A pour jouer, B pour revenir au titre.
+// niveaux) : joystick pour choisir, A pour jouer, B pour revenir au titre.
 export default class selection extends Phaser.Scene {
   constructor() {
     super({ key: "selection" });
@@ -27,50 +21,59 @@ export default class selection extends Phaser.Scene {
     this.touches = creerTouches(this);
     this.depart = false;
     // on se replace sur le dernier jeu choisi
-    this.index = JEUX.findIndex((jeu) => jeu.cle == this.registry.get("jeu"));
+    this.index = Math.max(0, JEUX.findIndex((jeu) => jeu.cle == this.registry.get("jeu")));
 
     fondAssombri(this, "img_fond_scene", 0.6);
-    this.add.text(640, 55, "CHOISIS TON JEU", style(50, OR, 10)).setOrigin(0.5);
-    this.add.text(640, 105, "Music Party : 4 mini-jeux, en solo ou à deux", styleTexte(22, "#ffe9a8")).setOrigin(0.5);
-    this.cartes = JEUX.map((jeu, i) => this.creerCarte(jeu, i));
-    this.cadre = this.add.graphics().setDepth(5);
+    var titre = this.add.image(640, 50, "img_choisis_jeu");
+    titre.scaleX = 0.9;
+    titre.scaleY = 0.9;
+    this.vignettes = JEUX.map((jeu, i) => this.creerVignette(jeu, i));
 
-    aideBas(this, "◄ ► : choisir      A : jouer      B : écran titre");
+    // le cadre doré autour du jeu choisi (le trou du cadre est au milieu de l'image)
+    this.cadre = this.add.image(0, 0, "img_cadre_jeu");
+
+    aideBas(this, "Joystick : choisir      A : jouer      B : écran titre");
     this.majCadre();
     lancerMusique(this);
-    this.cameras.main.fadeIn(300);
   }
 
-  creerCarte(jeu, i) {
-    var x = X_CARTES[i];
-    this.add.rectangle(x, Y_CARTE, LARGEUR_CARTE, HAUTEUR_CARTE, 0x1b1030, 0.88).setStrokeStyle(3, 0xe0a818);
-    // (pour une spritesheet, Phaser affiche automatiquement la 1re image)
-    var image = this.add.image(x, Y_CARTE + 20, jeu.image).setOrigin(0.5, 1).setScale(jeu.echelleImage);
-    this.add.text(x, Y_CARTE + 55, jeu.titre, style(26, OR, 6)).setOrigin(0.5);
-    this.add.text(x, Y_CARTE + 85, jeu.description, styleTexte(18, "#d8d0e8")).setOrigin(0.5, 0);
-    return { image: image, x: x };
+  // une vignette = une capture du jeu, son nom et une banderole qui le décrit
+  creerVignette(jeu, i) {
+    var x = X_COLONNES[i % 2];
+    var y = Y_LIGNES[Math.floor(i / 2)];
+    var gauche = x - LARGEUR / 2;
+    var haut = y - HAUTEUR / 2;
+    var bas = haut + HAUTEUR;
+
+    // Tuto menu : images préchargées et texte, sans masque ni Graphics.
+    var image = this.add.image(x, y, jeu.apercu);
+
+    this.add.text(gauche + 16, haut + 14, jeu.titre, { ...style(24, OR, 6), backgroundColor: "rgba(11, 6, 24, 0.75)", padding: { x: 12, y: 4 } });
+
+    this.add.text(x, bas - 20, jeu.slogan, { ...styleTexte(14), backgroundColor: "#1b1030", fixedWidth: LARGEUR, padding: { y: 8 } }).setOrigin(0.5);
+    return { image: image, x: x, y: y };
   }
 
   majCadre() {
-    var carte = this.cartes[this.index];
-    this.cadre.clear();
-    this.cadre.lineStyle(8, 0xffc83d, 1);
-    this.cadre.strokeRoundedRect(
-      X_CARTES[this.index] - LARGEUR_CARTE / 2 - 10,
-      Y_CARTE - HAUTEUR_CARTE / 2 - 10,
-      LARGEUR_CARTE + 20,
-      HAUTEUR_CARTE + 20,
-      12
-    );
-    this.cartes.forEach((c, i) => c.image.setAlpha(i == this.index ? 1 : 0.55));
+    var v = this.vignettes[this.index];
+    this.cadre.x = v.x;
+    this.cadre.y = v.y;
+    this.vignettes.forEach((autre, i) => autre.image.setTint(i == this.index ? 0xffffff : 0x777777));
   }
 
   update() {
     if (this.depart) return;
     var gauche = unJoueurAppuie(this.touches, "gauche");
     var droite = unJoueurAppuie(this.touches, "droite");
-    if (gauche || droite) {
-      this.index = (this.index + (droite ? 1 : JEUX.length - 1)) % JEUX.length;
+    var haut = unJoueurAppuie(this.touches, "haut");
+    var bas = unJoueurAppuie(this.touches, "bas");
+    if (gauche || droite || haut || bas) {
+      // gauche / droite : on change de colonne, haut / bas : on change de ligne
+      if (gauche || droite) {
+        var voisin = this.index + (this.index % 2 == 0 ? 1 : -1);
+        if (voisin < JEUX.length) this.index = voisin;
+      }
+      if (haut || bas) this.index = this.index < 2 ? Math.min(this.index + 2, JEUX.length - 1) : this.index - 2;
       jouerSon(this, "menu");
       this.majCadre();
     }
@@ -85,7 +88,6 @@ export default class selection extends Phaser.Scene {
   partir(scene, son) {
     this.depart = true;
     jouerSon(this, son);
-    this.cameras.main.fadeOut(300);
-    this.time.delayedCall(300, () => this.scene.start(scene));
+    this.scene.start(scene);
   }
 }
