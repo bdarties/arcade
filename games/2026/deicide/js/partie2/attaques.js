@@ -4,6 +4,7 @@
 import { jouerSonSurLeTemps } from "../partie1/systemes/sons.js";
 import * as effets from "../partie1/systemes/effets.js";
 import { ATTAQUES, zone, declencher, detruireZone, creerOrbe, ECLATS_OR, ECLATS_BLANC } from "../partie1/ennemis/boss.js";
+import { ARGENT, LAVANDE, OMBRE, ETINCELLE, habillerRayon } from "../partie1/ennemis/apparence_boss.js"; // l'apparence des attaques (argent et lavande)
 
 // dernier boss : juste après les colonnes, un trait annonce un balayage au sol (0,55 s), puis le rayon part : il faut éviter les colonnes
 // puis sauter ou monter sur une plateforme tout de suite après
@@ -41,7 +42,7 @@ function preparerLasers(scene, boss) { // crée les traits d'annonce
     const lasers = Array.from({ length: reglage.nombre }, (_, i) => {
         const rang = i - (reglage.nombre - 1) / 2; // 0 pour le rayon du milieu, qui vise le robot
         const decalage = rang * ecartLasers(boss, scene, reglage.ecart);
-        const trait = scene.add.rectangle(boss.x, boss.y, LONGUEUR_LASER, 4, 0xfff2c0, 0.5).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
+        const trait = scene.add.rectangle(boss.x, boss.y, LONGUEUR_LASER, 4, LAVANDE, 0.6).setOrigin(0, 0.5).setDepth(51);
         effets.clignoter(scene, trait, { alpha: 0.15, duration: 110 }); // il clignote : le danger est proche
         const laser = { rang, base: reglage.ecart, decalage, trait, rayon: null, etat: "annonce", angle: 0, verrouJusqua: scene.time.now + VERROU_LASERS, fin: 0, balayage: 0 };
         laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + decalage;
@@ -57,7 +58,7 @@ function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne
     laser.fin = scene.time.now + 600;
     laser.balayage = LASERS[boss.phase].balayage * sens;
     laser.ox = boss.x; laser.oy = boss.y; // le rayon part de là où le boss était
-    laser.rayon = scene.add.rectangle(laser.ox, laser.oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(laser.angle);
+    laser.rayon = habillerRayon(scene.add.rectangle(laser.ox, laser.oy, LONGUEUR_LASER, EPAISSEUR_LASER, ARGENT, 0.95).setOrigin(0, 0.5).setDepth(51)).setRotation(laser.angle);
     scene.tweens.add({ targets: laser.rayon, alpha: 0, scaleY: 0.3, duration: 600, ease: "Quad.In" });
 }
 // Un rayon qui tourne autour d'un point fixe (la forme finale s'en sert pour l'horloge : voir attaques_ultimes.js). C'est un laser comme les autres :
@@ -65,7 +66,7 @@ function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne
 // `grace` : pendant ces ms le rayon est « dormant » (transparent, il ne blesse pas) : un robot qui se trouve près du rayon à son apparition a le temps de s'écarter.
 export function poserRayonTournant(scene, { ox, oy, angle, balayage, duree, grace = 0, epaisseur = EPAISSEUR_LASER }) {
     const laser = { decalage: 0, trait: null, rayon: null, etat: "rayon", angle, verrouJusqua: 0, fin: scene.time.now + duree, balayage, ox, oy, actifDepuis: scene.time.now + grace, epaisseur };
-    laser.rayon = scene.add.rectangle(ox, oy, LONGUEUR_LASER, epaisseur, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(angle);
+    laser.rayon = habillerRayon(scene.add.rectangle(ox, oy, LONGUEUR_LASER, epaisseur, ARGENT, 0.95).setOrigin(0, 0.5).setDepth(51)).setRotation(angle);
     if (grace > 0) { laser.rayon.setAlpha(0.25); scene.tweens.add({ targets: laser.rayon, alpha: 0.95, duration: 120, delay: grace }); } // dormant, puis il s'allume d'un coup
     effets.clignoter(scene, laser.rayon, { alpha: 0.6, duration: 140 }); // il vibre : il reste actif tout le temps
     scene.lasersBoss.push(laser);

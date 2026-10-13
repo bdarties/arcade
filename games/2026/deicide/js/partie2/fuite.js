@@ -4,6 +4,7 @@
 //  3. Le robot qui passe par l'ouverture arrive au niveau 2 (sortirParLaDroite), la fuite, où la poursuite continue (poursuite.js).
 // Le mur lui-même est posé par partie1/mecanismes/arene.js quand l'arène se ferme ; ici on le détruit. Ce fichier est branché sur le niveau 1 par
 // installerFuite (voir partie2/index.js) : le niveau 1 ne connaît pas la partie 2.
+import { ARGENT, habillerRayon, creerTextureEclat } from "../partie1/ennemis/apparence_boss.js"; // l'apparence des attaques du boss
 import { creerOrbe, nettoyerCombat, elementsBarre } from "../partie1/ennemis/boss.js";
 import * as effets from "../partie1/systemes/effets.js"; // éclats
 import { jouerSon, jouerSonSurLeTemps } from "../partie1/systemes/sons.js"; // bruitages
@@ -63,14 +64,14 @@ function briserMurDroit(scene, boss) {
     const xMur = COLONNES_MUR[0] * 32;
     const y = boss.y;
     // 1. la charge : une boule rouge-orangé qui grossit devant le boss (0,7 s)
-    const boule = scene.add.image(boss.x + 140, y, "halo").setTint(0xff7a40).setBlendMode(Phaser.BlendModes.ADD).setDepth(52).setScale(0.1);
+    const boule = scene.add.image(boss.x + 140, y, creerTextureEclat(scene)).setDepth(52).setScale(0.1); // (une étoile d'argent qui grossit)
     scene.tweens.add({ targets: boule, scale: 1.7, duration: 700, ease: "Quad.In" });
     scene.cameras.main.shake(700, 0.006);
     scene.time.delayedCall(700, () => {
         // 2. le rayon : une bande de lumière du boss jusqu'au mur
         jouerSon(scene, "dash");
         boule.destroy();
-        const rayon = scene.add.rectangle((boss.x + 140 + xMur) / 2, y, xMur - boss.x - 140, 70, 0xffd0a0, 0.95).setBlendMode(Phaser.BlendModes.ADD).setDepth(52);
+        const rayon = habillerRayon(scene.add.rectangle((boss.x + 140 + xMur) / 2, y, xMur - boss.x - 140, 70, ARGENT, 0.95).setDepth(52));
         scene.tweens.add({ targets: rayon, alpha: 0, scaleY: 0.2, duration: 450, ease: "Quad.In", onComplete: () => rayon.destroy() });
         scene.cameras.main.flash(150, 255, 220, 180);
         mur.setTint(0xff9a60); // le mur rougeoie à l'endroit touché
