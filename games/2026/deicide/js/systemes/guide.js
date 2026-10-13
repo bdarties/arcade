@@ -10,7 +10,7 @@ const STYLE_BUT = { fontFamily: "monospace", fontSize: "26px", fontStyle: "bold"
 export function montrerGuide(scene) {
   if (scene.registry.get("guideVu")) return; // déjà montré pendant cette partie
   scene.registry.set("guideVu", true);
-  const but = scene.add.text(640, 150, "BUT : MONTE LA TOUR\nET BATS LE DIEU DE LA LUMIÈRE", STYLE_BUT)
+  const but = scene.add.text(640, 150, "MONTE LA TOUR\nET BATS LE DIEU DE LA LUMIÈRE", STYLE_BUT)
     .setOrigin(0.5).setScrollFactor(0).setDepth(100).setAlpha(0);
   scene.tweens.add({ targets: but, alpha: 1, duration: 600 }); // il apparaît en fondu
   // puis il s'efface tout seul, et le texte est détruit
