@@ -52,6 +52,7 @@ export default class fauxPantheon extends classement {
     }
 
     create() {
+        this.fissuresPretes = false; // (la scène est réutilisée : les fissures sont refaites à chaque fausse fin)
         this.debutFaux = this.game.loop.time; // l'instant où le niveau s'est figé
         super.create(); // l'écran du panthéon et sa séquence de victoire, comme pour une vraie victoire
     }
@@ -86,6 +87,7 @@ export default class fauxPantheon extends classement {
         const voile = this.add.rectangle(LARGEUR / 2, HAUTEUR / 2, LARGEUR, HAUTEUR, 0x000000, 0).setDepth(80);
         this.tweens.add({ targets: voile, fillAlpha: 0.5, duration: 1500, ease: "Quad.In" });
         this.cameras.main.zoomTo(1.06, 1500, "Quad.easeIn"); // l'écran se rapproche lentement
+        this.time.delayedCall(700, () => this.preparerFissures()); // le réseau de fissures est tracé à l'avance, bien avant le coup
         this.time.delayedCall(1620, () => this.coup(voile));
     }
 
@@ -128,12 +130,16 @@ export default class fauxPantheon extends classement {
             alpha: { start: 1, end: 0 }, tint: [0xfff2c0, 0xffd45c, 0xffffff], blendMode: "ADD", emitting: false
         }).setDepth(103);
         for (let i = 4; i < POINTS - 4; i += 3) etincelles.emitParticleAt(LIGNE[i].x, LIGNE[i].y, 3); // (moins de particules : elles pesaient sur les FPS pendant le coup)
-        this.fissurer(lame);
+        this.fissurer();
         this.time.delayedCall(560, () => this.trancher(lame, voile, etincelles)); // les fissures se propagent sous le tremblement, puis l'écran est tranché
     }
 
-    // Le réseau de fissures : de chaque point de la lame partent des fêlures brisées, qui s'étendent en 0,3 s. Elles sont dessinées sur l'écran (donc dans la photo qui sera coupée).
-    fissurer(lame) {
+    // Le réseau de fissures : de chaque point de la lame partent des fêlures brisées. TOUT est préparé avant le coup (pendant la tension, voir tension()) : le tracé de centaines de
+    // lignes épaisses sur un canevas puis son envoi à la carte graphique faisaient chuter les FPS au moment de l'impact. Au coup, il ne reste qu'à révéler des images déjà prêtes :
+    // les grandes fêlures d'abord, puis leurs branches une fraction de seconde plus tard (la fissure se propage). Elles sont affichées sur l'écran (donc dans la photo qui sera coupée).
+    preparerFissures() {
+        if (this.fissuresPretes) return;
+        this.fissuresPretes = true;
         const fissures = [];
         const branche = (x, y, angle, longueur, generation) => { // une fêlure : une ligne brisée qui peut se diviser
             const points = [{ x, y }];
@@ -146,37 +152,37 @@ export default class fauxPantheon extends classement {
                 reste -= pas;
                 if (generation < 2 && Math.random() < 0.22) branche(points[points.length - 1].x, points[points.length - 1].y, a + Phaser.Math.FloatBetween(-1.1, 1.1), reste * 0.8, generation + 1);
             }
-            if (points.length >= 2) fissures.push({ points, epaisseur: Math.max(1.5, 5 - generation * 1.8) }); // (une branche trop courte n'a pas de segment)
+            if (points.length >= 2) fissures.push({ points, generation, epaisseur: Math.max(1.5, 5 - generation * 1.8) }); // (une branche trop courte n'a pas de segment)
         };
         for (let i = 6; i < POINTS - 6; i += 4) { // de nombreux points d'impact le long de la lame, des fêlures des deux côtés
             const p = LIGNE[i], dx = LIGNE[i + 1].x - LIGNE[i - 1].x, dy = LIGNE[i + 1].y - LIGNE[i - 1].y, normale = Math.atan2(dy, dx) + Math.PI / 2;
             branche(p.x, p.y, normale + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
             branche(p.x, p.y, normale + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6), Phaser.Math.Between(200, 520), 0);
         }
-        // Les fissures sont tracées sur un canevas 2D, segment après segment (seulement les nouveaux à chaque image) : redessiner des centaines de lignes épaisses en WebGL à chaque
-        // image faisait chuter les FPS pendant le coup. Le canevas est envoyé à la carte graphique une fois par image, comme une simple image.
-        if (this.textures.exists("fissures")) this.textures.remove("fissures");
-        const toile = this.textures.createCanvas("fissures", LARGEUR, HAUTEUR);
-        const ctx = toile.getContext();
-        ctx.lineCap = "round"; ctx.lineJoin = "round";
-        this.add.image(LARGEUR / 2, HAUTEUR / 2, "fissures").setDepth(101);
-        const deja = fissures.map(() => 1); // le nombre de points déjà tracés pour chaque fissure
-        const etat = { avancee: 0 };
-        this.tweens.add({ targets: etat, avancee: 1, duration: 320, ease: "Cubic.Out",
-            onUpdate: () => {
-                fissures.forEach(({ points, epaisseur }, f) => {
-                    const jusqua = Math.max(2, Math.floor(points.length * etat.avancee));
-                    if (jusqua <= deja[f]) return;
-                    [[epaisseur + 6, "rgba(0,0,0,0.55)"], [epaisseur + 2, "rgba(255,212,92,0.5)"], [epaisseur, "#ffffff"]].forEach(([largeur, couleur]) => { // un contour sombre, un reflet doré, un trait blanc
-                        ctx.lineWidth = largeur; ctx.strokeStyle = couleur;
-                        ctx.beginPath(); ctx.moveTo(points[deja[f] - 1].x, points[deja[f] - 1].y);
-                        for (let k = deja[f]; k < jusqua; k++) ctx.lineTo(points[k].x, points[k].y);
-                        ctx.stroke();
-                    });
-                    deja[f] = jusqua;
+        const couches = [0, 1].map((numero) => { // 0 : les grandes fêlures ; 1 : leurs branches
+            const cle = "fissures_" + numero;
+            if (this.textures.exists(cle)) this.textures.remove(cle);
+            const toile = this.textures.createCanvas(cle, LARGEUR, HAUTEUR);
+            const ctx = toile.getContext();
+            ctx.lineCap = "round"; ctx.lineJoin = "round";
+            fissures.filter((f) => (f.generation > 0 ? 1 : 0) === numero).forEach(({ points, epaisseur }) => {
+                [[epaisseur + 6, "rgba(0,0,0,0.55)"], [epaisseur + 2, "rgba(255,212,92,0.5)"], [epaisseur, "#ffffff"]].forEach(([largeur, couleur]) => { // un contour sombre, un reflet doré, un trait blanc
+                    ctx.lineWidth = largeur; ctx.strokeStyle = couleur;
+                    ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+                    for (let k = 1; k < points.length; k++) ctx.lineTo(points[k].x, points[k].y);
+                    ctx.stroke();
                 });
-                toile.refresh();
-            } });
+            });
+            toile.refresh();
+            return this.add.image(LARGEUR / 2, HAUTEUR / 2, cle).setDepth(101).setVisible(false);
+        });
+        this.couchesFissures = couches;
+    }
+
+    fissurer() {
+        this.preparerFissures(); // (déjà fait pendant la tension ; sinon on le fait ici)
+        this.couchesFissures[0].setVisible(true);
+        this.time.delayedCall(90, () => this.couchesFissures[1].setVisible(true));
     }
 
     // ---- 4. L'ÉCRAN EST TRANCHÉ : une photo de l'écran est coupée le long de la courbe, et les deux moitiés s'écartent dans la lumière ----
