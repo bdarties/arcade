@@ -56,7 +56,7 @@ export function majPoursuite(scene) { // à appeler dans update()
 
     // le mur touche le robot
     if (!scene.mort && joueur.body.left < p.mur.x + LARGEUR_MUR / 2) {
-        scene.blesserJoueur(1, "Rattrapé par le mur de lumière");
+        scene.blesserJoueur(1, "Rattrapé par le mur de lumière", true); // (le mur de la fuite blesse même un robot en boule : sinon on le laisserait passer)
         scene.cameras.main.shake(200, 0.01);
         p.mur.x = joueur.x - RECUL_APRES_COUP; // le mur recule, sinon il toucherait le robot à chaque image
     }
@@ -127,7 +127,7 @@ function majColonne(scene, c) {
         const b = scene.player.body;
         if (!c.touche && !scene.mort && b.center.x + b.halfWidth * 0.6 > c.x - 36 && b.center.x - b.halfWidth * 0.6 < c.x + 36) {
             c.touche = true; // un seul coup par rayon
-            scene.blesserJoueur(1, "Foudroyé par le Dieu enragé");
+            scene.blesserJoueur(1, "Foudroyé par le Dieu enragé", true); // (un rayon blesse même un robot en boule)
         }
         if (scene.time.now >= c.fin) { c.rayon.destroy(); c.etat = "finie"; }
     }

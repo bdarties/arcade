@@ -409,7 +409,7 @@ function majLasers(scene, boss) { // à chaque image : les traits suivent le bos
         const distance = Math.hypot(px - dx * avance, py - dy * avance);
         if (!laser.touche && distance < EPAISSEUR_LASER / 2 + 16) {
             scene.lasersBoss.forEach((l) => { l.touche = true; }); // un seul coup par attaque
-            scene.blesserJoueur(1, "Foudroyé par " + profil.cause);
+            scene.blesserJoueur(1, "Foudroyé par " + profil.cause, true); // (un rayon blesse même un robot en boule)
         }
     });
 }
@@ -535,7 +535,7 @@ function majZones(scene) { // à chaque image
         const dedans = b.center.x + b.halfWidth * 0.6 > z.x - z.w / 2 && b.center.x - b.halfWidth * 0.6 < z.x + z.w / 2 && b.bottom > z.y - z.h / 2 && b.top < z.y + z.h / 2;
         if (!z.touche && z.degats && dedans) { // le robot est dans le rayon
             z.touche = true; // un seul coup par rayon
-            scene.blesserJoueur(1, "Foudroyé par " + profil.cause);
+            scene.blesserJoueur(1, "Foudroyé par " + profil.cause, true); // (un rayon blesse même un robot en boule)
         }
     });
 }

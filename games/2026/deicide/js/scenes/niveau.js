@@ -16,6 +16,7 @@ import { creerHud } from "../personnage/hud.js";
 import * as ennemis from "../ennemis/ennemis.js";
 import * as lumiere from "../mecanismes/lumiere.js";
 import { jouerSon, musiqueDeScene, chargerMusiqueBoss, chargerMusiqueBossEnArrierePlan } from "../systemes/sons.js"; // bruitages et musique
+import { majBoule } from "../personnage/boule.js"; // le robot immobile se met en boule
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 // décor dessiné une seule fois, ennemis lointains endormis (optimisations pour la borne)
 import { figerCalques, endormirLesLoins } from "../systemes/optimisation.js";
@@ -177,6 +178,7 @@ export default class niveau extends Phaser.Scene {
     this.invincibleJusqua = 0;
     this.graceAPoser = true;
     this.mort = false; // vrai quand le robot est tombé à 0 PV (voir mourir)
+    this.immobileDepuis = null; // l'instant où le robot s'est arrêté (voir boule.js)
     this.partieFinie = false; // vrai une fois la partie terminée (voir finirPartie dans points.js)
   }
 
@@ -195,14 +197,17 @@ export default class niveau extends Phaser.Scene {
     }
     lumiere.majLumiere(this); // vérifie si le joueur est dans la lumière et le brûle
     majPersonnage(this.player, this.clavier);
+    majBoule(this); // immobile plus d'une seconde : le robot se met en boule (invulnérable, sauf aux rayons du boss)
     ennemis.majEnnemis(this);
     verifierSalles(this); // ferme une salle de combat quand le joueur y entre, l'ouvre quand tous les ennemis sont morts
     this.cfg.arene(this); // si le joueur arrive en haut, on ferme l'arène
     lumiere.majVoile(this);
   }
 
-  blesserJoueur(degats, cause) {
+  // perce : vrai pour les rayons du boss (colonnes, balayage, geysers, lasers) et le mur de lumière de la fuite : ils blessent même un robot en boule
+  blesserJoueur(degats, cause, perce = false) {
     if (this.mort || this.partieFinie) return; // un robot qui meurt ne prend plus de coups (et la partie finie, plus rien ne blesse)
+    if (this.player.enBoule && !perce) return; // en boule : invulnérable (et le coup ne déclenche pas l'invincibilité d'une seconde)
     // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
     if (this.time.now < this.invincibleJusqua) return;
     this.invincibleJusqua = this.time.now + DUREE_INVINCIBLE;

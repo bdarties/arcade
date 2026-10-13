@@ -42,6 +42,12 @@
 - **Ce qui est déjà léger** (mesuré) : le processeur du jeu (moins de 1 % sur un Mac, même avec toutes les attaques du boss), la surface dessinée (1,5 à 4 fois l'écran), les textures (23 Mo, stables après des dizaines de morts).
 - **Non vérifié** : tout ça est mesuré sur un Mac, pas sur le Raspberry Pi.
 
+## Le robot « en boule » (`personnage/boule.js`)
+- **Règle** : immobile plus d'1 seconde (aucune touche tenue, aucune action en cours, au sol, vitesse horizontale nulle), le robot est « en boule » : il garde sa pose d'attente et clignote, et il est invulnérable à tous les dégâts. Il en sort dès qu'il bouge, saute, tire ou dashe.
+- **Exception** : les rayons du boss le blessent quand même (colonnes, balayage, geysers, lasers) ainsi que le mur de lumière de la fuite (sinon on laisserait passer le mur en restant immobile). `blesserJoueur(degats, cause, perce)` : `perce` vaut vrai pour ces rayons.
+- **Piège rencontré** : au sol le robot rebondit un tout petit peu en permanence (rebond de 0,2) : sa vitesse verticale n'est jamais nulle, donc on ne la teste pas.
+- Vérifié par script : en boule, plus aucun coup des orbes, de la nova, de la spirale ni du piqué ; les colonnes, le balayage et les lasers blessent toujours.
+
 ## Le mode 1 contre 1 (`versus.js`)
 - **Lancement** : un bouton « 2 JOUEURS » sur l'écran d'accueil (haut / bas pour choisir, un bouton pour valider). Un bouton du joueur 2 (R, T, Y, F, G, H, N) lance aussi directement le duel.
 - **Arène** : les 22 dernières lignes de `niveau1.json` (le bas de la map 1, là où le robot démarre) découpées par `outils/generer_niveaux.py` : mêmes tuiles, 1280 x 704 px, la taille de l'écran. Pas de voile d'obscurité ni de lanternes : un halo de la couleur de chaque joueur le fait ressortir, parce que le robot est sombre sur un décor sombre.
