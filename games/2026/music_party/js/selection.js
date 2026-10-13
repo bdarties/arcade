@@ -56,7 +56,7 @@ export default class selection extends Phaser.Scene {
     this.cadre.clear();
     this.cadre.lineStyle(8, 0xffc83d, 1);
     this.cadre.strokeRoundedRect(
-      carte.x - LARGEUR_CARTE / 2 - 10,
+      X_CARTES[this.index] - LARGEUR_CARTE / 2 - 10,
       Y_CARTE - HAUTEUR_CARTE / 2 - 10,
       LARGEUR_CARTE + 20,
       HAUTEUR_CARTE + 20,
