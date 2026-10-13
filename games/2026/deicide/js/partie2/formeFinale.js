@@ -22,7 +22,13 @@ export function pvMinimum(boss) { // il ne peut pas descendre sous 1 PV tant qu'
     const requises = attaquesRequises(boss);
     // (une attaque impossible en ce moment ne le retient pas : l'horloge n'est lancée que si le robot est au centre, et il restait sinon bloqué à 1 PV, invincible, tant que le robot n'y allait pas)
     const lancable = (nom) => attaquePossible(boss.scene, boss, nom) && !(nom === "lanternes" && boss.scene.lanternesVivantes && boss.scene.lanternesVivantes.countActive() >= 2);
-    return requises && !requises.every((nom) => boss.faits.has(nom) || !lancable(nom)) ? 1 : 0;
+    const retenu = requises && !requises.every((nom) => boss.faits.has(nom) || !lancable(nom));
+    // filet de sécurité : s'il est retenu à 1 PV depuis plus de 20 s (une attaque qui ne vient pas, pour une raison imprévue), on le laisse mourir plutôt que de le rendre invincible
+    if (retenu && boss.pv <= 1) {
+        boss.retenuDepuis = boss.retenuDepuis ?? boss.scene.time.now;
+        if (boss.scene.time.now - boss.retenuDepuis > 20000) return 0;
+    } else boss.retenuDepuis = undefined;
+    return retenu ? 1 : 0;
 }
 
 // Le tirage de la phase 3 et de la forme finale : d'abord, au hasard parmi les attaques pas encore lancées ; ensuite, un « sac » mélangé (chaque attaque de la liste
