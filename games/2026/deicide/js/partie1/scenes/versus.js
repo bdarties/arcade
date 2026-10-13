@@ -17,7 +17,7 @@ const MANCHES_POUR_GAGNER = 2;
 const DUREE_INVINCIBLE = 600; // ms après un coup : une rafale ne tue pas en une image
 const DELAI_FIN_MANCHE = 2300; // ms entre la mort d'un robot et la manche suivante
 const DELAI_RETOUR_ACCUEIL = 10000; // ms sans bouton après la victoire : retour à l'écran d'accueil
-const COULEUR_J1 = 0xe7e0e9; // la couleur des cellules de vie du joueur 1...
+const COULEUR_J1 = 0xff5a4a; // la couleur du joueur 1 (rouge : robot, halo, cellules de vie)...
 const COULEUR_J2 = 0x8fd8ff; // ...et du joueur 2 (c'est aussi la teinte de son robot)
 const COULEUR_VIDE = 0x3a2f45;
 const POLICE = "monospace";
@@ -53,7 +53,7 @@ export default class versus extends Phaser.Scene {
     const [depart1] = objetsDe(carte, "depart1");
     const [depart2] = objetsDe(carte, "depart2");
     this.joueurs = [
-      creerPersonnage(this, depart1.x, depart1.y),
+      creerPersonnage(this, depart1.x, depart1.y, { teinte: COULEUR_J1 }),
       creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G" } })
     ];
     this.joueurs[1].regardeGauche = true; // le joueur 2 regarde vers le joueur 1
@@ -160,7 +160,7 @@ export default class versus extends Phaser.Scene {
   afficherVictoire(nom) { // l'écran de victoire : rejouer avec un bouton, ou retour à l'accueil au bout de 10 s
     this.ecranFinal = true;
     this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.55).setScrollFactor(0).setDepth(105);
-    this.add.text(640, 250, nom + " GAGNE", { fontFamily: POLICE, fontSize: "88px", fontStyle: "bold", color: nom === "J1" ? "#e7e0e9" : "#8fd8ff", stroke: "#000000", strokeThickness: 10 }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
+    this.add.text(640, 250, nom + " GAGNE", { fontFamily: POLICE, fontSize: "88px", fontStyle: "bold", color: nom === "J1" ? "#ff7a6a" : "#8fd8ff", stroke: "#000000", strokeThickness: 10 }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
     this.add.text(640, 350, this.victoires[0] + "  -  " + this.victoires[1], { fontFamily: POLICE, fontSize: "56px", color: "#f5f0f8", stroke: "#000000", strokeThickness: 8 }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
     const aide = this.add.text(640, 470, "UN BOUTON : REJOUER", { fontFamily: POLICE, fontSize: "26px", color: "#e7e0e9", stroke: "#000000", strokeThickness: 5 }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
     this.tweens.add({ targets: aide, alpha: 0.35, duration: 600, yoyo: true, repeat: -1 });
