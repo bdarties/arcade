@@ -49,7 +49,7 @@ export function preparerPause(niveau) {
 // Pendant la pause, l'horloge du niveau (scene.time.now) saute en avant : elle suit le temps réel. Tous les délais du jeu (invincibilité,
 // brûlure de la lumière, tirs des ennemis, attaques du boss) seraient alors terminés d'un coup à la reprise. On retranche donc la durée
 // de la pause à l'horloge du niveau : pour lui, le temps ne s'est pas écoulé.
-function rattraperHorloge(niveau, duree) {
+export function rattraperHorloge(niveau, duree) {
     const horloge = niveau.time;
     if (horloge.decalagePause === undefined) { // première pause de ce niveau : on remplace la mise à jour de l'horloge, une seule fois
         const evenements = niveau.sys.events;

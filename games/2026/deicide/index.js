@@ -8,6 +8,7 @@ import niveau1 from "./js/scenes/niveau1.js";
 import niveau2 from "./js/scenes/niveau2.js";
 import niveau3 from "./js/scenes/niveau3.js";
 import versus from "./js/scenes/versus.js"; // le mode 1 contre 1
+import pantheon from "./js/scenes/pantheon.js"; // choix « entrer dans le panthéon » avant la phase 2 du dernier boss
 import pause from "./js/scenes/pause.js"; // menu pause : réglages et crédits (posé par-dessus le niveau)
 import { activerRaccourcis } from "./js/systemes/raccourcis.js"; // reset de la borne (Z + X maintenus) et touches de test (F8, F9, F10, Z + B)
 import classement from "./js/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
@@ -63,7 +64,7 @@ const config = {
     // (voir optimisation.js)
     maxTextures: 4
   },
-  scene: [menu, niveau1, niveau2, niveau3, versus, classement, pause], // la première scène (le menu) démarre toute seule
+  scene: [menu, niveau1, niveau2, niveau3, versus, classement, pause, pantheon], // la première scène (le menu) démarre toute seule
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
