@@ -1,6 +1,14 @@
 // effets.js : tous les effets qui rendent les actions satisfaisantes (tremblements, flashs, éclats, traînée de dash, alertes)
 // chaque effet est une petite fonction qu'on appelle au bon moment depuis les autres fichiers
 
+// Un clignotement sans fin (yoyo) sur un objet. Il s'arrête quand l'objet est détruit : sans ça, Phaser garde le tween et continue de le calculer à
+// chaque image pour un objet qui n'existe plus. Pendant un combat de boss ces tweens s'accumulaient (des centaines), et le jeu ralentissait.
+export function clignoter(scene, objet, proprietes) {
+    const tween = scene.tweens.add({ targets: objet, ...proprietes, yoyo: true, repeat: -1 });
+    objet.once("destroy", () => tween.stop()); // l'objet est détruit : on arrête son clignotement
+    return tween;
+}
+
 function creerTexturePixel(scene) { // crée une texture d'un carré blanc de 4 x 4 px, utilisée pour toutes les particules
     if (scene.textures.exists("pixel")) return; // déjà créée : on la réutilise
     const dessin = scene.make.graphics({ add: false }); // un dessin qui n'est pas affiché à l'écran

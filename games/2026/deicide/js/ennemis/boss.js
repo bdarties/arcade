@@ -261,7 +261,7 @@ function annoncer(scene, boss, nom) { // les avertissements : des traits clairs 
         const nombre = rude(boss) ? rude(boss).pluie : [6, 8, 10][boss.phase];
         const largeurCase = 1120 / nombre;
         const xs = Array.from({ length: nombre }, (_, i) => Math.round(80 + largeurCase * i + Phaser.Math.Between(10, largeurCase - 10)));
-        const reperes = xs.map((x) => { const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); scene.tweens.add({ targets: r, alpha: 0.15, duration: 110, yoyo: true, repeat: -1 }); return r; });
+        const reperes = xs.map((x) => { const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51); effets.clignoter(scene, r, { alpha: 0.15, duration: 110 }); return r; });
         return { xs, reperes, haut };
     }
     // le trait suit le robot puis se fige : le boss plongera là
@@ -365,7 +365,7 @@ function preparerLasers(scene, boss) { // crée les traits d'annonce
     const lasers = Array.from({ length: reglage.nombre }, (_, i) => {
         const decalage = (i - (reglage.nombre - 1) / 2) * reglage.ecart; // le rayon du milieu (décalage 0) vise le robot
         const trait = scene.add.rectangle(boss.x, boss.y, LONGUEUR_LASER, 4, 0xfff2c0, 0.5).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-        scene.tweens.add({ targets: trait, alpha: 0.15, duration: 110, yoyo: true, repeat: -1 }); // il clignote : le danger est proche
+        effets.clignoter(scene, trait, { alpha: 0.15, duration: 110 }); // il clignote : le danger est proche
         const laser = { decalage, trait, rayon: null, etat: "annonce", angle: 0, verrouJusqua: scene.time.now + 550, fin: 0, balayage: 0 };
         laser.angle = Phaser.Math.Angle.Between(boss.x, boss.y, scene.player.x, scene.player.body.center.y) + decalage;
         return laser;
@@ -499,7 +499,7 @@ function zone(scene, { x, y, w, h, trait, suit = false, degats = true }) {
     const t = scene.add.rectangle(x, y, trait.w, trait.h, 0xfff2c0, trait.w > 400 && trait.h > 200 ? 0.14 : 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
     const grand = trait.w > 400 && trait.h > 200; // un grand rectangle de lumière doit rester plus discret qu'un trait fin
     // il clignote : le danger est proche
-    scene.tweens.add({ targets: t, alpha: grand ? { from: 0.05, to: 0.22 } : { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 });
+    effets.clignoter(scene, t, { alpha: grand ? { from: 0.05, to: 0.22 } : { from: 0.15, to: 0.6 }, duration: 110 });
     const z = { x, y, w, h, trait: t, suit, degats, etat: "annonce", verrouJusqua: scene.time.now + 500, touche: false, fin: 0, rayon: null };
     scene.zonesBoss.push(z);
     return z;

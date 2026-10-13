@@ -4,7 +4,7 @@
 // Si la barre est déjà pleine, la croix est ramassée quand même (le texte affiche « PV MAX » et rien n'est regagné).
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
 import { volumeEffets } from "../systemes/sons.js"; // le bip suit le réglage des bruitages
-import { textePoints } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
+import { textePoints, clignoter } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
 import { PV_MAX_BARRE } from "../personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
 
 const CHANCE_PV = 0.3; // 30 % de chances qu'un ennemi tué laisse un PV
@@ -85,7 +85,7 @@ function creerBonusPV(scene, x, y) {
         const halo = scene.add.image(x, y, "halo_doux");
         halo.setScale(0.4).setTint(0xe7e0e9).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0.9);
         halo.setPipeline("SinglePipeline"); // le shader simple (voir optimisation.js)
-        scene.tweens.add({ targets: halo, scale: 0.55, alpha: 0.5, duration: 600, yoyo: true, repeat: -1 });
+        clignoter(scene, halo, { scale: 0.55, alpha: 0.5, duration: 600 });
         bonus.halo = halo;
         bonus.once("destroy", () => halo.destroy()); // la lueur disparaît avec la croix
     }

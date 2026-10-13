@@ -96,7 +96,7 @@ function annoncerPluie(scene, p) { // de petits traits en haut de l'écran, deva
     const xs = [170, 340, 510, 680].map((d) => Math.round(scene.player.x + d + Phaser.Math.Between(-30, 30)));
     const reperes = xs.map((x) => {
         const r = scene.add.rectangle(x, haut + 20, 6, 40, 0xfff2c0, 0.6).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-        scene.tweens.add({ targets: r, alpha: 0.15, duration: 100, yoyo: true, repeat: -1 });
+        effets.clignoter(scene, r, { alpha: 0.15, duration: 100 });
         return r;
     });
     scene.time.delayedCall(750, () => {
@@ -109,7 +109,7 @@ function annoncerColonne(scene, p) { // un trait clignotant sur toute la hauteur
     const hauteur = scene.carte.heightInPixels;
     const x = Math.round(scene.player.x + 300);
     const trait = scene.add.rectangle(x, hauteur / 2, 8, hauteur, 0xfff2c0, 0.4).setBlendMode(Phaser.BlendModes.ADD).setDepth(51);
-    scene.tweens.add({ targets: trait, alpha: { from: 0.15, to: 0.6 }, duration: 110, yoyo: true, repeat: -1 });
+    effets.clignoter(scene, trait, { alpha: { from: 0.15, to: 0.6 }, duration: 110 });
     p.colonnes.push({ x, trait, etat: "annonce", fin: 0, rayon: null, touche: false, allumage: scene.time.now + 900 });
 }
 
