@@ -22,6 +22,7 @@ import * as cristaux from "./cristaux.js";
 //               toutes les lumières (torche, cristaux, lasers...) pour un coût très faible côté processeur graphique
 //   "light2d" : les lumières de Phaser (Light2D) : jolies mais lourdes, la borne tombe vers 10 FPS
 //   "ancien"  : cercles et cônes par paliers, le tout premier système (gardé pour comparer)
+//   "aucune"  : aucune obscurité, le jeu en pleine luminosité : sert à mesurer la vitesse du jeu sans lumière
 const MODE = "degrade";
 const LIGHT2D = MODE === "light2d";
 const DEGRADE = MODE === "degrade";
@@ -101,11 +102,18 @@ function distanceMur(scene, joueur, portee) {
   return Math.max(distance, DISTANCE_MIN_TORCHE);
 }
 
+// d'où part la torche : le centre du sprite, un peu devant lui (la lampe est tenue devant le corps)
+// la hitbox du joueur est à ses pieds (15 px plus bas) : partir de là décalait tout le faisceau vers le bas
+const DECALAGE_TORCHE = 6; // px
+function origineTorche(joueur) {
+  return { x: joueur.sprite.x + joueur.regard.x * DECALAGE_TORCHE, y: joueur.sprite.y + joueur.regard.y * DECALAGE_TORCHE };
+}
+
 // la torche : les lumières se placent devant le joueur et s'arrêtent avant le mur ; éteinte, elles sont invisibles
 function majTorche(scene, joueur) {
   const portee = porteeTorche(joueur);
   const distance = distanceMur(scene, joueur, portee);
-  const centre = joueur.sprite.body.center;
+  const centre = origineTorche(joueur);
   joueur.lumieres_torche.forEach((lumiere, k) => {
     const allumee = joueur.torche_allumee;
     lumiere.visible = allumee;
@@ -178,6 +186,10 @@ export function eclairerObjets(scene) {
 
 // crée le noir qui couvre l'écran et le calque de gomme (dans la salle safe : pas d'obscurité du tout)
 export function creerObscurite(scene) {
+  if (MODE === "aucune") {
+    scene.obscurite = null;
+    return;
+  }
   if (LIGHT2D) {
     creerLight2D(scene);
     return;
@@ -261,6 +273,10 @@ function dansLeCone(joueur, x, y) {
 // à appeler à chaque image : redessine toute la lumière
 export function majLumieres(scene) {
   if (scene.etat.safe) return; // salle safe : pas d'obscurité, donc rien à éclairer
+  if (MODE === "aucune") {
+    scene.eclats.length = 0; // personne ne les filtre dans ce mode
+    return;
+  }
   if (LIGHT2D) {
     majLight2D(scene);
     return;
@@ -307,14 +323,30 @@ export function majLumieres(scene) {
 /** MODE "degrade" : le noir gommé, avec un pinceau en dégradé
 /** une seule image (un disque blanc qui s'estompe du centre vers le bord) sert de gomme pour toutes les lumières :
 /** chaque lumière est une copie de cette image, à sa taille et à son opacité, gommée dans le noir en un seul appel
-/** (aucun calcul de lumière par pixel). La lumière est neutre : la gomme n'a pas de couleur.
-/** (une lueur colorée en mélange additif a été essayée : elle délave l'image et coûte 8 FPS dans les mesures)
+/** (aucun calcul de lumière par pixel). La gomme n'a pas de couleur : la teinte vient d'un second jeu d'images (cf. TEINTE_CHAUDE).
 /***********************************************************************/
 
+const COULEUR_NOIR = 0x02030a; // le noir qui couvre l'écran : un bleu nuit presque noir (0x000000 : noir pur)
 const OPACITE_NOIR = 0.96; // 1 - luminosité ambiante : ce qu'aucune lumière n'atteint reste très sombre mais visible
 const RAYON_VISIBILITE_JOUEUR = 26; // px : un joueur reste toujours visible, même hors de toute lumière
+// le pinceau est plus large et plus clair que l'atténuation de Light2D : on le réduit pour éclairer la même zone
+const REGLAGE_DEGRADE = { rayon: 0.88, force: 1 };
+// le halo autour du joueur et la chaîne de lumières de la torche : position (part de la distance au premier mur) et intensité
+// de chaque lumière, de plus en plus larges et faibles. Valeurs calculées (recherche numérique) pour que, devant le joueur,
+// la lumière décroisse régulièrement jusqu'à ~260 px (ni trou, ni bosse) et que le faisceau s'élargisse comme un cône
+// (demi-largeur d'environ 55 px à 60 px du joueur, 110 px à 240 px)
+const HALO_JOUEUR_DEGRADE = { rayon: 84, force: 0.6 };
+const TORCHE_DEGRADE = [{ position: 0.1, intensite: 0.38 }, { position: 0.3, intensite: 0.31 }, { position: 0.6, intensite: 0.19 }];
+const RAYON_TORCHE_DEGRADE = 53; // px : rayon d'une lumière collée au joueur...
+const RAYON_PAR_PX_DEGRADE = 1.29; // ... plus ce nombre de px de rayon par px de distance au joueur (le cône s'évase)
+// teinte chaude : chaque lumière pose aussi une image colorée en mélange multiplicatif, sous le noir
+// (multiplier ne délave pas l'image, contrairement à une lueur additive) ; false : lumière neutre, un peu plus rapide
+const TEINTE_CHAUDE = true;
+const FORCE_TEINTE = 0.7; // part de l'intensité d'une lumière qui devient teinte (0 à 1)
+const ECHELLE_TEINTE = 0.7; // la teinte couvre une zone plus petite que la lumière (moins de pixels à mélanger : plus rapide)
 
-// l'image du pinceau, créée une seule fois pour tout le jeu : opacité (1 - t)^2, t allant de 0 au centre à 1 au bord
+// l'image du pinceau, créée une seule fois pour tout le jeu : opacité (1 - t²)², t allant de 0 au centre à 1 au bord
+// (plus large au centre que (1 - t)² : les lumières de la torche se fondent en un faisceau continu au lieu de taches séparées)
 function creerTextureDegrade(scene) {
   if (scene.textures.exists("degrade_lumiere")) return;
   const taille = 256;
@@ -323,7 +355,7 @@ function creerTextureDegrade(scene) {
   const degrade = ctx.createRadialGradient(taille / 2, taille / 2, 0, taille / 2, taille / 2, taille / 2);
   for (let i = 0; i <= 10; i++) {
     const t = i / 10;
-    degrade.addColorStop(t, "rgba(255,255,255," + Math.pow(1 - t, 2).toFixed(3) + ")");
+    degrade.addColorStop(t, "rgba(255,255,255," + Math.pow(1 - t * t, 2).toFixed(3) + ")");
   }
   ctx.fillStyle = degrade;
   ctx.fillRect(0, 0, taille, taille);
@@ -337,56 +369,70 @@ function creerDegrade(scene) {
     .setScrollFactor(0) // il reste collé à l'écran quand la caméra bouge
     .setDepth(fct.PROFONDEUR.obscurite);
   scene.pinceaux = []; // images réutilisées d'une image à l'autre : jamais affichées, seulement gommées dans le noir
+  scene.teintes = []; // images colorées (mélange multiplicatif) posées dans le monde, juste sous le noir
   scene.nb_pinceaux = 0;
 }
 
-// une lumière : le pinceau, placé en coordonnées d'écran (le noir est collé à l'écran), à la taille et à l'opacité voulues
-function pinceau(scene, x, y, rayon, force) {
+// une lumière : le pinceau, placé en coordonnées d'écran (le noir est collé à l'écran), à la taille et à l'opacité voulues,
+// et sa teinte colorée (coordonnées du monde). ajuster = false : on garde le rayon et la force tels quels
+function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) {
   const camera = scene.cameras.main;
   const i = scene.nb_pinceaux++;
+  if (ajuster) {
+    rayon *= REGLAGE_DEGRADE.rayon;
+    force *= REGLAGE_DEGRADE.force;
+  }
   if (!scene.pinceaux[i]) scene.pinceaux[i] = scene.make.image({ key: "degrade_lumiere" }, false);
   scene.pinceaux[i].setPosition(x - camera.scrollX, y - camera.scrollY).setDisplaySize(rayon * 2, rayon * 2).setAlpha(Math.min(force, 1));
+  if (!TEINTE_CHAUDE || !ajuster) {
+    scene.teintes[i]?.setVisible(false); // cet indice a pu servir à une lumière teintée à l'image précédente
+    return;
+  }
+  if (!scene.teintes[i]) scene.teintes[i] = scene.add.image(0, 0, "degrade_lumiere").setBlendMode(Phaser.BlendModes.MULTIPLY).setDepth(fct.PROFONDEUR.obscurite - 1);
+  scene.teintes[i].setPosition(x, y).setDisplaySize(rayon * 2 * ECHELLE_TEINTE, rayon * 2 * ECHELLE_TEINTE).setTint(couleur).setAlpha(Math.min(force * FORCE_TEINTE, 1)).setVisible(true);
 }
 
 // à appeler à chaque image : les mêmes lumières qu'avec Light2D (cf. majLight2D), en pinceaux
 function majDegrade(scene) {
   scene.nb_pinceaux = 0;
   scene.joueurs.forEach((j) => {
-    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_JOUEUR, INTENSITE_JOUEUR);
-    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1);
+    pinceau(scene, j.sprite.x, j.sprite.y, HALO_JOUEUR_DEGRADE.rayon, HALO_JOUEUR_DEGRADE.force, COULEUR_JOUEUR);
+    pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1, 0xffffff, false);
     if (!j.torche_allumee) return;
     // la torche : une chaîne de pinceaux devant le joueur, qui s'arrête avant le premier mur (comme avec Light2D)
     const portee = porteeTorche(j);
-    const distance = distanceMur(scene, j, portee);
-    const centre = j.sprite.body.center;
-    for (let k = 0; k < NB_LUMIERES_TORCHE; k++) {
-      const d = distance * (k + 1) / NB_LUMIERES_TORCHE;
-      const rayon = (RAYON_TORCHE_PROCHE + d * RAYON_TORCHE_PAR_PX) * (0.5 + 0.5 * distance / portee);
-      const intensite = INTENSITE_TORCHE_PROCHE + (INTENSITE_TORCHE_LOIN - INTENSITE_TORCHE_PROCHE) * (d / portee);
-      pinceau(scene, centre.x + j.regard.x * d, centre.y + j.regard.y * d, rayon, intensite);
-    }
+    const distance = distanceMur(scene, j, portee); // mesurée depuis les pieds, comme les collisions
+    const centre = origineTorche(j);
+    TORCHE_DEGRADE.forEach(({ position, intensite }) => {
+      const d = distance * position;
+      const rayon = (RAYON_TORCHE_DEGRADE + d * RAYON_PAR_PX_DEGRADE) * (0.5 + 0.5 * distance / portee); // moins large près d'un mur
+      pinceau(scene, centre.x + j.regard.x * d, centre.y + j.regard.y * d, rayon, intensite, COULEUR_TORCHE);
+    });
   });
   scene.butin.forEach((objet) => {
-    if (objet.definition.lumiere) pinceau(scene, objet.x, objet.y, LUMIERE_POTION.rayon, LUMIERE_POTION.intensite);
+    if (objet.definition.lumiere) pinceau(scene, objet.x, objet.y, LUMIERE_POTION.rayon, LUMIERE_POTION.intensite, LUMIERE_POTION.couleur);
   });
   scene.projectiles.getChildren().forEach((laser) => {
-    if (laser.active) pinceau(scene, laser.x, laser.y, LUMIERE_LASER.rayon, LUMIERE_LASER.intensite);
+    if (!laser.active) return;
+    const couleur = LUMIERE_LASER.couleurs[laser.texture.key.endsWith("rouge") ? "rouge" : "bleu"];
+    pinceau(scene, laser.x, laser.y, LUMIERE_LASER.rayon, LUMIERE_LASER.intensite, couleur);
   });
   scene.tirs_ennemis.getChildren().forEach((tir) => {
-    if (tir.active) pinceau(scene, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.intensite);
+    if (tir.active) pinceau(scene, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.intensite, LUMIERE_TIR_ENNEMI.couleur);
   });
   scene.cristaux.forEach((cristal) => {
-    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite);
+    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, LUMIERE_CRISTAL.couleur);
   });
   scene.eclats = scene.eclats.filter((eclat) => scene.time.now < eclat.fin);
   scene.eclats.forEach((eclat) => {
     const restant = (eclat.fin - scene.time.now) / (eclat.duree ?? DUREE_ECLAT); // 1 puis 0
     const echelle = eclat.expansion ? 0.6 + 0.4 * (1 - restant) : 1;
-    pinceau(scene, eclat.x, eclat.y, (eclat.halo ?? HALO_ECLAT)[0][0] * LUMIERE_ECLAT.rayon_par_px * echelle, restant);
+    pinceau(scene, eclat.x, eclat.y, (eclat.halo ?? HALO_ECLAT)[0][0] * LUMIERE_ECLAT.rayon_par_px * echelle, restant, LUMIERE_ECLAT.couleur);
   });
 
-  // tout le noir, moins ce que les pinceaux gomment (un seul appel pour tous)
+  // les teintes des lumières disparues sont cachées ; puis tout le noir, moins ce que les pinceaux gomment (un seul appel pour tous)
+  for (let i = scene.nb_pinceaux; i < scene.teintes.length; i++) scene.teintes[i]?.setVisible(false);
   scene.obscurite.clear();
-  scene.obscurite.fill(0x000000, OPACITE_NOIR);
+  scene.obscurite.fill(COULEUR_NOIR, OPACITE_NOIR);
   scene.obscurite.erase(scene.pinceaux.slice(0, scene.nb_pinceaux));
 }
