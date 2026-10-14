@@ -3,16 +3,18 @@ export default class credits extends Phaser.Scene {
     super({ key: "credits" });
   }
 
-   preload() {
-  this.load.setBaseURL(this.sys.game.config.baseURL);
-  this.load.image("fond_credits", "./assets/ecrans/credits.png");
-  
-   }
+  preload() {
+    this.load.setBaseURL(this.sys.game.config.baseURL);
+    this.load.image("fond_credits", "./assets/ecrans/credits.png");
+    this.load.image("button_back", "./assets/boutton/button_back.png");
+  }
 
   create() {
     const w = this.game.config.width;
     const h = this.game.config.height;
-    const police = 'Georgia, "Times New Roman", serif';
+
+    const baseScale = 0.36;
+    const zoomScale = baseScale * 1.12;
 
     // fond : derrière tout le reste
     this.add
@@ -20,31 +22,15 @@ export default class credits extends Phaser.Scene {
       .setDisplaySize(w, h)
       .setDepth(-1);
 
-  
-
-    // bouton retour
-    const retour = this.add
-      .text(w / 2, 620, "RETOUR", {
-        fontFamily: police,
-        fontSize: "40px",
-        color: "#ffffff",
-        stroke: "#000000",
-        strokeThickness: 4
-      })
+    // bouton retour (directement sélectionné avec zoom + tint)
+    this.add
+      .image(w / 2, 620, "button_back")
       .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
+      .setScale(zoomScale)
+      .setTint(0xff9999);
 
-    retour.on("pointerover", () => {
-      retour.setScale(1.15);
-      retour.setColor("#ff0000");
-    });
-    retour.on("pointerout", () => {
-      retour.setScale(1);
-      retour.setColor("#ffffff");
-    });
-    retour.on("pointerup", () => this.scene.start("accueil"));
-
-    // Échap = retour aussi
+    // Espace ou Échap = retour à l'accueil
+    this.input.keyboard.once("keydown-SPACE", () => this.scene.start("accueil"));
     this.input.keyboard.once("keydown-ESC", () => this.scene.start("accueil"));
   }
 }
