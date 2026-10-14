@@ -28,7 +28,7 @@ export default class Menu extends Phaser.Scene {
         // (Optionnel) Permettre aussi de passer l'histoire avec Entrée ou Espace
         const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         enterKey.once("down", () => {
-          this.scene.start("Niveau_demo");
+          this.scene.start("niveau1");
         });
       },
       // 2. Bouton "Contrôles"
