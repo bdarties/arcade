@@ -3,9 +3,9 @@
 //
 // Cette scène est AUTONOME : elle ne partage rien avec le mode narratif
 // (ni vies dans le registry, ni touche "F", ni musique), donc elle ne peut pas
-// l'impacter. On y entre depuis le menu (accueil.js) et on y retourne avec la touche A.
+// l'impacter. On y entre depuis le menu (accueil.js) et on y retourne avec la touche F.
 // ============================================================================
-import * as fct from "../fonctions.js"; // on réutilise seulement le chargement et les animations d'Aria
+import * as fct from "../fonctions.js"; // on réutilise seulement le chargement et les animations d'Aria[cite: 14]
 import { CLE_SCENE, DEBUG, REGLES, ETATS, JOUEURS, POLICE, PHYSIQUE, ARENES_REGLES } from "./versusConfig.js";
 import Joueur from "./Joueur.js";
 import { ARENES, chargerAssetsArenes, construireArene, detruireArene, etendreOrdre } from "./arenes.js";
@@ -24,20 +24,20 @@ export default class VersusScene extends Phaser.Scene {
   // --------------------------------------------------------------------------
   init() {
     this.etat = null;
-    this.scores = [0, 0]; // manches gagnées par joueur
-    this.manche = 1; // numéro de la manche en cours
-    this.indexArene = 0; // arène en cours (position dans la liste ARENES)
-    this.ordreArenes = []; // arène de chaque manche (index dans ARENES), allongée au besoin
-    this.compteur = 0; // valeur affichée pendant le décompte
+    this.scores = [0, 0]; // manches gagnées par joueur[cite: 14]
+    this.manche = 1; // numéro de la manche en cours[cite: 14]
+    this.indexArene = 0; // arène en cours (position dans la liste ARENES)[cite: 14]
+    this.ordreArenes = []; // arène de chaque manche (index dans ARENES), allongée au besoin[cite: 14]
+    this.compteur = 0; // valeur affichée pendant le décompte[cite: 14]
     this.evenementDecompte = null;
-    this.peutRelancer = false; // devient true 1 s après la fin du match (évite de relancer en martelant ses touches)
+    this.peutRelancer = false; // devient true 1 s après la fin du match (évite de relancer en martelant ses touches)[cite: 14]
 
-    this.joueurs = []; // les deux instances de Joueur
-    this.collisions = []; // colliders Phaser (retirés / recréés à chaque changement d'arène)
-    this.arene = null; // arène chargée : { def, solides, spawns, limiteBas, objets } (voir arenes.js)
-    this.coeurs = []; // images des cœurs du HUD : coeurs[joueur][numéro]
-    this.iconesArmes = []; // HUD de l'arme tenue : { icone, texte } par joueur
-    this.armes = null; // GestionnaireArmes (apparition des armes et cœurs, tirs)
+    this.joueurs = []; // les deux instances de Joueur[cite: 14]
+    this.collisions = []; // colliders Phaser (retirés / recréés à chaque changement d'arène)[cite: 14]
+    this.arene = null; // arène chargée : { def, solides, spawns, limiteBas, objets } (voir arenes.js)[cite: 14]
+    this.coeurs = []; // images des cœurs du HUD : coeurs[joueur][numéro][cite: 14]
+    this.iconesArmes = []; // HUD de l'arme tenue : { icone, texte } par joueur[cite: 14]
+    this.armes = null; // GestionnaireArmes (apparition des armes et cœurs, tirs)[cite: 14]
   }
 
   // --------------------------------------------------------------------------
@@ -45,9 +45,9 @@ export default class VersusScene extends Phaser.Scene {
   // --------------------------------------------------------------------------
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    fct.chargerPerso(this); // spritesheets d'Aria
-    chargerAssetsArenes(this); // cartes Tiled, tilesets et fonds de toutes les arènes
-    chargerAssetsArmes(this); // sprites et sons des armes
+    fct.chargerPerso(this); // spritesheets d'Aria[cite: 14]
+    chargerAssetsArenes(this); // cartes Tiled, tilesets et fonds de toutes les arènes[cite: 14]
+    chargerAssetsArmes(this); // sprites et sons des armes[cite: 14]
   }
 
   // --------------------------------------------------------------------------
@@ -61,7 +61,7 @@ export default class VersusScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#0b0b1a");
     
-    // fond assombri pour faire ressortir les plateformes
+    // fond assombri pour faire ressortir les plateformes[cite: 14]
     this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.6).setOrigin(0).setDepth(-1);
 
     fct.creerAnimsPerso(this);
@@ -70,7 +70,7 @@ export default class VersusScene extends Phaser.Scene {
     this.creerHUD();
     this.creerEntrees();
 
-    // le bas de l'écran reste OUVERT : on peut tomber dans le vide
+    // le bas de l'écran reste OUVERT : on peut tomber dans le vide[cite: 14]
     this.physics.world.setBoundsCollision(true, true, true, false);
 
     this.chargerArene(this.arenePourManche(1));
@@ -320,21 +320,24 @@ export default class VersusScene extends Phaser.Scene {
   }
 
   // ==========================================================================
-  //  ENTRÉES GÉNÉRALES (menu / debug / relance avec les touches de la borne)
+  //  ENTRÉES DE FIN DE MATCH (Quitter avec F, Relancer avec A)
   // ==========================================================================
   creerEntrees() {
     const clavier = this.input.keyboard;
 
-    // Retour au menu : Touche A de la borne pour les deux joueurs (I pour J1, R pour J2)
-    clavier.on("keydown-I", () => this.quitter());
-    clavier.on("keydown-R", () => this.quitter());
+    // Quitter avec la touche F de la borne (M pour J1, H pour J2), UNIQUEMENT sur l'écran de fin de match
+    const quitterMatch = () => {
+      if (this.etat === ETATS.FIN_MATCH) this.quitter();
+    };
+    clavier.on("keydown-M", quitterMatch);
+    clavier.on("keydown-H", quitterMatch);
 
-    // Rejouer un match depuis l'écran de fin : Touche F de la borne pour les deux joueurs (M pour J1, H pour J2)
+    // Relancer avec la touche A de la borne (I pour J1, R pour J2), UNIQUEMENT sur l'écran de fin de match
     const relancer = () => {
       if (this.etat === ETATS.FIN_MATCH && this.peutRelancer) this.scene.restart();
     };
-    clavier.on("keydown-M", relancer);
-    clavier.on("keydown-H", relancer);
+    clavier.on("keydown-I", relancer);
+    clavier.on("keydown-R", relancer);
   }
 
   // ==========================================================================
@@ -417,7 +420,7 @@ export default class VersusScene extends Phaser.Scene {
       .setFontSize(32)
       .setLineSpacing(14)
       .setColor(JOUEURS[gagnant].couleurTexte)
-      .setText(`${JOUEURS[gagnant].nom}\nREMPORTE LE MATCH !\n\nBOUTON F : rejouer\nBOUTON A : menu`);
+      .setText(`${JOUEURS[gagnant].nom}\nREMPORTE LE MATCH !\n\nBOUTON A : rejouer\nBOUTON F : menu`);
   }
 
   // ==========================================================================

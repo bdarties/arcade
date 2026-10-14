@@ -85,9 +85,9 @@ export default class histoire extends Phaser.Scene {
     this.persosObj = {};
     this.creerSilhouette();
 
-    // Bouton A de la borne (touche I) = avancer ; Bouton F de la borne (touche F) = passer toute l'histoire[cite: 2, 3, 5, 15]
+    // Bouton A de la borne (touche I) = avancer ; Bouton F de la borne (touche %M) = passer toute l'histoire[cite: 2, 3, 5, 15]
     this.input.keyboard.on("keydown-I", () => this.avancer());
-    this.input.keyboard.once("keydown-F", () => this.terminer());
+    this.input.keyboard.once("keydown-M", () => this.terminer());
 
     this.add
       .text(this.game.config.width - 20, 20, "Bouton F : passer", {
