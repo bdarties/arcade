@@ -1,0 +1,1027 @@
+{
+ "image": "assets/images/tilesets/tileset_deco.png",
+ "colonnes": 60,
+ "ordre": [
+  "jardin",
+  "nuit",
+  "reve",
+  "automne",
+  "apocalypse",
+  "magie",
+  "commun"
+ ],
+ "elements": [
+  {
+   "nom": "arbre_jardin",
+   "monde": "jardin",
+   "type": "arbre",
+   "rect": [
+    0,
+    0,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "ensemble_jardin",
+   "monde": "jardin",
+   "type": "ensemble",
+   "rect": [
+    4,
+    0,
+    14,
+    10
+   ]
+  },
+  {
+   "nom": "pot_fleurs_1",
+   "monde": "jardin",
+   "type": "petit",
+   "rect": [
+    0,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "nom": "pot_fleurs_2",
+   "monde": "jardin",
+   "type": "petit",
+   "rect": [
+    1,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "nom": "herbes_hautes",
+   "monde": "jardin",
+   "type": "petit",
+   "rect": [
+    2,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "nom": "carottes",
+   "monde": "jardin",
+   "type": "petit",
+   "rect": [
+    3,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "nom": "guirlande_herbes",
+   "monde": "jardin",
+   "type": "petit",
+   "rect": [
+    0,
+    4,
+    2,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_nuit",
+   "monde": "nuit",
+   "type": "arbre",
+   "rect": [
+    0,
+    10,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "ensemble_nuit",
+   "monde": "nuit",
+   "type": "ensemble",
+   "rect": [
+    4,
+    10,
+    14,
+    10
+   ]
+  },
+  {
+   "nom": "guirlande_lune",
+   "monde": "nuit",
+   "type": "petit",
+   "rect": [
+    0,
+    13,
+    2,
+    1
+   ]
+  },
+  {
+   "nom": "ensemble_reve",
+   "monde": "reve",
+   "type": "ensemble",
+   "rect": [
+    4,
+    20,
+    14,
+    9
+   ]
+  },
+  {
+   "nom": "nuage",
+   "monde": "reve",
+   "type": "petit",
+   "rect": [
+    0,
+    23,
+    1,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_automne",
+   "monde": "automne",
+   "type": "arbre",
+   "rect": [
+    0,
+    30,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "ensemble_automne",
+   "monde": "automne",
+   "type": "ensemble",
+   "rect": [
+    4,
+    30,
+    14,
+    10
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse",
+   "monde": "apocalypse",
+   "type": "arbre",
+   "rect": [
+    0,
+    40,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "ensemble_apocalypse",
+   "monde": "apocalypse",
+   "type": "ensemble",
+   "rect": [
+    4,
+    40,
+    14,
+    10
+   ]
+  },
+  {
+   "nom": "arbre_magie",
+   "monde": "magie",
+   "type": "arbre",
+   "rect": [
+    0,
+    50,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "ensemble_magie",
+   "monde": "magie",
+   "type": "ensemble",
+   "rect": [
+    4,
+    50,
+    14,
+    10
+   ]
+  },
+  {
+   "nom": "guirlandes_et_caisses",
+   "monde": "commun",
+   "type": "petit",
+   "rect": [
+    0,
+    60,
+    4,
+    2
+   ]
+  },
+  {
+   "nom": "zone_de_terre",
+   "monde": "commun",
+   "type": "petit",
+   "rect": [
+    4,
+    60,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "legumes",
+   "monde": "commun",
+   "type": "petit",
+   "rect": [
+    7,
+    60,
+    2,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_jardin_cime",
+   "monde": "jardin",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    0,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_jardin_base",
+   "monde": "jardin",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    0,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_jardin_colle_haut",
+   "monde": "jardin",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    0,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_jardin_colle_milieu",
+   "monde": "jardin",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    0,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_jardin_colle_bas",
+   "monde": "jardin",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    0,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_jardin_demi_haut",
+   "monde": "jardin",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    4,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_jardin_demi_bas",
+   "monde": "jardin",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    2,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_jardin_demi_gauche",
+   "monde": "jardin",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    7,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_jardin_demi_droite",
+   "monde": "jardin",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    7,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_nuit_cime",
+   "monde": "nuit",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    10,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_nuit_base",
+   "monde": "nuit",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    10,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_nuit_colle_haut",
+   "monde": "nuit",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    10,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_nuit_colle_milieu",
+   "monde": "nuit",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    10,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_nuit_colle_bas",
+   "monde": "nuit",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    10,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_nuit_demi_haut",
+   "monde": "nuit",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    14,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_nuit_demi_bas",
+   "monde": "nuit",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    12,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_nuit_demi_gauche",
+   "monde": "nuit",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    17,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_nuit_demi_droite",
+   "monde": "nuit",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    17,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_automne_cime",
+   "monde": "automne",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    30,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_automne_base",
+   "monde": "automne",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    30,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_automne_colle_haut",
+   "monde": "automne",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    30,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_automne_colle_milieu",
+   "monde": "automne",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    30,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_automne_colle_bas",
+   "monde": "automne",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    30,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_automne_demi_haut",
+   "monde": "automne",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    34,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_automne_demi_bas",
+   "monde": "automne",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    32,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_automne_demi_gauche",
+   "monde": "automne",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    37,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_automne_demi_droite",
+   "monde": "automne",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    37,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_cime",
+   "monde": "apocalypse",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    40,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_base",
+   "monde": "apocalypse",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    40,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_colle_haut",
+   "monde": "apocalypse",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    40,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_colle_milieu",
+   "monde": "apocalypse",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    40,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_colle_bas",
+   "monde": "apocalypse",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    40,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_demi_haut",
+   "monde": "apocalypse",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    44,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_demi_bas",
+   "monde": "apocalypse",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    42,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_demi_gauche",
+   "monde": "apocalypse",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    47,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_demi_droite",
+   "monde": "apocalypse",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    47,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_magie_cime",
+   "monde": "magie",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    50,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_magie_base",
+   "monde": "magie",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    50,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_magie_colle_haut",
+   "monde": "magie",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    50,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_magie_colle_milieu",
+   "monde": "magie",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    50,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_magie_colle_bas",
+   "monde": "magie",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    50,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_magie_demi_haut",
+   "monde": "magie",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    54,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_magie_demi_bas",
+   "monde": "magie",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    52,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_magie_demi_gauche",
+   "monde": "magie",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    57,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_magie_demi_droite",
+   "monde": "magie",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    57,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_jardin_foret_auto",
+   "monde": "jardin",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    3,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "arbre_nuit_foret_auto",
+   "monde": "nuit",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    13,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "arbre_automne_foret_auto",
+   "monde": "automne",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    33,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "arbre_apocalypse_foret_auto",
+   "monde": "apocalypse",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    43,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "arbre_magie_foret_auto",
+   "monde": "magie",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    53,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "chemin_nuit_discret",
+   "monde": "nuit",
+   "type": "chemin_discret",
+   "rect": [
+    40,
+    10,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_nuit_standard",
+   "monde": "nuit",
+   "type": "chemin_standard",
+   "rect": [
+    44,
+    10,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_nuit_pale",
+   "monde": "nuit",
+   "type": "chemin_pale",
+   "rect": [
+    48,
+    10,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_nuit_caillouteux",
+   "monde": "nuit",
+   "type": "chemin_caillouteux",
+   "rect": [
+    52,
+    10,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_nuit_herbeux",
+   "monde": "nuit",
+   "type": "chemin_herbeux",
+   "rect": [
+    56,
+    10,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "arbre_reve",
+   "monde": "reve",
+   "type": "arbre",
+   "rect": [
+    0,
+    20,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_reve_cime",
+   "monde": "reve",
+   "type": "arbre_cime",
+   "rect": [
+    20,
+    20,
+    3,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_reve_base",
+   "monde": "reve",
+   "type": "arbre_base",
+   "rect": [
+    24,
+    20,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_reve_colle_haut",
+   "monde": "reve",
+   "type": "arbre_colle_haut",
+   "rect": [
+    28,
+    20,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_reve_colle_milieu",
+   "monde": "reve",
+   "type": "arbre_colle_milieu",
+   "rect": [
+    32,
+    20,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_reve_colle_bas",
+   "monde": "reve",
+   "type": "arbre_colle_bas",
+   "rect": [
+    36,
+    20,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_reve_demi_haut",
+   "monde": "reve",
+   "type": "arbre_demi_haut",
+   "rect": [
+    20,
+    24,
+    3,
+    2
+   ]
+  },
+  {
+   "nom": "arbre_reve_demi_bas",
+   "monde": "reve",
+   "type": "arbre_demi_bas",
+   "rect": [
+    24,
+    22,
+    3,
+    1
+   ]
+  },
+  {
+   "nom": "arbre_reve_demi_gauche",
+   "monde": "reve",
+   "type": "arbre_demi_gauche",
+   "rect": [
+    20,
+    27,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_reve_demi_droite",
+   "monde": "reve",
+   "type": "arbre_demi_droite",
+   "rect": [
+    23,
+    27,
+    2,
+    3
+   ]
+  },
+  {
+   "nom": "arbre_reve_foret_auto",
+   "monde": "reve",
+   "type": "arbre_foret_auto",
+   "rect": [
+    26,
+    23,
+    14,
+    7
+   ]
+  },
+  {
+   "nom": "chemin_reve_discret",
+   "monde": "reve",
+   "type": "chemin_discret",
+   "rect": [
+    40,
+    20,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_reve_standard",
+   "monde": "reve",
+   "type": "chemin_standard",
+   "rect": [
+    44,
+    20,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_reve_pale",
+   "monde": "reve",
+   "type": "chemin_pale",
+   "rect": [
+    48,
+    20,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_reve_caillouteux",
+   "monde": "reve",
+   "type": "chemin_caillouteux",
+   "rect": [
+    52,
+    20,
+    4,
+    4
+   ]
+  },
+  {
+   "nom": "chemin_reve_fleuri",
+   "monde": "reve",
+   "type": "chemin_herbeux",
+   "rect": [
+    56,
+    20,
+    4,
+    4
+   ]
+  }
+ ]
+}
