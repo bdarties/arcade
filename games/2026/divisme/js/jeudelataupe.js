@@ -367,28 +367,55 @@ export default class jeudelataupe extends Phaser.Scene {
     }
 
 
-    // Choisit une trappe libre et y fait sortir un masque (le même sur tous les plateaux,
-    // pour que les deux joueurs aient exactement la même partie).
+    // Fait sortir un masque chez chaque joueur.
+    // - POSITIONS : chaque joueur a sa propre trappe (différente de celle de l'autre).
+    // - ÉQUITÉ    : le type (joyeux ou triste) et la durée sont tirés UNE SEULE FOIS
+    //               et donnés aux deux : les joueurs ont donc toujours exactement
+    //               le même nombre de masques joyeux et de masques tristes.
     faireApparaitre() {
 
         if (this.etat !== "jeu") return;
 
-        // Trappes libres sur TOUS les plateaux
-        const libres = [];
+        // Pour CHAQUE joueur : la liste de ses trappes libres (numéros 0, 1, 2)
+        const libres = this.plateaux.map(plateau => {
 
-        for (let i = 0; i < TROUS_PAR_JOUEUR; i++) {
-            if (this.plateaux.every(plateau => !plateau.trous[i].masque)) {
-                libres.push(i);
+            const liste = [];
+
+            for (let i = 0; i < TROUS_PAR_JOUEUR; i++) {
+                if (!plateau.trous[i].masque) {
+                    liste.push(i);
+                }
             }
-        }
 
-        if (libres.length === 0) return;
+            return liste;
+        });
 
-        const index = Phaser.Utils.Array.GetRandom(libres);
+        // Si un joueur n'a plus aucune trappe libre, personne n'a de masque cette fois-ci :
+        // les deux joueurs reçoivent ainsi toujours autant de masques l'un que l'autre.
+        if (libres.some(liste => liste.length === 0)) return;
+
+        // Tirés une seule fois, pour tout le monde
         const triste = Phaser.Math.FloatBetween(0, 1) < PROBA_TRISTE;
         const duree = Phaser.Math.Linear(VISIBLE_DEBUT, VISIBLE_FIN, this.progression());
 
-        this.plateaux.forEach(plateau => this.sortirMasque(plateau, index, triste, duree));
+        // Chaque joueur tire sa trappe, en évitant celles déjà choisies pour l'autre
+        const dejaChoisies = [];
+
+        this.plateaux.forEach((plateau, numero) => {
+
+            let possibles = libres[numero].filter(i => !dejaChoisies.includes(i));
+
+            // Cas rare : aucune trappe différente de libre, on accepte la même position
+            if (possibles.length === 0) {
+                possibles = libres[numero];
+            }
+
+            const index = Phaser.Utils.Array.GetRandom(possibles);
+
+            dejaChoisies.push(index);
+
+            this.sortirMasque(plateau, index, triste, duree);
+        });
     }
 
 
