@@ -1026,7 +1026,6 @@ export default class niveau1 extends Phaser.Scene {
   // (la lampe ne se vide pas : elle reste allumée tant qu'on ne l'éteint pas)
   mettreAJourLampe(temps, delta) {
     const lampe = this.lampe;
-    }
 
     this.faisceau.clear(); // on efface le faisceau dessiné à l'image précédente
     this.halo.setVisible(lampe.allumee); // la tache de lumière n'est visible que si la lampe est allumée
