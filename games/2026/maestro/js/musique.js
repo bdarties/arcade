@@ -48,12 +48,12 @@ function contexteAudio(scene) {
   return ctx;
 }
 
-// Le son des ennemis (aujourd'hui : le cristal qui grince sous une mauvaise note) : le fichier son_ennemi, à volume doux
+// Le son d'un ennemi (tuba, cristal) : cle = le fichier à jouer. Un délai évite que ça tourne en boucle.
 const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
 let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
 
-export function jouerSonCreature(scene) {
-  if (scene.cache.audio.exists("son_ennemi") == false) {
+export function jouerSonEnnemi(scene, cle) {
+  if (scene.cache.audio.exists(cle) == false) {
     return; // fichier absent : on joue sans ce son
   }
   const maintenant = performance.now(); // l'heure actuelle, en millisecondes
@@ -61,7 +61,7 @@ export function jouerSonCreature(scene) {
     return; // trop tôt depuis le dernier son : on se tait
   }
   dernierSonEnnemi = maintenant;
-  scene.sound.play("son_ennemi", { volume: 0.6 }); // 0,6 = audible, sans être agressif
+  scene.sound.play(cle, { volume: 0.6 });
 }
 
 // Une note courte (Do, Mi ou Sol) : quand la Cantatrice lance une onde

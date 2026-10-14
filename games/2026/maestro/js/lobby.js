@@ -359,6 +359,7 @@ export default class lobby extends Phaser.Scene {
   // Crée un personnage : son image, sa hitbox, et la liste des touches qui le contrôlent
   creerPersonnage(nom, x, touches) {
     const perso = this.physics.add.sprite(x, SPAWN.solY - 40, nom + "_idle"); // il apparaît juste au-dessus du sol
+    perso.setScale(REGLAGES.taillePerso); // on l'agrandit (la boîte de collision suit la taille)
     perso.setDepth(10); // devant le décor
     perso.setCollideWorldBounds(true); // il ne sort pas de la carte
     // Hitbox plus petite que l'image de 64 x 64 : seulement le corps, pieds en bas de l'image

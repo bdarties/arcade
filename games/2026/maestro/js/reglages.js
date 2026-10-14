@@ -11,6 +11,7 @@ export const REGLAGES = {
   vitesse: 200, // vitesse de marche (pixels par seconde)
   saut: -520, // vitesse de saut (négatif = vers le haut)
   gravite: 1000, // gravité des niveaux (appliquée dans niveau1, pas dans index.js)
+  taillePerso: 1.4, // agrandissement de la Cantatrice et du Détective (1 = taille d'origine de l'image)
 
   // ---- Cantatrice : l'onde sonore ----
   onde: {

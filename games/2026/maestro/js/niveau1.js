@@ -22,7 +22,7 @@
 import { REGLAGES } from "./reglages.js";
 import { creerPanneau, aideBorne, aideClavier } from "./controles.js";
 import { enregistrerVictoire, NIVEAUX } from "./progression.js";
-import { jouerMusique, arreterMusique, jouerSonNote, jouerSonCreature } from "./musique.js";
+import { jouerMusique, arreterMusique, jouerSonNote, jouerSonEnnemi } from "./musique.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
 const LARGEUR_MONDE = 2176;
@@ -497,6 +497,7 @@ export default class niveau1 extends Phaser.Scene {
   // point = l'objet "depart" de Tiled (x, y = où les pieds se posent)
   creerPersonnage(nom, point, touches) {
     const perso = this.physics.add.sprite(point.x, point.y - 40, nom + "_idle"); // le personnage, posé au point de départ
+    perso.setScale(REGLAGES.taillePerso); // on l'agrandit (la boîte de collision suit la taille)
     perso.setDepth(10);
     perso.setCollideWorldBounds(true);
     // Hitbox plus petite que l'image de 64 x 64 : seulement le corps, pieds en bas de l'image
@@ -1267,6 +1268,7 @@ export default class niveau1 extends Phaser.Scene {
     onde.body.setSize(22, 18); // taille de sa boîte de collision
     onde.setVelocityX(sens * REGLAGES.tuba.vitesseOnde); // elle avance
     onde.xDepart = onde.x; // pour savoir quand elle a parcouru sa portée
+    jouerSonEnnemi(this, "son_tuba"); // le tuba crache son onde avec son cri
   }
 
   // Le cristal flotte vers le joueur le plus proche, s'il est assez près
@@ -1286,7 +1288,7 @@ export default class niveau1 extends Phaser.Scene {
     if (distance < REGLAGES.cristal.detectionPx) {
       if (cristal.reveille !== true) {
         cristal.reveille = true; // il vient de se réveiller : un petit son, une seule fois par réveil
-        jouerSonCreature(this);
+        jouerSonEnnemi(this, "son_cristal");
       }
       this.physics.moveToObject(cristal, cible, REGLAGES.cristal.vitesse); // il se dirige vers lui
     } else {
@@ -1329,7 +1331,7 @@ export default class niveau1 extends Phaser.Scene {
     if (note != cristal.note) {
       // mauvaise note : il est juste étourdi un court instant
       this.etourdir(cristal, REGLAGES.cristal.etourdissementMauvaiseNoteMs);
-      jouerSonCreature(this); // le cristal grince sous la mauvaise note
+      jouerSonEnnemi(this, "son_cristal"); // le cristal grince sous la mauvaise note
       this.afficherMessage("Mauvaise note ! Ce cristal est " + cristal.note.toUpperCase() + " (P pour changer de note)", 2500); // on aide le joueur
       return;
     }

@@ -19,7 +19,7 @@
 // ============================================================================
 
 import { creerPanneau, touche } from "./controles.js";
-import { jouerSonNote } from "./musique.js";
+import { jouerSonNote, jouerMusique, arreterMusique } from "./musique.js";
 
 const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
 const NOMS_NOTES = ["DO", "MI", "SOL"]; // 0 = Do (A), 1 = Mi (B), 2 = Sol (C)
@@ -47,6 +47,7 @@ export default class niveau3 extends Phaser.Scene {
     this.load.spritesheet("maestro_hurt", "./assets/maestro_hurt.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("maestro_death", "./assets/maestro_death.png", { frameWidth: 64, frameHeight: 64 });
     this.load.image("maestro_notes", "./assets/maestro_notes.png");
+    this.load.audio("son_niveau3", "./assets/son_niveau3.m4a"); // la musique de la phase 2, qui s'accélère
   }
 
   create() {
@@ -69,6 +70,7 @@ export default class niveau3 extends Phaser.Scene {
     this.creerPersonnages();
     this.creerTextes();
 
+    this.events.once("shutdown", () => arreterMusique(this)); // en quittant le niveau, la musique s'arrête
     this.lancerTheme();
   }
 
@@ -278,6 +280,7 @@ export default class niveau3 extends Phaser.Scene {
     this.etat = "joue";
     this.progressionMorceau = 0;
     this.nuit.setVisible(true);
+    jouerMusique(this, "son_niveau3", 0.45); // la musique s'accélère pendant le morceau
     this.afficherNotes(MORCEAU, 230); // le morceau est affiché sur la portée
     this.maestro.setAlpha(0); // le Maestro disparaît dans le noir
     this.texteMessage.setText("Les lumières s'éteignent ! Éclaire-le avec T (Détective).");
@@ -344,6 +347,7 @@ export default class niveau3 extends Phaser.Scene {
     this.maestro.play("maestro_death");
     this.nuit.setVisible(false);
     this.lumiere.setVisible(false);
+    arreterMusique(this); // la musique s'arrête : la voix est revenue
     this.texteMessage.setText("Sa voix revient ! Le Maestro est libéré.");
   }
 

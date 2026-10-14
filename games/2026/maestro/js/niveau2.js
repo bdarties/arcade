@@ -406,6 +406,7 @@ export default class niveau2 extends niveau1 {
       return; // pas un vrai atterrissage sur le tambour (ou sur une échelle) : rien ne se passe
     }
     perso.setVelocityY(FORCE_TAMBOUR); // on le relance vers le haut, très fort
+    this.sound.play("son_tambour", { volume: 0.5 }); // le tambour résonne
     this.tweens.add({ targets: tambour, scaleY: 0.7, duration: 70, yoyo: true }); // le tambour s'écrase un instant
   }
 
