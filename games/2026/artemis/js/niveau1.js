@@ -911,7 +911,7 @@ export default class niveau1 extends Phaser.Scene {
       /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause = this.sound.getAllPlaying(); // on retient ce qui jouait pour le relancer à la reprise
       /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause.forEach((son) => son.pause());
       /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // ouverture du menu pause (joué après le gel des sons : il n'est pas mis en pause)      
-      // this.scene.pause();
+      this.scene.pause();
       this.scene.launch("pause");
       return;
     }
