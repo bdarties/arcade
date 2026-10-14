@@ -1,8 +1,9 @@
 // boss.js : le Dieu de la Lumière, le boss qui garde le sommet du niveau 1 (profil « soldat »).
 // Le fichier est un MOTEUR : les réglages de chaque boss sont dans une table de profils (PROFILS) et ses attaques dans une table d'attaques (ATTAQUES).
 // La partie 2 du jeu (js/partie2) ajoute dans ces deux tables le boss final et ses attaques, sans modifier ce fichier.
-// Son dessin vient de 4 feuilles d'images de 152 x 116 px (assets/images/boss/), faites en code (voir le dossier sprite-boss) :
-//   boss_idle (8 images, il plane), boss_charge (6, il prépare une attaque), boss_attaque (4, il la lance), boss_mort (8, il se dissout).
+// Son dessin vient de feuilles d'images de 152 x 116 px (assets/images/boss/) : un ange en armure à un seul œil, avec un halo et une lance dorés, de grandes ailes dorées.
+//   boss_idle (6 images, il plane : les ailes battent), boss_mort (8, il se dissout), et pour les attaques une préparation « charge » (6 images) puis un lancement « attaque » (4) :
+//   les poses de base (lancer de lumière) et une variante par geste : sol, rayon, piqué, nova, invocation (voir GESTES et ANIMATIONS plus bas).
 // Il apparaît quand arene.js ferme l'arène (voir faireApparaitreBoss), flotte en haut de la salle et attaque.
 //
 // 2 PHASES (selon ses PV) : au changement il devient invulnérable un instant, il lâche un PV à ramasser, et il se débloque
@@ -19,6 +20,7 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 // Les tirs du robot le blessent. À 0 PV, le joueur choisit : arrêter la partie ici (le boss est vaincu), ou entrer dans le panthéon (OUI) : la
 // suite du jeu est alors dans js/partie2 (profil.suite).
+import { VERSION } from "../../version.js"; // le numéro de version du jeu (sert à recharger les images du boss après une mise à jour)
 import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau, viderSons } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { gagnerPoints, finirPartie } from "../systemes/points.js";
@@ -67,12 +69,24 @@ export function reglages(boss) { // les réglages de la phase en cours : ceux de
 }
 
 // les feuilles : clé, nombre d'images, images par seconde, répétition (-1 = en boucle, 0 = une fois)
-const ANIMATIONS = [["boss_idle", 8, 8, -1], ["boss_charge", 6, 12, 0], ["boss_attaque", 4, 16, 0], ["boss_mort", 8, 7, 0]];
+// Les 4 premières sont celles de toutes les attaques (idle : il plane ; charge/attaque : le lancer de lumière des orbes, de la pluie, de la spirale... ; mort : il se dissout). Les autres sont des variantes (préparation « charge » + lancement « attaque ») propres à un geste : voir GESTES.
+const ANIMATIONS = [["boss_idle", 6, 7, -1], ["boss_charge", 6, 12, 0], ["boss_attaque", 4, 16, 0], ["boss_mort", 8, 7, 0],
+    ["boss_charge_sol", 6, 12, 0], ["boss_attaque_sol", 4, 14, 0],      // il lève la lance (elle tremble), puis la plante dans le sol
+    ["boss_charge_rayon", 6, 10, 0], ["boss_attaque_rayon", 4, 12, 0],  // son œil grandit et le halo s'élargit, puis le rayon part
+    ["boss_charge_pique", 6, 12, 0], ["boss_attaque_pique", 4, 14, 0],  // il s'accroupit, puis la lance part en diagonale
+    ["boss_charge_nova", 6, 10, 0], ["boss_attaque_nova", 4, 12, 0],    // ses ailes se referment en boule, puis explosent
+    ["boss_charge_invocation", 6, 10, 0], ["boss_attaque_invocation", 4, 10, 0]]; // il lève la lance à deux mains, ailes ouvertes
+// quelle variante pour quelle attaque : celles qui n'y sont pas gardent les animations de base
+const GESTES = { colonne: "sol", geysers: "sol", damier: "sol", balayage: "rayon", lasers: "rayon", horloge: "rayon", pique: "pique", nova: "nova", lanternes: "invocation" };
+function animation(attaque, etape) { return "boss_" + etape + (GESTES[attaque] ? "_" + GESTES[attaque] : ""); } // « boss_charge » ou « boss_charge_sol »...
 export const ECLATS_OR = [0xffd45c, 300]; // mêmes réglages que les éclats de lanterne vivante (effets.js) : l'émetteur est déjà fabriqué
 export const ECLATS_BLANC = [0xffffff, 190];
 
+// À augmenter quand les images du boss changent : l'adresse change, donc le navigateur recharge les feuilles au lieu de garder en mémoire les anciennes
+// (sinon, après une mise à jour, on peut voir l'ancien dessin du boss pendant des heures).
+const REVISION_IMAGES = 2;
 export function chargerBoss(scene) { // à appeler dans chargerJeu (preload)
-    ANIMATIONS.forEach(([cle]) => scene.load.spritesheet(cle, "./assets/images/boss/" + cle + ".png", { frameWidth: LARGEUR_IMAGE, frameHeight: HAUTEUR_IMAGE }));
+    ANIMATIONS.forEach(([cle]) => scene.load.spritesheet(cle, "./assets/images/boss/" + cle + ".png?r=" + REVISION_IMAGES + "-" + VERSION, { frameWidth: LARGEUR_IMAGE, frameHeight: HAUTEUR_IMAGE }));
 }
 
 export function creerAnimations(scene) { // crée une seule fois les 4 animations (exportée : poursuite.js dessine le même boss)
@@ -91,7 +105,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     boss.profil = profil; // les attaques de la partie 2 retrouvent ainsi son profil
     boss.body.setAllowGravity(false); // il vole : la gravité ne l'affecte pas
     boss.body.setImmovable(true);
-    boss.body.setSize(34, 90).setOffset(59, 22); // la hitbox est le corps de l'ange, sans les ailes
+    boss.body.setSize(38, 70).setOffset(59, 25); // la hitbox est le corps de l'armure (casque, torse, ventre), sans les ailes ni la lance : de y 25 à y 95 dans l'image de 152 x 116, centrée sur l'œil (x 78, y 38)
     boss.setScale(profil.echelle).setDepth(51).setAlpha(0);
     if (scene.player) scene.player.setDepth(52); // le robot passe DEVANT le boss quand ils se chevauchent (le boss est à 51, au-dessus du voile d'ombre à 50 ; sans ça le robot, à 0, passait derrière)
     // la teinte revient après chaque flash (voir effets.flash) // au-dessus du voile d'ombre (50) : c'est lui la lumière
@@ -207,7 +221,7 @@ function lancerAttaque(scene, boss, nom) {
     const valide = () => boss.etat === "attaque" && boss.jeton === id;
     boss.etat = "attaque";
     boss.derniereAttaque = nom;
-    boss.play("boss_charge");
+    boss.play(animation(nom, "charge"));
     const def = ATTAQUES[nom];
     // (durées arrondies à des croches : tout reste en rythme avec la musique)
     const apres = quantifier(def.apres + (profil.dureeEnPlus ? profil.dureeEnPlus(nom, boss) : 0));
@@ -217,10 +231,13 @@ function lancerAttaque(scene, boss, nom) {
     const annonce = def.annoncer ? def.annoncer(scene, boss) : {}; // ce qui prévient le joueur pendant la préparation
     scene.time.delayedCall(charge, () => {
         if (!valide()) { nettoyerAnnonce(nom, annonce); return; } // il est mort ou a changé de phase entre-temps
-        boss.play("boss_attaque");
+        const animAttaque = animation(nom, "attaque");
+        boss.play(animAttaque);
         boss.faits.add(nom); // cette attaque est faite (le boss final ne peut pas mourir avant d'avoir tout lancé : voir pvMinimum)
         def.executer(scene, boss, annonce, valide);
-        boss.once("animationcomplete-boss_attaque", () => { if (valide()) boss.play("boss_idle"); }); // il retrouve son calme visuellement
+        // il retrouve son calme visuellement quand l'animation se termine (même si l'attaque est déjà finie : sinon il resterait figé sur la dernière pose, la lance levée) ;
+        // l'événement n'arrive pas si une autre animation a pris la place (changement de phase, mort, attaque suivante)
+        boss.once("animationcomplete-" + animAttaque, () => { if (boss.etat === "attaque" || boss.etat === "combat") boss.play("boss_idle"); });
         scene.time.delayedCall(apres, () => { // l'effet est fini : la pause avant la prochaine attaque commence
             if (!valide()) return;
             boss.etat = "combat";

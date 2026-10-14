@@ -89,15 +89,21 @@ export function regulerCadence(jeu, imagesParSeconde) {
 }
 
 // Pour mesurer sur la borne : la touche F3 (ou le bouton B de la borne, la touche O) affiche ou cache le nombre d'images par seconde (et de sons qui jouent), en haut à gauche de la page
-// (on peut aussi l'afficher dès le départ en ajoutant ?fps à l'adresse du jeu). Caché, il ne coûte rien.
+// (on peut aussi l'afficher dès le départ en ajoutant ?fps à l'adresse du jeu). Caché, il ne coûte presque rien (une addition par image).
 export function compteurImages(jeu) {
     const boite = document.createElement("div");
     boite.style.cssText = "position:fixed;left:6px;top:6px;padding:2px 8px;background:rgba(0,0,0,.75);color:#8f8;font:16px monospace;z-index:10;pointer-events:none;display:" + (location.search.includes("fps") ? "block" : "none");
     document.body.appendChild(boite);
+    // On compte les images que le jeu calcule VRAIMENT (l'événement « step », une fois par image du jeu). jeu.loop.actualFps, lui, compte les images de l'écran (60 par
+    // seconde) même quand le jeu en saute une sur deux pour tenir ses 30 images par seconde : il afficherait 60.
+    let images = 0, depuis = performance.now();
+    jeu.events.on("step", () => { images++; });
     setInterval(() => { // (le nombre de sons en train de jouer et l'état de l'audio aident à comprendre un bruit de moteur : si le nombre de sons monte sans arrêt, ils s'accumulent)
+        const maintenant = performance.now(), cadence = images * 1000 / (maintenant - depuis);
+        images = 0; depuis = maintenant;
         if (boite.style.display === "none") return;
         const jouent = jeu.sound.sounds.filter((son) => son.isPlaying).length;
-        boite.textContent = Math.round(jeu.loop.actualFps) + " images/s | " + jouent + " sons | audio " + (jeu.sound.context ? jeu.sound.context.state : "aucun");
+        boite.textContent = Math.round(cadence) + " images/s | " + jouent + " sons | audio " + (jeu.sound.context ? jeu.sound.context.state : "aucun");
     }, 500);
     window.addEventListener("keydown", (evenement) => {
         // F3 sur un ordinateur ; sur la borne, le bouton B (la touche O) : pas de clavier pour taper F3. (En jeu, O ne sert à rien d'autre ; dans le menu elle lance aussi la partie.)
