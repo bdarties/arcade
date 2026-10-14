@@ -13,15 +13,6 @@ export default class chargement extends Phaser.Scene {
     // comme dans le template : les chemins sont relatifs à la page du jeu
     this.load.setBaseURL(this.sys.game.config.baseURL);
 
-    this.add
-      .text(640, 330, "Chargement...", { fontFamily: "Arial", fontSize: "28px", color: "#ffffffff" })
-      .setOrigin(0.5);
-    var barre = this.add.graphics();
-    this.load.on("progress", function (valeur) {
-      barre.clear();
-      barre.fillStyle(0xffc83d, 1);
-      barre.fillRect(440, 370, 400 * valeur, 16);
-    });
 
     // fonds et logo (dossier "Logo et son background" + document Idées)
     this.load.image("img_fond_accueil", "./assets/images/fond_accueil.jpg");
