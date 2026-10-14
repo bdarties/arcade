@@ -1267,7 +1267,6 @@ export default class niveau1 extends Phaser.Scene {
     onde.body.setSize(22, 18); // taille de sa boîte de collision
     onde.setVelocityX(sens * REGLAGES.tuba.vitesseOnde); // elle avance
     onde.xDepart = onde.x; // pour savoir quand elle a parcouru sa portée
-    jouerSonCreature(this); // le Tuba « gloups » quand il crache son onde
   }
 
   // Le cristal flotte vers le joueur le plus proche, s'il est assez près

@@ -48,7 +48,7 @@ function contexteAudio(scene) {
   return ctx;
 }
 
-// Le son des ennemis (Tuba qui crache son onde, cristal qui grince) : le fichier son_ennemi, à volume doux
+// Le son des ennemis (aujourd'hui : le cristal qui grince sous une mauvaise note) : le fichier son_ennemi, à volume doux
 const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
 let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
 
