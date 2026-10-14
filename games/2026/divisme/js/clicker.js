@@ -38,8 +38,8 @@ import {
 const DUREE_MANCHE = 20;
 
 // SOLO : le crescendo
-const GAIN_PAR_CLIC = 4;        // % de jauge gagnés à chaque clic
-const PERTE_PAR_SECONDE = 10;   // % de jauge perdus chaque seconde si on ne clique pas
+const GAIN_PAR_CLIC = 3;        // % de jauge gagnés à chaque clic
+const PERTE_PAR_SECONDE = 14;   // % de jauge perdus chaque seconde si on ne clique pas
 
 // DUO : le tir à la corde
 const LIMITE_CORDE = 20;        // écart de clics pour gagner tout de suite
