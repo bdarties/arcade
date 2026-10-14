@@ -1,4 +1,5 @@
 // chargement des librairies
+import "./js/donnees.js";
 import menu from "./js/menu.js";
 import credits from "./js/credits.js";
 import classement from "./js/classement.js";
