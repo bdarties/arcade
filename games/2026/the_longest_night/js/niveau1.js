@@ -12,7 +12,7 @@ var J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu,J2Interaction; //variables de
 var player_spawn; //définit l'endroit d'apparition du joueur1
 var player2_spawn; //définit l'endroit d'apparition du joueur2
 var tableau_spawn
-var nombre_cles = 1;
+var nombre_cles;
 var cles_creees = 0;
 var mode_deux_joueurs = true; //définit si le mode un joueur ou deux joueur est actif.
 var groupe_cle; 
@@ -51,8 +51,6 @@ var son_cle;
 var cles_restantes_affiche;
 var temps_restant_affiche
 var temps_restant;
-var groupe_areignee;
-var arreignee;
 var camerasFusionnees = true; //sert a former une camera globale une fois les deux proches
 var cibleCamera; // point invisible au milieu des deux joueurs
 var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points
@@ -261,13 +259,13 @@ export default class niveau1 extends Phaser.Scene {
    */
   create() {
       
-      //definition des paramètres du jeu
-      temps_restant = 80;
-      cles_creees = 0;
+      //definition des paramètres du premier niveau
+      temps_restant = 120;
+      var nombre_cles = 1
       cles_restantes = nombre_cles;
       nombre_ennemis_apparaissant = 4;
       nombre_recharges_apparaissant = 1;
-      nombre_soins_apparaissant = 1;
+      nombre_soins_apparaissant = 2;
       sortie_ouverte = false;
 
     /*************************************
@@ -310,7 +308,7 @@ export default class niveau1 extends Phaser.Scene {
 
   player_spawn = {x:93.3333,y:672.0} 
   player2_spawn = {x:243.333, y:673.333};8
-  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:40.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}];
+  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}];
 
   /**************************
    * INSTALATION DES ELEMENTS
@@ -729,7 +727,7 @@ export default class niveau1 extends Phaser.Scene {
     /************************************ 
      * ELEMENTS DE L'UI
     ************************************/
-    const panneauScoreJ1 = this.add.rectangle(76, 156, 152, 56, 0x111827, 0.8)
+    const panneauScoreJ1 = this.add.rectangle(76, 175, 152, 56, 0x111827, 0.8)
       .setStrokeStyle(2, 0x3bd5f0, 0.7)
       .setScrollFactor(0);
     const panneauBallesJ1 = this.add.rectangle(76, 96, 152, 64, 0x111827, 0.8)
@@ -739,21 +737,21 @@ export default class niveau1 extends Phaser.Scene {
       .setStrokeStyle(2, 0x3bd5f0, 0.7)
       .setScrollFactor(0);
     //élements de l'UI du joueur 1
-    player.iconeScore = this.add.image(30, 132, "Score").setDisplaySize(24, 24);
+    player.iconeScore = this.add.image(30, 145, "Score").setDisplaySize(24, 24);
     player.iconeScore.setScale(2);
     player.iconeScore.setOrigin(0.5, 0);
     player.iconeScore.setScrollFactor(0);
-    score_J1_affiche = this.add.text(64, 136, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
+    score_J1_affiche = this.add.text(64, 160, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
     score_J1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.iconeRecharge = this.add.image(32, 68, "bullet_icone").setDisplaySize(24, 24);
-    player.iconeRecharge.setScale(2);
+    player.iconeRecharge = this.add.image(32, 74, "bullet_icone").setDisplaySize(24, 24);
+    player.iconeRecharge.setScale(1.5);
     player.iconeRecharge.setOrigin(0.5, 0);
     player.iconeRecharge.setScrollFactor(0);
     balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326'});
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.barreVie = this.add.sprite(60, 10, "pv_bar", player.points_vies);
-    player.barreVie.setScale(2);
+    player.barreVie = this.add.sprite(70, 10, "pv_bar", player.points_vies);
+    player.barreVie.setScale(2.2);
     player.barreVie.setOrigin(0.5, 0);
     player.barreVie.setScrollFactor(0);
     
@@ -763,30 +761,31 @@ export default class niveau1 extends Phaser.Scene {
     //élements de l'UI du joueur 2
     let panneauxJ2 = [];
     if (mode_deux_joueurs){
-      const decalageHudJ2 = 480;
-      const panneauScoreJ2 = this.add.rectangle(76 + decalageHudJ2, 156, 152, 56, 0x111827, 0.8)
+      const panneauScoreJ2 = this.add.rectangle(556, 175, 152, 56, 0x111827, 0.8)
         .setStrokeStyle(2, 0xf03b3b, 0.7)
         .setScrollFactor(0);
-      const panneauBallesJ2 = this.add.rectangle(76 + decalageHudJ2, 96, 152, 64, 0x111827, 0.8)
+      const panneauBallesJ2 = this.add.rectangle(556, 96, 152, 64, 0x111827, 0.8)
         .setStrokeStyle(2, 0x571881, 0.7)
         .setScrollFactor(0);
-      const panneauVieJ2 = this.add.rectangle(76 + decalageHudJ2, 26, 152, 48, 0x111827, 0.8)
+      const panneauVieJ2 = this.add.rectangle(556, 26, 152, 48, 0x111827, 0.8)
         .setStrokeStyle(2, 0xf03b3b, 0.7)
         .setScrollFactor(0);
       panneauxJ2 = [panneauScoreJ2, panneauBallesJ2, panneauVieJ2];
-      player2.iconeScore = this.add.image(30 + decalageHudJ2, 132, "Score").setDisplaySize(24, 24);
-      player2.iconeScore.setScale(2);
+      player2.iconeScore = this.add.image(510, 145, "Score").setDisplaySize(24, 24);
+      player2.iconeScore.setScale(2.2);
       player2.iconeScore.setOrigin(0.5, 0);
       player2.iconeScore.setScrollFactor(0);
-      player2.iconeRecharge = this.add.image(32 + decalageHudJ2, 68, "bullet_icone").setDisplaySize(24, 24);
-      player2.iconeRecharge.setScale(2);
+      score_J2_affiche = this.add.text(544, 160, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
+      score_J2_affiche.setScrollFactor(0)
+      player2.iconeRecharge = this.add.image(512, 74, "bullet_icone").setDisplaySize(24, 24);
+      player2.iconeRecharge.setScale(1.5);
       player2.iconeRecharge.setOrigin(0.5, 0);
       player2.iconeRecharge.setScrollFactor(0);
-      score_J2_affiche = this.add.text(64 + decalageHudJ2, 136, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
+      score_J2_affiche = this.add.text(544, 160, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
       score_J2_affiche.setScrollFactor(0)
-      balle_restanteJ2_affiche = this.add.text(64 + decalageHudJ2, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
+      balle_restanteJ2_affiche = this.add.text(544, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
       balle_restanteJ2_affiche.setScrollFactor(0);
-      player2.barreVie = this.add.sprite(60 + decalageHudJ2, 10, "pv_bar2", player2.points_vies);
+      player2.barreVie = this.add.sprite(550, 10, "pv_bar2", player2.points_vies);
       player2.barreVie.setScale(2);
       player2.barreVie.setOrigin(0.5, 0);
       player2.barreVie.setScrollFactor(0);
@@ -1183,7 +1182,7 @@ function degat_contact_ennemi(player, ennemi) {
         player.enRechargement = true;
         player.peutTirer = false;
         const texteBalles = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
-        texteBalles.setText('Rechargement...');
+        texteBalles.setText('!');
         texteBalles.setColor('#f1c489');
         this.tweens.add({
           targets: texteBalles,
