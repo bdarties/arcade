@@ -68,7 +68,7 @@ export default class niveau_termine extends Phaser.Scene {
     }
     this.add.text(640, 568, consigne, style("17pt", "#f5d97a")).setOrigin(0.5);
 
-    const aide = this.add.text(640, 672, "Bouton A / Entrée : retourner au lobby", style("14pt", "#cfd6f5")).setOrigin(0.5);
+    const aide = this.add.text(640, 672, "Bouton A (borne) · Entrée (clavier) : retourner au lobby", style("14pt", "#cfd6f5")).setOrigin(0.5);
     this.tweens.add({ targets: aide, alpha: 0.4, duration: 800, yoyo: true, repeat: -1 });
   }
 

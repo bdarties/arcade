@@ -86,7 +86,7 @@ export default class synopsis extends Phaser.Scene {
     });
     this.nombreCaracteres = contenus.reduce((total, ligne) => total + ligne.length, 0);
     this.compteur.setText((this.paragraphe + 1) + " / " + PARAGRAPHES.length);
-    this.indication.setText("Bouton A / Entrée / Espace / Clic : afficher tout le texte");
+    this.indication.setText("Bouton A (borne) · Entrée / Espace / Clic : afficher tout le texte");
 
     this.minuteur = this.time.addEvent({
       delay: DELAI_LETTRE_MS,
@@ -122,7 +122,7 @@ export default class synopsis extends Phaser.Scene {
     this.revelerTexte();
     this.ecritureTerminee = true;
     const action = this.paragraphe === PARAGRAPHES.length - 1 ? "commencer l'aventure" : "continuer";
-    this.indication.setText("Bouton A / Entrée / Espace / Clic : " + action);
+    this.indication.setText("Bouton A (borne) · Entrée / Espace / Clic : " + action);
   }
 
   update() {

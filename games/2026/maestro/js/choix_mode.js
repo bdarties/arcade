@@ -63,7 +63,7 @@ export default class choix_mode extends Phaser.Scene {
     this.panneaux = MODES.map((m) => this.creerPanneau(m));
 
     this.add
-      .text(640, 685, "← → choisir · Bouton A / Entrée valider", {
+      .text(640, 685, "← → choisir (joystick) · A (borne) / Entrée (clavier) valider", {
         fontFamily: POLICE,
         fontSize: "14pt",
         color: "#dfe6ff",
