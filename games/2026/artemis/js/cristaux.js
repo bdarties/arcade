@@ -63,6 +63,7 @@ export function frapperCristal(scene, zone) {
   }
 
   eclater(scene, cristal.x, cristal.y);
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("cristal_brise"); // cristal brisé, quelle que soit sa couleur
   pierres.lacherPierres(scene, cristal.x, cristal.y + 19, 1, PIERRES_CRISTAL[0], PIERRES_CRISTAL[1]);
   scene.cristaux.splice(scene.cristaux.indexOf(cristal), 1);
   cristal.destroy(); // son corps statique disparait avec lui

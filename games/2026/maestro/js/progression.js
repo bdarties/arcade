@@ -16,7 +16,7 @@
 export const NIVEAUX = [
   { numero: 1, nom: "LES COULISSES", scene: "niveau1", disponible: true },
   { numero: 2, nom: "LES OMBRES CHINOISES", scene: "niveau2", disponible: true },
-  { numero: 3, nom: "LA GRANDE SCÈNE", scene: "niveau3", disponible: false }
+  { numero: 3, nom: "LA GRANDE SCÈNE", scene: "niveau3", disponible: true }
 ];
 
 // La liste des numéros de niveaux terminés (vide au début)

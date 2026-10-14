@@ -8,6 +8,7 @@ import niveau2 from "./js/niveau2.js";
 import niveau3 from "./js/niveau3.js";
 import pause from "./js/pause.js";
 import synopsis from "./js/synopsis.js";
+import choix_mode from "./js/choix_mode.js";
 
 // configuration générale du jeu
 var config = {
@@ -30,10 +31,10 @@ var config = {
       gravity: {
         y: 0 // jeu vu de dessus : pas de gravité
       },
-      debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause, synopsis],
+  scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause, synopsis, choix_mode],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

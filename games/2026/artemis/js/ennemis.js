@@ -1,6 +1,8 @@
 /***********************************************************************/
-/** ENNEMIS : apparition, poursuite (pathfinding), dégâts
+/** ENNEMIS : apparition, poursuite (pathfinding), dégâts ; le cristal flotte à travers les murs et tire un rayon
 /***********************************************************************/
+
+import * as biomes from "./biomes.js";
 
 const TAILLE_CASE = 32; // px (cf. niveau1.js)
 const NB_ENNEMIS = 4; // au niveau 1 ; un de plus tous les 3 niveaux, jusqu'à NB_ENNEMIS_MAX
@@ -10,14 +12,30 @@ const ECHELLE_ENNEMI = 1.25;
 // types d'ennemis (images chargées dans selection.js, de 32x32)
 // poids(niveau) : probabilité relative d'apparition (0 = n'apparait pas encore) ; corps : [largeur, hauteur, décalage x, décalage y] de la hitbox
 // vitesse : px/s (le joueur marche à 160) ; degats : PV retirés au contact ; tireur : tire de loin au lieu de foncer sur le joueur
+// cristal (images de 48x48, une couleur par biome) : par_biome : sprite choisi selon le biome ; echelle : remplace ECHELLE_ENNEMI ;
+// traverse : passe à travers les murs, les cailloux et les cristaux ; rayon : tire un rayon (cf. majCristal) ; brille : éclaire le noir autour de lui
 const TYPES = {
   slime: { sprite: "sprite_slime", anim: "anim_slime", pv: 3, vitesse: 70, degats: 15, poids: () => 100, corps: [22, 14, 5, 18] },
   alien_vert: {
     sprite: "sprite_alien_vert", anim: "anim_alien_vert", anim_tir: "anim_alien_vert_tir", pv: 3, vitesse: 55, degats: 10,
     poids: (niveau) => (niveau >= 2 ? 40 : 0), corps: [20, 14, 6, 18], tireur: true
   },
-  alien_rouge: { sprite: "sprite_alien_rouge", anim: "anim_alien_rouge", pv: 5, vitesse: 95, degats: 20, poids: (niveau) => (niveau >= 3 ? 35 : 0), corps: [20, 14, 6, 18] }
+  alien_rouge: { sprite: "sprite_alien_rouge", anim: "anim_alien_rouge", pv: 5, vitesse: 95, degats: 20, poids: (niveau) => (niveau >= 3 ? 35 : 0), corps: [20, 14, 6, 18] },
+  cristal: {
+    par_biome: true, pv: 3, vitesse: 40, degats: 25, poids: (niveau) => (niveau >= 4 ? 30 : 0), corps: [22, 28, 13, 10],
+    echelle: 1, traverse: true, rayon: true, brille: true
+  }
 };
+
+// rayon du cristal : une ligne qui clignote (il se charge, le joueur peut esquiver), puis le rayon part droit dans la direction verrouillée
+const PORTEE_RAYON = 320; // px : distance max pour tirer
+const DUREE_CHARGE = 1000; // ms
+const DUREE_TIR = 500; // ms
+const DELAI_RAYON = 4000; // ms entre la fin d'un tir et la charge suivante
+const DELAI_APRES_COUP = 1500; // ms : un coup reçu pendant la charge l'interrompt
+const LONGUEUR_RAYON = 420; // px ; il s'arrête avant un mur, un caillou ou un cristal décor
+const EPAISSEUR_RAYON = 10; // px
+const DEGATS_RAYON = 40;
 
 // tirs des aliens verts
 const PORTEE_TIR = 300; // px : distance max pour tirer
@@ -81,11 +99,13 @@ export function chercherChemin(bloquees, largeur, hauteur, depart, arrivee) {
   return [];
 }
 
-// un ennemi du type donné ("slime", "alien_vert" ou "alien_rouge") en (x, y) : le groupe scene.ennemis existe déjà (cf. creerEnnemis)
+// un ennemi du type donné ("slime", "alien_vert", "alien_rouge" ou "cristal") en (x, y) : le groupe scene.ennemis existe déjà (cf. creerEnnemis)
 export function creerEnnemi(scene, nom, x, y) {
   const type = TYPES[nom];
-  const ennemi = scene.ennemis.create(x, y, type.sprite);
-  ennemi.setScale(ECHELLE_ENNEMI);
+  const couleur = type.par_biome ? biomes.biomeDuNiveau(scene.niveau).ennemi_cristal : null; // cf. biomes.js
+  const ennemi = scene.ennemis.create(x, y, couleur ? "sprite_ennemi_cristal_" + couleur : type.sprite);
+  ennemi.echelle = type.echelle ?? ECHELLE_ENNEMI;
+  ennemi.setScale(ennemi.echelle);
   ennemi.body.setSize(type.corps[0], type.corps[1]); // hitbox sur le bas du corps (pixels du sprite d'origine)
   ennemi.body.setOffset(type.corps[2], type.corps[3]);
   ennemi.type = type;
@@ -96,7 +116,11 @@ export function creerEnnemi(scene, nom, x, y) {
   ennemi.recul_jusqua = 0;
   ennemi.prochain_tir = 0;
   ennemi.vise = false; // true pendant l'animation de tir
-  ennemi.anims.play(type.anim);
+  ennemi.etat_rayon = "repos"; // cristal : "repos", "charge" puis "tir"
+  ennemi.fin_etat = 0;
+  ennemi.prochain_rayon = 0;
+  ennemi.direction_rayon = null;
+  ennemi.anims.play(couleur ? "anim_ennemi_cristal_" + couleur : type.anim);
   return ennemi;
 }
 
@@ -105,6 +129,8 @@ export function creerEnnemi(scene, nom, x, y) {
 export function creerEnnemis(scene, calque_sol, calque_murs, nombre = Math.min(NB_ENNEMIS + Math.floor((scene.niveau - 1) / 3), NB_ENNEMIS_MAX)) {
   scene.ennemis = scene.physics.add.group();
   scene.tirs_ennemis = scene.physics.add.group(); // projectiles des aliens verts
+  scene.rayons_gfx = scene.add.graphics().setDepth(5000); // rayons des cristaux, redessinés à chaque image
+  scene.rayons_actifs = []; // { x1, y1, x2, y2, couleur, intensite } : pour la lumière (cf. lumiere.js)
   const bloquees = casesBloquees(scene);
   const cases_libres = calque_sol.filterTiles((tuile) =>
     !bloquees.has(tuile.x + "," + tuile.y) &&
@@ -114,9 +140,10 @@ export function creerEnnemis(scene, calque_sol, calque_murs, nombre = Math.min(N
     creerEnnemi(scene, tirerType(scene.niveau), tuile.getCenterX(), tuile.getCenterY());
   });
 
-  scene.physics.add.collider(scene.ennemis, calque_murs);
-  scene.physics.add.collider(scene.ennemis, scene.cailloux);
-  if (scene.groupe_cristaux) scene.physics.add.collider(scene.ennemis, scene.groupe_cristaux);
+  const pas_traversant = (ennemi) => !ennemi.type.traverse; // le cristal passe à travers les décors
+  scene.physics.add.collider(scene.ennemis, calque_murs, null, pas_traversant);
+  scene.physics.add.collider(scene.ennemis, scene.cailloux, null, pas_traversant);
+  if (scene.groupe_cristaux) scene.physics.add.collider(scene.ennemis, scene.groupe_cristaux, null, pas_traversant);
   scene.physics.add.collider(scene.ennemis, scene.ennemis);
   // un ennemi qui touche un joueur lui fait des dégâts
   scene.joueurs.forEach((j) => {
@@ -144,8 +171,11 @@ export function creerEnnemis(scene, calque_sol, calque_murs, nombre = Math.min(N
 export function majEnnemis(scene) {
   const maintenant = scene.time.now;
   const bloquees = casesBloquees(scene);
+  scene.rayons_gfx.clear();
+  scene.rayons_actifs = [];
 
   scene.ennemis.getChildren().forEach((ennemi) => {
+    if (!ennemi.body.enable) return; // en train de mourir (fondu) : il ne fait plus rien
     ennemi.setDepth(ennemi.y);
     if (maintenant < ennemi.recul_jusqua) return; // repoussé par un coup : on laisse la vitesse du recul
     if (ennemi.vise) { // en train de viser : il ne bouge plus
@@ -165,6 +195,12 @@ export function majEnnemis(scene) {
     else if (distance > RAYON_ABANDON) ennemi.alerte = false;
     if (!ennemi.alerte) {
       ennemi.setVelocity(0, 0);
+      ennemi.etat_rayon = "repos"; // plus de charge en cours
+      return;
+    }
+
+    if (ennemi.type.rayon) {
+      majCristal(scene, ennemi, cible, distance, maintenant, bloquees);
       return;
     }
 
@@ -193,6 +229,67 @@ export function majEnnemis(scene) {
     ennemi.setVelocity(direction.x * ennemi.type.vitesse, direction.y * ennemi.type.vitesse);
     if (Math.abs(direction.x) > 0.1) ennemi.setFlipX(direction.x < 0);
   });
+}
+
+// cristal : il flotte tout droit vers le joueur (à travers les murs) ; à portée il s'arrête, charge, puis tire un rayon
+function majCristal(scene, ennemi, cible, distance, maintenant, bloquees) {
+  const origine = ennemi.body.center;
+  const couleur = biomes.biomeDuNiveau(scene.niveau).lumiere;
+
+  if (ennemi.etat_rayon === "repos" && distance <= PORTEE_RAYON && maintenant >= ennemi.prochain_rayon) {
+    ennemi.etat_rayon = "charge";
+    ennemi.fin_etat = maintenant + DUREE_CHARGE;
+  }
+
+  if (ennemi.etat_rayon === "repos") {
+    const direction = new Phaser.Math.Vector2(cible.x - origine.x, cible.y - origine.y).normalize();
+    ennemi.setVelocity(direction.x * ennemi.type.vitesse, direction.y * ennemi.type.vitesse);
+    return;
+  }
+
+  ennemi.setVelocity(0, 0);
+  if (ennemi.etat_rayon === "charge") {
+    // il vise le joueur jusqu'à la fin de la charge, puis la direction est verrouillée : bouger pendant la charge suffit à esquiver
+    ennemi.direction_rayon = new Phaser.Math.Vector2(cible.x - origine.x, cible.y - origine.y).normalize();
+    if (maintenant >= ennemi.fin_etat) {
+      ennemi.etat_rayon = "tir";
+      ennemi.fin_etat = maintenant + DUREE_TIR;
+    }
+  } else if (maintenant >= ennemi.fin_etat) { // fin du tir
+    ennemi.etat_rayon = "repos";
+    ennemi.prochain_rayon = maintenant + DELAI_RAYON;
+    return;
+  }
+
+  const bout = boutDuRayon(bloquees, origine, ennemi.direction_rayon);
+  const tir = ennemi.etat_rayon === "tir";
+  scene.rayons_actifs.push({ x1: origine.x, y1: origine.y, x2: bout.x, y2: bout.y, couleur: couleur, intensite: tir ? 1 : 0.4 });
+  if (tir) {
+    scene.rayons_gfx.lineStyle(EPAISSEUR_RAYON, couleur, 0.9).lineBetween(origine.x, origine.y, bout.x, bout.y);
+    scene.rayons_gfx.lineStyle(4, 0xffffff, 1).lineBetween(origine.x, origine.y, bout.x, bout.y);
+    const ligne = new Phaser.Geom.Line(origine.x, origine.y, bout.x, bout.y);
+    scene.joueursEnJeu().forEach((j) => {
+      const corps = j.sprite.body;
+      const zone = new Phaser.Geom.Rectangle(corps.x - EPAISSEUR_RAYON / 2, corps.y - EPAISSEUR_RAYON / 2, corps.width + EPAISSEUR_RAYON, corps.height + EPAISSEUR_RAYON);
+      if (Phaser.Geom.Intersects.LineToRectangle(ligne, zone)) degatsJoueur(scene, j, DEGATS_RAYON);
+    });
+  } else {
+    // la charge : une ligne fine qui clignote
+    scene.rayons_gfx.lineStyle(2, couleur, 0.35 + 0.35 * Math.sin(maintenant / 60)).lineBetween(origine.x, origine.y, bout.x, bout.y);
+  }
+}
+
+// l'extrémité du rayon : au bout de LONGUEUR_RAYON, ou juste avant le premier obstacle rencontré
+// (le cristal peut être dans un mur : un obstacle ne compte qu'une fois sorti de ce mur)
+function boutDuRayon(bloquees, origine, direction) {
+  let libre = false;
+  let d = 0;
+  for (; d < LONGUEUR_RAYON; d += 8) {
+    const bloque = bloquees.has(case_de(origine.x + direction.x * d) + "," + case_de(origine.y + direction.y * d));
+    if (!bloque) libre = true;
+    else if (libre) break;
+  }
+  return { x: origine.x + direction.x * d, y: origine.y + direction.y * d };
 }
 
 // type d'ennemi tiré au hasard, selon les poids du niveau (le slime est toujours possible)
@@ -235,6 +332,7 @@ function viser(scene, ennemi, cible) {
     tir.setRotation(direction.angle());
     tir.body.setSize(8, 8);
     tir.setVelocity(direction.x * VITESSE_TIR, direction.y * VITESSE_TIR);
+    /* >>>>> AJOUT SON <<<<< */ scene.sound.play("laser_ennemi"); // chaque tir d'alien
     scene.time.delayedCall(DUREE_VIE_TIR, () => tir.destroy());
     ennemi.vise = false;
     ennemi.prochain_tir = scene.time.now + DELAI_TIR;
@@ -245,15 +343,21 @@ function viser(scene, ennemi, cible) {
 // dégâts à un ennemi : clignotement rouge, recul dans la direction du coup, mort à 0 PV
 export function blesserEnnemi(scene, ennemi, degats, direction) {
   if (!ennemi.active) return;
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("impact_ennemi"); // un joueur touche un ennemi (pioche ou laser), coup fatal compris
   ennemi.pv -= degats;
   if (ennemi.pv <= 0) {
     ennemi.body.enable = false;
-    scene.tweens.add({ targets: ennemi, alpha: 0, scale: ECHELLE_ENNEMI * 1.3, duration: 180, onComplete: () => ennemi.destroy() });
+    ennemi.etat_rayon = "repos"; // un cristal tué n'a plus de rayon
+    scene.tweens.add({ targets: ennemi, alpha: 0, scale: ennemi.echelle * 1.3, duration: 180, onComplete: () => ennemi.destroy() });
     return;
   }
   ennemi.setTintFill(0xffffff);
   scene.time.delayedCall(80, () => ennemi.active && ennemi.clearTint());
   ennemi.alerte = true;
+  if (ennemi.etat_rayon === "charge") { // un coup interrompt la charge du cristal
+    ennemi.etat_rayon = "repos";
+    ennemi.prochain_rayon = scene.time.now + DELAI_APRES_COUP;
+  }
   ennemi.recul_jusqua = scene.time.now + DUREE_RECUL;
   ennemi.setVelocity(direction.x * VITESSE_RECUL, direction.y * VITESSE_RECUL);
 }
@@ -272,6 +376,7 @@ function degatsJoueur(scene, j, degats) {
   if (j.pv <= 0 || maintenant < (j.invulnerable_jusqua ?? 0)) return false;
   j.pv = Math.max(j.pv - degats, 0);
   j.invulnerable_jusqua = maintenant + INVULNERABILITE_JOUEUR;
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("impact_ennemi"); // coup reçu, au contact comme par un tir (une fois par coup grâce à l'invulnérabilité)
   scene.tweens.add({ targets: j.sprite, alpha: 0.3, duration: 90, yoyo: true, repeat: 4, onComplete: () => j.sprite.setAlpha(1) });
   scene.cameras.main.shake(120, 0.004);
   return true;

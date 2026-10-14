@@ -139,16 +139,18 @@ const DECOR = [
 // Le niveau 2 : une classe qui hérite de niveau1 (tout ce qui n'est pas redéfini ici reste celui du niveau 1)
 export default class niveau2 extends niveau1 {
   constructor() {
-    super("niveau2"); // la clé de la scène
+    super("niveau2");
   }
 
   // --------------------------------------------------------------------------
   //  PRELOAD : le fond, l'image des tuiles et la carte
   // --------------------------------------------------------------------------
   preload() {
-    this.load.setBaseURL(this.sys.game.config.baseURL); // les fichiers sont cherchés depuis le dossier du jeu
-    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
-    this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
+    this.load.setBaseURL(this.sys.game.config.baseURL);
+    this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
+    if (!this.textures.exists("ts_plateformes")) {
+      this.load.image("ts_plateformes", "./assets/plateformes-coulisses-grid-50.png");
+    }
     this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png"); // les tuiles de la carte
     this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json"); // la carte Tiled elle-même
@@ -158,13 +160,13 @@ export default class niveau2 extends niveau1 {
   definirNiveau() {
     this.largeurMonde = LARGEUR_MONDE; // taille du monde utilisée par le niveau 1
     this.hauteurMonde = HAUTEUR_MONDE;
-    this.couleurFond = 0x05070f; // couleur de fond, presque noire
-    this.listeTubas = TUBAS; // deux Tubas dans ce niveau
-    this.listeCristaux = CRISTAUX; // les cristaux de ce niveau
+    this.couleurFond = 0x05070f;
+    this.listeTubas = TUBAS;
+    this.listeCristaux = CRISTAUX;
     this.numeroNiveau = 2; // son numéro dans la progression (voir progression.js)
     this.formeUnique = true; // en solo, un seul corps : la Cantatrice se transforme en Détective avec K (comme au niveau 1)
-    this.musiqueNiveau = "musique_niveau2"; // la piste propre au niveau 2
-    this.messageVictoire = "Niveau 2 terminé !"; // le texte affiché à la victoire
+    this.musiqueNiveau = "musique_niveau2";
+    this.messageVictoire = "Niveau 2 terminé !";
     this.objectif = "OBJECTIF : ramasse " + NOTES_REQUISES + " notes de musique pour révéler la PARTITION,\npuis prends-la et franchis la porte en haut à droite";
     this.notesRamassees = 0; // compteur des notes ramassées (au départ : aucune)
     this.partitionActive = false; // vrai quand les 3 notes ont été ramassées : la partition s'illumine
@@ -175,8 +177,8 @@ export default class niveau2 extends niveau1 {
   //  La carte : décor (calques de tuiles), puis les zones solides, les échelles, les passerelles
   // --------------------------------------------------------------------------
   creerCarte() {
-    this.groupe_plateformes = this.physics.add.staticGroup(); // plateformes solides
-    this.groupe_fantomes = this.physics.add.staticGroup(); // passerelles fantômes
+    this.groupe_plateformes = this.physics.add.staticGroup();
+    this.groupe_fantomes = this.physics.add.staticGroup();
     this.groupe_murs = this.physics.add.staticGroup(); // (pas de mur dans ce niveau, mais le niveau 1 en a besoin)
     this.avecTuilesPlateformes = false; // les passerelles fantômes utilisent le dessin de secours
 
@@ -185,7 +187,7 @@ export default class niveau2 extends niveau1 {
 
     // La carte Tiled ne sert plus qu'à deux choses : les ÉCHELLES (dessin) et les PLATEFORMES (leurs positions).
     // Tout le reste du décor est dessiné avec les images rouges (voir poserDecor).
-    const carte = this.add.tilemap("carte_theatre"); // on lit la carte Tiled
+    const carte = this.add.tilemap("carte_theatre");
     const tuiles = carte.addTilesetImage("tileset_maestro", "tuiles_theatre"); // on relie le jeu de tuiles à son image
     const calqueEchelles = carte.createLayer("calque_background2", tuiles).setDepth(3); // le calque qui contient les échelles
     calqueEchelles.forEachTile((tuile) => { // on regarde chaque tuile du calque
@@ -210,13 +212,13 @@ export default class niveau2 extends niveau1 {
     this.poserDecor(); // le décor rouge (piliers, bannières, lanternes…)
     this.creerSolidesDepuisLesTuiles(carte); // les tuiles solides deviennent des zones où l'on marche
     PALIERS.forEach((palier) => { // les petits paliers au sommet des échelles
-      this.ajouterPlateforme(palier); // une zone solide
-      this.dessinerPlateforme(palier.x, palier.y, palier.width); // et son dessin
+      this.ajouterPlateforme(palier);
+      this.dessinerPlateforme(palier.x, palier.y, palier.width);
     });
     this.echelles = ECHELLES; // la liste des échelles utilisée par le niveau 1
 
     // Zone sombre + passerelles fantômes qui mènent à la note dorée bonus
-    this.creerOmbre(); // le voile sombre
+    this.creerOmbre();
     PASSERELLES.forEach((passerelle) => this.ajouterFantome(passerelle)); // chaque passerelle fantôme (révélée par la lampe)
 
     // Ce que le niveau 1 attend de la carte
@@ -225,7 +227,6 @@ export default class niveau2 extends niveau1 {
 
     // Panneaux d'indication
     this.ajouterIndice(250, 540, "Monte à l'échelle (haut)");
-    this.ajouterIndice(760, 120, "Cristaux colorés !\nChoisis la note de la même couleur (bouton C) et tire (bouton B)");
     this.ajouterIndice(1150, 330, "Zone sombre : le Détective éclaire les passerelles (bouton B)\npour atteindre une note dorée BONUS (+1 cœur)");
     this.ajouterIndice(1290, 600, "Plateformes mobiles : attends le bon moment pour sauter !");
     this.ajouterIndice(190, 330, "Tambour : saute dessus pour rebondir très haut !");
@@ -260,9 +261,9 @@ export default class niveau2 extends niveau1 {
           choisie = image; // celle-ci est plus proche : on la garde
         }
       });
-      const dessin = this.add.image(i * largeurMorceau, 0, "decor2", choisie.nom).setOrigin(0, 0); // le morceau, dans le conteneur
+      const dessin = this.add.image(i * largeurMorceau, 0, "decor2", choisie.nom).setOrigin(0, 0);
       dessin.setDisplaySize(largeurMorceau, dessin.height); // on étire un peu en largeur, jamais en hauteur
-      conteneur.add(dessin); // on l'ajoute au groupe
+      conteneur.add(dessin);
     }
     return conteneur; // le groupe complet, pour pouvoir le faire bouger plus tard
   }
@@ -273,12 +274,12 @@ export default class niveau2 extends niveau1 {
     const l = ZONE_SOMBRE.largeur + marge * 2; // largeur totale du dessin
     const h = ZONE_SOMBRE.hauteur + marge * 2; // hauteur totale du dessin
     if (this.textures.exists("tex_ombre") == false) { // on ne dessine la texture qu'une seule fois
-      const toile = this.textures.createCanvas("tex_ombre", l, h); // une toile de dessin
-      const ctx = toile.getContext(); // le « pinceau » de cette toile
+      const toile = this.textures.createCanvas("tex_ombre", l, h);
+      const ctx = toile.getContext();
       ctx.filter = "blur(26px)"; // on flou tout ce qui est dessiné ensuite
       ctx.fillStyle = "rgba(0, 0, 10, 0.78)"; // une couleur noire presque opaque
-      ctx.fillRect(marge, marge, ZONE_SOMBRE.largeur, ZONE_SOMBRE.hauteur); // le rectangle sombre, au centre
-      toile.refresh(); // on valide le dessin
+      ctx.fillRect(marge, marge, ZONE_SOMBRE.largeur, ZONE_SOMBRE.hauteur);
+      toile.refresh();
     }
     this.add.image(ZONE_SOMBRE.x - marge, ZONE_SOMBRE.y - marge, "tex_ombre").setOrigin(0, 0).setDepth(4); // on pose le voile
   }
@@ -286,12 +287,12 @@ export default class niveau2 extends niveau1 {
   // Pose tous les éléments de décor de la liste DECOR (bannières, lanternes, piliers, rideaux, vases…)
   poserDecor() {
     DECOR.forEach((d) => { // pour chaque élément de la liste
-      const image = this.add.image(d.x, d.y, "decor2", d.nom); // on pose son image
+      const image = this.add.image(d.x, d.y, "decor2", d.nom);
       image.setOrigin(0.5, d.ancre == "bas" ? 1 : 0).setDepth(d.profondeur); // le point d'ancrage et la profondeur
       if (d.nom == "pilier") {
         // le pilier est un vrai obstacle : solide de TOUS les côtés (pas à sens unique), on peut s'y poser dessus
         const zone = this.add.zone(d.x, d.y - image.height / 2, image.width, image.height); // une zone de la taille du pilier
-        this.groupe_plateformes.add(zone); // elle devient solide
+        this.groupe_plateformes.add(zone);
         zone.unSens = false; // false = solide de tous les côtés
       }
       if (d.lueur == true) {
@@ -311,8 +312,8 @@ export default class niveau2 extends niveau1 {
   creerCorps(x, y, largeur, hauteur) {
     const zone = this.add.zone(x + largeur / 2, y + hauteur / 2, largeur, hauteur); // zone centrée sur le rectangle
     this.physics.add.existing(zone); // on lui ajoute un corps physique
-    zone.body.setAllowGravity(false); // elle ne tombe pas
-    zone.body.setImmovable(true); // elle ne se laisse pas pousser
+    zone.body.setAllowGravity(false);
+    zone.body.setImmovable(true);
     return zone;
   }
 
@@ -323,11 +324,11 @@ export default class niveau2 extends niveau1 {
     this.groupe_mobiles = this.physics.add.group({ allowGravity: false, immovable: true }); // le groupe des plateformes mobiles
     this.mobiles = []; // la liste utilisée par emporterLesHeros()
     PLATEFORMES_MOBILES.forEach((m, i) => { // pour chaque plateforme mobile de la liste
-      const plateforme = this.creerCorps(m.x, m.origine.y, m.largeur, m.hauteur); // son corps physique
-      this.groupe_mobiles.add(plateforme); // on la range dans le groupe
+      const plateforme = this.creerCorps(m.x, m.origine.y, m.largeur, m.hauteur);
+      this.groupe_mobiles.add(plateforme);
       plateforme.unSens = true; // on la traverse par le dessous
-      plateforme.body.setImmovable(true); // elle ne se laisse pas pousser
-      plateforme.body.setAllowGravity(false); // elle ne tombe pas
+      plateforme.body.setImmovable(true);
+      plateforme.body.setAllowGravity(false);
       const dessin = this.dessinerPlateforme(m.x, m.origine.y, m.largeur); // son dessin
       // Le tween déplace EN MÊME TEMPS le corps (physique) et le dessin : de sa position de départ jusqu'à +dx / +dy,
       // puis retour, à l'infini
@@ -342,7 +343,7 @@ export default class niveau2 extends niveau1 {
       });
       plateforme.dernierX = plateforme.x; // on retient sa position, pour savoir de combien elle a bougé
       plateforme.dernierY = plateforme.y;
-      this.mobiles.push(plateforme); // on la garde dans la liste
+      this.mobiles.push(plateforme);
     });
   }
 
@@ -353,7 +354,7 @@ export default class niveau2 extends niveau1 {
     // Plateformes fixes en hauteur : une zone solide (donc « plateforme sûre » pour le respawn) + le dessin de la carte
     PLATEFORMES_HAUTES.forEach((p) => {
       this.ajouterPlateforme({ x: p.x, y: p.y, width: LARGEUR_PLATEFORME_HAUTE, height: TAILLE_TUILE }); // la zone solide
-      this.dessinerPlateforme(p.x, p.y, LARGEUR_PLATEFORME_HAUTE); // le dessin
+      this.dessinerPlateforme(p.x, p.y, LARGEUR_PLATEFORME_HAUTE);
     });
 
     // Tambours : un petit décor + une zone de détection (physique statique)
@@ -365,12 +366,12 @@ export default class niveau2 extends niveau1 {
     });
 
     // Planches fragiles : des corps qui peuvent être désactivés puis réactivés
-    this.groupe_fragiles = this.physics.add.group({ allowGravity: false, immovable: true }); // le groupe des planches
+    this.groupe_fragiles = this.physics.add.group({ allowGravity: false, immovable: true });
     PLANCHES_FRAGILES.forEach((f) => { // pour chaque planche
       const planche = this.creerCorps(f.x, f.y, LARGEUR_PLANCHE, 32); // son corps physique, haut de 32 px
-      this.groupe_fragiles.add(planche); // on la range dans le groupe
+      this.groupe_fragiles.add(planche);
       planche.unSens = true; // on la traverse par le dessous
-      planche.body.setImmovable(true); // elle ne se laisse pas pousser
+      planche.body.setImmovable(true);
       planche.body.setAllowGravity(false); // elle ne tombe pas toute seule
       planche.dessin = this.dessinerPlateforme(f.x, f.y, LARGEUR_PLANCHE); // son dessin, gardé pour le faire trembler et tomber
       planche.tombe = false; // vrai dès que quelqu'un a marché dessus (elle est « en train de tomber »)
@@ -385,16 +386,16 @@ export default class niveau2 extends niveau1 {
     }
     planche.tombe = true; // la chute commence
     const x0 = planche.dessin.x; // position de départ du dessin
-    this.tweens.add({ targets: planche.dessin, x: x0 + 2, duration: 50, yoyo: true, repeat: 4 }); // elle tremble
+    this.tweens.add({ targets: planche.dessin, x: x0 + 2, duration: 50, yoyo: true, repeat: 4 });
     this.time.delayedCall(DELAI_CHUTE_MS, () => { // après 0,5 s
       planche.body.enable = false; // plus solide : les héros tombent
       this.tweens.add({ targets: planche.dessin, alpha: 0.15, duration: 200 }); // elle devient presque transparente
     });
     this.time.delayedCall(DELAI_CHUTE_MS + DELAI_RETOUR_MS, () => { // après 0,5 s + 3,5 s
-      planche.dessin.x = x0; // elle revient à sa place
-      planche.body.enable = true; // elle est de nouveau solide
+      planche.dessin.x = x0;
+      planche.body.enable = true;
       planche.tombe = false; // la prochaine marche pourra la faire tomber
-      this.tweens.add({ targets: planche.dessin, alpha: 1, duration: 300 }); // elle redevient visible
+      this.tweens.add({ targets: planche.dessin, alpha: 1, duration: 300 });
     });
   }
 
@@ -405,6 +406,7 @@ export default class niveau2 extends niveau1 {
       return; // pas un vrai atterrissage sur le tambour (ou sur une échelle) : rien ne se passe
     }
     perso.setVelocityY(FORCE_TAMBOUR); // on le relance vers le haut, très fort
+    this.sound.play("son_tambour", { volume: 0.5 }); // le tambour résonne
     this.tweens.add({ targets: tambour, scaleY: 0.7, duration: 70, yoyo: true }); // le tambour s'écrase un instant
     if (this.cache.audio.exists("son_tambour")) { // si le son a bien été chargé
       this.sound.play("son_tambour", { volume: 0.5 }); // « boing » !
@@ -415,7 +417,7 @@ export default class niveau2 extends niveau1 {
   emporterLesHeros() {
     this.mobiles.forEach((plateforme) => { // pour chaque plateforme mobile
       const dx = plateforme.x - plateforme.dernierX; // de combien elle a bougé en x depuis la dernière image
-      const dy = plateforme.y - plateforme.dernierY; // et en y
+      const dy = plateforme.y - plateforme.dernierY;
       this.persos.forEach((perso) => { // pour chaque personnage
         const corps = perso.body;
         const surLaPlateforme = // vrai si le personnage est posé dessus
@@ -443,12 +445,12 @@ export default class niveau2 extends niveau1 {
     };
 
     // 1) les suites de tuiles solides sur chaque ligne
-    const suites = []; // la liste des suites trouvées
+    const suites = [];
     for (let ligne = 0; ligne < carte.height; ligne++) { // pour chaque ligne de la carte
       let debut = -1; // le début de la suite en cours (-1 = aucune)
       for (let colonne = 0; colonne <= carte.width; colonne++) { // on parcourt les colonnes (une de plus, pour fermer la dernière suite)
         if (estSolide(ligne, colonne) == true && debut == -1) {
-          debut = colonne; // une suite commence
+          debut = colonne;
         } else if (estSolide(ligne, colonne) == false && debut != -1) {
           suites.push({ ligne: ligne, debut: debut, fin: colonne - 1 }); // la suite se termine : on la garde
           debut = -1;
@@ -464,14 +466,14 @@ export default class niveau2 extends niveau1 {
       if (bloc !== undefined) {
         bloc.ligneFin = suite.ligne; // on prolonge le bloc d'une ligne
       } else {
-        blocs.push({ debut: suite.debut, fin: suite.fin, ligneDebut: suite.ligne, ligneFin: suite.ligne }); // nouveau bloc
+        blocs.push({ debut: suite.debut, fin: suite.fin, ligneDebut: suite.ligne, ligneFin: suite.ligne });
       }
     });
 
     blocs.forEach((b) => { // pour chaque bloc trouvé
-      const x = b.debut * TAILLE_TUILE; // position en pixels
+      const x = b.debut * TAILLE_TUILE;
       const y = b.ligneDebut * TAILLE_TUILE;
-      const largeur = (b.fin - b.debut + 1) * TAILLE_TUILE; // largeur en pixels
+      const largeur = (b.fin - b.debut + 1) * TAILLE_TUILE;
       this.ajouterPlateforme({ x: x, y: y, width: largeur, height: (b.ligneFin - b.ligneDebut + 1) * TAILLE_TUILE }); // la zone solide
 
       // Le dessin : seulement pour le DESSUS d'une plateforme (pas pour les rangées en dessous) et pas pour
@@ -484,7 +486,7 @@ export default class niveau2 extends niveau1 {
       }
       const estUneMarche = largeur <= 32 && x >= 448 && x < 608 && y >= 320 && y < 480; // une marche de l'escalier retiré
       if (tuileAuDessus == false && estUneMarche == false) {
-        this.dessinerPlateforme(x, y, largeur); // on dessine seulement le dessus
+        this.dessinerPlateforme(x, y, largeur);
       }
     });
   }
@@ -492,7 +494,7 @@ export default class niveau2 extends niveau1 {
   // Une plateforme = un rectangle invisible avec un corps statique (le décor est déjà dessiné par les tuiles)
   ajouterPlateforme(objet) {
     const zone = this.add.zone(objet.x + objet.width / 2, objet.y + objet.height / 2, objet.width, objet.height); // zone centrée
-    this.groupe_plateformes.add(zone); // elle devient solide
+    this.groupe_plateformes.add(zone);
     zone.unSens = objet.y < 640; // tout ce qui est au-dessus du sol (y < 640) : on traverse par le dessous
   }
 
@@ -504,15 +506,22 @@ export default class niveau2 extends niveau1 {
 
     this.groupe_notes = this.physics.add.group({ allowGravity: false }); // le groupe des notes, qui ne tombent pas
     POSITIONS_NOTES.forEach((position, i) => this.ajouterNote(position[0], position[1], i % 3, false)); // les 5 notes normales (couleur Do, Mi, Sol en alternance)
-    this.ajouterNote(NOTE_BONUS.x, NOTE_BONUS.y, 2, true); // la note dorée bonus, en haut
+    this.ajouterNote(NOTE_BONUS.x, NOTE_BONUS.y, 2, true);
     this.ajouterNote(NOTE_VOIE_HAUTE.x, NOTE_VOIE_HAUTE.y, 2, true); // 2e note dorée, au bout de la voie haute
 
-    // La porte de sortie (même image que le niveau 1, en rouge), fermée au début
-    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie_rouge", 0); // la porte, image 0 = fermée
-    this.porte.setDepth(3); // derrière les héros
-    this.porteOuverte = false; // la porte est fermée au départ
-    if (this.anims.exists("porte_ouvre_rouge") == false) { // on crée l'animation une seule fois
-      this.anims.create({ key: "porte_ouvre_rouge", frames: this.anims.generateFrameNumbers("porte_sortie_rouge", { start: 0, end: 5 }), frameRate: 8, repeat: 0 });
+    // La petite porte dorée du tileset, identique à celle du niveau 1.
+    const texturePorte = this.textures.get("ts_plateformes");
+    if (!texturePorte.has("porte_fermee")) {
+      texturePorte.add("porte_fermee", 0, 480, 312, 72, 76);
+    }
+    if (!texturePorte.has("porte_ouverte")) {
+      texturePorte.add("porte_ouverte", 0, 576, 392, 72, 76);
+    }
+    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 38, "ts_plateformes", "porte_fermee");
+    this.porte.setDepth(3);
+    this.porteOuverte = false;
+    if (!this.anims.exists("porte_coulisse_ouvre")) {
+      this.anims.create({ key: "porte_coulisse_ouvre", frames: [{ key: "ts_plateformes", frame: "porte_fermee" }, { key: "ts_plateformes", frame: "porte_ouverte" }], frameRate: 8, repeat: 0 });
     }
 
     this.creerPartition(); // la partition (verrouillée au départ)
@@ -523,22 +532,22 @@ export default class niveau2 extends niveau1 {
     const dessin = this.make.graphics({ add: false }); // un pinceau qui ne s'affiche pas (on fabrique juste des images)
     if (this.textures.exists("tex_note") == false) { // la note simple, créée une seule fois
       dessin.fillStyle(0xffffff); // couleur blanche (on la colorera après)
-      dessin.fillEllipse(10, 34, 17, 12); // la tête
-      dessin.fillRect(15, 6, 3, 28); // la hampe
-      dessin.fillTriangle(18, 6, 30, 20, 18, 16); // le crochet
+      dessin.fillEllipse(10, 34, 17, 12);
+      dessin.fillRect(15, 6, 3, 28);
+      dessin.fillTriangle(18, 6, 30, 20, 18, 16);
       dessin.generateTexture("tex_note", 32, 44); // on transforme le dessin en image réutilisable
       dessin.clear(); // on efface le pinceau pour la suite
     }
     if (this.textures.exists("tex_note_double") == false) { // la note double (dorée bonus), créée une seule fois
       dessin.fillStyle(0xffffff);
-      dessin.fillEllipse(9, 36, 15, 11).fillEllipse(29, 32, 15, 11); // deux têtes
-      dessin.fillRect(13, 8, 3, 29).fillRect(33, 4, 3, 29); // deux hampes
+      dessin.fillEllipse(9, 36, 15, 11).fillEllipse(29, 32, 15, 11);
+      dessin.fillRect(13, 8, 3, 29).fillRect(33, 4, 3, 29);
       dessin.fillTriangle(13, 8, 36, 4, 36, 12).fillTriangle(13, 8, 36, 12, 13, 16); // la barre qui les relie
       dessin.generateTexture("tex_note_double", 44, 48);
       dessin.clear();
     }
     if (this.textures.exists("tex_etincelle") == false) { // une petite étincelle pour les particules
-      dessin.fillStyle(0xffffff).fillCircle(4, 4, 4); // un petit rond blanc
+      dessin.fillStyle(0xffffff).fillCircle(4, 4, 4);
       dessin.generateTexture("tex_etincelle", 8, 8);
     }
     dessin.destroy(); // on supprime le pinceau, il n'est plus utile
@@ -548,8 +557,8 @@ export default class niveau2 extends niveau1 {
   // bonus = vrai pour une note dorée plus grosse qui rend un cœur.
   ajouterNote(x, y, indexCouleur, bonus) {
     const couleur = bonus == true ? 0xffd24a : COULEURS_NOTES[indexCouleur]; // doré pour le bonus, sinon la couleur de la liste
-    const note = this.groupe_notes.create(x, y, bonus == true ? "tex_note_double" : "tex_note"); // l'image de la note
-    note.setDepth(6).setTint(couleur); // devant le décor, colorée
+    const note = this.groupe_notes.create(x, y, bonus == true ? "tex_note_double" : "tex_note");
+    note.setDepth(6).setTint(couleur);
     note.bonus = bonus; // on retient si c'est une note bonus
     note.couleur = couleur; // et sa couleur (pour la copie animée au ramassage)
     if (bonus == true) {
@@ -564,14 +573,14 @@ export default class niveau2 extends niveau1 {
   // La PARTITION : le fragment à récupérer. Visible dès le début mais éteinte et « verrouillée » ; elle s'illumine
   // quand on a ramassé les notes (voir revelerPartition). Halo, rayons, étincelles et flèche d'indication la mettent en valeur.
   creerPartition() {
-    const x = PARTITION.x; // position de la partition
+    const x = PARTITION.x;
     const y = PARTITION.y;
 
     // les rayons de lumière qui tournent lentement derrière la partition (invisibles tant qu'elle est éteinte)
     // et le halo : ce sont des effets décoratifs, absents en mode économique (rayons et halo valent alors null)
-    this.rayons = null; // pas de rayons par défaut
-    this.halo_partition = null; // pas de halo par défaut
-    this.etincelles = null; // pas d'étincelles par défaut
+    this.rayons = null;
+    this.halo_partition = null;
+    this.etincelles = null;
     if (this.modeLeger == false) { // seulement si l'ordinateur est assez rapide
       this.rayons = this.add.graphics({ x: x, y: y }).setDepth(5.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0); // les rayons, invisibles au départ
       this.rayons.fillStyle(0xffe6a0, 0.35); // couleur dorée et transparente
@@ -584,9 +593,9 @@ export default class niveau2 extends niveau1 {
     }
 
     // la partition elle-même : éteinte (grise, transparente) et sans collision tant que les notes ne sont pas ramassées
-    this.partition = this.physics.add.image(x, y, "img_partition"); // l'image de la partition
+    this.partition = this.physics.add.image(x, y, "img_partition");
     this.partition.setDisplaySize(84, 84).setDepth(7).setAlpha(0.6).setTint(0x8fa0c0); // taille, profondeur, transparence, couleur froide
-    this.partition.body.setAllowGravity(false); // elle ne tombe pas
+    this.partition.body.setAllowGravity(false);
     this.partition.body.enable = false; // pas encore de collision : on ne peut pas la prendre
     this.echellePartition = this.partition.scaleX; // on retient sa taille normale, pour l'animation d'apparition
     const flottent = this.halo_partition === null ? [this.partition] : [this.partition, this.halo_partition]; // ce qui flotte
@@ -613,7 +622,7 @@ export default class niveau2 extends niveau1 {
     this.partitionActive = true; // la partition peut maintenant être prise
     this.partition.body.enable = true; // elle devient solide (on peut la toucher)
     this.partition.clearTint().setAlpha(1); // elle reprend ses vraies couleurs, opaque
-    this.partition.setScale(this.echellePartition * 0.2); // elle commence petite…
+    this.partition.setScale(this.echellePartition * 0.2);
     this.tweens.add({ targets: this.partition, scale: this.echellePartition * 1.15, duration: 700, ease: "Back.easeOut" }); // …et grandit avec un petit rebond
     this.etiquettePartition.setText("PARTITION !").setColor("#ffe9a8").setFontSize("17pt"); // le texte devient doré et plus grand
 
@@ -635,11 +644,11 @@ export default class niveau2 extends niveau1 {
         frequency: 60, // une nouvelle étincelle toutes les 60 ms
         quantity: 1 // une à la fois
       });
-      this.etincelles.setDepth(7.5); // devant la partition
+      this.etincelles.setDepth(7.5);
       this.effets.push(this.etincelles); // on les garde dans la liste des effets (mode économique)
     }
 
-    this.cameras.main.flash(400, 255, 232, 160); // éclair doré
+    this.cameras.main.flash(400, 255, 232, 160);
     this.afficherMessage("La PARTITION est apparue en haut à droite ! Va la chercher !", 6000); // le message pendant 6 s
     this.iconeFragment.setTint(0xffd98a); // l'icône du fragment (en haut à droite) devient dorée
     this.tweens.add({ targets: this.iconeFragment, scale: this.iconeFragment.scale * 1.25, duration: 500, yoyo: true, repeat: -1 }); // et pulse
@@ -653,13 +662,13 @@ export default class niveau2 extends niveau1 {
     }
     const vue = this.cameras.main.worldView; // la partie du monde qui est affichée à l'écran
     const sx = this.partition.x - vue.x; // position de la partition à l'écran, en x
-    const sy = this.partition.y - vue.y; // et en y
+    const sy = this.partition.y - vue.y;
     const visible = sx > 60 && sx < 1220 && sy > 90 && sy < 660; // la partition est-elle déjà à l'écran (avec une marge) ?
     if (visible == true) {
       this.indicateur.setVisible(false); // inutile de montrer la flèche si on voit la partition
       return;
     }
-    const cx = 640; // le centre de l'écran
+    const cx = 640;
     const cy = 360;
     const angle = Math.atan2(sy - cy, sx - cx); // la direction de la partition, depuis le centre de l'écran
     // on place la flèche sur le bord de l'écran, dans la direction de la partition
@@ -674,7 +683,7 @@ export default class niveau2 extends niveau1 {
     super.update(temps, delta); // le comportement du niveau 1 (héros, lampe, ennemis…)
     if (this.fini == false) { // tant que le niveau n'est pas fini
       this.emporterLesHeros(); // les héros suivent les plateformes mobiles
-      this.mettreAJourIndicateur(temps); // la flèche vers la partition
+      this.mettreAJourIndicateur(temps);
     }
   }
 
@@ -685,16 +694,16 @@ export default class niveau2 extends niveau1 {
     this.physics.add.collider(this.persos, this.groupe_fragiles, this.planchePietinee, (perso, plateforme) => this.peutMarcherSur(perso, plateforme), this); // marcher sur une planche la fait trembler
     // Les héros marchent sur les plateformes mobiles (sauf s'ils sont sur une échelle)
     this.physics.add.collider(this.persos, this.groupe_mobiles, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
-    this.physics.add.overlap(this.persos, this.groupe_notes, this.ramasserNote, null, this); // toucher une note la ramasse
-    this.physics.add.overlap(this.persos, this.partition, this.ramasserFragment, null, this); // toucher la partition la prend
+    this.physics.add.overlap(this.persos, this.groupe_notes, this.ramasserNote, null, this);
+    this.physics.add.overlap(this.persos, this.partition, this.ramasserFragment, null, this);
     this.physics.add.overlap(this.persos, this.porte, this.franchirPorte, null, this); // toucher la porte tente de la franchir
   }
 
   // Ramasser une note : elle disparaît, et on compte (une note dorée rend un cœur)
   ramasserNote(perso, note) {
-    note.disableBody(true, true); // la note disparaît
+    note.disableBody(true, true);
     if (note.lueur !== null && note.lueur.active) {
-      note.lueur.destroy(); // sa lueur disparaît aussi
+      note.lueur.destroy();
     }
     // petit effet : une copie de la note monte en grossissant et s'efface
     const copie = this.add.image(note.x, note.y, note.texture.key).setTint(note.couleur).setDepth(7).setScale(note.scale); // une copie de la note
@@ -702,13 +711,13 @@ export default class niveau2 extends niveau1 {
 
     if (note.bonus == true) {
       // la note dorée rend un cœur (sans dépasser le maximum)
-      this.vies = Math.min(this.vies + 1, this.viesMax); // +1 cœur, plafonné au maximum
+      this.vies = Math.min(this.vies + 1, this.viesMax);
       this.majCoeurs(); // on met à jour l'affichage des cœurs
       this.afficherMessage("Note dorée ! +1 cœur", 3000);
       return; // une note bonus ne compte pas dans les 3 notes requises
     }
 
-    this.notesRamassees += 1; // une note de plus
+    this.notesRamassees += 1;
     this.texteNotes.setText(Math.min(this.notesRamassees, NOTES_REQUISES) + " / " + NOTES_REQUISES); // le compteur en haut à droite
     if (this.notesRamassees == NOTES_REQUISES) {
       this.revelerPartition(); // les 3 notes sont là : la partition s'illumine
@@ -722,24 +731,24 @@ export default class niveau2 extends niveau1 {
     if (this.partitionActive == false || this.partitionPrise == true) {
       return; // pas encore active, ou déjà prise : on ne fait rien
     }
-    this.partitionPrise = true; // elle est maintenant prise
+    this.partitionPrise = true;
     this.fragmentRecupere = true; // le niveau sait que le fragment est gagné
     this.arreterSonPartition(); // le chœur s'arrête dès qu'on tient le fragment
-    partition.disableBody(true, true); // la partition disparaît
+    partition.disableBody(true, true);
     [this.etincelles, this.rayons, this.halo_partition, this.etiquettePartition, this.indicateur].forEach((objet) => { // tous les effets liés à la partition
       if (objet && objet.active) {
         if (objet.stop) {
           objet.stop(); // les étincelles arrêtent d'en produire
         }
-        objet.setVisible(false); // et on les cache
+        objet.setVisible(false);
       }
     });
-    this.cameras.main.flash(300, 255, 240, 190); // petit flash
-    this.porteOuverte = true; // la porte peut maintenant être franchie
-    this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre
-    this.tweens.killTweensOf(this.iconeFragment); // on arrête le pulsement de l'icône
-    this.iconeFragment.clearTint().setScale(1); // l'icône reprend sa couleur et sa taille normales
-    this.texteFragment.setText("1 / 1"); // le compteur de fragments passe à 1 / 1
+    this.cameras.main.flash(300, 255, 240, 190);
+    this.porteOuverte = true;
+    this.porte.anims.play("porte_coulisse_ouvre"); // la porte s'ouvre
+    this.tweens.killTweensOf(this.iconeFragment);
+    this.iconeFragment.clearTint().setScale(1);
+    this.texteFragment.setText("1 / 1");
     this.afficherMessage("PARTITION récupérée ! La porte est ouverte : rejoins-la !", 5000);
   }
 
@@ -751,7 +760,7 @@ export default class niveau2 extends niveau1 {
         this.afficherMessage(aide, 2500); // on explique ce qu'il faut faire
         this.prochaineAlertePorte = this.time.now + 3000; // le prochain message dans 3 s au moins
       }
-      return; // la porte reste fermée
+      return;
     }
     super.franchirPorte(); // la porte est ouverte : on reprend la fin de niveau du niveau 1
   }

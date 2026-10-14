@@ -66,13 +66,15 @@ export default class pause extends Phaser.Scene {
 
   // rend la main au niveau : les sons repartent, le menu pause se ferme
   reprendre() {
-    this.sound.resumeAll();
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_sortant"); // on quitte le menu pause
+    /* >>>>> AJOUT SON <<<<< */ this.scene.get("niveau1").reprendreSons(); // seuls les sons gelés par la pause repartent (cf. niveau1.js)
     this.scene.resume("niveau1");
     this.scene.stop();
   }
 
   // l'écran des commandes (cf. infos.js) par-dessus la pause ; il rend la main à la pause quand on appuie sur un bouton
   commandes() {
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // appui sur un bouton
     this.scene.launch("infos", { page: "commandes", depuis_pause: true });
     this.scene.bringToTop("infos");
     this.scene.pause();
@@ -80,6 +82,7 @@ export default class pause extends Phaser.Scene {
 
   // abandonne la partie : le niveau est arrêté, retour au menu principal
   retourMenu() {
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_sortant"); // on quitte le menu pause (et la partie)
     this.scene.get("niveau1").quitterPartie();
     this.scene.stop("niveau1");
     this.scene.start("menu");
@@ -93,11 +96,15 @@ export default class pause extends Phaser.Scene {
       this.reprendre();
       return;
     }
+    /* >>>>> AJOUT SON <<<<< */ const avant = this.choix;
     if (this.touches.some((t) => appuye(t.haut))) this.choix = (this.choix + OPTIONS.length - 1) % OPTIONS.length;
     if (this.touches.some((t) => appuye(t.bas))) this.choix = (this.choix + 1) % OPTIONS.length;
+    /* >>>>> AJOUT SON <<<<< */ if (this.choix !== avant) this.sound.play("son_touche_entrant"); // passage d'un bouton à un autre
     this.majSelection();
 
     const action = OPTIONS[this.choix].action;
-    if (action && this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) this[action]();
+    if (!this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) return;
+    if (action) this[action](); // chaque action joue son son (entrant, ou sortant si elle ferme la pause)
+    /* >>>>> AJOUT SON <<<<< */ else this.sound.play("son_touche_entrant"); // bouton sans action (classement) : on entend quand même l'appui
   }
 }

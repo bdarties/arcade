@@ -2,7 +2,7 @@ import * as fct from "./fonctions.js";
 
 /***********************************************************************/
 /** SYNOPSIS : deux pages d'histoire entre le menu et le niveau 1
-/** le bouton "frapper / tirer" (K ou F) passe à la page suivante, puis lance la partie
+/** le bouton "frapper / tirer" (K ou F) passe à la page suivante, puis lance la partie (en solo : l'écran "Jouer / Tutoriel", cf. choix_mode.js)
 /***********************************************************************/
 
 // les pages selon le nombre de joueurs (images chargées dans selection.js ; le texte est dessiné dans l'image)
@@ -46,10 +46,15 @@ export default class synopsis extends Phaser.Scene {
   // fondu au noir, puis la page suivante (ou le niveau 1 après la dernière)
   suivante() {
     this.verrou = true;
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_sortant"); // on quitte la page
     this.cameras.main.fadeOut(DUREE_FONDU);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.page++;
       if (this.page >= this.pages.length) {
+        if (this.registry.get("nb_joueurs") === 1) {
+          this.scene.start("choix_mode"); // la musique d'accueil continue
+          return;
+        }
         this.sound.get("accueil")?.stop(); // la musique d'accueil a continué pendant le synopsis
         this.scene.start("niveau1", { niveau: 1 });
         return;

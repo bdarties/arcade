@@ -15,7 +15,7 @@
 //
 // * LES CIBLES
 //   Une cible est n'importe quel objet Phaser avec un corps physique. Elle peut avoir une propriété hitPoints
-//   (son nombre de vies : 1 si elle n'en a pas). Chaque balle qui la touche lui retire 1 vie ; à 0, elle est détruite.
+//   (son nombre de vies : 1 si elle n'en a pas) et une fonction onHit(cible), appelée à chaque coup pour jouer un effet. Chaque balle qui la touche lui retire 1 vie ; à 0, elle est détruite.
 //   Le groupe de cibles (leur image, leur place, leurs vies) est créé par le monde qui en a besoin, pas ici.
 //
 // * COMMENT L'UTILISER
@@ -125,6 +125,11 @@ export function hitTarget(bullet, target) {
   explodeBullet(bullet);
 
   target.hitPoints = (target.hitPoints ?? 1) - 1;
+
+  // * Un effet visuel facultatif (voir CrateSystem) : joué AVANT la destruction, pour que la cible ait encore sa position.
+  // Il sait si c'était le coup fatal grâce à target.hitPoints (0 ou moins).
+  target.onHit?.(target);
+
   if (target.hitPoints <= 0) target.destroy();
 }
 
