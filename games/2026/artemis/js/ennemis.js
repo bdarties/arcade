@@ -8,6 +8,7 @@ const TAILLE_CASE = 32; // px (cf. niveau1.js)
 const NB_ENNEMIS = 4; // au niveau 1 ; un de plus tous les 3 niveaux, jusqu'à NB_ENNEMIS_MAX
 const NB_ENNEMIS_MAX = 7;
 const ECHELLE_ENNEMI = 1.25;
+const NIVEAUX_PAR_BONUS_PV = 10; // tous les 10 niveaux, les ennemis ont 1 PV de plus (un tir de laser de plus pour les tuer)
 
 // types d'ennemis (images chargées dans selection.js, de 32x32)
 // poids(niveau) : probabilité relative d'apparition (0 = n'apparait pas encore) ; corps : [largeur, hauteur, décalage x, décalage y] de la hitbox
@@ -109,7 +110,7 @@ export function creerEnnemi(scene, nom, x, y) {
   ennemi.body.setSize(type.corps[0], type.corps[1]); // hitbox sur le bas du corps (pixels du sprite d'origine)
   ennemi.body.setOffset(type.corps[2], type.corps[3]);
   ennemi.type = type;
-  ennemi.pv = type.pv;
+  ennemi.pv = type.pv + Math.floor(scene.niveau / NIVEAUX_PAR_BONUS_PV); // +1 PV aux niveaux 10 à 19, +2 aux niveaux 20 à 29...
   ennemi.chemin = [];
   ennemi.alerte = false;
   ennemi.prochain_chemin = 0;

@@ -246,6 +246,18 @@ export default class selection extends Phaser.Scene {
 
     // tout est chargé : on ouvre le menu (qui lance la partie, cf. menu.js)
     // (après le chargement des typographies, cf. POLICES dans fonctions.js : un fichier absent n'empêche pas le jeu de démarrer)
-    fct.chargerPolices().then(() => this.scene.start("menu"));
+    // raccourci pour la démo : "?niveau=7" dans l'adresse saute le menu et le synopsis et ouvre ce niveau ("&joueurs=2" pour le duo)
+    const parametres = new URLSearchParams(window.location.search);
+    const niveau = parseInt(parametres.get("niveau"), 10);
+    fct.chargerPolices().then(() => {
+      if (!(niveau >= 1)) {
+        this.scene.start("menu");
+        return;
+      }
+      this.registry.set("niveaux", {}); // une partie neuve, comme après le menu (cf. menu.js)
+      this.registry.set("pierres_lunaires", 0);
+      this.registry.set("nb_joueurs", parametres.get("joueurs") === "2" ? 2 : 1);
+      this.scene.start("niveau1", { niveau: niveau });
+    });
   }
 }
