@@ -391,7 +391,7 @@ export default class niveau1 extends Phaser.Scene {
     // Calques dessinés avec plateformes-coulisses-grid-50.png : plateformes, décors, passerelles
     if (tuilesPlateformes != null) {
       this.carte.createLayer("plateformes_tuiles", tuilesPlateformes).setDepth(2);
-      this.carte.createLayer("decorations", tuilesPlateformes).setDepth(4);
+      this.calque_decorations = this.carte.createLayer("decorations", tuilesPlateformes).setDepth(4);
       // Les passerelles fantômes : chaque tuile aura son propre alpha (voir afficherFantome)
       this.calque_passerelles = this.carte.createLayer("passerelles_temporaires", tuilesPlateformes).setDepth(5);
       this.calque_passerelles.forEachTile((tuile) => {
@@ -577,10 +577,33 @@ export default class niveau1 extends Phaser.Scene {
       ease: "Sine.easeInOut"
     });
 
-    // La porte (image 96 x 120), fermée au début : frame 0. On la pose sur la plateforme de sortie.
+    // Une seule porte : on reprend celle du décor pour qu'elle puisse s'ouvrir.
     const s = this.rectSortie;
-    this.porte = this.physics.add.staticSprite(s.x + s.width / 2, s.y + s.height - 16 - 60, "porte_sortie", 0);
-    this.porte.setDepth(3);
+    const centreX = s.x + s.width / 2;
+    const plateforme = this.groupe_plateformes.getChildren().find((sol) => centreX >= sol.body.left && centreX <= sol.body.right && sol.body.top >= s.y + s.height - 16);
+    const solY = plateforme ? plateforme.body.top : s.y + s.height - 16;
+    this.animationPorte = "porte_ouvre";
+    if (this.avecTuilesPlateformes) {
+      const texture = this.textures.get("ts_plateformes");
+      if (!texture.has("porte_fermee")) {
+        texture.add("porte_fermee", 0, 480, 312, 72, 76);
+        texture.add("porte_ouverte", 0, 576, 392, 72, 76);
+      }
+      // Supprime les 5 × 6 tuiles de la porte initiale, remplacées par le sprite.
+      for (let y = s.y / 16; y < s.y / 16 + 6; y++) {
+        for (let x = s.x / 16; x < s.x / 16 + 5; x++) {
+          this.calque_decorations.removeTileAt(x, y);
+        }
+      }
+      this.animationPorte = "porte_coulisse_ouvre";
+      if (!this.anims.exists(this.animationPorte)) {
+        this.anims.create({ key: this.animationPorte, frames: [{ key: "ts_plateformes", frame: "porte_fermee" }, { key: "ts_plateformes", frame: "porte_ouverte" }], frameRate: 8, repeat: 0 });
+      }
+      this.porte = this.physics.add.staticSprite(centreX + 4, solY - 38, "ts_plateformes", "porte_fermee");
+    } else {
+      this.porte = this.physics.add.staticSprite(centreX, solY - 60, "porte_sortie", 0);
+    }
+    this.porte.setDepth(4);
     this.porteOuverte = false;
   }
 
@@ -1448,7 +1471,7 @@ export default class niveau1 extends Phaser.Scene {
     this.arreterSonPartition();
     partition.disableBody(true, true); // le parchemin disparaît
     this.porteOuverte = true;
-    this.porte.anims.play("porte_ouvre"); // la porte s'ouvre
+    this.porte.anims.play(this.animationPorte); // la porte s'ouvre
     this.iconeFragment.clearTint();
     this.texteFragment.setText("1 / 1");
     this.afficherMessage("Partition récupérée ! La porte de sortie est ouverte.", 4000);
