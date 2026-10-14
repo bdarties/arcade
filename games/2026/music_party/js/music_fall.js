@@ -20,7 +20,7 @@ const ECART_LIGNES = 14;             // écart entre les lignes de la portée
 const CM_RATE = 60;                  // score si on dépasse la ligne
 const X_DUO = [440, 840];            // position du perso de J1 et de J2 en duo
 const X_SOLO = 640;                  // position du perso en solo
-const ECHELLE_PERSO = 3;             // le perso fait 32 px, on le grossit x3
+const ECHELLE_PERSO = 2;             // le perso fait 32 px, on le grossit x3
 const POLICE = '"Arial Black", Arial';
 
 // les 3 essais, de plus en plus durs
@@ -123,8 +123,7 @@ export default class music_fall extends Phaser.Scene {
   // ===========================================================================
   creerJoueur(perso, i) {
     var x = this.solo ? X_SOLO : X_DUO[i];
-    var ecartNote = i == 0 ? 40 : -40; // la note est à coté du perso
-
+    var ecartNote = i == 0 ? 70 : -70; // la note est à coté du perso
     // la note, de la couleur du perso. Son bas est au niveau des pattes :
     // c'est ce point qu'on mesure
     var note = this.add
@@ -143,13 +142,12 @@ export default class music_fall extends Phaser.Scene {
       .setAlpha(0.3)
       .setDepth(1);
 
+    // le perso choisi : image 0 de sa spritesheet de marche (debout), pieds en bas
     var player = this.add
-      .sprite(x, Y_DEPART, perso.texture)
+      .sprite(x, Y_DEPART, perso.marche, 0)
       .setScale(ECHELLE_PERSO)
-      .setOrigin(0.5, perso.piedRepos)
-      .setDepth(PROFONDEUR.perso);
-    player.anims.play(perso.anim);
-    if (i == 1) player.setFlipX(true); // J2 regarde vers le milieu
+      .setOrigin(0.5, 1)
+      .setDepth(PROFONDEUR.perso);    if (i == 1) player.setFlipX(true); // J2 regarde vers le milieu
 
     return {
       perso: perso,
@@ -177,12 +175,9 @@ export default class music_fall extends Phaser.Scene {
     // pour chaque joueur : la tete de son perso, J1/J2, et son total en cm
     this.textesScore = this.joueurs.map((joueur) => {
       var tete = this.add
-        .image(joueur.x - 60, 82, joueur.perso.texture, 0)
-        .setCrop(0, 0, 35, 20) // on ne garde que le haut de l'image = la tete
-        .setScale(2.4)
+        .image(joueur.x - 60, 70, joueur.perso.tete) // la tete du perso choisi
+        .setScale(0.7)
         .setDepth(PROFONDEUR.texte);
-      if (joueur.i == 1) tete.setFlipX(true);
-
       this.add
         .text(joueur.x - 60, 94, joueur.perso.etiquette, { ...style, fontSize: "14px", strokeThickness: 4 })
         .setOrigin(0.5, 0)
@@ -302,9 +297,6 @@ fermerPanneau() {
     this.joueurs.forEach((joueur) => {
       joueur.etat = "chute";
       joueur.vitesse = 0;
-      joueur.sprite.anims.stop();
-      joueur.sprite.setFrame(joueur.perso.imagemusic_fall); // image "je tombe"
-      joueur.sprite.setOrigin(0.5, joueur.perso.piedmusic_fall);
     });
   }
 
@@ -369,17 +361,7 @@ fermerPanneau() {
       this.tweens.add({ targets: this.rideau, y: -320, duration: 900, ease: "Quad.easeIn" });
       attente = 1000;
     }
-    this.time.delayedCall(attente, () => this.decoller());
-  }
-
-  // le perso et sa note remontent : il ne reste que le tampon
-  decoller() {
-    this.joueurs.forEach((joueur) => {
-      if (joueur.etat != "tamponne") return;
-      this.tweens.add({ targets: [joueur.sprite, joueur.note], y: "-=70", alpha: 0.4, duration: 350, ease: "Quad.easeOut" });
-    });
-    this.time.delayedCall(450, () => this.afficherMesures());
-  }
+  this.time.delayedCall(attente, () => this.afficherMesures());  }
 
   afficherMesures() {
     this.joueurs.forEach((joueur) => {
