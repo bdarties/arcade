@@ -3,23 +3,32 @@ import { markStarCollected } from './StarSystem.js';
 var nombreEtoiles = 0;
 var etoilesPrises = [];
 
+/** Crée l'étoile à (x, y) et la rend ramassable par le joueur. Renvoie le sprite, ou null si elle est déjà prise. */
 export function RecolteEtoiles(player, scene, x, y) {
   var id = scene.mapKey + '_' + x + '_' + y;
 
   if (etoilesPrises.includes(id)) {
-    return;
+    return null;
   }
 
   var etoile = scene.physics.add.sprite(x, y, 'etoile');
+  etoile.starId = id;
 
   scene.physics.add.overlap(player, etoile, function () {
-    if (!etoile.active) {
-      return;
-    }
-
-    etoilesPrises.push(id);
-    nombreEtoiles += 1;
-    markStarCollected(scene.getWorldName(), id); // compteur global du jeu (StarSystem)
-    etoile.disableBody(true, true);
+    recolterEtoile(scene, etoile);
   });
+
+  return etoile;
+}
+
+/** Ramasse cette étoile : elle disparaît et compte dans le total du jeu. Sert au ramassage et aux récompenses (énigme). */
+export function recolterEtoile(scene, etoile) {
+  if (!etoile.active) {
+    return;
+  }
+
+  etoilesPrises.push(etoile.starId);
+  nombreEtoiles += 1;
+  markStarCollected(scene.getWorldName(), etoile.starId); // compteur global du jeu (StarSystem)
+  etoile.disableBody(true, true);
 }

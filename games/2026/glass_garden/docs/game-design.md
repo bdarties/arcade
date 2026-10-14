@@ -186,7 +186,7 @@ Le joueur doit d'abord **trouver l'arme**, placée plus loin sur la map. Il peut
 
 >  **À préciser :** cherche-t-on l'étoile au hasard, ou un indice désigne-t-il la bonne boîte ?
 
-**À faire :** ramassage de l'arme · boîtes destructibles · réutilisation du système de tir du monde 2.
+**Déjà fait :** les caisses cassables (objets Tiled `crate`, section 9). **À faire :** ramassage de l'arme · placer les caisses dans la carte du monde 4, dont une cache l'étoile · réutilisation du système de tir du monde 2.
 
 ---
 
@@ -343,7 +343,10 @@ Une **musique d'ambiance par monde**, en boucle, et quelques effets sonores (mir
 
 ```
 glass_garden/
-├── index.html            charge Phaser (CDN) puis src/main.js
+├── index.html            charge Phaser (CDN) puis index.js (pour les tests en local ; la borne n'utilise pas ce fichier)
+├── index.js              point d'entrée, exporte `game` : c'est CE fichier que charge le lanceur de la borne
+├── game.json             fiche du jeu pour la borne (titre, description, genre, auteurs)
+├── presentation.png      image de présentation (800 x 450, moins de 200 Ko)
 ├── README.md
 ├── assets/
 │   ├── images/
@@ -353,12 +356,11 @@ glass_garden/
 │   ├── audio/            music/, sfx/                          (prévu)
 │   └── fonts/                                                  (prévu)
 ├── src/
-│   ├── main.js           point d'entrée
 │   ├── config.js         configuration Phaser (1280 x 720, physique)
 │   ├── scenes/           PreloadScene, MenuScene, WorldScene (base des mondes), HubScene, World1Scene, UIScene
 │   │                     prévu : mondes 2 à 5…
 │   ├── systems/          InputManager, ControlMode, TimerSystem, SaveSystem, MirrorSystem, TintSystem, PaletteSystem (en réserve),
-│   │                     StarSystem, RecolteEtoiles, fonctionTir
+│   │                     StarSystem, RecolteEtoiles, fonctionTir, CrateSystem
 │   │                     prévu : Audio, Dialogue…
 │   ├── entities/         Player, Enemy, Collectible…            (prévu)
 │   ├── ui/               boutons, barres, HUD                   (prévu)
@@ -516,7 +518,7 @@ Entrées (clavier et borne) · Chronomètre global · High score · Dialogues ·
 
 Le joueur tire une balle dans la **dernière direction regardée** (haut, bas, gauche, droite), avec `O` en arcade et `A` en mode pc. Le code est dans `src/systems/fonctionTir.js` et ne contient que la vie d'une balle : elle apparaît devant le joueur, vole en jouant son animation, puis **explose** quand elle touche un mur ou une cible, ou toute seule après `BULLET.LIFETIME_MS` (pour qu'aucune balle ne reste en mémoire). Le tir est branché dans `WorldScene` : **tous les mondes tirent pour l'instant**, pour tester.
 
-- **Les cibles** : tout objet avec un corps physique et, éventuellement, une propriété `hitPoints` (1 si absente). Chaque balle lui retire une vie ; elle est détruite à zéro. Le monde qui a des cibles (le monde 4) les crée et appelle `addTargetCollision`.
+- **Les cibles** : tout objet avec un corps physique et, éventuellement, une propriété `hitPoints` (1 si absente). Chaque balle lui retire une vie ; elle est détruite à zéro. Les cibles sont des **caisses** (`CrateSystem.js`) : un objet Tiled de classe `crate`, avec une propriété `hitPoints` facultative, posé dans le calque `objects`. Elles bloquent le joueur et se cassent aux tirs, avec des effets visuels (éclat blanc à chaque coup, gerbe d'éclats de bois et léger tremblement de l'écran à la casse, réglables dans `CRATE.VFX`). Tous les mondes les gèrent, et une carte sans caisse n'en a pas.
 - **L'image** `balle.png` est une bande de 33 images de 16 x 16 pixels : vol (0 à 5), explosion (6 à 15), et un rayon inutilisé (16 à 32).
 - Les réglages (vitesse, portée, animations) sont dans `BULLET` (`constants.js`).
 

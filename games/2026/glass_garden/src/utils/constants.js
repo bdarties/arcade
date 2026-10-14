@@ -11,6 +11,10 @@ export const SCENES = {
   MENU: 'MenuScene',
   HUB: 'HubScene',
   WORLD_1: 'World1Scene',
+  WORLD_2: 'World2Scene',
+  WORLD_3: 'World3Scene',
+  WORLD_4: 'World4Scene',
+  WORLD_5: 'World5Scene',
   UI: 'UIScene',
 };
 
@@ -23,6 +27,10 @@ export const NORMAL_WORLD = 'hub';
 export const WORLDS = {
   hub: SCENES.HUB,
   world_1: SCENES.WORLD_1,
+  world_2: SCENES.WORLD_2,
+  world_3: SCENES.WORLD_3,
+  world_4: SCENES.WORLD_4,
+  world_5: SCENES.WORLD_5,
 };
 
 // * La couleur d'origine de l'eau principale dans les images (elle sert de référence aux palettes ci-dessous)
@@ -87,7 +95,37 @@ export const TINTS = {
 // Un monde absent de cette table garde ses couleurs d'origine : c'est le cas du jardin (le monde normal).
 // TODO(équipe): définir la teinte de chaque monde quand les mondes seront créés (monde 1 = la nuit)
 export const WORLD_TINTS = {
-  world_1: 'magic', // ! TEST : remettre 'night' (le monde 1 est la nuit)
+};
+
+// * Images recolorées d'un monde (fabriquées par outils/recolorer.py) : le tileset de construction et l'eau animée
+// remplacent les originaux dans ce monde. Un monde absent de cette table garde les images d'origine.
+// Pas de teinte (WORLD_TINTS) en plus : elle multiplierait une seconde fois les couleurs.
+export const WORLD_ART = {
+  world_1: {
+    suffix: '@nuit',
+    tileset: 'assets/images/tilesets/tileset_garden_nuit.png',
+    water: 'assets/images/sprites/water_spritesheet_nuit.png',
+  },
+  world_2: {
+    suffix: '@reve', // ajouté aux clés des textures et des animations de ce monde
+    tileset: 'assets/images/tilesets/tileset_garden_reve.png',
+    water: 'assets/images/sprites/water_spritesheet_reve.png',
+  },
+  world_3: {
+    suffix: '@automne',
+    tileset: 'assets/images/tilesets/tileset_garden_automne.png',
+    water: 'assets/images/sprites/water_spritesheet_automne.png',
+  },
+  world_4: {
+    suffix: '@apocalypse',
+    tileset: 'assets/images/tilesets/tileset_garden_apocalypse.png',
+    water: 'assets/images/sprites/water_spritesheet_apocalypse.png',
+  },
+  world_5: {
+    suffix: '@magie',
+    tileset: 'assets/images/tilesets/tileset_garden_magie.png',
+    water: 'assets/images/sprites/water_spritesheet_magie.png',
+  },
 };
 
 // * Clés des assets : le nom sous lequel Phaser retrouve un fichier chargé
@@ -95,10 +133,16 @@ export const ASSETS = {
   PLAYER_1: 'player_1',
   HUB_MAP: 'hub_map',
   WORLD_1_MAP: 'world_1_map',
+  WORLD_2_MAP: 'world_2_map',
+  WORLD_3_MAP: 'world_3_map',
+  WORLD_4_MAP: 'world_4_map',
+  WORLD_5_MAP: 'world_5_map',
   TILESET_GARDEN: 'tileset_garden', // la construction : sol, murs, eau
   TILESET_DECO: 'tileset_deco', // les décors
   WATER: 'water',
   MIRROR: 'mirror',
+  NPC_ENIGME: 'pnj_enigme', // le personnage de l'énigme (voir NPCS)
+  BUBBLE: 'bulle', // les bulles du monde magique (voir BUBBLES)
 };
 
 // * Les cartes de chaque monde : la clé Phaser et le fichier JSON exporté de Tiled. Le nom du monde est celui de WORLDS.
@@ -107,6 +151,10 @@ export const ASSETS = {
 export const WORLD_MAPS = {
   hub: { key: ASSETS.HUB_MAP, path: 'assets/maps/hub_test.json' },
   world_1: { key: ASSETS.WORLD_1_MAP, path: 'assets/maps/monde_1.json' },
+  world_2: { key: ASSETS.WORLD_2_MAP, path: 'assets/maps/monde_2.json' },
+  world_3: { key: ASSETS.WORLD_3_MAP, path: 'assets/maps/monde_3.json' },
+  world_4: { key: ASSETS.WORLD_4_MAP, path: 'assets/maps/monde_4.json' },
+  world_5: { key: ASSETS.WORLD_5_MAP, path: 'assets/maps/monde_5.json' },
 };
 
 // * Les deux façons de jouer : « arcade » (joystick et boutons de la borne) ou « pc » (clavier).
@@ -165,6 +213,32 @@ export const PLAYER = {
   HITBOX: { WIDTH: 20, HEIGHT: 16, OFFSET_X: 6, OFFSET_Y: 16 },
 };
 
+// * Le dash (voir DashSystem.js) : une courte accélération dans la direction du déplacement, qui ralentit jusqu'à
+// s'arrêter, avec une pause entre deux dash.
+export const DASH = {
+  DISTANCE: 135, // la distance parcourue, en pixels (toujours la même, quelle que soit la courbe de vitesse)
+  DURATION_MS: 220, // durée du dash
+  EASE_POWER: 1.5, // la forme du ralentissement : 0 = vitesse constante ; plus c'est grand, plus il part fort puis freine tôt
+  COOLDOWN_MS: 500, // pause avant de pouvoir recommencer, comptée à partir de la fin du dash
+  STRETCH: { ALONG: 1.4, ACROSS: 0.75 }, // l'étirement du personnage au départ du dash : plus long dans le sens du mouvement, plus fin en travers (1 = normal)
+  // * La poussière soulevée au départ et à l'arrivée du dash : de petits carrés beiges qui s'éparpillent et s'estompent
+  DUST: {
+    TEXTURE: 'dust_puff', // texture générée par le code
+    SIZE: 4, // côté d'un carré, en pixels
+    COLOR: 0xe6dcc4,
+    COUNT_START: 7, // nombre de nuages au départ, derrière le joueur
+    COUNT_END: 5, // nombre de nuages à l'arrivée
+    LIFESPAN_MS: 420,
+    SPEED: { MIN: 25, MAX: 70 }, // la vitesse d'éjection, en pixels par seconde
+    ALPHA: 0.75,
+    SCALE: { START: 1, END: 2.4 },
+    FEET_OFFSET: 13, // la poussière part des pieds : cette distance sous le centre du joueur
+  },
+  // Les images fantômes laissées derrière le joueur : une par image (INTERVAL_MS = 16 ≈ 60 par seconde), qui reprennent la forme
+  // étirée du joueur, passent du blanc-bleuté au bleu au fil du dash, rétrécissent un peu et s'estompent.
+  GHOST: { INTERVAL_MS: 16, FADE_MS: 280, ALPHA: 0.55, TINT_START: 0xe0f6ff, TINT_END: 0x4f95ff, SHRINK: 0.88 },
+};
+
 // Distance (en pixels) à laquelle le joueur peut interagir avec un miroir
 export const INTERACT_DISTANCE = 64;
 
@@ -182,10 +256,44 @@ export const MIRROR_VANISH = { KEY: 'mirror_vanish', FIRST_FRAME: 0, LAST_FRAME:
 // Durée d'affichage d'un message d'interaction, en millisecondes
 export const MESSAGE_DURATION_MS = 2000;
 
+// * Les personnages non joueurs (PNJ) : posés dans Tiled par un objet « point » de classe « npc », dont le NOM est la clé de cette table.
+// Le point marque l'endroit où le personnage a les pieds (le bas de l'image, centré). La zone de blocage est un petit rectangle aux pieds.
+export const NPCS = {
+  enigme: {
+    key: ASSETS.NPC_ENIGME,
+    image: 'assets/images/sprites/pnj_enigme.png',
+    hitbox: { WIDTH: 36, HEIGHT: 14 }, // la zone qui bloque le joueur, en pixels
+  },
+};
+
 // * Ordre d'affichage : plus la valeur est grande, plus l'élément est devant
 export const DEPTH = {
   ABOVE_PLAYER: 10, // calque decor_above
   UI: 20,
+  DIALOGUE: 30, // la boîte de dialogue des personnages (devant l'interface)
+  TRANSITION: 100, // le calque noir de la transition entre deux mondes (devant tout)
+};
+
+// * Transition entre deux mondes : un « iris », un cercle noir qui se referme sur le miroir pris puis s'ouvre sur le miroir d'arrivée (voir TransitionSystem.js)
+export const TRANSITION = {
+  IRIS_CLOSE_MS: 600, // durée de la fermeture du cercle
+  IRIS_CLOSE_EASE: 'Quad.easeIn', // le cercle accélère en se refermant
+  IRIS_OPEN_MS: 600, // durée de l'ouverture du cercle
+  IRIS_OPEN_EASE: 'Quad.easeOut', // le cercle ralentit en s'ouvrant
+  COLOR: 0x000000,
+};
+
+// * Fumée de cheminée : des objets de classe « smoke » posés dans Tiled (point = le haut de la cheminée)
+export const SMOKE = {
+  TEXTURE: 'smoke_puff', // texture générée par le code (carré de PUFF_SIZE pixels)
+  PUFF_SIZE: 4,
+  COLOR: 0xc9ced8,
+  LIFESPAN_MS: 2600, // durée de vie d'une bouffée
+  FREQUENCY_MS: 420, // une bouffée toutes les ... millisecondes
+  RISE_SPEED: { MIN: 14, MAX: 24 }, // pixels par seconde vers le haut
+  DRIFT_X: { MIN: 2, MAX: 10 }, // dérive vers la droite (vent léger)
+  START_ALPHA: 0.7,
+  SCALE: { START: 1, END: 2.6 },
 };
 
 // Couleurs
@@ -205,6 +313,47 @@ export const FONT_SIZE = {
   STARS: '28px',
   VICTORY: '48px',
   CONTROL_MODE: '20px',
+};
+
+// * Boîte de dialogue des personnages (voir DialogueSystem.js) : un cadre en parchemin en bas de l'écran.
+// Les textes des personnages sont dans src/data/dialogues.js.
+export const DIALOGUE = {
+  INTERACT_DISTANCE: 90, // à quelle distance du personnage on peut lui parler, en pixels
+  BOX: { WIDTH: 1100, HEIGHT: 170, RIDDLE_HEIGHT: 310, BOTTOM_MARGIN: 40, RADIUS: 26, PADDING: 36, BORDER: 5 }, // RIDDLE_HEIGHT : le cadre agrandi d'une énigme
+  MAX_CHOICES: 4, // nombre de réponses d'une énigme (en 2 colonnes)
+  FONT_SIZE: '34px',
+  TYPE_DELAY_MS: 28, // délai entre deux lettres (effet machine à écrire)
+  COLORS: { PAPER: 0xf7e8c2, BORDER: 0xb98a3f, TEXT: '#7a4a12', TAG: 0x7a4a12, TAG_TEXT: '#f7e8c2' },
+};
+
+// * Les bulles du monde magique (voir BubbleSystem.js) : posées dans Tiled par des objets « point » de classe « bubble »
+// (le point est le CENTRE de la bulle). Le joueur les éclate en les touchant ; quand elles sont toutes éclatées,
+// l'étoile du monde apparaît. L'image est une bande de 32 x 32 : la bulle entière (image 0), puis son éclatement.
+export const BUBBLES = {
+  KEY: ASSETS.BUBBLE,
+  IMAGE: 'assets/images/sprites/bulle.png',
+  FRAME_SIZE: 32,
+  BURST: { KEY: 'bubble_burst', FIRST_FRAME: 1, LAST_FRAME: 6, FRAME_RATE: 16 }, // l'animation d'éclatement
+  // La bulle flotte et dérive doucement autour de son point : un balancement horizontal et un vertical de rythmes différents
+  // (ça trace une petite boucle irrégulière). Amplitudes en pixels, vitesses en radians par seconde (6,28 = un tour par seconde).
+  FLOAT: { AMPLITUDE_X: 10, AMPLITUDE_Y: 6, SPEED_X: 1.3, SPEED_Y: 2.1 },
+  HITBOX_RADIUS: 12, // la zone qui éclate la bulle au contact du joueur
+  DEPTH: 9, // devant le joueur, derrière le décor du dessus (10)
+  STAR_POP: { DURATION_MS: 700, EASE: 'Back.easeOut' }, // l'étoile apparaît au centre de la carte en grossissant, avec un petit rebond
+};
+
+// * L'étoile qui saute de la tête du personnage quand l'énigme est résolue (voir StarBounce.js).
+// Une direction au hasard (un chemin libre), puis des rebonds de plus en plus petits, comme une vraie balle.
+export const STAR_BOUNCE = {
+  HEAD_HEIGHT_RATIO: 0.85, // la hauteur de la tête, en part de la hauteur de l'image du personnage
+  LAUNCH_SPEED: 300, // la vitesse vers le haut au départ, en pixels par seconde
+  GRAVITY: 1100, // pixels par seconde au carré
+  RESTITUTION: 0.55, // chaque rebond repart avec 55 % de la vitesse de l'impact
+  MIN_BOUNCE_SPEED: 90, // en dessous, l'étoile ne rebondit plus : elle s'arrête
+  SPEED: { MIN: 85, MAX: 115 }, // la vitesse de déplacement au sol, en pixels par seconde (la distance reste courte)
+  SPIN_DEG_PER_S: 300, // l'étoile tourne sur elle-même en l'air
+  DEPTH: 9, // devant le joueur, derrière le décor du dessus (10)
+  DIRECTIONS: 24, // combien de directions on essaie (réparties sur le cercle) pour trouver un chemin libre
 };
 
 // * Modes de jeu : chacun a son propre meilleur temps
@@ -242,3 +391,25 @@ export const BULLET = {
 };
 // Marge (en pixels) entre les éléments d'interface et le bord de l'écran
 export const UI_MARGIN = 24;
+
+// * Les caisses : des objets Tiled de classe « crate », que le joueur casse en tirant dessus (voir CrateSystem.js).
+// ? boite1.png est un nom provisoire : le jour où il change, il n'y a que PATH à modifier.
+export const CRATE = {
+  KEY: 'crate', // la clé Phaser de la texture
+  PATH: 'assets/images/sprites/boite1.png',
+  FRAME_SIZE: 32, // l'image fait 32 x 32 pixels, comme une tuile
+  TILED_CLASS: 'crate', // la classe de l'objet dans Tiled
+  DEFAULT_HIT_POINTS: 1, // nombre de tirs pour la casser, si l'objet Tiled n'a pas de propriété « hitPoints »
+  // * Effets visuels (VFX). Éclat blanc à chaque coup qui ne casse pas, gerbe d'éclats de bois quand elle casse.
+  VFX: {
+    DEBRIS_KEY: 'crate_debris', // texture générée par le code : un petit carré blanc, coloré par les teintes ci-dessous
+    DEBRIS_SIZE: 6, // en pixels
+    DEBRIS_COLORS: [0x8a5a2b, 0xb8743a, 0xd9a45c, 0xe8c27a], // des bruns de bois
+    DEBRIS_COUNT: 20, // nombre d'éclats
+    DEBRIS_SPEED: { MIN: 50, MAX: 190 }, // pixels par seconde
+    DEBRIS_LIFETIME_MS: { MIN: 350, MAX: 650 },
+    DEBRIS_DEPTH: 15, // devant les calques et le joueur
+    HIT_FLASH_MS: 70, // durée de l'éclat blanc
+    SHAKE: { DURATION_MS: 90, INTENSITY: 0.004 }, // léger tremblement de l'écran quand la caisse casse
+  },
+};
