@@ -1,5 +1,6 @@
 import * as fct from "./fonctions.js";
 import * as salle_safe from "./salle_safe.js";
+import * as biomes from "./biomes.js";
 
 /***********************************************************************/
 /** VARIABLES GLOBALES
@@ -95,10 +96,8 @@ export default class selection extends Phaser.Scene {
     this.load.image("img_titre_game_over", "./assets/ui/game_over.png");
 
     // cailloux (32x32)
-    this.load.image("img_caillou_1", "./assets/rock1_3_no_shadow.png");
-    this.load.image("img_caillou_2", "./assets/rock5_3_no_shadow.png");
-    this.load.image("img_caillou_lune_1", "./assets/map/caillou_lune.png"); // cailloux lunaires à cristaux roses
-    this.load.image("img_caillou_lune_2", "./assets/map/caillou_lune2.png");
+    // quatre par biome, dans la couleur du biome (cf. biomes.js)
+    biomes.BIOMES.forEach((biome) => biomes.cailloux(biome).forEach(({ cle, fichier }) => this.load.image(cle, fichier)));
 
     // ennemis (cf. ennemis.js) : slime et aliens, 8 frames de 32x32 ; l'alien vert a en plus 6 frames de tir
     this.load.spritesheet("sprite_alien_vert", "./assets/enemy/alien_vert.png", { frameWidth: 32, frameHeight: 32 });
