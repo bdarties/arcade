@@ -77,7 +77,7 @@ export default class selection extends Phaser.Scene {
     // menu (cf. menu.js et infos.js) : fond, logo et boutons
     this.load.image("img_fond_menu", "./assets/ui/background_artemis.jpg");
     this.load.image("img_logo", "./assets/ui/logo_artemis.png");
-    ["solo", "duo", "tuto", "controles", "credits"].forEach((nom) => {
+    ["solo", "duo", "jouer", "tuto", "controles", "credits"].forEach((nom) => {
       this.load.image("img_bouton_" + nom, "./assets/ui/bouton_" + nom + ".png");
     });
 

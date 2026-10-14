@@ -2,9 +2,11 @@ import * as fct from "./fonctions.js";
 import * as pierres from "./pierres.js";
 import * as ennemis from "./ennemis.js";
 import * as biomes from "./biomes.js";
+import { STATUE } from "./salle_safe.js";
 
 /***********************************************************************/
 /** TUTORIEL : un niveau guidé (niveau1.js lancé avec { tuto: true }, un seul joueur)
+/** deux parties : la grotte (déplacement, pioche, laser, ennemi), puis la salle safe (statue), avant la vraie partie au niveau 1
 /** une bulle de consigne suit le joueur ; elle passe à la consigne suivante quand l'action est faite
 /** les lettres des boutons sont celles inscrites sur la borne (ETIQUETTES dans fonctions.js)
 /***********************************************************************/
@@ -16,10 +18,11 @@ const MARGE = 14; // px autour du texte, dans la bulle
 const HAUTEUR_QUEUE = 12; // px : la petite pointe qui montre le joueur
 const DECALAGE_BULLE = 40; // px : la pointe est à cette hauteur au-dessus du centre du joueur
 const DELAI_REUSSITE = 500; // ms : le cadre reste vert avant la consigne suivante
-const DELAI_AVANT_SORTIE = 900; // ms : après la dernière consigne, on laisse le temps de lire
 const DISTANCE_A_PARCOURIR = 150; // px (étape 1)
 const STAMINA_SPRINT = 90; // la stamina est à 100 au repos : sous cette valeur, le joueur a sprinté
 const PV_MINI = 40; // le joueur ne meurt pas dans le tutoriel : il est soigné sous ce seuil
+const PV_ARRIVEE_SAFE = 50; // PV en arrivant dans la salle safe : blessé, pour que la statue ait quelque chose à soigner
+const PORTEE_STATUE = 56; // px : comme la bulle de la statue (cf. offrande.js)
 
 const lettre = (action) => fct.ETIQUETTES[action];
 
@@ -69,11 +72,43 @@ const ETAPES = [
     },
     fait: (scene, t) => !t.ennemi.active,
     cible: (scene, t) => (t.ennemi.active ? t.ennemi : null)
+  },
+  {
+    texte: () => "Une échelle est apparue !\nApproche-toi, bouton " + lettre("interagir") + " : descends",
+    debut: (scene, t, j) => {
+      // le trou est normalement caché sous un caillou : ici on le pose à découvert, près du joueur
+      const place = trouverPlace(scene, j, 150, 250);
+      scene.trou.setPosition(place.x, place.y).setVisible(true);
+      scene.trou.refreshBody();
+      scene.trou.body.setSize(16, 16);
+      scene.etat.trou = { x: place.x, y: place.y };
+    },
+    fait: (scene) => scene.changement_niveau,
+    cible: (scene) => scene.trou
+  },
+  // seconde partie (niveau1.js relancé avec { tuto_safe: true }) : la vraie salle safe
+  {
+    safe: true,
+    texte: () => "Salle sûre : aucun ennemi ici.\nAvance jusqu'à la statue",
+    debut: (scene, t, j) => {
+      j.pv = PV_ARRIVEE_SAFE;
+      scene.registry.set("pierres_lunaires", Math.max(1, pierres.nombrePierres(scene))); // de quoi faire une offrande
+    },
+    fait: (scene, t, j) => distanceStatue(j) <= PORTEE_STATUE,
+    cible: () => ({ x: STATUE.centre_x, y: STATUE.rect[1] })
+  },
+  {
+    texte: () => "Bouton " + lettre("interagir") + " : offre une pierre lunaire\nà la statue pour regagner PV et stamina",
+    debut: (scene, t) => { t.pierres_debut = pierres.nombrePierres(scene); },
+    fait: (scene, t) => pierres.nombrePierres(scene) < t.pierres_debut
+  },
+  {
+    texte: () => "Prends l'échelle à droite :\nla vraie partie commence",
+    fait: (scene) => scene.changement_niveau,
+    cible: (scene) => scene.trou
   }
 ];
-
-// étape de fin, hors de la liste : elle n'a pas d'action à valider
-const texteFin = () => "Tutoriel terminé\nBouton " + lettre("frapper_tirer") + " : retour au menu";
+const PREMIERE_ETAPE_SAFE = ETAPES.findIndex((etape) => etape.safe);
 
 // crée la bulle de consigne et la flèche, et lance la première étape
 export function creerTutoriel(scene) {
@@ -85,15 +120,13 @@ export function creerTutoriel(scene) {
   const fleche = scene.add.triangle(0, 0, 0, 0, 16, 0, 8, 11, 0xffffff).setDepth(profondeur).setVisible(false);
 
   scene.tuto_etat = {
-    etape: -1, // -1 : pas commencé ; ETAPES.length : consigne de fin
+    etape: -1, // -1 : pas commencé
     attente_jusqua: 0, // > maintenant : l'étape est réussie, son cadre est vert
-    sortie: false,
-    bouton_etait_bas: true, // le bouton qui a validé le menu est peut-être encore enfoncé
     precedent: null,
     distance: 0,
     ui: { fond: fond, texte: texte, compteur: compteur, bulle: bulle, fleche: fleche }
   };
-  commencerEtape(scene, 0);
+  commencerEtape(scene, scene.tuto_safe ? PREMIERE_ETAPE_SAFE : 0);
 }
 
 // affiche la consigne de l'étape et la prépare
@@ -102,13 +135,8 @@ function commencerEtape(scene, numero) {
   const j = scene.joueurs[0];
   t.etape = numero;
   t.attente_jusqua = 0;
-  if (numero < ETAPES.length) {
-    ETAPES[numero].debut?.(scene, t, j);
-    afficher(scene, ETAPES[numero].texte(), (numero + 1) + " / " + (ETAPES.length + 1), COULEUR_CADRE);
-  } else {
-    afficher(scene, texteFin(), (ETAPES.length + 1) + " / " + (ETAPES.length + 1), COULEUR_REUSSI);
-    t.fin_a = scene.time.now;
-  }
+  ETAPES[numero].debut?.(scene, t, j);
+  afficher(scene, ETAPES[numero].texte(), (numero + 1) + " / " + ETAPES.length, COULEUR_CADRE);
 }
 
 // écrit le texte dans la bulle et redessine son cadre à la bonne taille
@@ -157,38 +185,25 @@ export function majTutoriel(scene) {
     fleche.setVisible(false);
   }
 
-  const bas = j.touches.frapper_tirer.isDown; // le niveau lit déjà JustDown de ce bouton : on suit l'état nous-mêmes
-  const vient_d_appuyer = bas && !t.bouton_etait_bas;
-  t.bouton_etait_bas = bas;
-
-  // dernière consigne : un appui sur le bouton ramène au menu
-  if (t.etape >= ETAPES.length) {
-    if (vient_d_appuyer && !t.sortie && maintenant - t.fin_a > DELAI_AVANT_SORTIE) sortir(scene);
-    return;
-  }
-
-  // cadre vert un instant, puis la consigne suivante
+  // cadre vert un instant, puis la consigne suivante (la dernière mène à un changement de niveau, qui relance la scène)
   if (t.attente_jusqua > 0) {
-    if (maintenant >= t.attente_jusqua) commencerEtape(scene, t.etape + 1);
+    if (maintenant >= t.attente_jusqua && t.etape + 1 < ETAPES.length) commencerEtape(scene, t.etape + 1);
     return;
   }
 
   if (etape.fait(scene, t, j)) {
     // pas de félicitation : seul le cadre passe au vert un instant, puis la consigne suivante arrive
     t.attente_jusqua = maintenant + DELAI_REUSSITE;
-    afficher(scene, etape.texte(), (t.etape + 1) + " / " + (ETAPES.length + 1), COULEUR_REUSSI);
+    afficher(scene, etape.texte(), (t.etape + 1) + " / " + ETAPES.length, COULEUR_REUSSI);
   }
 }
 
-// fondu puis retour au menu principal
-function sortir(scene) {
-  scene.tuto_etat.sortie = true;
-  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("son_touche_sortant"); // on quitte la page du tutoriel
-  scene.fondu();
-  scene.cameras.main.once("camerafadeoutcomplete", () => {
-    scene.quitterPartie(); // arrête la musique du niveau
-    scene.scene.start("menu");
-  });
+// distance entre le joueur et le rectangle de la statue
+function distanceStatue(j) {
+  const [rx, ry, largeur, hauteur] = STATUE.rect;
+  const dx = Math.max(rx - j.sprite.x, 0, j.sprite.x - (rx + largeur));
+  const dy = Math.max(ry - j.sprite.y, 0, j.sprite.y - (ry + hauteur));
+  return Math.hypot(dx, dy);
 }
 
 // la pierre lunaire (ou n'importe quel objet lâché) la plus proche du joueur
