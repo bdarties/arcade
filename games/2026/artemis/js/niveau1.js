@@ -9,6 +9,7 @@ import * as bonus from "./bonus.js";
 import * as cristaux from "./cristaux.js";
 import * as lumiere from "./lumiere.js";
 import * as biomes from "./biomes.js";
+import * as tutoriel from "./tutoriel.js";
 
 const LARGEUR_NIVEAU = 50; // cases de 32 px
 const HAUTEUR_NIVEAU = 34;
@@ -36,12 +37,14 @@ const DUREE_FONDU = 400; // ms
 const DUREE_ENTREE_ECHELLE = 160; // ms : le joueur se place sur l'échelle
 const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'échelle, avant le changement de niveau
 const NB_CAILLOUX = 14;
+const NB_CAILLOUX_TUTO = 5; // le tutoriel est un niveau presque vide : on y pose lui-même les cailloux dont il a besoin
 const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
 const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
+const DECOR_FIGE = true; // le sol et les murs d'un niveau généré sont dessinés une seule fois dans une image (cf. figerDecor) : false pour revenir aux calques de tuiles
 // test automatique pour la borne (sans clavier) : au lancement du niveau, chaque poste de DIAG (cf. lumiere.js) est coupé à tour de rôle
 // pendant DUREE_PHASE_BENCH ms, et la moyenne des FPS de chaque phase s'affiche en bas à gauche. Mettre false une fois les chiffres relevés.
 // Pendant le test : ne pas bouger (ou bouger de la même façon), torche allumée, et jouer dans la situation qui pose problème (duo ?)
-const BENCH_AUTO = true;
+const BENCH_AUTO = false;
 const DUREE_PHASE_BENCH = 10000; // ms par phase
 const ECHAUFFEMENT_BENCH = 2000; // ms ignorées au début de chaque phase : le compteur de FPS met un moment à se stabiliser
 const PHASES_BENCH = [["tout actif", []], ["sans teintes", ["teintes"]], ["sans noir", ["noir"]], ["sans torche", ["torche"]], ["sans ennemis", ["ennemis"]], ["tout actif (contrôle)", []]];
@@ -85,6 +88,7 @@ export default class niveau1 extends Phaser.Scene {
     // "haut" : on arrive par l'échelle de montée (on vient de descendre) ; "bas" : on arrive à côté du trou (on vient de remonter)
     this.arrivee = data.arrivee || "haut";
     this.donnees_joueurs = data.joueurs || []; // { pv, stamina, equipement } de chaque joueur, transmis d'un niveau à l'autre
+    this.tuto = !!data.tuto; // tutoriel (cf. tutoriel.js) : un seul niveau, des consignes, pas de passage ni de game over
   }
 
   preload() {
@@ -151,6 +155,7 @@ export default class niveau1 extends Phaser.Scene {
         else calque_sol.putTileAt(generation.TUILES.sol, x, y);
       }));
       calque_murs.setCollisionByExclusion([-1]); // toutes les tuiles non vides du calque "murs" sont solides
+      if (DECOR_FIGE) this.figerDecor(calque_sol, calque_murs);
     }
 
     /****************************
@@ -187,7 +192,7 @@ export default class niveau1 extends Phaser.Scene {
       this.physics.add.collider(this.projectiles, obstacles, (projectile) => this.impactLaser(projectile));
       offrande.creerOffrande(this); // bulle au-dessus de la statue
     }
-    ennemis.creerEnnemis(this, calque_sol, calque_murs, this.etat.safe ? 0 : undefined); // aucun ennemi dans la salle safe
+    ennemis.creerEnnemis(this, calque_sol, calque_murs, this.etat.safe || this.tuto ? 0 : undefined); // aucun ennemi dans la salle safe, ni au début du tutoriel
    
     // indication au-dessus d'un passage proche : texte + flèche (vers le bas pour descendre, vers le haut pour monter)
     // profondeur au-dessus de l'obscurité : sinon le texte serait noyé dans le noir
@@ -218,6 +223,7 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     lumiere.creerObscurite(this); // le noir qui couvre l'écran (cf. lumiere.js)
     this.calque_murs = calque_murs; // les rayons de lumière s'arrêtent sur ce calque
+    this.calque_sol = calque_sol;
     lumiere.eclairerCalques(this, [calque_sol, calque_murs]);
     lumiere.eclairerObjets(this);
 
@@ -226,7 +232,8 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     this.joueurs.forEach((j) => this.creerHud(j));
     pierres.creerCompteur(this);
-    this.add.text(this.scale.width / 2, 20, "Niveau " + this.niveau + (this.etat.safe ? " · salle sûre" : ""), { fontFamily: fct.POLICES.texte, fontSize: "28px", color: "#E8EBF0" })
+    if (this.tuto) tutoriel.creerTutoriel(this); // bulle de consigne au-dessus du joueur
+    this.add.text(this.scale.width / 2, 20, this.tuto ? "Tutoriel" : "Niveau " + this.niveau + (this.etat.safe ? " · salle sûre" : ""), { fontFamily: fct.POLICES.texte, fontSize: "28px", color: "#E8EBF0" })
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(fct.PROFONDEUR.hud);
@@ -262,6 +269,17 @@ export default class niveau1 extends Phaser.Scene {
   // - le HUD (objets collés à l'écran) : seulement la caméra du HUD
   // - l'obscurité : seulement la caméra principale (elle grossit avec le monde, la lumière reste bien placée)
   // - le monde (tout le reste, y compris ce qui sera créé plus tard) : seulement la caméra principale
+  // le décor d'un niveau ne change jamais, mais Phaser redessine chaque tuile visible à chaque image, en JavaScript : sur la borne, des centaines
+  // de tuiles par image coûtent cher. On dessine donc le sol et les murs une seule fois dans une image, et on cache les calques.
+  // Les calques restent dans la scène : ils servent toujours aux collisions, à la torche et au placement des objets (seul leur affichage est coupé).
+  figerDecor(calque_sol, calque_murs) {
+    const image = this.add.renderTexture(0, 0, LARGEUR_NIVEAU * 32, HAUTEUR_NIVEAU * 32).setOrigin(0, 0).setDepth(0); // sous les sprites, comme les calques
+    image.draw([calque_sol, calque_murs]); // à faire avant de cacher les calques : un calque caché ne se dessine pas
+    image.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // pas de flou : les pixels du décor restent nets, comme avec les tuiles
+    calque_sol.setVisible(false);
+    calque_murs.setVisible(false);
+  }
+
   creerCameraHud() {
     const camera_hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     this.camera_hud = camera_hud;
@@ -394,7 +412,7 @@ export default class niveau1 extends Phaser.Scene {
       this.distanceAuxJoueurs(tuile.getCenterX(), tuile.getCenterY()) >= DISTANCE_MIN_CAILLOU
     );
     Phaser.Utils.Array.Shuffle(cases_libres);
-    this.etat.cailloux = cases_libres.slice(0, NB_CAILLOUX).map((tuile) => ({
+    this.etat.cailloux = cases_libres.slice(0, this.tuto ? NB_CAILLOUX_TUTO : NB_CAILLOUX).map((tuile) => ({
       x: tuile.getCenterX(),
       y: tuile.getCenterY(),
       image: Phaser.Utils.Array.GetRandom(biomes.cailloux(biomes.biomeDuNiveau(this.niveau))).cle, // les cailloux ont la couleur du biome
@@ -413,14 +431,20 @@ export default class niveau1 extends Phaser.Scene {
   creerCailloux() {
     this.cailloux = this.physics.add.staticGroup();
     this.etat.cailloux.forEach((donnees) => {
-      const caillou = this.cailloux.create(donnees.x, donnees.y, donnees.image);
-      // hitbox sur le bas du caillou : le joueur peut passer derrière le haut
-      caillou.body.setSize(24, 15); // colonnes 5 à 28 (centrée sur le caillou), lignes 16 à 30 : la base du rocher
-      caillou.body.setOffset(5, 16);
-      caillou.setDepth(caillou.y); // tri d'affichage vue de dessus : plus bas = devant
-      caillou.coups_restants = donnees.coups_restants;
+      const caillou = this.creerCaillou(donnees);
       if (donnees.cache_le_trou) this.caillou_trou = caillou;
     });
+  }
+
+  // un caillou à partir de ses données { x, y, image, coups_restants } (le groupe this.cailloux existe déjà)
+  creerCaillou(donnees) {
+    const caillou = this.cailloux.create(donnees.x, donnees.y, donnees.image);
+    // hitbox sur le bas du caillou : le joueur peut passer derrière le haut
+    caillou.body.setSize(24, 15); // colonnes 5 à 28 (centrée sur le caillou), lignes 16 à 30 : la base du rocher
+    caillou.body.setOffset(5, 16);
+    caillou.setDepth(caillou.y); // tri d'affichage vue de dessus : plus bas = devant
+    caillou.coups_restants = donnees.coups_restants;
+    return caillou;
   }
 
   // le trou (descente) est sous son caillou, invisible tant que celui-ci n'est pas cassé ;
@@ -544,7 +568,9 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     if (caillou === this.caillou_trou) this.trou.setVisible(true);
-    pierres.lacherPierres(this, caillou.x, caillou.y + 8); // à la base du rocher
+    // à la base du rocher ; le caillou du tutoriel lâche toujours une pierre (la leçon suivante en a besoin)
+    if (caillou.tuto) pierres.lacherPierres(this, caillou.x, caillou.y + 8, 1, 1, 1);
+    else pierres.lacherPierres(this, caillou.x, caillou.y + 8);
     bonus.lacherBonus(this, caillou.x, caillou.y + 8);
     caillou.destroy();
   }
@@ -859,6 +885,10 @@ export default class niveau1 extends Phaser.Scene {
     this.limiterAEcran();
     lumiere.majLumieres(this);
 
+    if (this.tuto) { // pas de changement de niveau : le tutoriel se termine par sa dernière consigne
+      tutoriel.majTutoriel(this);
+      return;
+    }
     if (this.majPassages()) return;
   }
 }
