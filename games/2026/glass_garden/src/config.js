@@ -2,13 +2,17 @@ import PreloadScene from './scenes/PreloadScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import HubScene from './scenes/HubScene.js';
 import World1Scene from './scenes/World1Scene.js';
+import World2Scene from './scenes/World2Scene.js';
+import World3Scene from './scenes/World3Scene.js';
+import World4Scene from './scenes/World4Scene.js';
+import World5Scene from './scenes/World5Scene.js';
 import UIScene from './scenes/UIScene.js';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from './utils/constants.js';
 
 // * Configuration Phaser. La résolution est celle de la borne d'arcade : 1280 x 720 (16:9).
 export default {
   type: Phaser.AUTO,
-  parent: 'game-container', // * l'id de la div dans index.html (pas « game » : cela créerait une variable globale du même nom, voir main.js)
+  parent: 'game-container', // * l'id de la div dans index.html (pas « game » : cela créerait une variable globale du même nom, voir index.js)
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: COLORS.BACKGROUND,
@@ -25,11 +29,14 @@ export default {
     default: 'arcade',
     arcade: {
       gravity: { x: 0, y: 0 },
+      // * Jusqu'à quelle profondeur (en pixels) un joueur qui a pénétré dans un mur est repoussé. Le défaut (16) laisse passer
+      // à travers les murs un joueur qui avance de plus de 16 pixels par image : le début du dash va jusqu'à ~26 pixels.
+      tileBias: 32,
       debug: false, // passer à true pour voir les boîtes de collision pendant le développement
     },
   },
   // * La première scène de la liste est celle qui démarre
   // PreloadScene charge les cartes de tous les mondes, puis démarre le jardin.
   // ? Elle démarre HubScene directement le temps de développer le joueur. Le menu redeviendra la scène suivante.
-  scene: [PreloadScene, HubScene, MenuScene, World1Scene, UIScene],
+  scene: [PreloadScene, HubScene, MenuScene, World1Scene, World2Scene, World3Scene, World4Scene, World5Scene, UIScene],
 };

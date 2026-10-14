@@ -30,7 +30,9 @@ const TEXTE_CREDITS =
   "CRÉDITS\n\n" +
   "MAESTRO — SAE 301, MMI Béziers\n\n" +
   "Laura Gendre · Nerimen Kiouaz\n" +
-  "Vincent Bonnery · Mathieu Seres--Perea";
+  "Vincent Bonnery · Mathieu Seres--Perea\n\n" +
+  "Danse macabre : Kevin MacLeod (incompetech.com), CC BY 3.0\n" +
+  "Grieg et Mozart : enregistrements du domaine public";
 
 export default class accueil extends Phaser.Scene {
   constructor() {

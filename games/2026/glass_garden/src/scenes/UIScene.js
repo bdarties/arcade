@@ -1,5 +1,6 @@
 import timer from '../systems/TimerSystem.js';
 import { getCollectedStars, getTotalStars } from '../systems/StarSystem.js';
+import { getBubbleState } from '../systems/BubbleSystem.js';
 import { getControlMode, toggleControlMode } from '../systems/ControlMode.js';
 import { formatTime } from '../utils/helpers.js';
 import { SCENES, COLORS, FONT_FAMILY, FONT_SIZE, UI_MARGIN, VICTORY_MESSAGE, CONTROL_MODE_SHORTCUT } from '../utils/constants.js';
@@ -29,6 +30,15 @@ export default class UIScene extends Phaser.Scene {
     // * Le compteur d'étoiles, juste sous le chronomètre, aligné sur le même bord droit
     this.starsText = this.add
       .text(this.scale.width - UI_MARGIN, UI_MARGIN + this.timerText.height, this.getStarsLabel(), {
+        fontFamily: FONT_FAMILY,
+        fontSize: FONT_SIZE.STARS,
+        color: COLORS.TEXT,
+      })
+      .setOrigin(1, 0);
+
+    // * Le compteur de bulles, sous celui des étoiles : visible seulement dans un monde qui a des bulles à éclater
+    this.bubblesText = this.add
+      .text(this.scale.width - UI_MARGIN, UI_MARGIN + this.timerText.height + this.starsText.height, '', {
         fontFamily: FONT_FAMILY,
         fontSize: FONT_SIZE.STARS,
         color: COLORS.TEXT,
@@ -85,10 +95,17 @@ export default class UIScene extends Phaser.Scene {
     return `Étoiles : ${getCollectedStars()} / ${getTotalStars()}`;
   }
 
+  // Le texte du compteur de bulles : « Bulles : 2 / 6 », ou rien dans un monde sans bulles
+  getBubblesLabel() {
+    const state = getBubbleState();
+    return state ? `Bulles : ${state.burst} / ${state.total}` : '';
+  }
+
   // update() est appelée à chaque image : on relit le chronomètre et on met le texte à jour
   update() {
     this.timerText.setText(formatTime(timer.elapsed()));
     this.starsText.setText(this.getStarsLabel());
+    this.bubblesText.setText(this.getBubblesLabel());
     this.controlModeText.setText(this.getControlModeLabel());
   }
 }

@@ -1,4 +1,4 @@
-import { PROFONDEUR } from "../reglages/config.js";
+import { PROFONDEUR, POLICE_TITRE } from "../reglages/config.js";
 
 export function jouerEffet(scene, animation, x, y, options) {
   const reglages = options || {};
@@ -26,4 +26,31 @@ export function flashLumineux(scene, x, y, couleur, taille) {
     duration: 350,
     onComplete: () => lueur.destroy()
   });
+}
+
+let nbChiffres = 0;
+export function afficherChiffre(scene, x, y, texte, couleur) {
+  if (nbChiffres > 20) {
+    return;
+  }
+  nbChiffres++;
+  const chiffre = scene.add
+    .text(x, y, texte, { fontFamily: POLICE_TITRE, fontSize: "18px", color: couleur, stroke: "#000000", strokeThickness: 4 })
+    .setOrigin(0.5)
+    .setDepth(PROFONDEUR.textes);
+  scene.tweens.add({
+    targets: chiffre,
+    y: y - 34,
+    alpha: 0,
+    duration: 650,
+    ease: "Cubic.easeOut",
+    onComplete: () => {
+      chiffre.destroy();
+      nbChiffres--;
+    }
+  });
+}
+
+export function reinitialiserEffets() {
+  nbChiffres = 0;
 }

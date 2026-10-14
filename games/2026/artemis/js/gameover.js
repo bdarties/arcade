@@ -51,9 +51,13 @@ export default class gameover extends Phaser.Scene {
     const appuye = (touche) => Phaser.Input.Keyboard.JustDown(touche);
     if (!this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) return;
     this.quitte = true;
+    /* >>>>> AJOUT SON <<<<< */ const son_sortie = this.sound.add("son_touche_sortant"); // on quitte la page de game over
+    /* >>>>> AJOUT SON <<<<< */ son_sortie.once("complete", () => son_sortie.destroy());
+    /* >>>>> AJOUT SON <<<<< */ son_sortie.play();
     this.cameras.main.fadeOut(DUREE_FONDU);
     this.cameras.main.once("camerafadeoutcomplete", () => {
-      this.sound.stopAll(); // la musique de game over s'arrête ; celle du menu repart avec lui
+      // la musique de game over s'arrête ; celle du menu repart avec lui (le son de sortie, lui, va jusqu'au bout)
+      /* >>>>> AJOUT SON <<<<< */ this.sound.getAllPlaying().filter((son) => son !== son_sortie).forEach((son) => son.stop());
       this.scene.start("menu");
     });
   }

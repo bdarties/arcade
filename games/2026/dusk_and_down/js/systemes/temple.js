@@ -159,8 +159,8 @@ export function creerTenebres(scene) {
     scene.tenebres = null;
     return;
   }
-  const calque = scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height);
-  calque.setOrigin(0).setScrollFactor(0).setDepth(PROFONDEUR.tenebres);
+  const calque = scene.add.renderTexture(0, 0, scene.scale.width / 4, scene.scale.height / 4);
+  calque.setOrigin(0).setScale(4).setScrollFactor(0).setDepth(PROFONDEUR.tenebres);
   const pinceau = scene.make.image({ key: "img_lumiere", add: false });
   scene.tenebres = { calque: calque, pinceau: pinceau };
 }
@@ -174,6 +174,7 @@ export function mettreAJourTenebres(scene) {
   const temple = scene.temple;
   tenebres.calque.clear();
   tenebres.calque.fill(TENEBRES.couleur, temple.detruit ? TENEBRES.opaciteSansTemple : TENEBRES.opacite);
+  tenebres.calque.beginDraw();
 
   if (!temple.detruit) {
     eclairer(tenebres, temple.x - camera.scrollX, temple.y - 20 - camera.scrollY, rayonLumiereTemple(scene));
@@ -183,10 +184,11 @@ export function mettreAJourTenebres(scene) {
       eclairer(tenebres, joueur.x - camera.scrollX, joueur.y - 12 - camera.scrollY, joueur.stats.rayonLumiere);
     }
   }
+  tenebres.calque.endDraw(true);
 }
 
 function eclairer(tenebres, x, y, rayon) {
-  tenebres.pinceau.setPosition(x, y);
-  tenebres.pinceau.setDisplaySize(rayon * 2, rayon * 2 * ISO.ratioY);
-  tenebres.calque.erase(tenebres.pinceau);
+  tenebres.pinceau.setPosition(x / 4, y / 4);
+  tenebres.pinceau.setDisplaySize(rayon / 2, (rayon / 2) * ISO.ratioY);
+  tenebres.calque.batchDraw(tenebres.pinceau);
 }

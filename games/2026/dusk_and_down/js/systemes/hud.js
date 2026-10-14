@@ -1,4 +1,5 @@
 import { ECRAN, PROFONDEUR, POLICE_TITRE, POLICE_TEXTE, BARRES } from "../reglages/config.js";
+import { BIENFAITS, CATEGORIES } from "../reglages/bienfaits.js";
 import { formaterTemps } from "../fonctions.js";
 import { estVisible } from "./carte.js";
 
@@ -25,7 +26,7 @@ export function creerHud(scene) {
     const aGauche = joueur.numero === 1;
     const cle = "joueur_" + joueur.numero;
     const x = aGauche ? 12 : ECRAN.largeur - 232;
-    const panneau = { aGauche: aGauche, bord: aGauche ? 16 : ECRAN.largeur - 16, texteEtat: "" };
+    const panneau = { aGauche: aGauche, bord: aGauche ? 16 : ECRAN.largeur - 16, pastilles: [], nbBienfaits: -1, texteEtat: "" };
     panneau.remplissage = fixer(scene.add.image(x + BARRES[cle].x, 6 + BARRES[cle].y, cle + "_remplissage").setOrigin(0));
     fixer(scene.add.image(x, 6, cle + "_cadre").setOrigin(0));
     panneau.nom = fixer(
@@ -34,10 +35,17 @@ export function creerHud(scene) {
         .setOrigin(aGauche ? 0 : 1, 0)
     );
     panneau.etat = fixer(
-      scene.add.text(panneau.bord, 106, "", { ...TEXTE, fontSize: "15px", color: "#ffb0b0" }).setOrigin(aGauche ? 0 : 1, 0)
+      scene.add.text(panneau.bord, 126, "", { ...TEXTE, fontSize: "15px", color: "#ffb0b0" }).setOrigin(aGauche ? 0 : 1, 0)
     );
     return panneau;
   });
+
+  const xp = scene.textures.get("xp_remplissage").getSourceImage();
+  const xpY = ECRAN.hauteur - xp.height - 6;
+  hud.xpFond = fixer(scene.add.rectangle(centre, xpY + xp.height / 2, xp.width, xp.height, 0x120d1c, 0.85));
+  hud.xpRemplissage = fixer(scene.add.image(centre - xp.width / 2, xpY, "xp_remplissage").setOrigin(0));
+  hud.niveau = fixer(scene.add.text(centre, xpY - 2, "", TITRE).setOrigin(0.5, 1));
+  hud.texteNiveau = "";
 
   hud.fleche = fixer(scene.add.triangle(0, 0, 0, -14, 28, 0, 0, 14, 0xffa531)).setVisible(false);
 
@@ -93,7 +101,15 @@ export function mettreAJourHud(scene) {
       panneau.texteEtat = texte;
       panneau.etat.setText(texte);
     }
+    mettreAJourPastilles(scene, joueur, panneau);
   });
+
+  remplir(hud.xpRemplissage, scene.xp / scene.xpRequise, false);
+  const texteNiveau = "NIVEAU " + scene.niveau;
+  if (texteNiveau !== hud.texteNiveau) {
+    hud.texteNiveau = texteNiveau;
+    hud.niveau.setText(texteNiveau);
+  }
 
   const texteInfos = "Vague " + scene.vague.numero + "   ·   " + formaterTemps(scene.tempsJeu) + "   ·   Score " + scene.score;
   if (texteInfos !== hud.texteInfos) {
@@ -102,6 +118,20 @@ export function mettreAJourHud(scene) {
   }
 
   placerFlecheTemple(scene);
+}
+
+function mettreAJourPastilles(scene, joueur, panneau) {
+  const ids = Object.keys(joueur.bienfaits);
+  if (ids.length === panneau.nbBienfaits) {
+    return;
+  }
+  panneau.nbBienfaits = ids.length;
+  panneau.pastilles.forEach((pastille) => pastille.destroy());
+  panneau.pastilles = ids.map((id, i) => {
+    const couleur = CATEGORIES[BIENFAITS[id].categorie].couleur;
+    const x = panneau.aGauche ? panneau.bord + 6 + i * 17 : panneau.bord - 6 - i * 17;
+    return scene.add.circle(x, 112, 6, couleur).setStrokeStyle(1, 0x000000).setScrollFactor(0).setDepth(PROFONDEUR.hud);
+  });
 }
 
 function placerFlecheTemple(scene) {

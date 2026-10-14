@@ -3,10 +3,19 @@ import timer from '../systems/TimerSystem.js';
 import { RecolteEtoiles } from '../systems/RecolteEtoiles.js';
 import { areAllStarsCollected } from '../systems/StarSystem.js';
 import { createBulletAnimations, explodeBullet, shoot } from '../systems/fonctionTir.js';
+import { preloadCrate, createCrates } from '../systems/CrateSystem.js';
 import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear } from '../systems/MirrorSystem.js';
 import { applyTint } from '../systems/TintSystem.js';
+import { irisClose, irisOpen } from '../systems/TransitionSystem.js';
+import { preloadNpcs, createNpcs } from '../systems/NpcSystem.js';
+import DialogueBox, { isRiddleSolved } from '../systems/DialogueSystem.js';
+import { bounceStar } from '../systems/StarBounce.js';
+import Dash from '../systems/DashSystem.js';
+import { preloadBubbles, createBubbles } from '../systems/BubbleSystem.js';
+import { DIALOGUES } from '../data/dialogues.js';
 import { pickVariant } from '../utils/helpers.js';
 import {
+  GAME_WIDTH,
   SCENES,
   ASSETS,
   TILE_SIZE,
@@ -26,6 +35,11 @@ import {
   COLORS,
   FONT_FAMILY,
   FONT_SIZE,
+  SMOKE,
+  WORLD_ART,
+  DIALOGUE,
+  STAR_BOUNCE,
+  BUBBLES,
 } from '../utils/constants.js';
 
 /**
@@ -63,7 +77,15 @@ export default class WorldScene extends Phaser.Scene {
     // la construction (sol, murs, eau) et les décors
     this.load.tilemapTiledJSON(this.mapKey, this.mapPath);
     this.load.image(ASSETS.TILESET_GARDEN, 'assets/images/tilesets/tileset_garden.png');
+
+    // * Les images recolorées de ce monde, s'il en a (voir WORLD_ART) : sous des clés à part, pour ne pas toucher aux originaux
+    const art = WORLD_ART[this.getWorldName()];
+    if (art) {
+      this.load.image(ASSETS.TILESET_GARDEN + art.suffix, art.tileset);
+      this.load.spritesheet(ASSETS.WATER + art.suffix, art.water, { frameWidth: TILE_SIZE, frameHeight: TILE_SIZE });
+    }
     this.load.image('etoile', 'assets/images/sprites/Etoile.png');
+    preloadCrate(this);
     this.load.image(ASSETS.TILESET_DECO, 'assets/images/tilesets/tileset_deco.png');
 
     // * Les balles : balle.png est une bande de 33 images de 16 x 16 pixels, chargée comme un spritesheet
@@ -71,6 +93,12 @@ export default class WorldScene extends Phaser.Scene {
       frameWidth: BULLET.FRAME_SIZE,
       frameHeight: BULLET.FRAME_SIZE,
     });
+
+    // * Les images des personnages non joueurs (voir NPCS dans constants.js)
+    preloadNpcs(this);
+
+    // * L'image des bulles du monde magique (voir BUBBLES dans constants.js)
+    preloadBubbles(this);
 
     // * Le spritesheet du miroir, découpé en images de 32 x 32 pixels.
     // Un sprite créé sans préciser l'image affiche la première (le miroir entier).
@@ -182,6 +210,7 @@ export default class WorldScene extends Phaser.Scene {
     // ! Sinon un message encore affiché au moment de partir bloquerait le texte d'aide au retour
     this.messageActive = false;
     this.gameWon = false;
+    this.transitioning = false; // vrai pendant la FERMETURE de l'iris, quand on prend un miroir : le joueur est figé (voir update)
     this.waterSprites = []; // les sprites de l'eau animée de CETTE visite (remplis par createAnimatedTiles)
 
     // * Le chronomètre et son affichage sont globaux : ils ne dépendent pas du monde.
@@ -197,20 +226,23 @@ export default class WorldScene extends Phaser.Scene {
     // Les textures sont donc toujours les originales.
     // ? Les palettes (PaletteSystem.js, getPaletteTexture) ne sont plus appelées : pour les réactiver, l'eau et le tileset
     // de construction repasseraient par getPaletteTexture, avec WORLD_PALETTES.
-    const waterTexture = ASSETS.WATER;
-    const animationSuffix = '';
+    const art = WORLD_ART[this.getWorldName()];
+    const animationSuffix = art ? art.suffix : '';
+    const waterTexture = ASSETS.WATER + animationSuffix;
+    const gardenTexture = ASSETS.TILESET_GARDEN + animationSuffix;
 
     this.createTileAnimations(waterTexture, animationSuffix);
     this.createMirrorAnimation();
 
     // * On construit la carte à partir du JSON Tiled
     const map = this.make.tilemap({ key: this.mapKey });
+    this.map = map;
 
     // ! Le 1er nom est celui du tileset DANS Tiled, le 2e est la clé de l'image à utiliser.
     // Une carte peut utiliser plusieurs tilesets : on les passe tous à chaque calque, qui prend dans chacun
     // les tuiles qu'il utilise. Un tileset absent de la carte renvoie null : filter(Boolean) l'écarte.
     const tilesets = [
-      map.addTilesetImage('tileset_garden', ASSETS.TILESET_GARDEN),
+      map.addTilesetImage('tileset_garden', gardenTexture),
       map.addTilesetImage('tileset_deco', ASSETS.TILESET_DECO),
     ].filter(Boolean);
 
@@ -222,6 +254,8 @@ export default class WorldScene extends Phaser.Scene {
     // * L'eau : créée ici, entre le décor du dessous et les murs, pour passer sous le joueur
     const waterBlockers = this.createAnimatedTiles(map, tilesets, waterTexture, animationSuffix);
     const walls = map.createLayer('walls', tilesets);
+    this.walls = walls; // gardés pour savoir où l'étoile de l'énigme peut se poser (voir isFreeGround)
+    this.waterBlockers = waterBlockers;
 
     // * Toute tuile posée dans le calque « walls » devient un obstacle (-1 = case vide)
     walls.setCollisionByExclusion([-1]);
@@ -236,6 +270,7 @@ export default class WorldScene extends Phaser.Scene {
 
     // * Dans quelle direction regarde le joueur ? C'est la direction des tirs. Il commence de face (vers le bas).
     this.facing = 'down';
+    this.dash = new Dash(this, this.player); // le dash du joueur (voir DashSystem.js)
 
     // * La boîte de collision est plus petite que l'image et placée au niveau des pieds :
     // le joueur peut passer « devant » un mur sans que sa tête ne le bloque
@@ -258,6 +293,7 @@ export default class WorldScene extends Phaser.Scene {
     // * Au retour dans le jardin, le miroir pris pour partir est marqué « utilisé » AVANT de créer les miroirs.
     // Si c'est le cas, vanishingWorld contient son nom : ce miroir va jouer son animation de disparition.
     const vanishingWorld = this.markReturnMirrorUsed();
+    let vanishingMirror = null; // le miroir qui disparaît, s'il y en a un (son animation attend la fin de l'iris)
 
     map
       .getObjectLayer('objects')
@@ -282,13 +318,14 @@ export default class WorldScene extends Phaser.Scene {
         const collider = this.physics.add.collider(this.player, mirror);
 
         if (vanishing) {
-          // * Il joue son animation de disparition. Il n'est PAS ajouté à this.mirrors : on ne peut plus l'utiliser.
+          // * Il va jouer son animation de disparition. Il n'est PAS ajouté à this.mirrors : on ne peut plus l'utiliser.
           // Quand l'animation est finie, on détruit le miroir et sa collision pour de bon.
-          mirror.play(MIRROR_VANISH.KEY);
+          // L'animation démarre quand l'iris est entièrement ouvert (voir la fin de create), pour qu'on la voie.
           mirror.once('animationcomplete', () => {
             collider.destroy();
             mirror.destroy();
           });
+          vanishingMirror = mirror;
           return;
         }
 
@@ -323,8 +360,73 @@ export default class WorldScene extends Phaser.Scene {
     // * Les étoiles de ce monde, posées dans Tiled (le joueur existe déjà : l'étoile a besoin de lui)
     this.createStars(map);
 
+    // * Les caisses de ce monde, posées dans Tiled (le joueur et le groupe de balles existent déjà)
+    this.crates = createCrates(this, map, this.player, this.bullets);
+
+    // * La fumée des cheminées, posée dans Tiled
+    this.createSmokes(map);
+
+    // * Les personnages non joueurs, posés dans Tiled (le joueur existe déjà : ils le bloquent comme un mur)
+    this.npcs = createNpcs(this, map, this.player);
+
+    // * Une étoile gardée par une énigme n'apparaît qu'une fois l'énigme résolue (elle saute alors de la tête du personnage)
+    if (this.npcs.some((npc) => DIALOGUES[npc.npcName]?.riddle && !isRiddleSolved(npc.npcName))) {
+      this.stars.forEach((star) => star.disableBody(true, true));
+    }
+
+    // * Les bulles à éclater, posées dans Tiled (le joueur existe déjà). L'étoile du monde est cachée tant qu'il en reste ;
+    // quand elles sont toutes éclatées, elle apparaît au centre de la carte.
+    this.bubbles = createBubbles(this, map, this.player, () => this.revealStarAtCenter(true));
+    if (this.bubbles.total > 0) this.stars.forEach((star) => star.disableBody(true, true));
+    if (this.bubbles.done) this.revealStarAtCenter(false); // bulles déjà éclatées lors d'une visite précédente
+
+    // * La boîte de dialogue des personnages (cachée tant qu'on ne parle à personne)
+    this.dialogue = new DialogueBox(this);
+
     // * La teinte du monde, posée en dernier : tous les calques et les sprites d'eau existent. Le jardin n'en a pas.
     applyTint(map, this.waterSprites, WORLD_TINTS[this.getWorldName()]);
+
+    // * Arrivée par un miroir : le cercle s'ouvre depuis le miroir d'arrivée (ou depuis celui qui disparaît).
+    // Le joueur n'est pas figé pendant l'ouverture : il peut déjà bouger. Sans miroir d'origine (premier lancement),
+    // il n'y a pas de transition.
+    if (this.fromWorld) {
+      const arrival = this.mirrors.find((mirror) => mirror.world === this.fromWorld) || vanishingMirror || this.player;
+      irisOpen(this, arrival.x, arrival.y, () => vanishingMirror?.play(MIRROR_VANISH.KEY));
+    }
+  }
+
+  /**
+   * * Crée une fumée à la position de chaque objet de classe « smoke » du calque « objects » (le point se place
+   * en haut de la cheminée). Elle passe devant le joueur, comme le décor du dessus. Une carte sans objet « smoke »
+   * n'a pas de fumée. Les réglages (durée, vitesse, vent) sont dans SMOKE (constants.js).
+   */
+  createSmokes(map) {
+    const smokes = map
+      .getObjectLayer('objects')
+      .objects.filter((object) => (object.class || object.type) === 'smoke');
+    if (smokes.length === 0) return;
+
+    // La texture d'une bouffée : un petit carré (pixel art), créé une seule fois pour toute la partie
+    if (!this.textures.exists(SMOKE.TEXTURE)) {
+      const puff = this.make.graphics({ x: 0, y: 0, add: false });
+      puff.fillStyle(SMOKE.COLOR, 1);
+      puff.fillRect(0, 0, SMOKE.PUFF_SIZE, SMOKE.PUFF_SIZE);
+      puff.generateTexture(SMOKE.TEXTURE, SMOKE.PUFF_SIZE, SMOKE.PUFF_SIZE);
+      puff.destroy();
+    }
+
+    smokes.forEach((object) => {
+      this.add
+        .particles(object.x, object.y, SMOKE.TEXTURE, {
+          lifespan: SMOKE.LIFESPAN_MS,
+          frequency: SMOKE.FREQUENCY_MS,
+          speedY: { min: -SMOKE.RISE_SPEED.MAX, max: -SMOKE.RISE_SPEED.MIN },
+          speedX: { min: SMOKE.DRIFT_X.MIN, max: SMOKE.DRIFT_X.MAX },
+          alpha: { start: SMOKE.START_ALPHA, end: 0 },
+          scale: { start: SMOKE.SCALE.START, end: SMOKE.SCALE.END },
+        })
+        .setDepth(DEPTH.ABOVE_PLAYER);
+    });
   }
 
   /**
@@ -333,10 +435,39 @@ export default class WorldScene extends Phaser.Scene {
    * Selon la version de Tiled, la classe s'appelle « class » ou « type » : on lit les deux.
    */
   createStars(map) {
-    map
+    this.stars = map
       .getObjectLayer('objects')
       .objects.filter((object) => (object.class || object.type) === 'star')
-      .forEach((object) => RecolteEtoiles(this.player, this, object.x, object.y));
+      .map((object) => RecolteEtoiles(this.player, this, object.x, object.y))
+      .filter(Boolean); // une étoile déjà prise n'est pas recréée
+  }
+
+  /** L'étoile du monde saute de la tête du personnage (récompense de l'énigme), puis le joueur la ramasse. */
+  revealWorldStar(npc) {
+    const star = this.stars.find((s) => !s.active);
+    if (!star) return;
+    const from = { x: npc.x, y: npc.y, headHeight: npc.height * STAR_BOUNCE.HEAD_HEIGHT_RATIO };
+    bounceStar(this, star, from, (x, y) => this.isFreeGround(x, y, npc));
+  }
+
+  /** L'étoile du monde apparaît au centre de la carte (récompense des bulles), avec un petit effet de rebond si animated. */
+  revealStarAtCenter(animated) {
+    const star = this.stars[0];
+    if (!star || star.starId === undefined) return;
+    star.enableBody(true, this.map.widthInPixels / 2, this.map.heightInPixels / 2, true, true);
+    if (!animated) return;
+    star.setScale(0);
+    this.tweens.add({ targets: star, scale: 1, duration: BUBBLES.STAR_POP.DURATION_MS, ease: BUBBLES.STAR_POP.EASE });
+  }
+
+  /** L'étoile peut-elle se poser en ce point du sol ? (ni mur, ni eau, ni miroir, ni personnage, ni hors de la carte) */
+  isFreeGround(x, y, npc) {
+    const margin = 20;
+    if (x < margin || y < margin || x > GAME_WIDTH - margin || y > this.map.heightInPixels - margin) return false;
+    if (this.walls.hasTileAtWorldXY(x, y)) return false;
+    if (this.waterBlockers?.getChildren().some((zone) => Math.abs(zone.x - x) <= 20 && Math.abs(zone.y - y) <= 20)) return false;
+    if (this.mirrors.some((mirror) => Phaser.Math.Distance.Between(x, y, mirror.x, mirror.y) < 40)) return false;
+    return !this.npcs.some((other) => Math.abs(other.x - x) < 34 && y > other.y - 24 && y < other.y + 12);
   }
 
   // Le nom de ce monde, comme dans la table WORLDS (ex. « hub », « world_1 »)
@@ -424,6 +555,19 @@ export default class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // * Pendant la fermeture de l'iris (on a pris un miroir) : le joueur est figé, on ne lit ni les déplacements, ni le tir, ni l'interaction
+    if (this.transitioning) {
+      this.player.setVelocity(0, 0);
+      return;
+    }
+
+    // * Pendant un dialogue : le joueur est figé, les touches servent au dialogue (avancer, choisir une réponse)
+    if (this.dialogue.isOpen) {
+      this.player.setVelocity(0, 0);
+      this.dialogue.update(this.input1);
+      return;
+    }
+
     // * Direction souhaitée, déjà normalisée en diagonale par l'InputManager
     const { x, y } = this.input1.getMove();
 
@@ -451,7 +595,10 @@ export default class WorldScene extends Phaser.Scene {
 
     // * On donne une vitesse (en pixels par seconde) : c'est la physique Phaser qui déplace
     // le joueur et qui l'arrête contre les murs
-    this.player.setVelocity(x * PLAYER.SPEED, y * PLAYER.SPEED);
+    // * Le dash impose sa propre vitesse tant qu'il dure ; sinon la vitesse normale
+    if (!this.dash.update(this.input1, { x, y }, this.facing)) {
+      this.player.setVelocity(x * PLAYER.SPEED, y * PLAYER.SPEED);
+    }
 
     // * Y a-t-il un miroir assez proche pour interagir ?
     const nearMirror = this.mirrors.find(
@@ -460,12 +607,27 @@ export default class WorldScene extends Phaser.Scene {
         INTERACT_DISTANCE,
     );
 
+    // * Y a-t-il un personnage assez proche pour lui parler ?
+    const nearNpc = this.npcs.find(
+      (npc) =>
+        Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.body.center.x, npc.body.center.y) <
+        DIALOGUE.INTERACT_DISTANCE,
+    );
+
     // On ne réécrit pas le texte pendant l'affichage du message d'interaction
     // ? Les touches sont provisoires : à changer avec les boutons de la borne (voir BINDINGS dans InputManager)
     // TODO(équipe): changer le message d'interaction (utiliser une icône de touche au-dessus des miroirs)
     if (!this.messageActive) {
       // * La touche affichée suit le mode de contrôle (I en arcade, E en pc) : l'aide ne ment jamais
-      this.hint.setText(nearMirror ? `${this.input1.getKeyLabel('interact')} : entrer dans le miroir` : '');
+      const key = this.input1.getKeyLabel('interact');
+      this.hint.setText(nearMirror ? `${key} : entrer dans le miroir` : nearNpc ? `${key} : parler` : '');
+    }
+
+    // * Parler à un personnage proche (un miroir proche passe avant)
+    if (nearNpc && !nearMirror && this.input1.justPressed('interact')) {
+      this.hint.setText('');
+      this.dialogue.open(nearNpc.npcName, DIALOGUES[nearNpc.npcName], () => this.revealWorldStar(nearNpc));
+      return;
     }
 
     if (nearMirror && this.input1.justPressed('interact')) {
@@ -475,13 +637,15 @@ export default class WorldScene extends Phaser.Scene {
       if (targetScene) {
         // TODO(équipe): SFX du passage par le miroir, à ajouter au plus vite
         // TODO(équipe): timer global et score, à ajouter au plus vite (ils doivent survivre au changement de scène)
-        // TODO(équipe): VFX du passage par le miroir (fondu, effet visuel), à ajouter plus tard
-        // TODO(équipe): bloquer les touches pendant le changement de monde, à ajouter plus tard
-        // (sans ça, un double appui rapide sur E peut relancer la scène)
         // * On quitte cette scène et on lance celle du monde visé, en lui disant d'où l'on vient.
         // Le nom de ce monde est la clé de WORLDS dont la valeur est notre scène.
         const currentWorld = this.getWorldName();
-        this.scene.start(targetScene, { from: currentWorld });
+
+        // * Transition : le cercle noir se referme SUR LE MIROIR pris, puis on change de scène
+        this.transitioning = true;
+        irisClose(this, nearMirror.x, nearMirror.y, () => {
+          this.scene.start(targetScene, { from: currentWorld });
+        });
       } else {
         // Le miroir existe dans Tiled mais son monde n'est pas encore créé
         this.hint.setText(`Ce monde n'existe pas encore : ${nearMirror.world}`);
