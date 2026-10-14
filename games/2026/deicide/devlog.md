@@ -210,3 +210,11 @@
 - **Quoi** : quand le joueur éteint la dernière lanterne du niveau, le message « L'OBSCURITE COMMENCE A REGNER DANS CE MONDE » apparaît en fondu en haut de l'écran pendant 3 secondes.
 - **Comment** : un seul `if` dans `eteindreLanterne` (`lumiere.js`) : si toutes les lanternes du groupe sont éteintes, on affiche le message (police pixel du jeu, collé à l'écran, au-dessus du voile). La fonction s'arrête plus haut quand une lanterne est déjà éteinte, donc le message ne part qu'une fois par niveau.
 - **Choix** : on a essayé de changer aussi la couleur du robot (bleu), puis on l'a retirée : le robot est déjà presque invisible dans le noir, et le message suffit.
+
+## Correction : l'accueil se figeait sur la borne (14/10/2026)
+- **Symptôme** : sur la borne, le jeu s'arrêtait sur l'écran d'accueil et plus rien ne répondait.
+- **Cause** : dans Git, trois dossiers s'appelaient `assets/Spritesheet/Player/...` (avec des majuscules) alors que le code charge `assets/spritesheet/player/...`. Le Mac ne fait pas la différence entre majuscules et minuscules, donc tout marchait chez nous ; la borne (Linux) la fait : 13 images en erreur 404, puis une erreur dans le menu (les animations du robot n'ont pas leurs images).
+- **Pourquoi on ne l'a pas vu** : Git sur Mac n'enregistre pas un renommage qui ne change que les majuscules (`core.ignorecase`). Le disque local avait le bon nom, Git gardait l'ancien.
+- **Correction** : les 17 fichiers sont renommés dans Git (`git mv` en deux temps via un nom temporaire). Aucun changement de code.
+- **Vérifié** : sur un volume sensible aux majuscules (comme Linux), avant : 13 erreurs 404 et un menu bloqué ; après : plus d'erreur, le menu répond.
+- **À faire avant chaque PR** : tester sur un volume sensible aux majuscules (`hdiutil create -fs "Case-sensitive APFS"`) ou vérifier avec `git ls-files | grep "[A-Z]"` qu'aucun fichier du jeu ne garde une majuscule.
