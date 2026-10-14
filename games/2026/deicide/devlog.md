@@ -205,3 +205,8 @@
 - **Pourquoi** : avant, on ne voyait le panthéon qu'à la fin d'une partie réussie. Sur une borne, les gens veulent voir les meilleurs temps sans jouer.
 - **Comment** : on réutilise la scène `classement` avec une option `{ consultation: true }` (au lieu d'écrire un deuxième écran). Dans ce mode, pas de chute du titre, pas de résultat de partie, pas de saisie : le tableau est décalé au centre et affiché tout de suite. Le menu a un 3e mode (1 = JOUER, 2 = 1 V 1, 3 = CLASSEMENT) ; le bouton est une plaque du HUD avec le texte en police pixel, sans animation.
 - **Vérifié** : avec un panthéon de test dans le navigateur, flèche droite puis Entrée ouvre la vue, Entrée revient au menu, aucune erreur dans la console.
+
+## Easter egg : toutes les lanternes éteintes (14/10/2026)
+- **Quoi** : quand le joueur éteint la dernière lanterne du niveau, le message « L'OBSCURITE COMMENCE A REGNER DANS CE MONDE » apparaît en fondu en haut de l'écran pendant 3 secondes.
+- **Comment** : un seul `if` dans `eteindreLanterne` (`lumiere.js`) : si toutes les lanternes du groupe sont éteintes, on affiche le message (police pixel du jeu, collé à l'écran, au-dessus du voile). La fonction s'arrête plus haut quand une lanterne est déjà éteinte, donc le message ne part qu'une fois par niveau.
+- **Choix** : on a essayé de changer aussi la couleur du robot (bleu), puis on l'a retirée : le robot est déjà presque invisible dans le noir, et le message suffit.

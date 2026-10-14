@@ -6,8 +6,9 @@
 // Utilisé par : niveau.js (les crée à chaque niveau), pause.js (la luminosité), classement.js et versus.js (le halo).
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
+import { ecrire } from "../scenes/classement.js"; // l'écriture en police pixel (pour le message de l'easter egg)
 import { reglages } from "../systemes/reglages.js"; // luminosité choisie dans le menu pause
-import { creerTextureHalo, creerTexturesLanterne } from "../systemes/dessins.js"; // les textures du halo et des lanternes (dessinées en code)
+import { creerTextureHalo, creerTexturesLanterne, creerPolice } from "../systemes/dessins.js"; // les textures du halo et des lanternes (dessinées en code)
 export function creerZoneRonde(scene, x, y, rayon) {
     const halo = scene.add.image(x, y, "halo"); // affiche le halo sur les positions x,y
     halo.setScale(rayon / 128); // permet de creer la forme de rayon
@@ -55,6 +56,13 @@ function clignoterBrulure(scene) { // fait clignoter le robot en blanc doré, de
     if (Math.floor(scene.time.now / periode) % 2 === 0) joueur.setTintFill(0xfff2c0); // une période sur deux : le robot est rempli de lumière
     else joueur.clearTint(); // l'autre période : ses vraies couleurs
 }
+// Easter egg : quand TOUTES les lanternes du niveau sont éteintes, un message s'affiche (la fonction s'arrête plus haut si la lanterne était déjà éteinte : il ne s'affiche qu'une fois par niveau).
+function annoncerObscurite(scene) { // le message de l'easter egg : il apparaît en fondu, reste 3 secondes, puis disparaît
+    creerPolice(scene); // la police pixel du jeu (même texte que l'écran de fin : sans accents)
+    const message = ecrire(scene, 640, 150, "L'OBSCURITE COMMENCE A REGNER DANS CE MONDE", 3, { teinte: 0xbcd0ff, profondeur: 110 }); // 110 : au-dessus du voile (50) et de l'interface (100)
+    message.setScrollFactor(0).setAlpha(0); // collé à l'écran, invisible au départ
+    scene.tweens.add({ targets: message, alpha: 1, duration: 600, hold: 3000, yoyo: true, onComplete: () => message.destroy() }); // apparaît (600 ms), reste (3 s), repart en fondu
+}
 export function eteindreLanterne(scene, tir, lanterne) {
     tir.destroy(); // permet de détruire le tir
     if (lanterne.eteinte) return; // si la lanterne est deja eteinte on return juste
@@ -66,6 +74,7 @@ export function eteindreLanterne(scene, tir, lanterne) {
     const halo = lanterne.zone.halo; // on range l'image du halo dans un variable halo
     scene.zonesLumiere.remove(lanterne.zone, true, true); // on retire alors du groupe des zones de dégats lumineuse la lanterne en question
     scene.tweens.add({ targets: halo, alpha: 0, duration: 300, onComplete: () => halo.destroy() });
+    if (scene.lanternes.getChildren().every((l) => l.eteinte)) annoncerObscurite(scene); // la dernière vient de tomber : le message de l'easter egg
 }
 export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de creer les lanternes
     creerTexturesLanterne(scene); // dessine les textures de la lanterne si elles n'existent pas encore
