@@ -35,26 +35,14 @@ export function arreterMusique(scene) {
   }
 }
 
-// ---- Petits sons fabriqués par le code (pas de fichier audio) ----
-const VOLUME_NOTE = 0.05; // note jouée par la Cantatrice (plus doux encore)
-const FREQUENCES_NOTES = [523.25, 659.25, 783.99]; // Do, Mi, Sol (mêmes notes que les ondes)
+// Sons d'attaque de la Cantatrice, dans le même ordre que les notes des ondes.
+const SONS_NOTES = ["attack_do", "attack_mi", "attack_sol"];
 
-// Le contexte audio de Phaser (ou null si le navigateur n'a pas d'audio : on ne fait rien)
-function contexteAudio(scene) {
-  const ctx = scene.sound && scene.sound.context ? scene.sound.context : null;
-  if (ctx && ctx.state == "suspended") {
-    ctx.resume(); // certains navigateurs bloquent le son jusqu'au premier clic
-  }
-  return ctx;
-}
-
-// Le son des ennemis (aujourd'hui : le cristal qui grince sous une mauvaise note) : le fichier son_ennemi, à volume doux
+// Le son d'un ennemi (tuba, cristal) : cle = le fichier à jouer. Un délai évite que ça tourne en boucle.
 const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
 let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
 
-// cle = le son à jouer : "son_ennemi" si on ne précise rien, "son_cristal" pour les cristaux, "son_tuba" pour les Tubas
-// (le délai de 1,5 s est commun à tous : jamais deux cris de monstres l'un sur l'autre)
-export function jouerSonCreature(scene, cle = "son_ennemi") {
+export function jouerSonEnnemi(scene, cle) {
   if (scene.cache.audio.exists(cle) == false) {
     return; // fichier absent : on joue sans ce son
   }
@@ -63,26 +51,14 @@ export function jouerSonCreature(scene, cle = "son_ennemi") {
     return; // trop tôt depuis le dernier son : on se tait
   }
   dernierSonEnnemi = maintenant;
-  scene.sound.play(cle, { volume: 0.6 }); // 0,6 = audible, sans être agressif
+  scene.sound.play(cle, { volume: 0.6 });
 }
 
-// Une note courte (Do, Mi ou Sol) : quand la Cantatrice lance une onde
+// Le son correspondant à la note de chaque onde lancée par la Cantatrice.
 export function jouerSonNote(scene, indexNote) {
-  const ctx = contexteAudio(scene);
-  if (ctx == null) {
+  const cle = SONS_NOTES[indexNote] || SONS_NOTES[0];
+  if (!scene.cache.audio.exists(cle)) {
     return;
   }
-  const t = ctx.currentTime;
-  const son = ctx.createOscillator();
-  const volume = ctx.createGain();
-  son.type = "triangle"; // son doux, moins strident qu'une onde carrée
-  son.frequency.value = FREQUENCES_NOTES[indexNote] || FREQUENCES_NOTES[0];
-
-  volume.gain.setValueAtTime(0, t);
-  volume.gain.linearRampToValueAtTime(VOLUME_NOTE, t + 0.005);
-  volume.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
-  son.connect(volume).connect(ctx.destination);
-
-  son.start(t);
-  son.stop(t + 0.27);
+  scene.sound.play(cle, { volume: 0.5 });
 }

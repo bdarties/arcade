@@ -155,6 +155,12 @@ export default class niveau3 extends niveau1 {
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("img_fond_niveau3", "./assets/fond_niveau3.jpg"); // la Grande Scène
     this.load.image("img_lanterne", "./assets/lanterne_chinoise.png");
+    // Les plateformes : une par couleur de note (Do = rouge, Mi = bleue, Sol = dorée), et les plateformes marron
+    this.load.image("n3_note_rouge", "./assets/plateforme_note_rouge.png");
+    this.load.image("n3_note_bleue", "./assets/plateforme_note_bleue.png");
+    this.load.image("n3_note_doree", "./assets/plateforme_note_doree.png");
+    this.load.image("n3_plat_marron", "./assets/plateforme_marron.png");
+    this.load.image("n3_sol_marron", "./assets/sol_marron.png");
     this.load.spritesheet("maestro_boss", "./assets/maestro_boss.png", { frameWidth: 64, frameHeight: 64 }); // 8 cases par ligne
     this.load.audio("musique_niveau3_montee", "./assets/musique_niveau3_montee.m4a");
     this.load.audio("musique_niveau3_maestro", "./assets/musique_niveau3_maestro.m4a");
@@ -312,7 +318,7 @@ export default class niveau3 extends niveau1 {
 
     // Le sol de départ, et le plancher de la scène (avec la trappe au milieu)
     this.ajouterPlateforme({ x: 0, y: SOL_DEPART, width: LARGEUR_MONDE, height: 60 });
-    this.add.tileSprite(0, SOL_DEPART, LARGEUR_MONDE, 60, "n3_balcon").setOrigin(0, 0).setDepth(2);
+    this.add.tileSprite(0, SOL_DEPART, LARGEUR_MONDE, 60, "n3_sol_marron").setOrigin(0, 0).setDepth(2);
     this.ajouterPlateforme({ x: 0, y: SOL_SCENE, width: TRAPPE.x, height: 20 });
     this.ajouterPlateforme({ x: TRAPPE.x + TRAPPE.largeur, y: SOL_SCENE, width: LARGEUR_MONDE - TRAPPE.x - TRAPPE.largeur, height: 20 });
     this.trappe = this.ajouterPlateforme({ x: TRAPPE.x, y: SOL_SCENE, width: TRAPPE.largeur, height: 20 });
@@ -322,7 +328,7 @@ export default class niveau3 extends niveau1 {
 
     // Les paliers (balcons sur toute la largeur, on les traverse par en dessous)
     PALIERS.forEach((y) => {
-      this.add.tileSprite(0, y, LARGEUR_MONDE, 20, "n3_balcon").setOrigin(0, 0).setDepth(2);
+      this.add.tileSprite(0, y, LARGEUR_MONDE, 20, "n3_plat_marron").setOrigin(0, 0).setDepth(2);
       const zone = this.ajouterPlateforme({ x: 0, y: y, width: LARGEUR_MONDE, height: 20 });
       zone.unSens = true; // à sens unique (voir peutMarcherSur dans niveau1.js)
       zone.palier = true;
@@ -385,15 +391,21 @@ export default class niveau3 extends niveau1 {
 
   // Une marche spéciale : un corps (dans groupe_scene) + son dessin
   ajouterMarche(m) {
-    const zone = this.add.zone(m.x + m.l / 2, m.y + 8, m.l, 16);
+    // Une plateforme de note est une seule image, un peu plus haute (24 px) ; les autres marches restent à 16 px
+    const estNote = m.note !== undefined;
+    const H = estNote ? 24 : 16;
+    const zone = this.add.zone(m.x + m.l / 2, m.y + H / 2, m.l, H);
     this.groupe_scene.add(zone);
     zone.type = m.type;
     zone.note = m.note;
     zone.groupe = m.groupe;
-    const texture = m.type == "or" ? "n3_or" : m.type == "rythme" ? "n3_rythme" : "n3_note";
-    zone.dessin = this.add.tileSprite(m.x, m.y, m.l, 16, texture).setOrigin(0, 0).setDepth(5);
+    const couleurNote = ["n3_note_rouge", "n3_note_bleue", "n3_note_doree"]; // Do, Mi, Sol
+    const texture = m.type == "or" ? "n3_or" : m.type == "rythme" ? "n3_rythme" : couleurNote[m.note] || "n3_note";
+    // Une note : l'image entière, étirée sur toute la largeur. Les autres : répétée (tileSprite)
+    zone.dessin = estNote
+      ? this.add.image(m.x, m.y, texture).setOrigin(0, 0).setDisplaySize(m.l, H).setDepth(5)
+      : this.add.tileSprite(m.x, m.y, m.l, 16, texture).setOrigin(0, 0).setDepth(5);
     if (m.note !== undefined) {
-      zone.dessin.setTint(NOTES[m.note].couleur);
       zone.symbole = this.add
         .text(m.x + m.l / 2, m.y - 14, "♪", { fontFamily: POLICE, fontSize: "18pt", color: "#ffffff", stroke: "#000000", strokeThickness: 3 })
         .setOrigin(0.5)
