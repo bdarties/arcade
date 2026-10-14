@@ -77,7 +77,7 @@ export default class selection extends Phaser.Scene {
     // menu (cf. menu.js et infos.js) : fond, logo et boutons
     this.load.image("img_fond_menu", "./assets/ui/background_artemis.jpg");
     this.load.image("img_logo", "./assets/ui/logo_artemis.png");
-    ["solo", "duo", "tuto", "controles", "credits"].forEach((nom) => {
+    ["solo", "duo", "jouer", "tuto", "controles", "credits"].forEach((nom) => {
       this.load.image("img_bouton_" + nom, "./assets/ui/bouton_" + nom + ".png");
     });
 
@@ -103,6 +103,9 @@ export default class selection extends Phaser.Scene {
     this.load.spritesheet("sprite_alien_vert", "./assets/enemy/alien_vert.png", { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet("sprite_alien_vert_tir", "./assets/enemy/alien_vert_tir.png", { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet("sprite_alien_rouge", "./assets/enemy/alien_rouge.png", { frameWidth: 32, frameHeight: 32 });
+
+    // ennemi cristal (cf. ennemis.js) : 4 frames de 48x48, une couleur par biome (cf. biomes.js)
+    biomes.BIOMES.forEach((biome) => this.load.spritesheet("sprite_ennemi_cristal_" + biome.ennemi_cristal, "./assets/enemy/crystal_enemy_" + biome.ennemi_cristal + ".png", { frameWidth: 48, frameHeight: 48 }));
 
     // passages entre les niveaux (32x32) : le trou avec son échelle pour descendre, l'échelle pour remonter
     this.load.image("img_trou", "./assets/map/hole_ladder.png");
@@ -147,8 +150,17 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("fondSonore", "./assets/sons/fond_sonore.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("echelle", "./assets/sons/ladder.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("map_safe", "./assets/sons/ambiance_map_safe.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("impact_ennemi", "./assets/sons/impact_ennemi.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi", "./assets/sons/Laser_ennemi.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("tir_laser", "./assets/sons/tir_laser.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("cristal_brise", "./assets/sons/cristal_brisé.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("stone_break", "./assets/sons/stone_break.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("son_touche_entrant", "./assets/sons/son_touche_entrant.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("son_touche_sortant", "./assets/sons/son_touche_sortant.mp3");
     /* >>>>> AJOUT commande solo <<<<< */this.load.image("img_commandes_solo", "./assets/commandes_solo.png");
     /* >>>>> AJOUT commande duo <<<<< */ this.load.image("img_commandes_duo", "./assets/commandes_duo.png"); 
+    
   }
 
   /***********************************************************************/
@@ -197,6 +209,9 @@ export default class selection extends Phaser.Scene {
 
     ["alien_vert", "alien_rouge"].forEach((nom) => {
       this.anims.create({ key: "anim_" + nom, frames: this.anims.generateFrameNumbers("sprite_" + nom), frameRate: 8, repeat: -1 });
+    });
+    biomes.BIOMES.forEach((biome) => {
+      this.anims.create({ key: "anim_ennemi_cristal_" + biome.ennemi_cristal, frames: this.anims.generateFrameNumbers("sprite_ennemi_cristal_" + biome.ennemi_cristal), frameRate: 6, repeat: -1 });
     });
     this.anims.create({ key: "anim_alien_vert_tir", frames: this.anims.generateFrameNumbers("sprite_alien_vert_tir"), frameRate: 14, repeat: 0 });
 

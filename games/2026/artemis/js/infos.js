@@ -103,6 +103,7 @@ export default class infos extends Phaser.Scene {
     const appuye = (touche) => Phaser.Input.Keyboard.JustDown(touche);
     if (!this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) return;
     this.retour = true;
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_sortant"); // on quitte la page (commandes ou crédits)
     if (this.depuis_pause) {
       this.scene.stop();
       this.scene.resume("pause");

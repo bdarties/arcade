@@ -50,6 +50,8 @@ const DISTANCE_MIN_TORCHE = 24; // px : face à un mur collé, les lumières res
 // lumières des objets qui brillent : rayon (px), couleur, intensité
 const LUMIERE_LASER = { rayon: 70, intensite: 1, couleurs: { bleu: 0x6fb8ff, rouge: 0xff6f6f } };
 const LUMIERE_TIR_ENNEMI = { rayon: 60, intensite: 0.9, couleur: 0x7cff7c };
+const LUMIERE_ENNEMI_CRISTAL = { rayon: 70, intensite: 0.8 }; // la couleur est celle du biome ; le rayon du cristal : un pinceau tous les ECART px
+const LUMIERE_RAYON = { rayon: 48, ecart: 64 };
 const LUMIERE_CRISTAL = { rayon: 110, intensite: 0.9 }; // la couleur vient du biome (cf. biomes.js)
 const LUMIERE_POTION = { rayon: 60, intensite: 0.8, couleur: 0xffe9b0 };
 const LUMIERE_ECLAT = { couleur: 0xffd9a0, rayon_par_px: 1.5 }; // rayon = celui du halo de l'ancien système x 1,5
@@ -183,7 +185,7 @@ export function eclairerCalques(scene, calques) {
 // les objets qui brillent eux-mêmes (cristaux, lasers, tirs d'aliens, potions) n'ont pas le pipeline : ils restent visibles dans le noir
 export function eclairerObjets(scene) {
   if (!LIGHT2D || scene.etat.safe || !ECLAIRER_OBJETS) return;
-  const objets = [...scene.ennemis.getChildren(), ...scene.cailloux.getChildren(), scene.trou, scene.echelle_montee];
+  const objets = [...scene.ennemis.getChildren().filter((ennemi) => !ennemi.type.brille), ...scene.cailloux.getChildren(), scene.trou, scene.echelle_montee]; // les cristaux brillent : pas de pipeline
   objets.forEach((objet) => objet?.setPipeline("Light2D"));
 }
 
@@ -432,6 +434,17 @@ function majDegrade(scene) {
   });
   scene.cristaux.forEach((cristal) => {
     if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, biomes.biomeDuNiveau(scene.niveau).lumiere);
+  });
+  // ennemis cristal et leurs rayons (cf. ennemis.js)
+  scene.ennemis.getChildren().forEach((ennemi) => {
+    if (ennemi.active && ennemi.type.brille) pinceau(scene, ennemi.x, ennemi.y, LUMIERE_ENNEMI_CRISTAL.rayon, LUMIERE_ENNEMI_CRISTAL.intensite, biomes.biomeDuNiveau(scene.niveau).lumiere);
+  });
+  (scene.rayons_actifs ?? []).forEach((rayon) => {
+    const longueur = Phaser.Math.Distance.Between(rayon.x1, rayon.y1, rayon.x2, rayon.y2);
+    for (let d = 0; d <= longueur; d += LUMIERE_RAYON.ecart) {
+      const t = longueur > 0 ? d / longueur : 0;
+      pinceau(scene, rayon.x1 + (rayon.x2 - rayon.x1) * t, rayon.y1 + (rayon.y2 - rayon.y1) * t, LUMIERE_RAYON.rayon, rayon.intensite, rayon.couleur);
+    }
   });
   scene.eclats = scene.eclats.filter((eclat) => scene.time.now < eclat.fin);
   scene.eclats.forEach((eclat) => {
