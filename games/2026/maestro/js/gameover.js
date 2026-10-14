@@ -1,3 +1,5 @@
+// Écran de défaite : retour au lobby.
+
 import { creerClavierMenu } from "./controles.js";
 
 const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';

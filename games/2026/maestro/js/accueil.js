@@ -1,9 +1,5 @@
-// ============================================================================
-//  js/accueil.js — ÉCRAN D'ACCUEIL : trois boutons PLAY / CONTROLS / CREDITS
-//
-//  Commandes : gauche / droite pour choisir un bouton, bouton A / Entrée pour valider.
-//  CONTROLS et CREDITS ouvrent un petit panneau ; un appui sur A / Entrée le ferme.
-// ============================================================================
+// Écran d'accueil : Play, Controls et Credits.
+// Gauche / droite pour choisir, A ou Entrée pour valider.
 
 import { creerClavierMenu, aideBorne, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";

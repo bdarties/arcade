@@ -1,14 +1,4 @@
-// ============================================================================
-//  js/controles.js — les touches de la borne, définies UNE SEULE FOIS
-//
-//  La borne d'arcade envoie des touches de clavier. Pour changer une touche,
-//  on la modifie ici et c'est tout. Les noms sont ceux de Phaser
-//  ("UP", "LEFT", "ENTER", "SPACE", ou une lettre "I", "O"...).
-//
-//  Boutons de la borne :  A = sauter · B = action · C = note / recharge
-//                         D = changer de personnage (solo)
-//  (les boutons E et F ne sont pas utilisés)
-// ============================================================================
+// Toutes les touches du jeu, définies à un seul endroit.
 
 export const CONTROLES = {
   // Joueur 1 : la Cantatrice

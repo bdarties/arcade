@@ -1,3 +1,5 @@
+// Point d'entrée : configuration de Phaser et liste des écrans.
+
 // chargement des librairies
 import chargement from "./js/chargement.js";
 import accueil from "./js/accueil.js";

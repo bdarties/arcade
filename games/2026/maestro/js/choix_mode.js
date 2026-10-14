@@ -1,12 +1,4 @@
-// ============================================================================
-//  js/choix_mode.js — CHOIX DU MODE : Solo ou Duo
-//
-//  Le choix est stocké dans le "registry" (une mémoire partagée entre toutes
-//  les scènes) :   this.registry.set("mode", "solo")   ou   "duo"
-//  Les niveaux le relisent avec :   this.registry.get("mode")
-//
-//  Commandes : gauche / droite pour choisir, bouton A / Entrée pour valider.
-// ============================================================================
+// Choix du mode : Solo ou Duo, gardé pour les autres écrans.
 
 import { creerClavierMenu } from "./controles.js";
 import { REGLAGES } from "./reglages.js";

@@ -1,21 +1,4 @@
-// ============================================================================
-//  js/niveau1.js — NIVEAU 1 : LES COULISSES (carte Tiled « coulisse »)
-//
-//  Objectif : monter jusqu'au PARCHEMIN (fragment de partition), puis franchir
-//  la PORTE DE SORTIE. Pour atteindre le parchemin, le Détective doit révéler
-//  les PASSERELLES FANTÔMES avec sa lampe, pendant que l'autre personnage saute dessus.
-//
-//  - Cantatrice (J1) : O = tire une onde · P = change de note (Do / Mi / Sol)
-//  - Détective (J2)  : T = allume / éteint la lampe · haut / bas du joystick = oriente la lampe
-//  - Les deux        : flèches ou ZQSD pour marcher, bouton A pour sauter,
-//                      haut / bas devant une échelle pour monter / descendre
-//  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.
-//
-//  La carte vient de Tiled (assets/coulisse.json). On y lit des RECTANGLES posés
-//  dans les calques d'objets "collisions" et "mecaniques" : c'est plus fiable
-//  que de deviner les collisions à partir des images des tuiles.
-//  Les touches sont dans controles.js, les chiffres d'équilibrage dans reglages.js.
-// ============================================================================
+// Niveau 1 : Les Coulisses. Lampe, passerelles fantômes, ondes, Tuba et cristaux.
 
 // On importe ce dont le niveau a besoin : réglages, touches, progression, musique et sons
 import { REGLAGES } from "./reglages.js";

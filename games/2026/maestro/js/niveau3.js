@@ -1,31 +1,4 @@
-// ============================================================================
-//  js/niveau3.js — NIVEAU 3 : LA GRANDE SCÈNE
-//
-//  Comme le niveau 2, ce niveau « hérite » du niveau 1 (class niveau3 extends niveau1) : il garde les
-//  deux héros, la lampe, les ondes Do / Mi / Sol, les cristaux, les cœurs et la transformation en solo.
-//  Il ajoute ses propres mécaniques, en 3 MOUVEMENTS (comme une symphonie) :
-//
-//   I.   L'ASCENSION (musique : Grieg, « Dans l'antre du roi de la montagne »)
-//        On monte par les cintres jusqu'à la Grande Scène. Les marches sont des PORTÉES DE COULEUR :
-//        seules les marches de la note choisie par la Cantatrice (bouton C) sont solides.
-//        Les PROJECTEURS s'allument en rythme, et le rythme accélère quand on monte.
-//        Les FAUSSES NOTES s'effondrent sous les pieds : la lampe du Détective les démasque.
-//
-//   II.  LA DANSE MACABRE (musique : Saint-Saëns, « Danse macabre », version de Kevin MacLeod)
-//        Le combat contre le Maestro possédé. Son POINT FAIBLE (une note de couleur) n'apparaît que
-//        dans la lumière de la lampe ; il faut ensuite le toucher avec l'onde de la MÊME couleur.
-//        À mi-vie, la scène s'éteint : on ne voit plus le Maestro que dans la lumière.
-//
-//   III. LE CHANT FINAL (musique : Mozart, air de la Reine de la Nuit, chanté par Rita Streich, 1953)
-//        Le Maestro dirige : des notes défilent sur la portée, la Cantatrice les chante en rythme
-//        (A = Do, B = Mi, C = Sol). Chaque note juste rallume l'opéra. Puis rideau, et le salut !
-//
-//  Les réglages du niveau sont en haut du fichier (positions des marches, rythme, points du Maestro…).
-//  Musiques libres de droits (Wikimedia Commons) : voir les crédits en bas de ce commentaire.
-//   - Grieg, In the Hall of the Mountain King — Musopen Symphony — domaine public
-//   - Saint-Saëns, Danse macabre — Kevin MacLeod (incompetech.com) — licence CC BY 3.0
-//   - Mozart, Der Hölle Rache — Rita Streich, RIAS, dir. Ferenc Fricsay (1953) — domaine public
-// ============================================================================
+// Niveau 3 : la Grande Scène. Ascension, combat contre le Maestro, chant final.
 
 import niveau1 from "./niveau1.js";
 import { REGLAGES } from "./reglages.js";

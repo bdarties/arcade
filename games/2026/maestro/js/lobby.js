@@ -1,20 +1,4 @@
-// ============================================================================
-//  js/lobby.js — LE LOBBY (« les Cintres ») : le point d'apparition des joueurs
-//
-//  On y arrive en début de partie et après un Game Over (on y réapparaît au "spawn").
-//  Le lobby a 3 portes, une par niveau. Pour entrer dans une porte : se placer
-//  devant et appuyer sur le bouton B.
-//     1 — Les Coulisses (à gauche, au niveau du sol)  -> toujours ouverte
-//     2 — Les Ombres chinoises (en haut)             -> s'ouvre quand le niveau 1 est terminé
-//     3 — La Grande Scène (à droite, sur une marche) -> « bientôt » (niveau pas encore fait)
-//  Les portes fermées affichent un cadenas (règles dans progression.js).
-//
-//  - Flèches (J1) ou ZQSD (J2) pour marcher, bouton A pour sauter
-//  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.
-//
-//  La carte vient de Tiled (assets/lobby.json). Elle ne contient que des calques de tuiles :
-//  les zones solides, les échelles et les portes sont décrites dans ce fichier (SOLIDES, ECHELLES, PORTES).
-// ============================================================================
+// Le lobby : les portes vers les niveaux, selon la progression.
 
 // On importe ce dont le lobby a besoin : les réglages (vitesses, sauts), les touches,
 // la musique, et la progression (quelles portes sont ouvertes).

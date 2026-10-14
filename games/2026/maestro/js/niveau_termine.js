@@ -1,11 +1,4 @@
-// ============================================================================
-//  js/niveau_termine.js — ÉCRAN « NIVEAU TERMINÉ » (le bilan après chaque victoire)
-//
-//  Le niveau qui vient d'être gagné nous envoie ici avec des informations (voir terminerNiveau dans niveau1.js) :
-//    numero, nom, vies, viesMax, secondes, premiereFois.
-//  On affiche : le fragment de partition gagné, les cœurs restants, le temps, et ce que ça débloque.
-//  Puis A / Entrée ramène au LOBBY, où la porte suivante est maintenant ouverte.
-// ============================================================================
+// Bilan après une victoire : fragment, cœurs, temps, porte débloquée.
 
 import { creerClavierMenu } from "./controles.js";
 import { NIVEAUX, niveauxTermines } from "./progression.js";

@@ -1,19 +1,4 @@
-// ============================================================================
-//  js/niveau2.js — NIVEAU 2 : LES OMBRES CHINOISES (carte Tiled « map2maestro »)
-//
-//  Ce niveau « hérite » du niveau 1 (class niveau2 extends niveau1) : il reprend TOUTES ses
-//  mécaniques sans les recopier — les deux héros, la lampe, les ondes Do / Mi / Sol, les cristaux,
-//  les cœurs, la caméra, les échelles, le mode solo et duo. Il ne redéfinit que ce qui change :
-//  la carte, les objets à ramasser et les textes.
-//
-//  OBJECTIF : ramasser 3 NOTES DE MUSIQUE (il y en a 5 sur le chemin) pour RÉVÉLER la PARTITION, la prendre,
-//  puis franchir la PORTE en haut à droite.
-//
-//  - Les plateformes et les échelles sont lues dans la carte Tiled (propriétés estSolide / estEchelle).
-//  - Des CRISTAUX colorés gardent le chemin : il faut tirer la note de la même couleur (Cantatrice).
-//  - Dans la ZONE SOMBRE, des passerelles fantômes mènent à une note dorée BONUS (+1 cœur) :
-//    le Détective doit les éclairer avec sa lampe.
-// ============================================================================
+// Niveau 2 : Les ombres chinoises. Hérite du niveau 1 : notes, tambour, plateformes mobiles.
 
 // On importe le niveau 1 : ce niveau-ci en est une version qui change quelques éléments
 import niveau1 from "./niveau1.js";

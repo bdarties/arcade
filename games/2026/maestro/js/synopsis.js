@@ -1,3 +1,5 @@
+// Synopsis : le texte s'écrit lettre par lettre.
+
 import { creerClavierMenu } from "./controles.js";
 import { jouerMusique } from "./musique.js";
 

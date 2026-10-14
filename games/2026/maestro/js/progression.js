@@ -1,16 +1,4 @@
-// ============================================================================
-//  js/progression.js — LA PROGRESSION DU JOUEUR : quels niveaux sont terminés, quelles portes sont ouvertes
-//
-//  Le jeu doit « se souvenir » des niveaux terminés quand on change d'écran (lobby, niveaux, game over).
-//  On les range dans le registry (la mémoire partagée entre scènes) sous le nom "niveauxTermines" :
-//  c'est une liste de numéros, par exemple [1, 2] = les niveaux 1 et 2 sont terminés.
-//
-//  Règles :
-//   - la porte 1 est toujours ouverte ;
-//   - la porte N s'ouvre quand le niveau N-1 est terminé ;
-//   - un niveau terminé donne un FRAGMENT de partition (on en cherche 3) ;
-//   - une nouvelle partie (choix Solo / Duo) remet tout à zéro ; un Game Over ne perd rien.
-// ============================================================================
+// Progression : niveaux terminés, portes ouvertes, fragments.
 
 // Les niveaux du jeu. disponible = false : le niveau n'est pas encore jouable (la porte s'ouvre mais affiche « bientôt »).
 export const NIVEAUX = [

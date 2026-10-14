@@ -1,13 +1,4 @@
-// ============================================================================
-//  js/musique.js — LA MUSIQUE DU JEU (une seule piste à la fois) et les petits SONS fabriqués par le code
-//
-//  Problème résolu : chaque écran lançait sa propre musique et la coupait en partant. Résultat : un silence
-//  entre l'accueil, le choix du mode et le synopsis, jusqu'au lobby.
-//  Ici, la piste en cours est mémorisée dans le registry (la mémoire partagée entre scènes) :
-//    - si on demande la même piste, elle CONTINUE sans coupure ;
-//    - si on demande une autre piste, l'ancienne s'arrête et la nouvelle démarre ;
-//    - un niveau arrête la musique du menu quand il commence (arreterMusique).
-// ============================================================================
+// Musique (une seule piste à la fois) et sons des ennemis et des notes.
 
 // Joue la piste « cle » en boucle, sauf si elle joue déjà
 export function jouerMusique(scene, cle, volume) {

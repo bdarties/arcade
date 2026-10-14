@@ -1,10 +1,4 @@
-// ============================================================================
-//  js/reglages.js — TOUS les réglages du jeu au même endroit
-//
-//  Pour équilibrer le jeu (plus de vitesse, plus de vies...), on change les
-//  chiffres ici et nulle part ailleurs. Les autres fichiers font :
-//      import { REGLAGES } from "./reglages.js";
-// ============================================================================
+// Tous les réglages du jeu (vitesse, lampe, vies, ennemis) au même endroit.
 
 export const REGLAGES = {
   // ---- Déplacements communs aux deux personnages ----
