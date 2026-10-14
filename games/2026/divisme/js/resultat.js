@@ -36,6 +36,18 @@ export default class resultat extends Phaser.Scene {
         super({ key: "resultat" });
     }
 
+    preload() {
+
+        // Dossier de base des fichiers (réglé dans la config du jeu)
+        const baseURL = this.sys.game.config.baseURL;
+        this.load.setBaseURL(baseURL);
+
+        // Les trois fonds de l'écran final
+        this.load.image("screen_game_over", "src/bg/screen_game_over.png");   // solo : perdu
+        this.load.image("victoire_un", "src/bg/victoire_un.png");             // duo : le joueur 1 gagne
+        this.load.image("victoire_deux", "src/bg/victoire_deux.png");         // duo : le joueur 2 gagne
+    }
+
     create() {
 
         const nombreJoueurs = this.registry.get("joueurs") || 1;
@@ -72,11 +84,14 @@ export default class resultat extends Phaser.Scene {
         const nbReussites = nombreReussites(this);
         const gagne = nbReussites >= REUSSITES_POUR_GAGNER;
 
+        // Perdu : on affiche le fond "game over"
+        if (!gagne) this.poserFond("screen_game_over");
+
         creerEnTete(
             this,
             "Fin du spectacle",
             "Mini-jeux réussis : " + nbReussites + " sur " + cles.length +
-            "  (il en faut au moins " + REUSSITES_POUR_GAGNER + ")"
+            "  (il en faut " + REUSSITES_POUR_GAGNER + ")"
         );
 
         // Grand titre : victoire ou game over
@@ -135,6 +150,10 @@ export default class resultat extends Phaser.Scene {
 
         const egalite = total1 === total2;
 
+        // Le fond dépend du gagnant (en cas d'égalité : fond uni)
+        if (total1 > total2) this.poserFond("victoire_un");
+        if (total2 > total1) this.poserFond("victoire_deux");
+
         creerEnTete(this, "Fin du spectacle", "Les points de chaque mini-jeu sont additionnés");
 
         // Grand titre : le gagnant
@@ -170,6 +189,17 @@ export default class resultat extends Phaser.Scene {
 
         // Il y a toujours quelque chose à fêter, sauf en cas d'égalité
         this.annoncer(!egalite);
+    }
+
+
+    // Pose une image de fond (derrière tout le reste : depth -10).
+    // Si l'image n'a pas pu être chargée, on ne fait rien : le fond uni reste en place
+    // (sinon Phaser afficherait un carré vert "image manquante").
+    poserFond(cle) {
+
+        if (this.textures.exists(cle)) {
+            this.add.image(640, 360, cle).setDepth(-10);
+        }
     }
 
 
