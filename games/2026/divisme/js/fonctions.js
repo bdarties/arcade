@@ -693,3 +693,60 @@ export function nombreReussites(scene) {
 
     return Object.keys(MINIJEUX).filter(cle => reussites[cle]).length;
 }
+
+
+// ==============================================================
+// 12. SCORES SAUVEGARDÉS (restent après la fermeture du jeu)
+// ==============================================================
+// Le registry (section 11) est effacé à la fermeture de la page.
+// Ici on copie le total final dans la base de la borne, qui, elle, est durable.
+// Format sauvegardé :
+//   { solo: [ { score, date } ],
+//     duo:  [ { score, scoreJ1, scoreJ2, date } ] }
+
+const NB_SCORES_GARDES = 10;
+
+// Ajoute une entrée dans la liste d'un mode ("solo" ou "duo").
+// Cycle obligatoire : LIRE -> MODIFIER -> RÉÉCRIRE,
+// car ecrireDonneesJSON remplace tout le contenu précédent.
+export async function ajouterScoreSauvegarde(mode, entree) {
+
+    // 1. LIRE (null au tout premier lancement : on part d'un objet vide)
+    const donnees = (await lireDonneesJSON()) || {};
+    donnees.solo = donnees.solo || [];
+    donnees.duo = donnees.duo || [];
+
+    // 2. MODIFIER : on ajoute, on trie (meilleur en premier), on garde le top 10
+    const liste = donnees[mode];
+    liste.push(entree);
+    liste.sort((a, b) => b.score - a.score);
+    donnees[mode] = liste.slice(0, NB_SCORES_GARDES);
+
+    // 3. RÉÉCRIRE
+    await ecrireDonneesJSON(donnees);
+}
+
+// Lit les totaux de la partie dans le registry et les sauvegarde.
+export async function sauvegarderPartie(scene) {
+
+    const nombreJoueurs = scene.registry.get("joueurs") || 1;
+    const maintenant = Date.now();   // nombre de ms : accepté par le JSON
+
+    const total1 = totalJoueur(scene, 0);
+
+    if (nombreJoueurs === 1) {
+
+        await ajouterScoreSauvegarde("solo", { score: total1, date: maintenant });
+
+    } else {
+
+        const total2 = totalJoueur(scene, 1);
+
+        await ajouterScoreSauvegarde("duo", {
+            score: Math.max(total1, total2),   // le score du gagnant sert au classement
+            scoreJ1: total1,
+            scoreJ2: total2,
+            date: maintenant
+        });
+    }
+}

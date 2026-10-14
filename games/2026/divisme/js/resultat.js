@@ -17,7 +17,8 @@ import {
     lireScores,
     lireReussites,
     totalJoueur,
-    nombreReussites
+    nombreReussites,
+    sauvegarderPartie
 } from "./fonctions.js";
 
 // ==============================
@@ -53,6 +54,11 @@ export default class resultat extends Phaser.Scene {
         const nombreJoueurs = this.registry.get("joueurs") || 1;
 
         this.sortie = false;   // empêche de lancer deux fois la transition
+
+        // La partie est terminée : on sauvegarde le score (une seule fois, car cette
+        // scène n'est atteinte qu'à la fin d'une partie). Pas de "await" : le joueur
+        // reste au moins 2 s sur cet écran, c'est largement le temps d'écrire.
+        sauvegarderPartie(this);
 
         // Pas d'image de fond pour cet écran : un fond uni de la couleur "nuit"
         this.cameras.main.setBackgroundColor(COULEURS.NUIT);
