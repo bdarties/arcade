@@ -3,27 +3,28 @@ import * as fct from "./fonctions.js";
 /***********************************************************************/
 /** VARIABLES GLOBALES 
 /***********************************************************************/
-var mode_fantome = true;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions reste actives.
+var mode_fantome = true;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions restes actives.
 var player; // désigne le sprite du joueur
 var player2;
-var clavier; // pour la gestion du clavier
+var clavier; // pour la gestion du clavier. Semble initulisé mais en fait, si, elle l'est.
 var J1Haut, J1Bas, J1Gauche, J1Droite, J1boutonFeu,J1Interaction; //variables des touches du joueur 1
 var J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu,J2Interaction; //variables des touches du joueur 2
 var player_spawn; //définit l'endroit d'apparition du joueur1
 var player2_spawn; //définit l'endroit d'apparition du joueur2
-var tableau_spawn
-var nombre_cles;
-var cles_creees = 0;
-var mode_deux_joueurs = true; //définit si le mode un joueur ou deux joueur est actif.
+var tableau_spawn //tableau qui sert a reunir tous les points de spawn. Ces points de spawn sont définit dans le fichier Tiled, cependant, ils ne servent que de référence pour inscrire les coordonées manuelllement. Une amélioration de ce systeme serait possible.
+var nombre_elements
+var nombre_cles; //définit le nombre de clé a chercher dans le niveau
+var cles_creees = 0; //une variable qui va servir au code pour savoir combien de clés sont été crées pendant leur placement.
+var mode_deux_joueurs = true; //définit si le mode un joueur ou deux joueur est actif. En false, le mode un joueur est actif, en tue, le mode deux joueurs. C'est donc aussi a partir de cette variable qu'on va activer  ou desactiver toute variabless/fonctionalités pour le second joueur (car si on garde les variables mais qu'on retire le second joueur le code va planter par ce qu'il manquera des arguments donc on doit appliquer cette variable comme condition très regulièrement)
 var groupe_cle; 
-var cle;
-var hudJ1;
-var hudJ2;
-var hudCommun
-var groupeBullets;
-var groupe_araignee;
-var tableau_ennemis; //tableau qui serivira a choisir et répartir alétoirement les ennemis
-var groupe_recharges;
+var cle; //c'est sous ce nom que soont définis les clés a partir de groupe_cle lors de sa création.
+var hudJ1; //un tableur qui rassemble toutes les variables des éléments d'UI du premier joueur. Voir plus bas.
+var hudJ2; //pareil, pour le joueur 2
+var hudCommun //même principe, mais avec des variables d'éléments qui servent aux deux joueurs (comme le timer, ou le nombre de clé). Attention : on parle bien de l'AFFICHAGE UI de ses éléments (donc tout ce qui est BarreVie, affichageScore ect...) a ne pas confondre avec les élements interactibles dans le monde.
+var groupeBullets; 
+var groupe_araignee; //les groupe sont globalement explicatifs.
+var tableau_ennemis; //tableau qui serivira a choisir et répartir les ennemis dans les points d'apparitions définis danss tableau_spawn. Voir son utilisation dans apparition_element.
+var groupe_recharges; //en cas ou ce ne serait pas clair, c'est ce qui définira les recharges qui serviront a recharger les "balles" des joueurs
 var groupe_soin;
 var porte;
 var araignee;
@@ -34,28 +35,28 @@ var nombre_ennemis_apparaissant;
 var nombre_recharges_apparaissant;
 var nombre_soins_apparaissant;
 var musique_niveau1;
-var camJ1;
-var camJ1UI;
-var camJ2;
-var camJ2UI;
-var camGlobalUI;
-var score_J1_affiche;
+var camJ1; 
+var camJ1UI; //gère tous les éléments de l'UI du joueur 1, ou tous les éléments d'UI de la première motié de gauche.
+var camJ2; //Gère la seconde motié droite de la caméra du jeu, ou, en splitscreen, la caméra du joueur 2
+var camJ2UI; //gère tous les éléments de l'UI du joueur 2, ou tous les éléments d'UI de la seconde motié de droite.
+var camGlobalUI; //gère les éléments d'UI affichés au centre en haut de l'écran, ou tous les éléments d'UI qui concernent les deux joueurs et qui est donc surpéposé par dessus les deux caméras UI.
+var score_J1_affiche; //correspond actuellement au nombre dU score affiché pour le joueur 1 (pas l'icone, c'est autre chose). Idem pour la ligne de dessous avec le joueur 2.
 var score_J2_affiche;
-var balle_restanteJ1_affiche;
+var balle_restanteJ1_affiche; //correspond actuellement au nombre de balle restante affiché pour le joueur 1. Idem pour la ligne de dessous avec le joueur 2.
 var balle_restanteJ2_affiche;
 var timerIcon;
 var nombreCleIcon;
-var son_blesse;
+var son_blesse; //semble inutilisé, mais l'est pour gérer le son lorsque le joueur est bléssé.
 var son_areignne_blesse;
-var son_cle;
+var son_cle; //son lorsque la clé est ramassée. La clé elle-même ne produit pas de sons dans le niveau (mais devrais, cela pourrait faire un indicateur sonore pour les retrouver)
 var cles_restantes_affiche;
+var temps_restant; //variable qui gère combien de seconde s'écoule avant que la partie se finisse. A ne pas confondre avec temps_restant_affiche.
 var temps_restant_affiche
-var temps_restant;
-var camerasFusionnees = true; //sert a former une camera globale une fois les deux proches
-var cibleCamera; // point invisible au milieu des deux joueurs
-var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points
-var sortie_ouverte = false;
-var gameOver = false;
+var camerasFusionnees = true; //sert a former une camera globale une fois les deux joueurs proches
+var cibleCamera; // point invisible au milieu des deux joueurs sur laquelle la camera fusionée se focalise.
+var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points. Est éfféctivement initulisée pour l'instant.
+var sortie_ouverte = false; //définit si toutes les clés ont été trouvées, et donc, si la porte du niveau du jeu est ouverte pour s'échapper.
+var gameOver = false; //fonction pouvant etre utilisée pour définir si la partie se termine ou non. N'a pas d'utilité pour l'instant.
 // définition de la classe "selection"
 export default class niveau1 extends Phaser.Scene {
   constructor() {
@@ -82,6 +83,17 @@ export default class niveau1 extends Phaser.Scene {
     this.load.image("img_background", "./assets/arriere_plan.jpg");
     this.load.image("player1", "./assets/player_1/joueur1_image.png"); //servira a définir le joueur directement. L'image a en réalité peu d'importance car on verra l'animation d'attente du bas dès le début.
     this.load.image("player2", "./assets/player_2/joueur2_image.png");
+    this.load.image("sortie_fermee", "./assets/door.png");
+    this.load.image("Score", "./assets/UI/score_icon.png");
+    this.load.image("timer_icone", "./assets/UI/timer_icon.png");
+    this.load.image("bullet_icone", "./assets/UI/bullet_icon.png");
+    this.load.image("nombre_cle_icone", "./assets/UI/trousseau.png");
+    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
+    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
+    this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
+    this.load.audio("areignee_blesse","./assets/musique_et_sons/areigne_blesse.mp3")
+    this.load.audio("cle_collecte","./assets/musique_et_sons/cle_collecte.mp3")
+    /*CHARGEMENT DES ANIMATIONS */
     this.load.spritesheet("anim_attente_bas_J1", "./assets/player_1/idle_down.png", {
       frameWidth: 32,
       frameHeight: 32
@@ -235,16 +247,6 @@ export default class niveau1 extends Phaser.Scene {
       frameWidth : 32,
       frameHeight : 32
     });
-    this.load.image("sortie_fermee", "./assets/door.png");
-    this.load.image("Score", "./assets/UI/score_icon.png");
-    this.load.image("timer_icone", "./assets/UI/timer_icon.png");
-    this.load.image("bullet_icone", "./assets/UI/bullet_icon.png");
-    this.load.image("nombre_cle_icone", "./assets/UI/trousseau.png");
-    this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
-    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
-    this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
-    this.load.audio("areignee_blesse","./assets/musique_et_sons/areigne_blesse.mp3")
-    this.load.audio("cle_collecte","./assets/musique_et_sons/cle_collecte.mp3")
   }
 
   /***********************************************************************/
@@ -307,8 +309,8 @@ export default class niveau1 extends Phaser.Scene {
   */
 
   player_spawn = {x:93.3333,y:672.0} 
-  player2_spawn = {x:243.333, y:673.333};8
-  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}];
+  player2_spawn = {x:243.333, y:673.333};
+  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}]; //le tableau de spawn. Entrez les coordonées voulue dans celui-ci et les éléments du jeu seront répartis sur ces points avec la fonction repartition_element(). Il définit par la même occasion le nombre d'éléments qui peuvent apparaitre : plus il y'a de points, plus il peut y avoir d'éléments dans le jeu.
 
   /**************************
    * INSTALATION DES ELEMENTS
@@ -316,9 +318,10 @@ export default class niveau1 extends Phaser.Scene {
   groupeBullets = this.physics.add.group();
   porte = this.physics.add.staticSprite(600, 414, "sortie_fermee");
   groupe_cle = this.physics.add.group();
+  groupe_araignee = this.physics.add.group
   groupe_recharges = this.physics.add.group();
   groupe_soin = this.physics.add.group();
-  //timer du jeu
+  //le timer du jeu est crée ci-dessous :
       this.time.addEvent({
       delay: 1000,
       repeat: temps_restant - 1,
@@ -694,15 +697,15 @@ export default class niveau1 extends Phaser.Scene {
     //camera 1 
     camJ1 = this.cameras.main; //on initisalise les caméras maintenant pour qu'elle puissent ignorer les éléménts d'UI des deux joueurs plus tard.
     camJ1.setViewport(0, 0, 1280/2, 720);
-    camJ1.startFollow(player, true, 0.1, 0.1);
-    camJ1.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.widthInPixels);
-    camJ1.setZoom(2);
+    camJ1.startFollow(player, true, 0.1, 0.1); 
+    camJ1.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.widthInPixels); 
+    camJ1.setZoom(2); //Définit un zoom et l'applique a la caméra, tout simplement. Une plus grande valeur définira un zoom plus grand.
     //Les caméras UI ont comme objectif de n'afficher que les UI des deux joueurs afin qu'ils ne soient pas afféctés par le zoom des caméras normales.
     camJ1UI = this.cameras.add(0, 0, 1280 / 2, 720);
     camJ1UI.setScroll(0, 0);
-    camJ1UI.ignore(this.children.list);
+    camJ1UI.ignore(this.children.list); //ici, on indique ce que la camJ1UI ignorera (donc n'affichera pas). Ca peut etre autant des autres éléments d'UI que des éléments du jeu diréctement. this.children.list designe toute les répétitions de cette ligne et surtout la liste avec les huds.
     //cameraJoueur2
-    //note : la camera J2 aparait quand même même lorsque les
+    //note : la camera J2 aparait quand même même lorsque le mode deux joueur est désactivé car une fois rassemblé avec camJ2, ils forment les deux moitié de la caméra du joueur seul et des deux joueurs proches.
     camJ2 = this.cameras.add(1280/2, 0, 1280/2, 720);
     if (mode_deux_joueurs){
       camJ2.startFollow(player2, true, 0.1, 0.1);
@@ -721,13 +724,13 @@ export default class niveau1 extends Phaser.Scene {
     if (mode_deux_joueurs) {
       fusionner_cameras();
     } else {
-      camJ1.setViewport(0, 0, 1280, 720); // plein écran, suit uniquement player
+      camJ1.setViewport(0, 0, 1280, 720);
       camJ2.setVisible(false);
     }
     /************************************ 
      * ELEMENTS DE L'UI
     ************************************/
-    const panneauScoreJ1 = this.add.rectangle(76, 175, 152, 56, 0x111827, 0.8)
+    const panneauScoreJ1 = this.add.rectangle(76, 175, 152, 56, 0x111827, 0.8)  //par "panneau", on designe le rectangle sur lequel se trouve les éléments d'UI correspondant
       .setStrokeStyle(2, 0x3bd5f0, 0.7)
       .setScrollFactor(0);
     const panneauBallesJ1 = this.add.rectangle(76, 96, 152, 64, 0x111827, 0.8)
@@ -738,19 +741,19 @@ export default class niveau1 extends Phaser.Scene {
       .setScrollFactor(0);
     //élements de l'UI du joueur 1
     player.iconeScore = this.add.image(30, 145, "Score").setDisplaySize(24, 24);
-    player.iconeScore.setScale(2);
-    player.iconeScore.setOrigin(0.5, 0);
-    player.iconeScore.setScrollFactor(0);
-    score_J1_affiche = this.add.text(64, 160, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
+    player.iconeScore.setScale(2); //permet d'agrandir l'image directement dans le code.
+    player.iconeScore.setOrigin(0.5, 0); //setOrigin définit le point d'ancrage a partir duquel l'image peut etre modifié (donc déplacée, redimensionée...) 
+    player.iconeScore.setScrollFactor(0); //setScrollFactor fixe l'objet a sa position pour qu'il ne soit pas affécté par le scrolling de la caméra.
+    score_J1_affiche = this.add.text(64, 160, String(player.score), { fontSize: '32px', fill: '#3bd5f0'}); //en ajoutant le nombre a coté de l'icone correspondante, on pourra comprendre a quoi correspond ce nombre en jeu. Par exemple, ici il s'agit du nombre qui gère le score du joueur 1).
     score_J1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.iconeRecharge = this.add.image(32, 74, "bullet_icone").setDisplaySize(24, 24);
+    player.iconeRecharge = this.add.image(32, 74, "bullet_icone").setDisplaySize(24, 24); //setDisplaySize définit la taille rendue à l'écran d'un objet en pixels
     player.iconeRecharge.setScale(1.5);
     player.iconeRecharge.setOrigin(0.5, 0);
     player.iconeRecharge.setScrollFactor(0);
     balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326'});
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.barreVie = this.add.sprite(70, 10, "pv_bar", player.points_vies);
+    player.barreVie = this.add.sprite(70, 10, "pv_bar", player.points_vies); //note : cet élément d'UI possède plusieurs frames et est donc un sprite. Par rapport aux autres, on l'importe en tant que sprite.
     player.barreVie.setScale(2.2);
     player.barreVie.setOrigin(0.5, 0);
     player.barreVie.setScrollFactor(0);
@@ -819,10 +822,10 @@ export default class niveau1 extends Phaser.Scene {
     /***********************
      *  CREATION DU CLAVIER ET TOUCHES *
      ************************/
-    clavier = this.input.keyboard.createCursorKeys();
+    clavier = this.input.keyboard.createCursorKeys(); //on importe les touches curseurs, le reste étant installé après cette ligne.
 
     //touches Joueur 1
-      J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.KeyCodes.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
+      J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.addKey.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
       J1Bas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
       J1Gauche = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
       J1Droite = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
@@ -838,10 +841,10 @@ export default class niveau1 extends Phaser.Scene {
     /*************************************************
      * AJOUT DES ENNEMIS                             *
      ************************************************/
-    //on rajoute les ennemis dans ce tableau pour qu'ils soient réorganisés plus tard.
+    
     groupe_araignee = this.physics.add.group();
     this.physics.add.collider(groupe_araignee, calque_mur);
-    tableau_ennemis = [{
+    tableau_ennemis = [{ //on rajoute les ennemis dans ce tableau pour qu'ils soient réorganisés plus tard. Ce tableau permet aussi de mettre des informations liées aux ennemis comme leur score donné une fois éliminé par exemple
       nom: "groupe_araignee",
       texture: "areignee_ennemie",
       animation: "animation_areignee",
@@ -849,14 +852,13 @@ export default class niveau1 extends Phaser.Scene {
       degats: 1,
       score : 100
     }];
-    //on appelera ensuite apparition_elements pour
-    const nombre_appels_apparition = Math.max(
+     nombre_appels_apparition = Math.max( //on rassemble le nombre d'élément total que l'on shouaiterais ici.
       nombre_ennemis_apparaissant,
       nombre_cles,
       nombre_recharges_apparaissant,
       nombre_soins_apparaissant
     );
-    for (let i = 0; i < nombre_appels_apparition; i++){
+    for (let i = 0; i < nombre_appels_apparition; i++){ //on essaie de faire apparaitre tous les éléments en appelant apparaitre_element plusieurs fois, autant de fois qu'il y'a d'éléments a faire apparaitre au total.
       apparition_elements();
     }
     /*****************************************************
@@ -877,7 +879,7 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
-    hudJ1 = [
+    hudJ1 = [ //représente tous les éléments du hud (ou de l'UI) de la camJ1. Organisé comme ceci pour plus de clareté.
       panneauScoreJ1, panneauBallesJ1, panneauVieJ1,
       score_J1_affiche, player.iconeScore, balle_restanteJ1_affiche, player.iconeRecharge, player.barreVie
     ];
@@ -1033,7 +1035,7 @@ export default class niveau1 extends Phaser.Scene {
 /**FONCTIONS DU JEU **/
 /************************************************************************/
 
-function gerer_cameras() {
+function gerer_cameras() { //ici on gère plus précisément l'écart entre les joueurs 1 et 2 en mode deux joueurs et on définit quand séparer les deux caméras. Cette fonction sert donc a utiliser les fonctions séprare_cameras et fusionner_cameras
   const distance = Phaser.Math.Distance.Between(player.x, player.y, player2.x, player2.y);
 
   // deux seuils différents pour prévenir le clignotement a la limite
@@ -1048,21 +1050,21 @@ function gerer_cameras() {
   }
 }
 
-function fusionner_cameras() {
+function fusionner_cameras() { //sert a "fusionner" les deux caméras. On donne l'impression de fusion en "maquant" la camera du joueur 2 (donc on ne l'affiche plus, cachant aussi sa vision), puis en agrandissant le champ de la camera du joueur1 ni plus ni moins. On indique aussi a la camera de suivre le point qui servira de nouveau focus pour pouvoir voir les deux joueurs.
   camerasFusionnees = true;
   camJ1.setViewport(0, 0, 1280, 720);
   camJ1.startFollow(cibleCamera, true, 0.1, 0.1);
   camJ2.setVisible(false);
 }
 
-function separer_cameras() {
+function separer_cameras() { //par rapport a fusionner_camera, on réactive la seconde camera de droite et on redéfinit la première camera a ses proportions normales.
   camerasFusionnees = false;
   camJ1.setViewport(0, 0, 1280 / 2, 720);
   camJ1.startFollow(player, true, 0.1, 0.1);
   camJ2.setVisible(true);
 }
 
-function deplacement_areignee() {
+function deplacement_areignee() { //définit le comportement de l'areignée, un des ennemis du jeu.
   const joueurs = mode_deux_joueurs ? [player, player2] : [player];
   groupe_araignee.children.iterate((ennemi) => {
     if (!ennemi || !ennemi.active || !ennemi.body) {
@@ -1091,14 +1093,14 @@ function deplacement_areignee() {
 
 
 
-function apparition_elements() {
-  if (cles_creees < nombre_cles && groupe_cle.countActive(true) < nombre_cles && tableau_spawn.length > 0) { //partie des clés
+function apparition_elements() { //la fonction la plus complexe. Elle sert a faire apparaitre tous les éléments du jeu sauf les joueurs dans la carte. Pour cela, elle fait apparaitre les éléments individuellements par catégorie dans l'ordre de présentation du code.
+  if (cles_creees < nombre_cles && groupe_cle.countActive(true) < nombre_cles && tableau_spawn.length > 0) { //partie des clés. Aussi, a chaque vérfication de chaques parties,
     const typeCle = Phaser.Utils.Array.GetRandom([ //tableau qui contient les trois clés avec leur animations et leur score. Permet de les organiser plus facilement. Ici on en selectionne une clé aléatoire et on la met dans le tableur TypeCle.
       { texture: "cle_bronze", animation: "animation_cle_bronze", score: 500 },
       { texture: "cle_argent", animation: "animation_cle_argent", score: 500 },
       { texture: "cle_or", animation: "animation_cle_or", score: 800 }
     ]);
-    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
+    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn); //la ligne la plus importante. Celle-ci définit une position en prenant au hasard une des coordonées du tableau tableau_spawn.
     cle = groupe_cle.create(position.x, position.y, typeCle.texture); //comment on selectionne les clés aléatoirement, on a deja par défaut une texture, animation et score associé a TypeCle que l'on peut deja sortir du tableur.
     cle.score = typeCle.score;
     cles_creees += 1;
@@ -1110,16 +1112,6 @@ function apparition_elements() {
       camJ2UI.ignore(cle);
     }
   }
-  if (groupe_recharges.countActive(true) < nombre_recharges_apparaissant && tableau_spawn.length > 0) { //partie des recharges
-    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
-    const recharge = groupe_recharges.create(position.x, position.y, "recharge");
-    recharge.anims.play("recharge", true);
-    camJ1UI.ignore(recharge);
-    camGlobalUI.ignore(recharge);
-    if (mode_deux_joueurs) {
-      camJ2UI.ignore(recharge);
-    }
-  }
   if (groupe_soin.countActive(true) < nombre_soins_apparaissant && tableau_spawn.length > 0) {
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const medkit = groupe_soin.create(position.x, position.y, "soin");
@@ -1128,6 +1120,16 @@ function apparition_elements() {
     camGlobalUI.ignore(medkit);
     if (mode_deux_joueurs) {
       camJ2UI.ignore(medkit);
+    }
+  }
+  if (groupe_recharges.countActive(true) < nombre_recharges_apparaissant && tableau_spawn.length > 0) { //partie des recharges
+    const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
+    const recharge = groupe_recharges.create(position.x, position.y, "recharge");
+    recharge.anims.play("recharge", true);
+    camJ1UI.ignore(recharge);
+    camGlobalUI.ignore(recharge);
+    if (mode_deux_joueurs) {
+      camJ2UI.ignore(recharge);
     }
   }
   if (groupe_araignee.countActive(true) < nombre_ennemis_apparaissant && tableau_spawn.length > 0) { //partie des ennemis
@@ -1147,13 +1149,13 @@ function apparition_elements() {
 }
 
 function degat_contact_ennemi(player, ennemi) {
-  if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) {
+  if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) { //si le prochain degat déclenché par l'ennemi  est supérieur aux PV actuels de la cible (donc le joueur), on ne declenche pas la fonctions.
     return;
   }
   player.points_vies = Math.max(0, player.points_vies - ennemi.degats);
   player.prochaineDegat = this.time.now + 1000;
-  player.colliderEnnemis.active = false;
-  this.tweens.add({ //fait clignoter le joueur
+  player.colliderEnnemis.active = false; //on desactive la colision du joueur avec l'ennemi pour le rendre invincible.
+  this.tweens.add({ //fait clignoter le joueur pour indiquer qu'il est invincible
     targets: player,
     alpha: 0.2,
     duration: 100,
@@ -1177,7 +1179,7 @@ function degat_contact_ennemi(player, ennemi) {
           return;
         }
         recharge.destroy();
-        player.enRechargement = true;
+        player.enRechargement = true; //cette valeure permettra de faire en sorte de définir quand le joueur recharge pour pouvoir empecher de réactiver la fonction losrque le joueur est en train de deja l'activer.
         player.peutTirer = false;
         const texteBalles = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
         texteBalles.setText('!');
@@ -1286,25 +1288,25 @@ function degat_contact_ennemi(player, ennemi) {
           }
         }
       };
-    function recuperer_cle(player, cle){
-        player.score += cle.score;
+    function recuperer_cle(player, cle){ //définit ce qu'il se passe au contact d'une clé par le joueur. Devrait etre modifié plus tard une fois qu'on a remplacé les clés avec des objets de score pour ne plus inclure le second joueur (puisque lui ne pourra ramasser que des objets qui donne des points dans son propre mode)
+        player.score += cle.score; //voir score définit dans le tableau de la fonction apparition_element pour plus de clareté?
         const scoreText = player === player2 ? score_J2_affiche : score_J1_affiche;
         scoreText.setText(String(player.score));
         son_cle.play();
-      cles_restantes -= 1;
-      cle.destroy();
-      cles_restantes_affiche.setText(String(cles_restantes));
-      if (cles_creees >= nombre_cles && groupe_cle.countActive(true) === 0){
+        cles_restantes -= 1;
+        cle.destroy();
+        cles_restantes_affiche.setText(String(cles_restantes));
+        if (cles_creees >= nombre_cles && groupe_cle.countActive(true) == 0){
         porte.anims.play("animation_porte_ouverte");
         sortie_ouverte = true;
+        }
       }
-    }
-    function soigner(cible, objet) {
-      if (cible.points_vies >= 5) {
-        return;
-      }
-      else{
-        cible.points_vies = Math.min(cible.points_vies + 2, 5);
-        objet.destroy();
-      }
-    }; 
+      function soigner(cible, objet) {
+        if (cible.points_vies >= 5) {
+          return;
+        }
+        else{
+          cible.points_vies = Math.min(cible.points_vies + 2, 5);
+          objet.destroy();
+       }
+      }; 
