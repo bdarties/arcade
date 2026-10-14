@@ -1,8 +1,8 @@
-export default class niveau2 extends Phaser.Scene {
+export default class Game_over extends Phaser.Scene {
   // constructeur de la classe
   constructor() {
     super({
-      key: "niveau2" //  ici on précise le nom de la classe en tant qu'identifiant
+      key: "Game_over" //  ici on précise le nom de la classe en tant qu'identifiant
     });
   }
   preload() {}

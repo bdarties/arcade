@@ -44,6 +44,7 @@ var score_J2_affiche;
 var balle_restanteJ1_affiche;
 var balle_restanteJ2_affiche;
 var timerIcon;
+var nombreCleIcon;
 var son_blesse;
 var son_areignne_blesse;
 var son_cle;
@@ -240,6 +241,7 @@ export default class niveau1 extends Phaser.Scene {
     this.load.image("Score", "./assets/UI/score_icon.png");
     this.load.image("timer_icone", "./assets/UI/timer_icon.png");
     this.load.image("bullet_icone", "./assets/UI/bullet_icon.png");
+    this.load.image("nombre_cle_icone", "./assets/UI/trousseau.png");
     this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
     this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
     this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
@@ -262,6 +264,7 @@ export default class niveau1 extends Phaser.Scene {
       //definition des paramètres du jeu
       temps_restant = 80;
       cles_creees = 0;
+      cles_restantes = nombre_cles;
       nombre_ennemis_apparaissant = 4;
       nombre_recharges_apparaissant = 1;
       nombre_soins_apparaissant = 1;
@@ -726,12 +729,21 @@ export default class niveau1 extends Phaser.Scene {
     /************************************ 
      * ELEMENTS DE L'UI
     ************************************/
+    const panneauScoreJ1 = this.add.rectangle(76, 156, 152, 56, 0x111827, 0.8)
+      .setStrokeStyle(2, 0x3bd5f0, 0.7)
+      .setScrollFactor(0);
+    const panneauBallesJ1 = this.add.rectangle(76, 96, 152, 64, 0x111827, 0.8)
+      .setStrokeStyle(2, 0xc9a326, 0.7)
+      .setScrollFactor(0);
+    const panneauVieJ1 = this.add.rectangle(76, 26, 152, 48, 0x111827, 0.8)
+      .setStrokeStyle(2, 0x3bd5f0, 0.7)
+      .setScrollFactor(0);
     //élements de l'UI du joueur 1
-    player.iconeScore = this.add.image(30, 0, "Score").setDisplaySize(24, 24);
+    player.iconeScore = this.add.image(30, 132, "Score").setDisplaySize(24, 24);
     player.iconeScore.setScale(2);
     player.iconeScore.setOrigin(0.5, 0);
     player.iconeScore.setScrollFactor(0);
-    score_J1_affiche = this.add.text(64, 16, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
+    score_J1_affiche = this.add.text(64, 136, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
     score_J1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
     player.iconeRecharge = this.add.image(32, 68, "bullet_icone").setDisplaySize(24, 24);
     player.iconeRecharge.setScale(2);
@@ -740,40 +752,60 @@ export default class niveau1 extends Phaser.Scene {
     balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326'});
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.barreVie = this.add.sprite(60, 140, "pv_bar", player.points_vies);
+    player.barreVie = this.add.sprite(60, 10, "pv_bar", player.points_vies);
     player.barreVie.setScale(2);
     player.barreVie.setOrigin(0.5, 0);
     player.barreVie.setScrollFactor(0);
-    timerIcon = this.add.image(600, 50, "timer_icone").setDisplaySize(24, 24);
-    timerIcon.setScale(3);
-    timerIcon.setOrigin(0.5, 0);
-    timerIcon.setScrollFactor(0);
     
-    temps_restant_affiche = this.add.text(580, 80, String(temps_restant), {fontSize: '32px', fill: '#000000'});
-    temps_restant_affiche.setScrollFactor(0);
+    
+    
 
     //élements de l'UI du joueur 2
+    let panneauxJ2 = [];
     if (mode_deux_joueurs){
-      player2.iconeScore = this.add.image(30, 0, "Score").setDisplaySize(24, 24);
+      const decalageHudJ2 = 480;
+      const panneauScoreJ2 = this.add.rectangle(76 + decalageHudJ2, 156, 152, 56, 0x111827, 0.8)
+        .setStrokeStyle(2, 0xf03b3b, 0.7)
+        .setScrollFactor(0);
+      const panneauBallesJ2 = this.add.rectangle(76 + decalageHudJ2, 96, 152, 64, 0x111827, 0.8)
+        .setStrokeStyle(2, 0x571881, 0.7)
+        .setScrollFactor(0);
+      const panneauVieJ2 = this.add.rectangle(76 + decalageHudJ2, 26, 152, 48, 0x111827, 0.8)
+        .setStrokeStyle(2, 0xf03b3b, 0.7)
+        .setScrollFactor(0);
+      panneauxJ2 = [panneauScoreJ2, panneauBallesJ2, panneauVieJ2];
+      player2.iconeScore = this.add.image(30 + decalageHudJ2, 132, "Score").setDisplaySize(24, 24);
       player2.iconeScore.setScale(2);
       player2.iconeScore.setOrigin(0.5, 0);
       player2.iconeScore.setScrollFactor(0);
-      player2.iconeRecharge = this.add.image(32, 68, "bullet_icone").setDisplaySize(24, 24);
+      player2.iconeRecharge = this.add.image(32 + decalageHudJ2, 68, "bullet_icone").setDisplaySize(24, 24);
       player2.iconeRecharge.setScale(2);
       player2.iconeRecharge.setOrigin(0.5, 0);
       player2.iconeRecharge.setScrollFactor(0);
-      score_J2_affiche = this.add.text(64, 16, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
+      score_J2_affiche = this.add.text(64 + decalageHudJ2, 136, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
       score_J2_affiche.setScrollFactor(0)
-      balle_restanteJ2_affiche = this.add.text(64, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
+      balle_restanteJ2_affiche = this.add.text(64 + decalageHudJ2, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
       balle_restanteJ2_affiche.setScrollFactor(0);
-      player2.barreVie = this.add.sprite(60, 140, "pv_bar2", player2.points_vies);
+      player2.barreVie = this.add.sprite(60 + decalageHudJ2, 10, "pv_bar2", player2.points_vies);
       player2.barreVie.setScale(2);
       player2.barreVie.setOrigin(0.5, 0);
       player2.barreVie.setScrollFactor(0);
     }
     //elements UI global
-    cles_restantes_affiche = this.add.text(640, 20, 'Clés à récupérer : ' + nombre_cles, { fontSize: '32px', fill: '#cd50ff' });
-    cles_restantes_affiche.setOrigin(0.5, 0);
+    const panneauTimer = this.add.rectangle(640, 32, 160, 56, 0x111827, 0.8)
+      .setStrokeStyle(2, 0xffffff, 0.7)
+      .setScrollFactor(0);
+    const panneauCles = this.add.rectangle(640, 100, 160, 56, 0x111827, 0.8)
+      .setStrokeStyle(2, 0xcd50ff, 0.7)
+      .setScrollFactor(0);
+    timerIcon = this.add.image(600, 32, "timer_icone").setDisplaySize(32, 32);
+    timerIcon.setScrollFactor(0);
+    temps_restant_affiche = this.add.text(628, 14, String(temps_restant), {fontSize: '32px', fill: '#ffffff'});
+    temps_restant_affiche.setScrollFactor(0);
+    nombreCleIcon = this.add.image(600, 100, "nombre_cle_icone").setDisplaySize(16, 32);
+    nombreCleIcon.setScrollFactor(0);
+    nombreCleIcon.setScale(1.2);
+    cles_restantes_affiche = this.add.text(628, 82, String(cles_restantes), { fontSize: '32px', fill: '#cd50ff' });
     cles_restantes_affiche.setScrollFactor(0);
 
 
@@ -848,19 +880,28 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
-    hudJ1 = [score_J1_affiche, player.iconeScore, balle_restanteJ1_affiche, player.iconeRecharge, player.barreVie];
+    hudJ1 = [
+      panneauScoreJ1, panneauBallesJ1, panneauVieJ1,
+      score_J1_affiche, player.iconeScore, balle_restanteJ1_affiche, player.iconeRecharge, player.barreVie
+    ];
     if (mode_deux_joueurs){
-      hudJ2 = [score_J2_affiche, player2.iconeScore, balle_restanteJ2_affiche, player2.iconeRecharge, player2.barreVie]
+      hudJ2 = [
+        ...panneauxJ2,
+        score_J2_affiche, player2.iconeScore, balle_restanteJ2_affiche, player2.iconeRecharge, player2.barreVie
+      ];
     }
     else{
       hudJ2 = []
     }
-    hudCommun = [temps_restant_affiche, timerIcon, cles_restantes_affiche];
+    hudCommun = [
+      panneauTimer, panneauCles,
+      temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon
+    ];
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
     camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-      camJ2UI.ignore([...hudJ1, temps_restant_affiche, timerIcon]);
+      camJ2UI.ignore([...hudJ1, panneauTimer, panneauCles, temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon]);
     }
       camGlobalUI.ignore([...hudJ1, ...hudJ2]);
     }
@@ -929,10 +970,7 @@ export default class niveau1 extends Phaser.Scene {
         }
 
     if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte)) {
-      this.scene.start("Ecran_score", {
-        scoreJ1: player.score,
-        temps_restant,
-      });
+      this.scene.run("niveau2")
     }
   //commandes joueur2
   if (mode_deux_joueurs){
@@ -1258,12 +1296,7 @@ function degat_contact_ennemi(player, ennemi) {
         son_cle.play();
       cles_restantes -= 1;
       cle.destroy();
-      if (cles_restantes>0){
-        cles_restantes_affiche.setText('Clés à récupérer : ' + cles_restantes);
-      }
-      else{
-        cles_restantes_affiche.setText('Dirigez vous vers la sortie !');
-      }
+      cles_restantes_affiche.setText(String(cles_restantes));
       if (cles_creees >= nombre_cles && groupe_cle.countActive(true) === 0){
         porte.anims.play("animation_porte_ouverte");
         sortie_ouverte = true;
