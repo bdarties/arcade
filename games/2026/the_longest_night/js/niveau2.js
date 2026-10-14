@@ -17,7 +17,7 @@ export default class niveau2 extends niveau1 {
       tileset_nom: "tileset_reverse",       // nom du tileset DANS Tiled (à vérifier dans niveau_2.json, champ "name" de "tilesets")
       tileset_image: "Phaser_tuileReverse", // clé de l'image chargée dans preload() ci-dessous
 
-      // TODO : remplacer par les coordonnées de la carte 2 (voir calque_spawn dans Tiled)
+      // TO DO : remplacer par les coordonnées de la carte 2 (voir calque_spawn dans Tiled)
       player_spawn: cfg.player_spawn,
       player2_spawn: cfg.player2_spawn,
       tableau_spawn: cfg.tableau_spawn,
