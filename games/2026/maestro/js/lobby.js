@@ -4,9 +4,10 @@
 //  On y arrive en début de partie et après un Game Over (on y réapparaît au "spawn").
 //  Le lobby a 3 portes, une par niveau. Pour entrer dans une porte : se placer
 //  devant et appuyer sur le bouton B.
-//     1 — Les Coulisses (à gauche, au niveau du sol)  -> lance le niveau 1
-//     2 — Les Ombres chinoises (en haut)             -> pas encore ouverte
-//     3 — La Grande Scène (à droite, sur une marche) -> pas encore ouverte
+//     1 — Les Coulisses (à gauche, au niveau du sol)  -> toujours ouverte
+//     2 — Les Ombres chinoises (en haut)             -> s'ouvre quand le niveau 1 est terminé
+//     3 — La Grande Scène (à droite, sur une marche) -> « bientôt » (niveau pas encore fait)
+//  Les portes fermées affichent un cadenas (règles dans progression.js).
 //
 //  - Flèches (J1) ou ZQSD (J2) pour marcher, bouton A pour sauter
 //  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.
@@ -16,7 +17,7 @@
 // ============================================================================
 
 import { REGLAGES } from "./reglages.js";
-import { creerPanneau } from "./controles.js";
+import { creerPanneau, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";
 import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
 
@@ -180,17 +181,6 @@ export default class lobby extends Phaser.Scene {
     };
     this.echelles = ECHELLES.map((e) => ({ centreX: e.x, haut: caler(e.x, e.haut), bas: caler(e.x, e.bas) }));
 
-    // Les échelles ajoutées après coup ne sont pas dans l'illustration : on les dessine nous-mêmes
-    ECHELLES.forEach((e, i) => {
-      if (e.dessiner == true) {
-        const { haut, bas } = this.echelles[i];
-        const dessin = this.add.graphics().setDepth(4);
-        dessin.lineStyle(4, 0xc9a24a).lineBetween(e.x - 8, haut, e.x - 8, bas).lineBetween(e.x + 8, haut, e.x + 8, bas);
-        for (let y = haut + 12; y < bas; y += 18) {
-          dessin.lineBetween(e.x - 8, y, e.x + 8, y); // les barreaux
-        }
-      }
-    });
   }
 
   // Haut / bas du joystick devant une échelle pour s'y accrocher (même principe qu'au niveau 1)
@@ -341,8 +331,9 @@ export default class lobby extends Phaser.Scene {
 
     // En duo chacun a ses touches. En solo, les deux joysticks fonctionnent pour le perso actif.
     this.cantatrice = this.creerPersonnage("cantatrice", SPAWN.x, this.mode == "duo" ? [j1] : [j1, j2]);
-    this.detective = this.creerPersonnage("detective", SPAWN.x + 60, this.mode == "duo" ? [j2] : [j1, j2]);
-    this.persos = [this.cantatrice, this.detective];
+    // En solo il n'y a qu'un seul corps (comme au niveau 1) : pas de Détective dans le lobby
+    this.detective = this.mode == "duo" ? this.creerPersonnage("detective", SPAWN.x + 60, [j2]) : null;
+    this.persos = this.mode == "duo" ? [this.cantatrice, this.detective] : [this.cantatrice];
     this.actif = this.cantatrice; // en solo : le personnage qu'on contrôle en ce moment
 
     // On marche sur le sol, sauf quand on est accroché à une échelle
@@ -393,13 +384,13 @@ export default class lobby extends Phaser.Scene {
       stroke: "#000000",
       strokeThickness: 5
     };
-    const consigne = this.mode == "solo" ? "LE LOBBY · Flèches : marcher · I : sauter · K : changer de personnage" : "LE LOBBY · J1 : flèches + I · J2 : ZQSD + R";
-    this.texteConsigne = this.add.text(640, 30, consigne, style).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    const consigne = "LE LOBBY · " + (this.mode == "solo" ? "joystick : marcher · A : sauter" : "J1 : A sauter · J2 : A sauter") + "\n" + aideClavier();
+    this.texteConsigne = this.add.text(640, 30, consigne, { ...style, fontStyle: "bold" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.tweens.add({ targets: this.texteConsigne, alpha: 0, delay: 6000, duration: 1500 });
 
     // Message en bas de l'écran (ex : « cette porte n'est pas encore ouverte »)
     this.texteMessage = this.add
-      .text(640, 676, "", { ...style, fontSize: "14pt" })
+      .text(640, 676, "", { ...style, fontSize: "14pt", fontStyle: "bold" })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(100);
@@ -424,14 +415,6 @@ export default class lobby extends Phaser.Scene {
   update(temps) {
     if (this.enTransition == true) {
       return;
-    }
-
-    // Solo : le bouton D change de personnage
-    if (this.mode == "solo" && this.toucheAppuyee(this.actif, "D")) {
-      this.actif = this.actif == this.cantatrice ? this.detective : this.cantatrice;
-      const nouveau = this.actif;
-      nouveau.setTintFill(0xffffff); // petit flash blanc pour montrer qui est actif
-      this.time.delayedCall(120, () => nouveau.clearTint());
     }
 
     this.persos.forEach((perso) => this.gererPersonnage(perso));

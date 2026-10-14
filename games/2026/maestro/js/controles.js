@@ -63,3 +63,30 @@ export function creerClavierMenu(scene) {
     }
   };
 }
+
+// ---- Les NOMS affichés à l'écran ----
+// Deux familles de textes : ce qu'on lit sur la BORNE (A, B, C, D) et ce qu'on tape au CLAVIER (I, O, flèches…).
+// Les deux sont générés à partir de la table CONTROLES : si une touche change, l'affichage suit tout seul.
+
+// Nom lisible d'une touche de clavier (les flèches et les touches spéciales sont traduites)
+export function nomTouche(nom) {
+  const noms = { UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→", ENTER: "Entrée", SPACE: "Espace" };
+  return noms[nom] || nom;
+}
+
+// La touche de clavier d'un bouton pour un joueur : touche("j1", "B") -> "O"
+export function touche(joueur, bouton) {
+  return nomTouche(CONTROLES[joueur][bouton]);
+}
+
+// Ce qu'on lit sur la borne : les 4 boutons utiles (A, B, C, D)
+export function aideBorne() {
+  return "BORNE · A : sauter · B : action (onde / lampe) · C : note / recharge · D : changer (solo)";
+}
+
+// Ce qu'on tape au clavier, pour les deux joueurs
+export function aideClavier() {
+  const j1 = "flèches, " + touche("j1", "A") + ", " + touche("j1", "B") + ", " + touche("j1", "C") + ", " + touche("j1", "D");
+  const j2 = "ZQSD, " + touche("j2", "A") + ", " + touche("j2", "B") + ", " + touche("j2", "C") + ", " + touche("j2", "D");
+  return "CLAVIER · J1 : " + j1 + "   ·   J2 : " + j2;
+}

@@ -1,30 +1,27 @@
 // classement.js : l'écran de fin de partie, dans le style du HUD (plaques d'armure, chiffres à deux tons, palette lavande et or)
 // Déroulé : le titre tombe, le résultat s'affiche ligne par ligne (temps, points, bonus), puis le temps FINAL se décompte jusqu'au
 // temps net. Ensuite, si le temps entre dans le top 10 de la borne, le joueur saisit 3 lettres au joystick : sa ligne se glisse à
-// sa place dans le classement et suit les lettres en direct. Sinon il voit le classement. Le score est envoyé à l'API de la borne.
+// sa place dans le classement et suit les lettres en direct. Sinon il voit le classement. Le panthéon est sauvegardé avec lireDonneesJSON et
+// ecrireDonneesJSON (voir js/donnees.js) : dans la base de la borne, ou dans le navigateur quand le jeu tourne sur un ordinateur.
 //
 // Utilisation : this.scene.start("classement", { tempsBrutMs, points, tempsNetMs }) à la fin de la partie.
 //   tempsBrutMs : le chrono tel qu'il s'est arrêté (millisecondes)
 //   points      : le score de la partie (chaque point retire du temps, voir tempsNet dans points.js)
 //   tempsNetMs  : le temps qui sert au classement (plus petit = meilleur)
+// Depuis le menu (bouton CLASSEMENT) : this.scene.start("classement", { consultation: true }) montre seulement le panthéon, sans animation
+// et sans saisie : un appui sur I (ou Entrée, Espace) ramène à l'accueil.
 //
-// L'API de la borne classe du plus GRAND score au plus petit (voir app/db.py). Pour classer du plus RAPIDE au plus lent,
-// on envoie donc "SCORE_BASE - temps net" : plus le temps est court, plus ce nombre est grand. On refait le calcul à l'envers
-// pour afficher.
 import { jouerSon } from "../systemes/sons.js";
-import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
+import { creerTextureHalo, creerTexturePixel, creerPolice, plaque, GLYPHES, LARGEUR_CASE } from "../systemes/dessins.js"; // les dessins faits en code (halo, particules, police pixel, plaques)
 
-const SCORE_BASE = 10000000; // 10 millions de ms = presque 3 h : aucun temps réel ne peut le dépasser
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)
 
-const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const COL_NET = 964, COL_BRUT = 1092, COL_MORTS = 1168; // la fin (côté droit) de chaque colonne du tableau
-const NB_LETTRES = 3; // le nom fait 3 lettres, comme sur une vraie borne
+const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "; // les 27 caractères qui défilent : l'alphabet et une case vide (le dernier)
+const COL_NET = 996, COL_BRUT = 1104, COL_MORTS = 1172; // la fin (côté droit) de chaque colonne du tableau
+const NB_LETTRES = 6; // le nom fait 6 caractères au plus : on peut n'en remplir que quelques-uns, les autres restent vides
 const TOUCHES_VALIDER = ["KeyI", "Enter", "Space"]; // I = le bouton de saut de la borne
 const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de jeu, on ignore les appuis au début
 
-// les couleurs du HUD (voir PAL dans personnage/hud.js) et de la lanterne (or)
-const PAL = { K: "#211924", a: "#251d2a", b: "#2f2535", c: "#372b3e", d: "#3f3249", m: "#5f4f6e", n: "#8a779b", L: "#ac98b6", W: "#e7e0e9", G: "#f5f0f8" };
 export const OR = 0xffd45c;
 const OR_SOMBRE = 0xc99a2e;
 const ROSE = 0xf4b6c2; // le rose pâle du projet : la ligne du joueur
@@ -37,84 +34,33 @@ function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes
     const deux = (n) => String(n).padStart(2, "0");
     return deux(Math.floor(total / 6000)) + ":" + deux(Math.floor(total / 100) % 60) + "." + deux(total % 100);
 }
-// L'API de la borne ne garde que trois choses par score : le jeu, le nom et UN entier (le plus grand est en tête). On y range trois chiffres :
-//   score = (999999 - temps net en cs) * 100 000 000  +  (999999 - temps total en cs) * 100  +  (99 - morts)
-// (cs = centièmes de seconde). Le temps net est le plus important : le tri de la borne (plus grand en tête) classe donc comme avant ; à égalité,
-// le temps total le plus court, puis le moins de morts. Le plus gros score possible fait ~1e14 : bien en dessous de la limite des entiers de JavaScript.
-const CS_MAX = 999999; // 2 h 46 : au-delà, on affiche le maximum
+// Le panthéon est une simple LISTE, sauvegardée d'un bloc : un objet par partie enregistrée.
+//   { nom: "ABC", net: temps net (ms), brut: temps total (ms), morts: nombre de morts, date: "2026-10-13" }
+// Elle est triée du temps net le plus COURT au plus long ; à égalité, le temps total le plus court, puis le moins de morts. Elle ne garde que les 10 meilleurs.
+const MAX_LIGNES = 10;
 const MORTS_MAX = 99;
-const cs = (ms) => Math.min(CS_MAX, Math.max(0, Math.round(ms / 10)));
-function empaqueter(tempsNetMs, tempsBrutMs, morts) { // ce qu'on envoie à l'API (entier)
-    return (CS_MAX - cs(tempsNetMs)) * 100000000 + (CS_MAX - cs(tempsBrutMs)) * 100 + (MORTS_MAX - Math.min(MORTS_MAX, morts));
-}
-// Le tri du panthéon : le temps net le plus COURT en haut ; à égalité le temps total le plus court, puis le moins de morts. (Un ancien score n'a ni temps total
-// ni morts : il passe après les autres à temps net égal.) On trie nous-mêmes, au lieu de se fier à l'ordre de la base : elle trie sur le nombre brut, qui
-// ne range pas les anciens scores et les nouveaux dans le bon ordre.
+const arrondi = (ms) => Math.round(ms / 10) * 10; // les temps sont gardés au centième de seconde, comme à l'affichage
 function comparer(a, b) {
-    const sinon = (v) => (v === null || v === undefined ? Infinity : v);
-    return a.net - b.net || sinon(a.brut) - sinon(b.brut) || sinon(a.morts) - sinon(b.morts);
+    return a.net - b.net || a.brut - b.brut || a.morts - b.morts;
 }
-function deballer(score) { // ce qu'on affiche : { net, brut, morts } (brut et morts sont null pour un ancien score, qui ne gardait que le temps net)
-    if (score < 100000000) return { net: SCORE_BASE - score, brut: null, morts: null }; // ancien format : 10 000 000 - temps net en ms
-    return { net: (CS_MAX - Math.floor(score / 100000000)) * 10, brut: (CS_MAX - (Math.floor(score / 100) % 1000000)) * 10, morts: MORTS_MAX - (score % 100) };
-}
+const valide = (l) => l && typeof l.nom === "string" && Number.isFinite(l.net) && Number.isFinite(l.brut) && Number.isFinite(l.morts); // (on ignore une ligne abîmée)
 
-// le module de score de la borne n'existe que quand le jeu tourne dans la borne : on le charge au moment d'en avoir besoin,
-// et s'il manque (jeu ouvert à part, pendant les tests) on continue sans classement au lieu de planter
-async function chargerApi() {
-    try { return await import("/static/js/score.js"); } catch (erreur) { console.warn("API de score indisponible :", erreur); return null; }
+// Lit le panthéon sauvegardé : la liste triée (vide s'il n'y a rien encore), ou null si le stockage est impossible à lire. ecrireDonneesJSON remplace TOUT :
+// pour ajouter une ligne, on lit, on ajoute, puis on réécrit (voir envoyer).
+async function lirePantheon() {
+    if (typeof lireDonneesJSON !== "function") return null; // js/donnees.js n'est pas chargé
+    try {
+        const liste = await lireDonneesJSON();
+        return Array.isArray(liste) ? liste.filter(valide).sort(comparer).slice(0, MAX_LIGNES) : [];
+    } catch (erreur) {
+        console.warn("Panthéon illisible :", erreur);
+        return null;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
-// La police : des lettres de 5 x 7 pixels, haut clair et bas lavande sur une ombre, comme les chiffres du HUD
+// Écrire avec la police pixel (la police elle-même est dessinée en code : voir creerPolice dans systemes/dessins.js)
 // ---------------------------------------------------------------------------------------------
-
-const GLYPHES = {
-    A: [".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"], B: ["####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."],
-    C: [".###.", "#...#", "#....", "#....", "#....", "#...#", ".###."], D: ["####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."],
-    E: ["#####", "#....", "#....", "####.", "#....", "#....", "#####"], F: ["#####", "#....", "#....", "####.", "#....", "#....", "#...."],
-    G: [".###.", "#...#", "#....", "#.###", "#...#", "#...#", ".###."], H: ["#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
-    I: ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "#####"], J: ["..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.."],
-    K: ["#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"], L: ["#....", "#....", "#....", "#....", "#....", "#....", "#####"],
-    M: ["#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"], N: ["#...#", "##..#", "#.#.#", "#.#.#", "#..##", "#...#", "#...#"],
-    O: [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."], P: ["####.", "#...#", "#...#", "####.", "#....", "#....", "#...."],
-    Q: [".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#"], R: ["####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"],
-    S: [".####", "#....", "#....", ".###.", "....#", "....#", "####."], T: ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."],
-    U: ["#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."], V: ["#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.."],
-    W: ["#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#"], X: ["#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#"],
-    Y: ["#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.."], Z: ["#####", "....#", "...#.", "..#..", ".#...", "#....", "#####"],
-    0: [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."], 1: ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
-    2: [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"], 3: [".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###."],
-    4: ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."], 5: ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
-    6: ["..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."], 7: ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
-    8: [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."], 9: [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
-    ":": [".....", "..#..", "..#..", ".....", "..#..", "..#..", "....."], ".": [".....", ".....", ".....", ".....", ".....", "..#..", "..#.."],
-    "-": [".....", ".....", ".....", "#####", ".....", ".....", "....."], "+": [".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."],
-    "'": ["..#..", "..#..", ".#...", ".....", ".....", ".....", "....."], ",": [".....", ".....", ".....", ".....", "..#..", "..#..", ".#..."],
-    "!": ["..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.."], "?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
-    "(": ["...#.", "..#..", ".#...", ".#...", ".#...", "..#..", "...#."], ")": [".#...", "..#..", "...#.", "...#.", "...#.", "..#..", ".#..."],
-    "/": ["....#", "....#", "...#.", "..#..", ".#...", "#....", "#...."], "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."],
-    "&": [".##..", "#..#.", "#.#..", ".#...", "#.#.#", "#..#.", ".##.#"],
-    "^": ["..#..", ".###.", "#####", ".....", ".....", ".....", "....."], "~": [".....", ".....", ".....", "#####", ".###.", "..#..", "....."]
-};
-const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
-
-export function creerPolice(scene, cle = "police_fin", bas = PAL.L) { // dessine une seule fois toutes les lettres dans une image, avec une « image » par caractère (bas : la couleur du bas des lettres ; la police « police_blanche » est toute blanche)
-    if (scene.textures.exists(cle)) return;
-    const noms = Object.keys(GLYPHES);
-    const texture = scene.textures.createCanvas(cle, noms.length * LARGEUR_CASE, 8);
-    const ctx = texture.getContext();
-    noms.forEach((nom, i) => {
-        const ox = i * LARGEUR_CASE;
-        const cases = [];
-        GLYPHES[nom].forEach((ligne, y) => [...ligne].forEach((c, x) => { if (c === "#") cases.push([x, y]); }));
-        ctx.fillStyle = PAL.K; cases.forEach(([x, y]) => ctx.fillRect(ox + x + 1, y + 1, 1, 1)); // l'ombre portée
-        cases.forEach(([x, y]) => { ctx.fillStyle = y <= 3 ? PAL.W : bas; ctx.fillRect(ox + x, y, 1, 1); }); // clair en haut, lavande en bas
-        texture.add(nom, 0, ox, 0, LARGEUR_CASE, 8);
-    });
-    texture.refresh();
-    texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // pixel art : pas de flou quand on agrandit
-}
 
 // écrit un texte (un groupe d'images, une par caractère). ancre : "centre", "gauche" ou "droite" par rapport à x. Les espaces sont vides.
 export function ecrire(scene, x, y, texte, echelle, { ancre = "centre", teinte = 0xffffff, profondeur = 10, police = "police_fin" } = {}) {
@@ -135,67 +81,37 @@ function changerTexte(groupe, texte) { // remplace les caractères d'un texte de
 }
 
 // ---------------------------------------------------------------------------------------------
-// Les plaques : la même construction que celles du HUD (contour sombre, filet clair en haut, ombre en bas, rivets, coins coupés)
-// ---------------------------------------------------------------------------------------------
-
-export function plaque(scene, w, h, creux = true) { // renvoie la clé de la texture ; w et h sont en pixels du dessin (agrandis à l'écran)
-    const cle = "plaque_fin_" + w + "x" + h + (creux ? "c" : "");
-    if (scene.textures.exists(cle)) return cle;
-    const texture = scene.textures.createCanvas(cle, w, h);
-    const ctx = texture.getContext();
-    const px = (x, y, k) => { ctx.fillStyle = PAL[k]; ctx.fillRect(x, y, 1, 1); };
-    const dedans = (x, y) => x >= 0 && x < w && y >= 0 && y < h && !((x < 2 || x >= w - 2) && (y < 2 || y >= h - 2)); // coins coupés
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        if (!dedans(x, y)) continue;
-        const bord = !dedans(x - 1, y) || !dedans(x + 1, y) || !dedans(x, y - 1) || !dedans(x, y + 1);
-        px(x, y, bord ? "K" : "c");
-    }
-    for (let x = 3; x <= w - 4; x++) px(x, 1, "n"); // filet lumineux en haut
-    for (let x = 2; x <= w - 3; x++) px(x, h - 2, "b"); // ombre en bas
-    [[3, 3], [w - 4, 3], [3, h - 4], [w - 4, h - 4]].forEach(([x, y]) => px(x, y, "L")); // les 4 rivets
-    if (creux) { // un creux sombre où s'inscrit le texte : ombre en haut à gauche, bord clair en bas à droite
-        for (let y = 6; y < h - 6; y++) for (let x = 6; x < w - 6; x++) {
-            const hautGauche = y === 6 || x === 6;
-            const basDroite = y === h - 7 || x === w - 7;
-            px(x, y, hautGauche ? "K" : basDroite ? "d" : "a");
-        }
-    }
-    texture.refresh();
-    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    return cle;
-}
-
-// ---------------------------------------------------------------------------------------------
 
 export default class classement extends Phaser.Scene {
-    constructor(cle = "classement") { super({ key: cle }); } // (la partie 2 en fait un faux écran de victoire : voir partie2/fauxPantheon.js)
+    constructor(cle = "classement") { super({ key: cle }); } // (la partie 2 en fait un faux écran de victoire : voir partie2/faux_pantheon.js)
 
     init(donnees) { // reçoit les données passées par scene.start
         this.tempsBrutMs = donnees.tempsBrutMs ?? 0;
         this.points = donnees.points ?? 0;
         this.tempsNetMs = donnees.tempsNetMs ?? this.tempsBrutMs;
         this.morts = donnees.morts ?? 0;
+        this.consultation = donnees.consultation ?? false; // vrai quand on vient du bouton CLASSEMENT du menu : on regarde le panthéon, c'est tout
     }
 
     create() {
         this.cameras.main.setBackgroundColor("#0e0e11");
-        this.cameras.main.fadeIn(500, 0, 0, 0);
+        if (!this.consultation) this.cameras.main.fadeIn(500, 0, 0, 0);
         creerPolice(this);
         this.etape = "intro"; // intro -> choix (nouveau record) -> saisie -> (envoi) -> classement ; ou intro -> classement
         this.enregistrer = 0; // le choix « enregistrer mon score » : 0 = OUI, 1 = NON
         this.pret = false; // les validations ne comptent qu'après un court délai
         this.sequenceFinie = false;
-        this.apiPrete = false;
-        this.nom = Array(NB_LETTRES).fill("A");
+        this.donneesPretes = false;
+        this.nom = ["A", ...Array(NB_LETTRES - 1).fill(" ")]; // la première case commence à A, les autres sont vides
         this.curseur = 0;
-        this.api = null;
+        this.pantheonDispo = false; // vrai si le panthéon a pu être lu (donc écrit)
         this.tableau = [];
         this.nomJoueur = null;
         this.clignote = [];
 
         this.decor();
         this.construirePanneaux();
-        this.lancerSequence();
+        if (this.consultation) this.montrerPantheon(); else this.lancerSequence();
         this.input.keyboard.on("keydown", (evenement) => this.touche(evenement.code));
         this.charger();
     }
@@ -210,10 +126,7 @@ export default class classement extends Phaser.Scene {
             this.add.rectangle(x, 360, 56, 720, 0x15121a).setDepth(0);
             this.add.rectangle(x - 20, 360, 4, 720, 0x1d1824).setDepth(0);
         });
-        if (!this.textures.exists("menu_poussiere")) {
-            const carre = this.make.graphics({ add: false });
-            carre.fillStyle(0xffffff); carre.fillRect(0, 0, 4, 4); carre.generateTexture("menu_poussiere", 4, 4); carre.destroy();
-        }
+        creerTexturePixel(this, "menu_poussiere");
         this.add.particles(0, 0, "menu_poussiere", {
             x: { min: 0, max: 1280 }, y: { min: 420, max: 720 }, speedY: { min: -26, max: -10 }, speedX: { min: -6, max: 6 },
             lifespan: 7000, frequency: 500, quantity: 1, alpha: { start: 0.3, end: 0 }, tint: 0xe7e0e9
@@ -259,6 +172,22 @@ export default class classement extends Phaser.Scene {
         this.pied = ecrire(this, 640, 676, "", 2, { teinte: GRIS_VIOLET }); // l'aide des touches, en bas
     }
 
+    // ---- la consultation : le panthéon seul, tout de suite, au centre de l'écran ----
+
+    montrerPantheon() {
+        changerTexte(this.titre, "PANTHEON"); // « VICTOIRE » a le même nombre de lettres
+        this.titre.y = 0; // à sa place, sans la chute
+        const decalage = -290; // le panneau de droite se place au centre (son centre passe de 930 à 640)
+        this.entete.destroy();
+        this.entete = ecrire(this, 930, 200, "MEILLEURS TEMPS", 4, { teinte: CLAIR });
+        const droite = [this.plaqueDroite, this.entete, this.traitEntete, ...this.titresColonnes, this.groupeTableau];
+        droite.forEach((objet) => { objet.x += decalage; objet.setAlpha(1); }); // le tableau (un conteneur) est décalé d'un bloc
+        this.titre.setAlpha(1);
+        this.etape = "classement"; // l'étape où I ramène à l'accueil (voir touche)
+        this.ouvrirClassement(null); // pas de message : celui de la fin de partie n'a pas de sens ici
+        this.time.delayedCall(300, () => { this.pret = true; }); // l'appui qui a ouvert l'écran ne doit pas le refermer
+    }
+
     // ---- la séquence d'ouverture ----
 
     lancerSequence() {
@@ -294,22 +223,28 @@ export default class classement extends Phaser.Scene {
 
     // ---- l'API : le top 10 actuel ----
 
+    monResultat() { // les chiffres de cette partie, tels qu'ils seront rangés dans le panthéon (sans le nom)
+        return { net: arrondi(this.tempsNetMs), brut: arrondi(this.tempsBrutMs), morts: Math.min(MORTS_MAX, this.morts) };
+    }
+
     async charger() {
-        this.api = await chargerApi();
-        if (this.api) this.tableau = await this.api.get_tab_score(this.sys.game.config.idGame);
-        this.apiPrete = true;
+        const liste = await lirePantheon();
+        this.pantheonDispo = liste !== null;
+        this.tableau = liste || [];
+        this.donneesPretes = true;
+        if (this.consultation) this.afficherTableau(); // pas de séquence à attendre : le tableau est montré dès qu'il est lu
         this.decider(); // si la séquence n'est pas finie, elle appellera decider() à sa fin
     }
 
     decider() { // la séquence est finie et le classement chargé : saisie du nom ou simple affichage
-        if (!this.sequenceFinie || !this.apiPrete || this.etape !== "intro") return;
-        const mien = deballer(empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts));
-        const pire = this.tableau.map((l) => deballer(l.score)).sort(comparer).pop(); // le dernier du panthéon : le temps le plus long
-        const nouveauRecord = Boolean(this.api) && (this.tableau.length < 10 || comparer(mien, pire) < 0); // à égalité on ne passe pas devant
+        if (!this.sequenceFinie || !this.donneesPretes || this.etape !== "intro") return;
+        const mien = this.monResultat();
+        const pire = this.tableau[this.tableau.length - 1]; // le dernier du panthéon : le temps le plus long
+        const nouveauRecord = this.pantheonDispo && (this.tableau.length < MAX_LIGNES || comparer(mien, pire) < 0); // à égalité on ne passe pas devant
         this.pret = false;
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
         if (nouveauRecord) this.ouvrirChoix();
-        else this.ouvrirClassement(this.api ? "PAS DANS LE TOP 10" : "PANTHEON INDISPONIBLE");
+        else this.ouvrirClassement(this.pantheonDispo ? "PAS DANS LE TOP 10" : "PANTHEON INDISPONIBLE");
     }
 
     // ---- le choix d'enregistrer son score ou non : deux petits boutons OUI / NON sous la bannière « nouveau record » ----
@@ -348,7 +283,7 @@ export default class classement extends Phaser.Scene {
         else this.ouvrirClassement("SCORE NON ENREGISTRE"); // le joueur ne veut pas apparaître dans le panthéon
     }
 
-    // ---- la saisie du nom : trois cases, la case choisie en or avec une flèche au-dessus et en dessous ----
+    // ---- la saisie du nom : six cases, la case choisie en or avec une flèche au-dessus et en dessous ----
 
     ouvrirSaisie() {
         this.etape = "saisie";
@@ -358,7 +293,7 @@ export default class classement extends Phaser.Scene {
         this.zoneNom.add(banniere);
         this.cases = [];
         for (let i = 0; i < NB_LETTRES; i++) {
-            const x = 350 + (i - 1) * 78;
+            const x = 350 + (i - (NB_LETTRES - 1) / 2) * 78; // les cases sont centrées sous le résultat
             const fond = this.add.image(x, 568, plaque(this, 22, 24, false)).setScale(3);
             const lettre = ecrire(this, x - 14, 568, "A", 6, { ancre: "gauche" });
             const haut = ecrire(this, x - 9, 522, "^", 3, { ancre: "gauche", teinte: OR });
@@ -376,7 +311,9 @@ export default class classement extends Phaser.Scene {
         this.cases.forEach((c, i) => {
             const choisie = i === this.curseur;
             c.fond.setTint(choisie ? OR : 0xffffff);
-            changerTexte(c.lettre, this.nom[i]);
+            const vide = this.nom[i] === " "; // une case vide n'affiche aucune lettre
+            c.lettre.setVisible(!vide);
+            if (!vide) changerTexte(c.lettre, this.nom[i]);
             c.lettre.lettres[0].setTint(choisie ? OR : LAVANDE);
             c.haut.setVisible(choisie); c.bas.setVisible(choisie);
         });
@@ -385,7 +322,7 @@ export default class classement extends Phaser.Scene {
     ouvrirClassement(message, couleur = GRIS_VIOLET) { // le classement seul, sous le temps final
         this.etape = "classement";
         this.zoneNom.removeAll(true);
-        this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
+        if (message) this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
         this.pied.destroy();
         this.pied = ecrire(this, 640, 696, "I  RETOUR A L'ACCUEIL", 3, { teinte: CLAIR });
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 });
@@ -409,6 +346,7 @@ export default class classement extends Phaser.Scene {
             } else if (code === "ArrowRight") {
                 this.curseur = Math.min(NB_LETTRES - 1, this.curseur + 1);
             } else if (valider && this.pret) {
+                if (this.nom.join("").trim() === "") return; // au moins un caractère : un nom entièrement vide n'est pas accepté
                 this.envoyer();
                 return;
             }
@@ -423,21 +361,30 @@ export default class classement extends Phaser.Scene {
 
     async envoyer() {
         this.etape = "envoi"; // bloque les appuis pendant l'envoi
-        const nom = this.nom.join("");
+        const nom = this.nom.join("").trimEnd(); // les cases vides à la fin ne sont pas gardées : « AB    » devient « AB »
         jouerSon(this, "porte");
-        const resultat = await this.api.ajoute_score(this.sys.game.config.idGame, nom, empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts));
-        this.tableau = await this.api.get_tab_score(this.sys.game.config.idGame); // le tableau à jour, avec le nouveau temps
-        this.nomJoueur = resultat.success ? nom : null; // pour surligner sa ligne
+        let reussi = true;
+        try {
+            const liste = await lirePantheon(); // on relit juste avant d'écrire : ecrireDonneesJSON remplace tout le contenu précédent
+            if (liste === null) throw new Error("panthéon illisible");
+            liste.push({ nom, ...this.monResultat(), date: new Date().toISOString().slice(0, 10) });
+            this.tableau = liste.sort(comparer).slice(0, MAX_LIGNES);
+            await ecrireDonneesJSON(this.tableau);
+        } catch (erreur) {
+            console.warn("Enregistrement impossible :", erreur);
+            reussi = false;
+        }
+        this.nomJoueur = reussi ? nom : null; // pour surligner sa ligne
         this.pret = false;
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
-        this.ouvrirClassement(resultat.success ? "ENREGISTRE" : "ERREUR D'ENVOI", resultat.success ? OR : 0xff6b6b);
+        this.ouvrirClassement(reussi ? "ENREGISTRE" : "ERREUR D'ENVOI", reussi ? OR : 0xff6b6b);
     }
 
     // ---- le classement : 10 lignes, la ligne du joueur en rose ----
 
     lignesTableau() { // les 10 lignes à afficher : le top 10 de la borne, avec la ligne du joueur glissée à sa place pendant la saisie
-        const mien = deballer(empaqueter(this.tempsNetMs, this.tempsBrutMs, this.morts)); // mes chiffres, arrondis comme dans la base
-        const reel = this.tableau.map((l) => ({ nom: String(l.player), ...deballer(l.score) })).sort(comparer); // le temps le plus court en premier
+        const mien = this.monResultat(); // mes chiffres, arrondis comme dans le panthéon
+        const reel = this.tableau.map((l) => ({ ...l })); // le panthéon est déjà trié : le temps le plus court en premier (on en fait une copie : on y glisse la ligne du joueur)
         if (this.etape === "saisie") {
             const i = reel.findIndex((l) => comparer(mien, l) < 0); // à égalité parfaite, le joueur passe derrière
             reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), ...mien, moi: true });
@@ -459,13 +406,13 @@ export default class classement extends Phaser.Scene {
             const l = lignes[i];
             const teinte = l ? (l.moi ? ROSE : i < 3 ? couleurRang[i] : LAVANDE) : 0x5f4f6e;
             const elements = [];
-            if (l && l.moi) elements.push(this.add.rectangle(930, y, 480, 32, 0x372b3e, 0.9)); // un fond derrière la ligne du joueur
+            if (l && l.moi) elements.push(this.add.rectangle(925, y, 500, 32, 0x372b3e, 0.9)); // un fond derrière la ligne du joueur
             const secondaire = l && l.moi ? ROSE : 0x8a779b; // le temps total et les morts sont plus discrets que le temps net
-            elements.push(ecrire(this, 686, y, String(i + 1).padStart(2, "0"), 3, { ancre: "gauche", teinte }));
-            elements.push(ecrire(this, 740, y, l ? l.nom.padEnd(NB_LETTRES, " ") : "---", 3, { ancre: "gauche", teinte }));
+            elements.push(ecrire(this, 680, y, String(i + 1).padStart(2, "0"), 3, { ancre: "gauche", teinte }));
+            elements.push(ecrire(this, 724, y, l ? l.nom.padEnd(NB_LETTRES, " ") : "---", 3, { ancre: "gauche", teinte }));
             elements.push(ecrire(this, COL_NET, y, l ? formaterTemps(l.net) : "--:--.--", 3, { ancre: "droite", teinte }));
-            elements.push(ecrire(this, COL_BRUT, y, l && l.brut !== null ? formaterTemps(l.brut) : "--:--.--", 2, { ancre: "droite", teinte: l ? secondaire : teinte })); // (ancien score : pas de temps total)
-            elements.push(ecrire(this, COL_MORTS, y, l && l.morts !== null ? String(l.morts).padStart(2, "0") : "--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
+            elements.push(ecrire(this, COL_BRUT, y, l ? formaterTemps(l.brut) : "--:--.--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
+            elements.push(ecrire(this, COL_MORTS, y, l ? String(l.morts).padStart(2, "0") : "--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
             this.groupeTableau.add(elements);
             if (l && l.moi) this.clignote.push(this.tweens.add({ targets: elements, alpha: 0.55, duration: 380, yoyo: true, repeat: -1 }));
         }

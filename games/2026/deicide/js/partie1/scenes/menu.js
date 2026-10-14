@@ -1,4 +1,4 @@
-// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo) et 1 V 1 (1 contre 1, voir versus.js)
+// menu.js : l'écran d'accueil du jeu, avec les boutons JOUER (solo), 1 V 1 (1 contre 1, voir versus.js) et CLASSEMENT (le panthéon, voir classement.js)
 // C'est la première scène : elle charge tous les assets du jeu (avec une barre de chargement), puis attend qu'on appuie
 // sur un bouton. Le fond est l'image du menu (assets/images/menu/fond_menu.png, 1280 x 720). Le bouton Jouer est dans
 // assets/images/menu/bouton_jouer.png (15 images de 104 x 44 empilées : 0 = normal, 1 à 12 = survol animé, 13 et 14 = clic).
@@ -8,7 +8,8 @@ import { chargerJeu } from "../systemes/chargement.js"; // charge tous les asset
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
 import { VERSION } from "../../version.js"; // le numéro de version du jeu (voir outils/version.py)
-import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
+import { ecrire, OR, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel du jeu (pour écrire « 1 V 1 » sur la dalle) et ses couleurs
+import { creerPolice, creerTexturePixel, plaque } from "../systemes/dessins.js"; // la police pixel et les particules (dessinées en code)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];
@@ -16,7 +17,7 @@ const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLO
 const TOUCHES_JOUEUR2 = ["R", "T", "Y", "F", "G", "H", "N"];
 
 // Le robot de l'image est un Bot Wheel dessiné avec des pixels de 10,4 px (mesuré sur l'image). Pour que la flamme du tir
-// tombe pile au bout de son canon, on pose les images de "shoot FX.png" avec la même taille de pixel.
+// tombe pile au bout de son canon, on pose les images de "shoot_fx.png" avec la même taille de pixel.
 const PIXEL = 10.4; // taille d'un pixel du robot dans l'image du menu
 const CANON = { x: 330, y: 584 }; // le bout du canon du robot dans l'image
 // le centre de la flamme : 11,5 pixels devant le bout du canon (comme dans l'image du tir)
@@ -41,7 +42,7 @@ export default class menu extends Phaser.Scene {
     this.load.image("fond_menu", "./assets/images/menu/fond_menu.png"); // l'image du menu
     this.load.spritesheet("bouton_jouer", "./assets/images/menu/bouton_jouer.png", { frameWidth: 104, frameHeight: 44 }); // le bouton Jouer
     // la flamme du canon, seule (4 images)
-    this.load.spritesheet("menu_flamme_tir", "./assets/Spritesheet/Player/Bot Wheel/shoot FX.png", { frameWidth: 117, frameHeight: 26 });
+    this.load.spritesheet("menu_flamme_tir", "./assets/spritesheet/player/bot_wheel/shoot_fx.png", { frameWidth: 117, frameHeight: 26 });
     chargerJeu(this); // tout le reste du jeu
   }
 
@@ -64,13 +65,16 @@ export default class menu extends Phaser.Scene {
     this.bouton.on("pointerdown", () => this.lancer());
 
     // le bouton « 1 V 1 » : la même dalle que « JOUER ». Haut / bas change de mode, un bouton valide celui qui
-    // est choisi.
-    this.mode = 1; // 1 = solo, 2 = 1 contre 1
+    // est choisi. Le bouton CLASSEMENT est à droite de JOUER : la flèche droite l'atteint, la flèche gauche revient à JOUER.
+    this.mode = 1; // 1 = solo, 2 = 1 contre 1, 3 = classement
     this.boutonDeux = this.creerBoutonDeux(640, 545);
-    this.indication = this.add.text(640, 640, "HAUT / BAS : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
+    this.boutonClassement = this.creerBoutonClassement(945, 410);
+    this.indication = this.add.text(640, 640, "FLÈCHES : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
     ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
     ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2)));
+    ["RIGHT", "D"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 1) this.changerMode(3); })); // de JOUER vers CLASSEMENT
+    ["LEFT", "Q"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 3) this.changerMode(1); })); // et le retour
     this.boutonDeux.dalle.on("pointerdown", () => { this.mode = 2; this.lancer(); });
 
     this.add.text(1262, 686, VERSION, { fontFamily: "monospace", fontSize: "20px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(1, 1).setDepth(10); // en bas à droite : sur la borne, on voit si le jeu est à jour
@@ -112,15 +116,27 @@ export default class menu extends Phaser.Scene {
     return { voile, dalle };
   }
 
-  changerMode(mode) { // haut : solo, bas : 1 contre 1
+  creerBoutonClassement(x, y) { // une plaque du HUD avec « CLASSEMENT » écrit en police pixel : pas d'animation, c'est un simple bouton
+    creerPolice(this); // la police « police_fin » (déjà faite si on revient au menu)
+    const fond = this.add.image(x, y, plaque(this, 72, 16, false)).setScale(3);
+    const texte = ecrire(this, x, y, "CLASSEMENT", 3, { profondeur: 1 });
+    fond.setInteractive({ useHandCursor: true });
+    fond.on("pointerdown", () => { this.mode = 3; this.lancer(); });
+    return { fond, texte };
+  }
+
+  changerMode(mode) { // haut : solo, bas : 1 contre 1, droite : classement
     if (this.lance || this.mode === mode) return;
     this.mode = mode;
     this.majMode();
   }
 
   majMode() { // le mode choisi est en pleine couleur, l'autre est atténué
-    this.bouton.setAlpha(this.mode === 2 ? 0.4 : 1);
+    this.bouton.setAlpha(this.mode === 1 ? 1 : 0.4);
     this.boutonDeux.voile.setVisible(this.mode !== 2);
+    const choisi = this.mode === 3; // CLASSEMENT : plaque et lettres en or quand il est choisi, éteint sinon
+    this.boutonClassement.fond.setTint(choisi ? OR : 0xffffff).setAlpha(choisi ? 1 : 0.55);
+    this.boutonClassement.texte.lettres.forEach((lettre) => lettre && lettre.setTint(choisi ? OR : GRIS_VIOLET));
   }
 
   animer() { // les effets qui font vivre l'image fixe du menu
@@ -158,13 +174,7 @@ export default class menu extends Phaser.Scene {
     this.time.delayedCall(1500, glitcher);
 
     // 4. de la poussière flotte lentement vers le haut
-    if (!this.textures.exists("menu_poussiere")) {
-      const carre = this.make.graphics({ add: false });
-      carre.fillStyle(0xffffff);
-      carre.fillRect(0, 0, 4, 4);
-      carre.generateTexture("menu_poussiere", 4, 4);
-      carre.destroy();
-    }
+    creerTexturePixel(this, "menu_poussiere");
     this.add.particles(0, 0, "menu_poussiere", {
       x: { min: 0, max: 1280 }, y: { min: 380, max: 700 }, // elle naît dans la moitié basse de l'écran
       speedY: { min: -26, max: -10 }, speedX: { min: -6, max: 6 },
@@ -176,6 +186,11 @@ export default class menu extends Phaser.Scene {
   lancer() { // un bouton a été pressé : le bouton s'enfonce, l'écran s'éteint, puis le niveau 1 commence
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
+    if (this.mode === 3) { // le classement : on regarde le panthéon, sans animation
+      jouerSon(this, "porte");
+      this.scene.start("classement", { consultation: true });
+      return;
+    }
     if (this.mode === 2) { // 1 contre 1 : pas de chrono, on file dans l'arène
       jouerSon(this, "porte");
       this.cameras.main.fadeOut(350, 0, 0, 0);

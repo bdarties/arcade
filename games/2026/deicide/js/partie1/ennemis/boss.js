@@ -22,7 +22,7 @@
 import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { gagnerPoints, finirPartie } from "../systemes/points.js";
-import { faireApparaitre as invoquerLanterne } from "./lanterneVivante.js";
+import { faireApparaitre as invoquerLanterne } from "./lanterne_vivante.js";
 import { lacherPV } from "../mecanismes/bonus.js";
 
 const LARGEUR_IMAGE = 152; // une image des feuilles
@@ -100,7 +100,7 @@ export function faireApparaitreBoss(scene, x, y, nomProfil = "soldat") { // fait
     // reprise après une mort : le combat repart au début de la phase où le robot est mort (voir changerDePhase), pas depuis la phase 1
     const reprise = scene.registry.get("phaseBoss");
     const phaseDepart = reprise && reprise.profil === nomProfil ? reprise.phase : 0;
-    // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir partie2/testsBorne.js)
+    // au début d'une phase, le boss a exactement les PV de son seuil (sauf si la reprise donne ses PV : touche de test F10, voir partie2/tests_borne.js)
     boss.pvMax = profil.pvDePhase ? profil.pvDePhase(phaseDepart) : profil.pv; // les PV de la phase de départ (la barre de vie se règle dessus)
     boss.pv = reprise && reprise.pv !== undefined && reprise.profil === nomProfil ? reprise.pv : phaseDepart === 0 ? boss.pvMax : profil.pvPleinsApresMort ? (profil.pvApresMort && profil.pvApresMort(phaseDepart)) ?? boss.pvMax : profil.seuils[phaseDepart - 1]; // pvPleinsApresMort : après une mort il garde la phase atteinte mais repart avec TOUS ses PV
     boss.etat = "apparition"; // apparition -> combat <-> attaque -> transition (changement de phase) ; puis choix, fin (ou ce que fait la partie 2)

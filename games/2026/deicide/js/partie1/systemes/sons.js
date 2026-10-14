@@ -1,5 +1,5 @@
 // sons.js : chargement et lecture de tous les sons du jeu
-// tous les sons sont libres de droit (CC0), la liste des sources est dans assets/sons/LICENCES.md
+// tous les sons sont libres de droit (CC0), la liste des sources est dans assets/sons/licences.md
 import { reglages, VOLUME_MAX } from "./reglages.js"; // volumes choisis par le joueur dans le menu pause
 
 const DOSSIER = "./assets/sons/"; // dossier où sont rangés les fichiers audio
@@ -53,7 +53,7 @@ export function chargerMusiqueBossEnArrierePlan(scene) { // sans bloquer le jeu 
 // La musique metal du boss (Boss Battle #8) est à 200 battements par minute (un battement = 300 ms, une croche = 150 ms), en ré. Pendant
 // ces combats :
 //  - chaque bruitage est transposé sur une note de la gamme de ré mineur (ré mi fa sol la sib do) au lieu d'une hauteur au hasard : ACCORD donne,
-//    pour chaque son, de combien de centièmes de ton le décaler (mesuré sur le son : voir DEVLOG.md) ;
+//    pour chaque son, de combien de centièmes de ton le décaler (mesuré sur le son : voir devlog.md) ;
 //  - les sons d'attaque du boss sont joués sur la croche la plus proche de la musique (jouerSonSurLeTemps), et les attaques elles-mêmes sont calées
 //    sur la même grille (surLeTemps) : elles partent en rythme.
 const CROCHE = 150; // ms : une croche de la musique du boss

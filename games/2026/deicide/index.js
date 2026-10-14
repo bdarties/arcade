@@ -1,7 +1,8 @@
 // index.js : le point de départ du jeu (chargé par index.html). Il règle Phaser (taille, physique, cadence d'images, rendu pour la borne),
-// donne la liste des scènes (les écrans du jeu, dans js/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
+// donne la liste des scènes (les écrans du jeu, dans js/partie1/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
 
 // les scènes du jeu et les outils
+import "./js/donnees.js"; // la sauvegarde des données (le panthéon) : lireDonneesJSON et ecrireDonneesJSON, voir js/donnees.js
 import { compteurImages, regulerCadence } from "./js/partie1/systemes/optimisation.js";
 import menu from "./js/partie1/scenes/menu.js";
 import niveau1 from "./js/partie1/scenes/niveau1.js";
@@ -83,7 +84,7 @@ if (contexte) {
 // création et lancement du jeu
 installerPartie2(); // branche la suite du jeu (ses maps à charger) avant de créer le jeu
 export var game = new Phaser.Game(config); // le menu s'affiche, puis le bouton Jouer lance le niveau 1
-// identifiant du jeu dans la base des scores de la borne (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config)
+// identifiant du jeu (comme les autres jeux : posé après la création, Phaser ignorerait cette clé dans config) ; les données du panthéon, elles, sont rangées sous le nom du dossier (voir js/donnees.js)
 game.config.idGame = "deicide";
 regulerCadence(game, IMAGES_PAR_SECONDE); // corrige la petite dérive de la minuterie pour tomber pile sur la cadence voulue
 activerRaccourcis(game); // C + F (P et ;) maintenus 0,5 s : remet le jeu à zéro sans relancer la borne
