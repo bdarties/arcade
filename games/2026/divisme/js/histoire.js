@@ -115,7 +115,7 @@ export default class histoire extends Phaser.Scene {
   }
 
   // ==============================
-  // PHASE 1 : CHOIX DU MODE
+  // PHASE 1 : CHOIX DU MODE (MODIFIÉE : UX/UI)
   // ==============================
 
   afficherChoixMode() {
@@ -123,8 +123,10 @@ export default class histoire extends Phaser.Scene {
     this.selection = 1;      // 1 = Solo, 2 = Duo : le bouton actuellement "pointé"
 
     const question = this.add.text(640, 220, "Combien de joueurs ?", {
-      fontSize: '40px',
-      fill: '#ffffff'
+      fontSize: '44px',
+      fill: '#ffffff',
+      fontStyle: 'bold',
+      shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 4, stroke: true, fill: true } // Ajout d'une ombre pour plus de lisibilité
     }).setOrigin(0.5);
 
     this.boutonsChoix = [
@@ -134,40 +136,86 @@ export default class histoire extends Phaser.Scene {
 
     const aide = this.add.text(640, 520, "Joystick ◀ ▶ pour choisir, un bouton pour valider", {
       fontSize: '20px',
-      fill: '#888888'
+      fill: '#aaaaaa',
+      fontStyle: 'italic'
     }).setOrigin(0.5);
 
     this.elementsChoix.push(question, aide, ...this.boutonsChoix);
     this.majSelection();
   }
 
-  // Le bouton sélectionné est un peu plus gros
+  // Amélioration UX : animation fluide (Tween) et retour visuel enrichi
   majSelection() {
     this.boutonsChoix.forEach((bouton, i) => {
-      bouton.setScale(i + 1 === this.selection ? 1.1 : 1);
+      const estSelectionne = (i + 1 === this.selection);
+      const scaleCible = estSelectionne ? 1.15 : 1;
+
+      // Animation de mise à l'échelle (plus doux qu'un changement immédiat)
+      this.tweens.add({
+        targets: bouton,
+        scaleX: scaleCible,
+        scaleY: scaleCible,
+        duration: 150,
+        ease: 'Power2'
+      });
+
+      // Changement d'apparence selon la sélection
+      if (estSelectionne) {
+        bouton.fond.setFillStyle(0xE8C482); // Or plus clair
+        bouton.fond.setStrokeStyle(5, 0xffffff); // Bordure blanche bien visible (5px)
+        bouton.texte.setShadow(0, 0, '#ffffff', 2, false, true); // Effet de lueur sur le texte
+      } else {
+        bouton.fond.setFillStyle(0xD6AD65); // Or de base
+        bouton.fond.setStrokeStyle(3, 0xaaaaaa); // Bordure grisée/plus fine (3px)
+        bouton.texte.setShadow(0, 0, '#000000', 0, false, false); // Pas de lueur
+      }
     });
   }
 
   creerBoutonChoix(x, y, label, nombre) {
-    const bouton = this.add.text(x, y, label, {
+    // Remplacement du texte simple par un conteneur (Fond + Texte)
+    const conteneur = this.add.container(x, y);
+
+    const largeur = 260;
+    const hauteur = 80;
+
+    // Création du rectangle de fond avec la bordure (StrokeStyle)
+    const fond = this.add.rectangle(0, 0, largeur, hauteur, 0xD6AD65)
+      .setStrokeStyle(3, 0xaaaaaa); // Bordure par défaut
+
+    // Création du texte
+    const texte = this.add.text(0, 0, label, {
       fontSize: '36px',
       fill: '#ffffff',
-      backgroundColor: '#D6AD65',
-      padding: { x: 30, y: 20 }
-    }).setOrigin(0.5).setInteractive();
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
 
-    // Survoler à la souris change la sélection, comme le joystick
-    bouton.on('pointerover', () => { this.selection = nombre; this.majSelection(); });
-    bouton.on('pointerup', () => this.choisirMode(nombre));
+    // Ajout des éléments au conteneur
+    conteneur.add([fond, texte]);
 
-    return bouton;
+    // On rend le conteneur interactif à la place du texte
+    conteneur.setSize(largeur, hauteur);
+    conteneur.setInteractive();
+
+    // Survoler à la souris change la sélection
+    conteneur.on('pointerover', () => { 
+      this.selection = nombre; 
+      this.majSelection(); 
+    });
+    conteneur.on('pointerup', () => this.choisirMode(nombre));
+
+    // On attache le fond et le texte au conteneur pour pouvoir les modifier dans majSelection()
+    conteneur.fond = fond;
+    conteneur.texte = texte;
+
+    return conteneur;
   }
 
   choisirMode(nombre) {
       // Stockage global : toutes les scènes pourront lire cette valeur
       this.registry.set("joueurs", nombre);
   
-      // On retire le menu de choix
+      // On retire le menu de choix (détruire le conteneur détruit aussi le fond et le texte)
       this.elementsChoix.forEach(element => element.destroy());
       this.choixFait = true;
   
@@ -184,10 +232,10 @@ export default class histoire extends Phaser.Scene {
   
       // Phase 2 : les dialogues démarrent
       this.afficherEtapeActuelle();
-    }
+  }
 
   // ==============================
-  // PHASE 2 : DIALOGUES
+  // PHASE 2 : DIALOGUES (inchangée)
   // ==============================
 
   afficherEtapeActuelle() {
