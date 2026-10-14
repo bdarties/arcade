@@ -96,9 +96,16 @@ export function jouerSonSurLeTemps(scene, nom) {
     else scene.time.delayedCall(delai, () => jouerSon(scene, nom, 1.4));
 }
 
+// Coupe tous les bruitages encore en cours (la musique qui joue est gardée) : on le fait quand une nouvelle musique démarre et à la fin du combat du boss, pour repartir
+// d'un moteur audio sans aucun son qui traîne (sur le Raspberry Pi, des sons qui s'accumulent peuvent faire grésiller ou « moteuriser » le son).
+export function viderSons(scene) {
+    scene.sound.sounds.slice().forEach((son) => { if (son !== musique) son.destroy(); }); // slice : on parcourt une copie, car détruire un son le retire de la liste
+}
+
 function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
     if (musique && musique.manager) { musique.stop(); musique.destroy(); } // (manager est vide si le son a déjà été détruit) // coupe l'ancienne musique et la libère (sans destroy, chaque nouvelle partie laissait un son de plus en mémoire)
+    viderSons(scene); // une nouvelle musique : on repart sans aucun bruitage qui traîne
     volumeBase = base; // on retient son volume de base : majVolumeMusique en a besoin quand le joueur règle le volume
     // crée la musique, au volume choisi dans le menu pause
     musique = scene.sound.add(nom, { loop: boucle, volume: base * reglages.musique / VOLUME_MAX });

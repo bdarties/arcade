@@ -66,6 +66,7 @@ export function appliquerFormeFinale(scene, boss) {
 // Après la fausse fin (voir fin_de_combat.js, faux_pantheon.js) : le boss revient dans sa forme finale, avec tous ses PV.
 export function devenirFormeFinale(scene, boss) {
     if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true); // celles apparues pendant l'animation disparaissent : on repart de zéro
+    if (scene.bonusPV) scene.bonusPV.clear(true, true); // les croix de soin restées au sol aussi (clear détruit aussi leur lueur)
     scene.registry.set("chronoActif", true); // le chrono repart (il était arrêté pendant la fausse fin)
     boss.fige = false;
     boss.intouchable = false;

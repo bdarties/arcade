@@ -19,7 +19,7 @@
 //   - nova      : des anneaux d'orbes lentes s'écartent de lui, avec des trous entre les orbes
 // Les tirs du robot le blessent. À 0 PV, le joueur choisit : arrêter la partie ici (le boss est vaincu), ou entrer dans le panthéon (OUI) : la
 // suite du jeu est alors dans js/partie2 (profil.suite).
-import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau } from "../systemes/sons.js";
+import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau, viderSons } from "../systemes/sons.js";
 import * as effets from "../systemes/effets.js";
 import { gagnerPoints, finirPartie } from "../systemes/points.js";
 import { faireApparaitre as invoquerLanterne } from "./lanterne_vivante.js";
@@ -451,6 +451,7 @@ function proposerPantheon(scene, boss) {
     scene.cameras.main.flash(300, 255, 242, 192);
     scene.time.delayedCall(900, () => { // l'éclair passe, puis le choix
         if (scene.mort || scene.partieFinie) return; // le robot est mort ou la partie est finie entre-temps
+        viderSons(scene); // le combat est fini : on coupe les bruitages qui traînent avant le choix et la suite
         scene.scene.launch("pantheon", { origine: scene.scene.key, accepter: () => (profil.suite ? profil.suite(scene, boss) : refuserPantheon(scene, boss)), refuser: () => refuserPantheon(scene, boss) });
         scene.scene.pause(); // fige le niveau : le chrono attend la réponse
     });

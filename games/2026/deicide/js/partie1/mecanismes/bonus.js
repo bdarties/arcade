@@ -1,7 +1,7 @@
 // bonus.js : les bonus que lâchent les ennemis quand ils meurent (pour l'instant : un PV)
 // Un ennemi tué a CHANCE_PV de chances de laisser une croix de soin : elle jaillit, tombe sur le sol, et le joueur doit la
 // ramasser en passant dessus pour regagner 1 PV (la barre de PV du HUD s'allume d'une cellule).
-// Si la barre est déjà pleine, la croix est ramassée quand même (le texte affiche « PV MAX » et rien n'est regagné).
+// Si la barre est déjà pleine, la croix n'est PAS ramassée : elle reste au sol pour plus tard.
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
 import { volumeEffets } from "../systemes/sons.js"; // le bip suit le réglage des bruitages
 import { textePoints, clignoter } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
@@ -70,15 +70,13 @@ function creerBonusPV(scene, x, y) {
 function ramasserPV(scene, bonus) {
     if (!bonus.active) return; // déjà ramassée à cette image
     if (scene.pv <= 0) return; // le robot est à terre : un soin ne le relève pas
+    if (scene.pv >= PV_MAX_BARRE) return; // barre pleine : la croix n'est pas touchée, elle reste au sol
     const x = bonus.x;
     const y = bonus.y;
-    bonus.destroy(); // la croix est toujours ramassée, même si la barre est pleine
-    const gagne = scene.pv < PV_MAX_BARRE; // vrai s'il reste une cellule à allumer
-    if (gagne) {
-        scene.pv += 1; // un PV de plus
-        scene.hud.majPV(scene.pv); // la barre s'allume d'une cellule
-    }
-    textePoints(scene, x, y - 24, gagne ? "+1 PV" : "PV MAX"); // le texte monte puis s'efface (« PV MAX » : rien à regagner)
+    bonus.destroy(); // une cellule à allumer : la croix est ramassée
+    scene.pv += 1; // un PV de plus
+    scene.hud.majPV(scene.pv); // la barre s'allume d'une cellule
+    textePoints(scene, x, y - 24, "+1 PV"); // le texte monte puis s'efface
     bipPV(scene);
 }
 
