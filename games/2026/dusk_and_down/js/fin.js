@@ -30,6 +30,7 @@ export default class fin extends Phaser.Scene {
     const lignes = [
       "Temps survécu : " + formaterTemps(bilan.temps),
       "Vague atteinte : " + bilan.vague,
+      "Niveau : " + bilan.niveau,
       "Ombres vaincues : " + bilan.ennemisVaincus,
       "Score : " + bilan.score
     ];

@@ -2,6 +2,7 @@
 import chargement from "./js/chargement.js";
 import menu from "./js/menu.js";
 import jeu from "./js/jeu.js";
+import amelioration from "./js/amelioration.js";
 import fin from "./js/fin.js";
 
 // configuration générale du jeu
@@ -27,7 +28,7 @@ var config = {
   },
   roundPixels: true,
   render: { antialiasGL: false, powerPreference: "high-performance" },
-  scene: [chargement, menu, jeu, fin],
+  scene: [chargement, menu, jeu, amelioration, fin],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };
 

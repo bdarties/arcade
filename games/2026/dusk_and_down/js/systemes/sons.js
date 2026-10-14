@@ -5,9 +5,11 @@ let sortie = null;
 let bruit = null;
 const derniersSons = {};
 
-const INTERVALLES = { touche: 0.05, temple: 0.25, mort_ombre: 0.05, epee: 0.05 };
+const INTERVALLES = { touche: 0.05, temple: 0.25, mort_ombre: 0.05, epee: 0.05, gemme: 0.04 };
 
 const FICHIERS = {
+  gemme: { cles: ["xp_1", "xp_2"], volume: 0.3 },
+  niveau: { cles: ["niveau"], volume: 0.6 },
   epee: { cles: ["epee"], volume: 0.5 }
 };
 const sonsFichiers = {};

@@ -1,6 +1,6 @@
 export const ECRAN = { largeur: 1280, hauteur: 720 };
 
-export const MONDE = { largeur: 3200, hauteur: 1800 };
+export const MONDE = { largeur: 2048, hauteur: 1152 };
 
 export const ISO = { ratioY: 0.5 };
 
@@ -35,6 +35,14 @@ export const JOUEUR = {
   ecartMaxY: 580
 };
 
+export const XP = {
+  base: 5,
+  croissance: 4,
+  exposant: 1.25,
+  vitesseAttraction: 420,
+  maxGemmes: 80
+};
+
 export const VAGUES = {
   delaiPremiereVague: 3500,
   pauseEntreVagues: 3000,
@@ -50,6 +58,13 @@ export const VAGUES = {
   distanceMin: 650,
   distanceMax: 1000
 };
+
+export const RARETES = [
+  { id: "commun", nom: "Commun", poids: 60, multiplicateur: 1, couleur: 0xc9c3b6 },
+  { id: "rare", nom: "Rare", poids: 26, multiplicateur: 1.5, couleur: 0x4d9dff },
+  { id: "epique", nom: "Épique", poids: 10, multiplicateur: 2, couleur: 0xb15cff },
+  { id: "heroique", nom: "Héroïque", poids: 4, multiplicateur: 2.5, couleur: 0xff5c3d }
+];
 
 export const SONS = { actifs: true, volume: 0.35, volumeMusique: 0.2 };
 

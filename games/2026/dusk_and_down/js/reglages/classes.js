@@ -8,6 +8,8 @@ export const CLASSES = {
     rayonCorps: 10,
     pvMax: 110,
     vitesse: 150,
+    regeneration: 0,
+    rayonCollecte: 80,
     armeDeBase: "epee"
   }
 };

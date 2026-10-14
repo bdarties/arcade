@@ -31,6 +31,18 @@ export function creerAnimations(scene) {
   anim(scene, "rampant_marche", "rampant", 10, 17, 10, true);
   anim(scene, "rampant_attaque", "rampant", 20, 27, 16, false);
   anim(scene, "rampant_mort", "rampant", 40, 43, 10, false);
+  for (const cle of ["demon", "colosse"]) {
+    anim(scene, cle + "_repos", cle, 0, 5, 8, true);
+    anim(scene, cle + "_marche", cle, 10, 17, 12, true);
+    anim(scene, cle + "_attaque", cle, 20, 26, 16, false);
+    anim(scene, cle + "_mort", cle, 40, 43, 10, false);
+  }
+  anim(scene, "spectre_apparition", "spectre", 0, 3, 10, false);
+  anim(scene, "spectre_marche", "spectre", 4, 9, 8, true, true);
+  anim(scene, "spectre_mort", "spectre", 10, 15, 14, false);
+
+  anim(scene, "anim_crane_ombre", "crane_ombre", 0, 9, 14, true);
+  anim(scene, "anim_crane_impact", "crane_impact", 0, 5, 18, false);
 
   anim(scene, "anim_colonne_sacree", "colonne_sacree", 0, 15, 20, false);
 
