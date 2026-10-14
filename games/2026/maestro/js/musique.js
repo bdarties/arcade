@@ -1,5 +1,5 @@
 // ============================================================================
-//  js/musique.js — LA MUSIQUE DU JEU : une seule piste à la fois, qui continue d'un écran à l'autre
+//  js/musique.js — LA MUSIQUE DU JEU (une seule piste à la fois) et les petits SONS fabriqués par le code
 //
 //  Problème résolu : chaque écran lançait sa propre musique et la coupait en partant. Résultat : un silence
 //  entre l'accueil, le choix du mode et le synopsis, jusqu'au lobby.
@@ -33,4 +33,54 @@ export function arreterMusique(scene) {
     enCours.stop();
     scene.registry.set("musique", null);
   }
+}
+
+// ---- Petits sons fabriqués par le code (pas de fichier audio) ----
+const VOLUME_NOTE = 0.05; // note jouée par la Cantatrice (plus doux encore)
+const FREQUENCES_NOTES = [523.25, 659.25, 783.99]; // Do, Mi, Sol (mêmes notes que les ondes)
+
+// Le contexte audio de Phaser (ou null si le navigateur n'a pas d'audio : on ne fait rien)
+function contexteAudio(scene) {
+  const ctx = scene.sound && scene.sound.context ? scene.sound.context : null;
+  if (ctx && ctx.state == "suspended") {
+    ctx.resume(); // certains navigateurs bloquent le son jusqu'au premier clic
+  }
+  return ctx;
+}
+
+// Le son des ennemis (aujourd'hui : le cristal qui grince sous une mauvaise note) : le fichier son_ennemi, à volume doux
+const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
+let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
+
+export function jouerSonCreature(scene) {
+  if (scene.cache.audio.exists("son_ennemi") == false) {
+    return; // fichier absent : on joue sans ce son
+  }
+  const maintenant = performance.now(); // l'heure actuelle, en millisecondes
+  if (maintenant - dernierSonEnnemi < DELAI_SON_ENNEMI_MS) {
+    return; // trop tôt depuis le dernier son : on se tait
+  }
+  dernierSonEnnemi = maintenant;
+  scene.sound.play("son_ennemi", { volume: 0.6 }); // 0,6 = audible, sans être agressif
+}
+
+// Une note courte (Do, Mi ou Sol) : quand la Cantatrice lance une onde
+export function jouerSonNote(scene, indexNote) {
+  const ctx = contexteAudio(scene);
+  if (ctx == null) {
+    return;
+  }
+  const t = ctx.currentTime;
+  const son = ctx.createOscillator();
+  const volume = ctx.createGain();
+  son.type = "triangle"; // son doux, moins strident qu'une onde carrée
+  son.frequency.value = FREQUENCES_NOTES[indexNote] || FREQUENCES_NOTES[0];
+
+  volume.gain.setValueAtTime(0, t);
+  volume.gain.linearRampToValueAtTime(VOLUME_NOTE, t + 0.005);
+  volume.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+  son.connect(volume).connect(ctx.destination);
+
+  son.start(t);
+  son.stop(t + 0.27);
 }
