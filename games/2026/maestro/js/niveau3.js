@@ -7,9 +7,6 @@ export default class niveau3 extends Phaser.Scene {
     });
   }
   preload() {
-    if (!this.textures.exists("ts_plateformes")) {
-      this.load.image("ts_plateformes", "assets/plateformes-coulisses-grid-50.png");
-    }
     this.load.spritesheet("cantatrice", "assets/cantatrice.png", {
       frameWidth: 64,
       frameHeight: 64
@@ -52,14 +49,7 @@ export default class niveau3 extends Phaser.Scene {
     this.clavier = this.input.keyboard.createCursorKeys();
     this.physics.add.collider(this.player, this.groupe_plateformes);
     
-    // La même petite porte dorée du tileset que dans le niveau 1 (72 × 76 px).
-    const texturePorte = this.textures.get("ts_plateformes");
-    if (!texturePorte.has("porte_fermee")) {
-      texturePorte.add("porte_fermee", 0, 480, 312, 72, 76);
-    }
-    const plateformeSortie = this.groupe_plateformes.getChildren().find((sol) => 100 >= sol.body.left && 100 <= sol.body.right);
-    const solY = plateformeSortie ? plateformeSortie.body.top : 588;
-    this.porte_retour = this.physics.add.staticSprite(100, solY - 38, "ts_plateformes", "porte_fermee");
+    this.porte_retour = this.physics.add.staticSprite(100, 550, "img_porte3");
 
     this.anims.create({
       key: "cantatrice_repos",

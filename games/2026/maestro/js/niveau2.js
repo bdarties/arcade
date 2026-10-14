@@ -145,7 +145,9 @@ export default class niveau2 extends niveau1 {
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("fond_theatre", "./assets/map2_sombre_voile.jpg"); // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri // fond : le théâtre d'ombres chinoises (le dragon), déjà assombri
-    this.load.spritesheet("porte_sortie_rouge", "./assets/porte_sortie_rouge.png", { frameWidth: 96, frameHeight: 120 }); // la porte, en rouge
+    if (!this.textures.exists("ts_plateformes")) {
+      this.load.image("ts_plateformes", "./assets/plateformes-coulisses-grid-50.png");
+    }
     this.load.atlas("decor2", "./assets/decor_niveau2.png", "./assets/decor_niveau2.json"); // plateformes et décor rouges
     this.load.image("tuiles_theatre", "./assets/tilesetmap2.png");
     this.load.tilemapTiledJSON("carte_theatre", "./assets/map2maestro.json");
@@ -502,12 +504,19 @@ export default class niveau2 extends niveau1 {
     this.ajouterNote(NOTE_BONUS.x, NOTE_BONUS.y, 2, true);
     this.ajouterNote(NOTE_VOIE_HAUTE.x, NOTE_VOIE_HAUTE.y, 2, true); // 2e note dorée, au bout de la voie haute
 
-    // La porte de sortie (même image que le niveau 1, en rouge), fermée au début
-    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 60, "porte_sortie_rouge", 0);
+    // La petite porte dorée du tileset, comme au niveau 1, posée sur le sol.
+    const texturePorte = this.textures.get("ts_plateformes");
+    if (!texturePorte.has("porte_fermee")) {
+      texturePorte.add("porte_fermee", 0, 480, 312, 72, 76);
+    }
+    if (!texturePorte.has("porte_ouverte")) {
+      texturePorte.add("porte_ouverte", 0, 576, 392, 72, 76);
+    }
+    this.porte = this.physics.add.staticSprite(PORTE.x, PORTE.solY - 38, "ts_plateformes", "porte_fermee");
     this.porte.setDepth(3);
     this.porteOuverte = false;
-    if (this.anims.exists("porte_ouvre_rouge") == false) {
-      this.anims.create({ key: "porte_ouvre_rouge", frames: this.anims.generateFrameNumbers("porte_sortie_rouge", { start: 0, end: 5 }), frameRate: 8, repeat: 0 });
+    if (!this.anims.exists("porte_coulisse_ouvre")) {
+      this.anims.create({ key: "porte_coulisse_ouvre", frames: [{ key: "ts_plateformes", frame: "porte_fermee" }, { key: "ts_plateformes", frame: "porte_ouverte" }], frameRate: 8, repeat: 0 });
     }
 
     this.creerPartition();
@@ -729,7 +738,7 @@ export default class niveau2 extends niveau1 {
     });
     this.cameras.main.flash(300, 255, 240, 190);
     this.porteOuverte = true;
-    this.porte.anims.play("porte_ouvre_rouge"); // la porte s'ouvre
+    this.porte.anims.play("porte_coulisse_ouvre"); // la porte s'ouvre
     this.tweens.killTweensOf(this.iconeFragment);
     this.iconeFragment.clearTint().setScale(1);
     this.texteFragment.setText("1 / 1");
