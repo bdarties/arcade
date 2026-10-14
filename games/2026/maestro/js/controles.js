@@ -73,7 +73,7 @@ export function touche(joueur, bouton) {
 
 // Ce qu'on lit sur la borne : les 4 boutons utiles (A, B, C, D)
 export function aideBorne() {
-  return "BORNE · A : sauter · B : action (onde / lampe) · C : note / recharge · D : changer (solo)";
+  return "BORNE · A : sauter · B : action (onde / lampe) · C : note · D : changer (solo)";
 }
 
 // Ce qu'on tape au clavier, pour les deux joueurs

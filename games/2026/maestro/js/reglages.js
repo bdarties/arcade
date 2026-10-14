@@ -53,10 +53,7 @@ export const REGLAGES = {
     vitesse: 70, // vitesse à laquelle il avance vers le joueur (px/s)
     pv: 1, // nombre d'ondes de la BONNE note pour le détruire (chaque cristal a une couleur = une note)
     etourdissementMauvaiseNoteMs: 600, // une onde d'une autre note ne fait que l'étourdir un instant (ms)
-    detectionPx: 450, // il se réveille quand un joueur est plus proche que ça
-    // Pour plus tard (niveau 3) : le cristal apparaîtra toutes les 4 à 7 secondes
-    apparitionMinMs: 4000,
-    apparitionMaxMs: 7000
+    detectionPx: 450 // il se réveille quand un joueur est plus proche que ça
   },
   // ---- Choc quand un personnage est touché ----
   recul: {

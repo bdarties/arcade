@@ -11,7 +11,6 @@ import { toucheEnfoncee, toucheAppuyee, lacherEchelle, gererEchelle } from "./co
 const LARGEUR_MONDE = 2176;
 const HAUTEUR_MONDE = 736;
 const COULEUR_FOND = 0x090d17; // couleur de fond de la carte (réglée dans Tiled)
-const OPACITE_FOND = 0.42; // opacité de l'image de fond (propriété fond_opacite de la carte)
 const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner plus que ça (pour rester à l'écran)
 // Mur de lumière : empêche d'atteindre le parchemin en sautant depuis la plateforme de droite
 // (sol_14). Sans lui, on pourrait se passer des passerelles fantômes, donc du Détective.
@@ -70,12 +69,9 @@ export default class niveau1 extends Phaser.Scene {
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.tilemapTiledJSON("carte_coulisse", "./assets/coulisse.json");
-    // Images de la carte. Si l'une manque, le niveau est quand même jouable :
-    // il utilise alors un décor de secours (voir creerCarte).
+    // Images de la carte. Si l'une manque, le niveau reste jouable : un décor de secours est dessiné (voir creerCarte).
     this.load.image("ts_plateformes", "./assets/plateformes-coulisses-grid-50.png"); // tuiles des plateformes
-    this.load.image("ts_complements", "./assets/coulisses_complements.png"); // tuiles de la structure et des échelles
     this.load.image("img_lanterne", "./assets/lanterne_chinoise.png");
-    this.load.image("img_fond_coulisse", "./assets/coulisse.jpg");
   }
 
   // ==========================================================================
@@ -256,19 +252,15 @@ export default class niveau1 extends Phaser.Scene {
     this.groupe_plateformes = this.physics.add.staticGroup(); // plateformes solides
     this.groupe_fantomes = this.physics.add.staticGroup(); // passerelles fantômes
 
-    // Les images de tuiles sont-elles là ? (1er nom = nom du tileset dans Tiled, 2e nom = clé chargée dans preload)
+    // L'image de tuiles des plateformes est-elle là ? (1er nom = nom du tileset dans Tiled, 2e nom = clé chargée dans preload)
     const tuilesPlateformes = this.textures.exists("ts_plateformes")
       ? this.carte.addTilesetImage("plateformes_coulisses_niveau1", "ts_plateformes")
       : null;
-    const tuilesComplements = this.textures.exists("ts_complements")
-      ? this.carte.addTilesetImage("coulisses_complements", "ts_complements")
-      : null;
-    // Chaque jeu d'images est indépendant : s'il manque, on dessine un décor de secours à la place
+    // S'il manque, on dessine un décor de secours à la place
     this.avecTuilesPlateformes = tuilesPlateformes != null; // vrai si les images des plateformes sont là
-    this.avecTuilesComplements = tuilesComplements != null; // vrai si les images de la structure sont là
 
     this.creerFond(); // l'image de fond
-    this.creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements); // les calques de tuiles, du fond vers l'avant
+    this.creerCalquesDeTuiles(tuilesPlateformes); // les calques de tuiles, du fond vers l'avant
 
     // ---- Les objets de la carte ----
     const objetsDe = (calque) => this.carte.getObjectLayer(calque).objects; // la liste des objets d'un calque d'objets
@@ -283,9 +275,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Échelles : on garde le point où le personnage se tient en haut et en bas (= dessus des plateformes)
     this.echelles = deType("echelle").map((objet) => { // pour chaque échelle de la carte
-      if (this.avecTuilesComplements == false) {
-        this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3); // décor de secours : une échelle dessinée
-      }
+      this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3); // l'échelle dessinée par le code
       return {
         centreX: objet.x + objet.width / 2, // le milieu de l'échelle en x
         haut: objet.y + 12, // le haut de l'échelle dépasse de 12 px au-dessus de la plateforme
@@ -321,29 +311,14 @@ export default class niveau1 extends Phaser.Scene {
     this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (bouton B) et passe !");
   }
 
-  // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
-  // Dans les deux cas l'image est ÉTIRÉE pour couvrir toute la carte, quelle que soit sa taille d'origine.
+  // Le fond : l'image fond_niveau1.jpg, étirée pour couvrir toute la carte, quelle que soit sa taille d'origine.
   creerFond() {
-    if (this.textures.exists("img_fond_coulisse")) { // l'image du niveau est là
-      this.add
-        .image(0, 0, "img_fond_coulisse") // posée au coin haut gauche
-        .setOrigin(0, 0)
-        .setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE) // étirée à la taille du monde
-        .setAlpha(OPACITE_FOND) // un peu transparente, pour que le décor reste sombre
-        .setDepth(0); // tout au fond
-    } else {
-      this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0); // image de secours
-    }
+    this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0); // tout au fond
   }
 
   // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche.
-  // Chaque calque n'utilise qu'UN des deux jeux d'images : on ne crée que ceux dont l'image est présente.
-  creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements) {
-    // Calques dessinés avec coulisses_complements.png : la structure et les échelles
-    if (tuilesComplements != null) {
-      this.carte.createLayer("structure", tuilesComplements).setDepth(1).setAlpha(0.65); // la structure, un peu transparente
-      this.carte.createLayer("echelles", tuilesComplements).setDepth(3); // les échelles
-    }
+  // On ne crée que les calques dont l'image de tuiles est présente.
+  creerCalquesDeTuiles(tuilesPlateformes) {
     // Calques dessinés avec plateformes-coulisses-grid-50.png : plateformes, décors, passerelles
     if (tuilesPlateformes != null) {
       this.carte.createLayer("plateformes_tuiles", tuilesPlateformes).setDepth(2); // les plateformes visibles
@@ -574,6 +549,7 @@ export default class niveau1 extends Phaser.Scene {
     // (la 3e fonction est une CONDITION : si elle renvoie false, il n'y a pas de collision)
     this.physics.add.collider(this.persos, this.groupe_plateformes, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
     this.physics.add.collider(this.groupe_tubas, this.groupe_plateformes); // les Tubas marchent sur les plateformes
+    this.physics.add.collider(this.groupe_cristaux, this.groupe_plateformes); // les cristaux s'arrêtent contre les plateformes
     this.physics.add.collider(this.persos, this.groupe_murs); // le mur de lumière bloque les personnages
 
     // Les passerelles fantômes ne sont solides que si elles sont éclairées
@@ -935,17 +911,16 @@ export default class niveau1 extends Phaser.Scene {
     if (lampe.allumee == false) {
       return; // éteinte : rien d'autre à dessiner
     }
-    const intensite = 1; // la lumière reste pleine
 
     const f = this.calculerFaisceau(); // où pointe la lampe
     // le cône de lumière : un triangle de la main du Détective jusqu'à la tache de lumière
     const nx = -f.dy; // perpendiculaire à la direction, pour donner sa largeur au cône
     const ny = f.dx;
     const largeur = REGLAGES.lampe.rayon * 0.6; // la demi-largeur du cône, à l'arrivée
-    this.faisceau.fillStyle(0xffe9a0, 0.2 * intensite); // couleur dorée, transparente
+    this.faisceau.fillStyle(0xffe9a0, 0.2); // couleur dorée, transparente
     this.faisceau.fillTriangle(f.ox, f.oy, f.cx + nx * largeur, f.cy + ny * largeur, f.cx - nx * largeur, f.cy - ny * largeur); // le cône
-    this.halo.setPosition(f.cx, f.cy).setAlpha(intensite);
-    this.haloProche.setPosition(this.detective.body.center.x, this.detective.body.center.y).setAlpha(0.7 * intensite); // le petit halo autour du Détective
+    this.halo.setPosition(f.cx, f.cy).setAlpha(1);
+    this.haloProche.setPosition(this.detective.body.center.x, this.detective.body.center.y).setAlpha(0.7); // le petit halo autour du Détective
   }
 
   // Distance entre un point et un rectangle (0 si le point est dedans)
