@@ -369,7 +369,7 @@ export default class classement extends Phaser.Scene {
             if (liste === null) throw new Error("panthéon illisible");
             liste.push({ nom, ...this.monResultat(), date: new Date().toISOString().slice(0, 10) });
             this.tableau = liste.sort(comparer).slice(0, MAX_LIGNES);
-            await ecrireDonneesJSON(this.tableau);
+            if ((await ecrireDonneesJSON(this.tableau)) === false) throw new Error("écriture impossible"); // la version de la borne renvoie false (sans erreur) quand elle ne peut pas écrire
         } catch (erreur) {
             console.warn("Enregistrement impossible :", erreur);
             reussi = false;

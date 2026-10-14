@@ -218,3 +218,8 @@
 - **Correction** : les 17 fichiers sont renommés dans Git (`git mv` en deux temps via un nom temporaire). Aucun changement de code.
 - **Vérifié** : sur un volume sensible aux majuscules (comme Linux), avant : 13 erreurs 404 et un menu bloqué ; après : plus d'erreur, le menu répond.
 - **À faire avant chaque PR** : tester sur un volume sensible aux majuscules (`hdiutil create -fs "Case-sensitive APFS"`) ou vérifier avec `git ls-files | grep "[A-Z]"` qu'aucun fichier du jeu ne garde une majuscule.
+
+## Fichier donnees.js du prof et bouton CLASSEMENT retouché (14/10/2026)
+- **donnees.js** : notre copie est remplacée par le fichier officiel de la borne (identique à `app/static/js/donnees.js`). Sur la borne la page charge déjà cette version, donc notre copie n'est utilisée que hors borne. Les temps déjà enregistrés restent : ils sont dans la base, sous le nom du dossier du jeu (`deicide`), avec le même format.
+- **Pourquoi une ligne change dans `classement.js`** : la version officielle renvoie `false` quand elle ne peut pas écrire, au lieu de lancer une erreur. On teste ce `false` pour afficher « ERREUR D'ENVOI » au lieu de « ENREGISTRE » à tort.
+- **Bouton CLASSEMENT** : même dalle animée que JOUER et 1 V 1 (même image, flammes, assombrie quand elle n'est pas choisie, qui s'enfonce au clic), centrée à droite entre les deux. Elle est plus petite (échelle 2,25 au lieu de 4) : il n'y a que 240 px de large entre la dalle de JOUER et le pilier du décor. La flèche de la dalle est effacée pour laisser la place au mot (« CLASSEMENT » est plus long que « JOUER »).

@@ -8,7 +8,7 @@ import { chargerJeu } from "../systemes/chargement.js"; // charge tous les asset
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
 import { VERSION } from "../../version.js"; // le numéro de version du jeu (voir outils/version.py)
-import { ecrire, OR, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel du jeu (pour écrire « 1 V 1 » sur la dalle) et ses couleurs
+import { ecrire } from "./classement.js"; // l'écriture en police pixel du jeu (pour écrire « 1 V 1 » sur la dalle) et ses couleurs
 import { creerPolice, creerTexturePixel, plaque } from "../systemes/dessins.js"; // la police pixel et les particules (dessinées en code)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
@@ -68,7 +68,7 @@ export default class menu extends Phaser.Scene {
     // est choisi. Le bouton CLASSEMENT est à droite de JOUER : la flèche droite l'atteint, la flèche gauche revient à JOUER.
     this.mode = 1; // 1 = solo, 2 = 1 contre 1, 3 = classement
     this.boutonDeux = this.creerBoutonDeux(640, 545);
-    this.boutonClassement = this.creerBoutonClassement(945, 410);
+    this.boutonClassement = this.creerBoutonClassement(947, 477); // à droite, à mi-hauteur entre JOUER (y 405) et 1 V 1 (y 545)
     this.indication = this.add.text(640, 640, "FLÈCHES : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5);
     this.majMode();
     ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1)));
@@ -89,24 +89,25 @@ export default class menu extends Phaser.Scene {
     this.lance = false;
   }
 
-  creerTextureDalleVide() { // la dalle « JOUER » sans son texte : on recopie dans chaque image la colonne vide à droite du mot, sur toute sa place
-    if (this.textures.exists("bouton_vide")) return;
+  creerTextureDalleVide(cle, debut, fin) { // la dalle « JOUER » sans son texte : on recopie dans chaque image la colonne vide à droite du mot (colonnes debut à fin), sur toute sa place
+    if (this.textures.exists(cle)) return;
     const source = this.textures.get("bouton_jouer").getSourceImage();
-    const texture = this.textures.createCanvas("bouton_vide", 104, 44 * 15);
+    const texture = this.textures.createCanvas(cle, 104, 44 * 15);
     const ctx = texture.getContext();
     ctx.drawImage(source, 0, 0);
     for (let image = 0; image < 15; image++) {
-      for (let x = 34; x < 80; x++) ctx.drawImage(source, 84, image * 44 + 15, 1, 17, x, image * 44 + 15, 1, 17); // lignes 15 à 31 : l'intérieur de la dalle (le mot est entre les colonnes 36 et 78)
+      for (let x = debut; x < fin; x++) ctx.drawImage(source, 84, image * 44 + 15, 1, 17, x, image * 44 + 15, 1, 17); // lignes 15 à 31 : l'intérieur de la dalle
       texture.add(image, 0, 0, image * 44, 104, 44);
     }
     texture.refresh();
     texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.anims.create({ key: "bouton_vide_survol", frames: this.anims.generateFrameNumbers("bouton_vide", { start: 1, end: 12 }), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: cle + "_survol", frames: this.anims.generateFrameNumbers(cle, { start: 1, end: 12 }), frameRate: 12, repeat: -1 }); // les flammes
+    this.anims.create({ key: cle + "_clic", frames: this.anims.generateFrameNumbers(cle, { start: 13, end: 14 }), frameRate: 12, repeat: 0 }); // la dalle qui s'enfonce
   }
 
   creerBoutonDeux(x, y) { // la même dalle animée que « JOUER », sans son texte, avec « 1V1 » écrit à la place (police pixel du jeu)
     creerPolice(this, "police_blanche", "#ffffff"); // comme le mot « JOUER » : tout blanc
-    this.creerTextureDalleVide();
+    this.creerTextureDalleVide("bouton_vide", 34, 80); // la flèche reste, seul le mot est effacé
     const dalle = this.add.sprite(x, y, "bouton_vide", 1).setScale(4);
     dalle.play("bouton_vide_survol");
     const texte = ecrire(this, x + 23, y + 7, "1V1", 7, { profondeur: 0, police: "police_blanche" });
@@ -116,13 +117,18 @@ export default class menu extends Phaser.Scene {
     return { voile, dalle };
   }
 
-  creerBoutonClassement(x, y) { // une plaque du HUD avec « CLASSEMENT » écrit en police pixel : pas d'animation, c'est un simple bouton
-    creerPolice(this); // la police « police_fin » (déjà faite si on revient au menu)
-    const fond = this.add.image(x, y, plaque(this, 72, 16, false)).setScale(3);
-    const texte = ecrire(this, x, y, "CLASSEMENT", 3, { profondeur: 1 });
-    fond.setInteractive({ useHandCursor: true });
-    fond.on("pointerdown", () => { this.mode = 3; this.lancer(); });
-    return { fond, texte };
+  creerBoutonClassement(x, y) { // la même dalle animée que « JOUER », deux fois plus petite (il n'y a pas la place à côté), avec « CLASSEMENT » écrit à la place du mot
+    creerPolice(this, "police_blanche", "#ffffff"); // tout blanc, comme le mot « JOUER »
+    this.creerTextureDalleVide("bouton_vide_large", 16, 88); // « CLASSEMENT » est plus long que « JOUER » : on efface aussi la flèche pour lui laisser toute la place
+    const ECHELLE = 2.25; // la dalle fait 104 x 44 px : x2,25 = 234 x 99 px (c'est tout ce que la place à droite permet : le pilier du décor est à 1065)
+    const dalle = this.add.sprite(x, y, "bouton_vide_large", 1).setScale(ECHELLE);
+    dalle.play("bouton_vide_large_survol");
+    const texte = ecrire(this, x, y + 2.5, "CLASSEMENT", ECHELLE, { profondeur: 0, police: "police_blanche" });
+    const voile = this.add.rectangle(x, y, 104 * ECHELLE, 44 * ECHELLE, 0x0e0e11, 0.6); // atténue la dalle quand elle n'est pas choisie (comme « 1 V 1 »)
+    dalle.setInteractive({ hitArea: new Phaser.Geom.Rectangle(4, 10, 96, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true }); // seule la dalle réagit, pas les flammes
+    dalle.on("pointerover", () => this.changerMode(3)); // la souris dessus : le bouton est choisi
+    dalle.on("pointerdown", () => { this.mode = 3; this.lancer(); });
+    return { dalle, texte, voile };
   }
 
   changerMode(mode) { // haut : solo, bas : 1 contre 1, droite : classement
@@ -134,9 +140,7 @@ export default class menu extends Phaser.Scene {
   majMode() { // le mode choisi est en pleine couleur, l'autre est atténué
     this.bouton.setAlpha(this.mode === 1 ? 1 : 0.4);
     this.boutonDeux.voile.setVisible(this.mode !== 2);
-    const choisi = this.mode === 3; // CLASSEMENT : plaque et lettres en or quand il est choisi, éteint sinon
-    this.boutonClassement.fond.setTint(choisi ? OR : 0xffffff).setAlpha(choisi ? 1 : 0.55);
-    this.boutonClassement.texte.lettres.forEach((lettre) => lettre && lettre.setTint(choisi ? OR : GRIS_VIOLET));
+    this.boutonClassement.voile.setVisible(this.mode !== 3); // CLASSEMENT : atténué quand il n'est pas choisi, comme les deux autres
   }
 
   animer() { // les effets qui font vivre l'image fixe du menu
@@ -187,8 +191,9 @@ export default class menu extends Phaser.Scene {
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
     if (this.mode === 3) { // le classement : on regarde le panthéon, sans animation
+      this.boutonClassement.dalle.play("bouton_vide_large_clic"); // la dalle s'enfonce, comme « JOUER »
       jouerSon(this, "porte");
-      this.scene.start("classement", { consultation: true });
+      this.time.delayedCall(180, () => this.scene.start("classement", { consultation: true }));
       return;
     }
     if (this.mode === 2) { // 1 contre 1 : pas de chrono, on file dans l'arène
