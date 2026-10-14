@@ -42,7 +42,7 @@ export default class choix_mode extends Phaser.Scene {
     this.choix = 0; // Jouer par défaut
     this.majSelection();
 
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton " + fct.ETIQUETTES.frapper_tirer + " : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Un bouton d'action : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     // les touches des deux joueurs (cf. fonctions.js)

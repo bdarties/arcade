@@ -45,13 +45,13 @@ const ETAPES = [
       const modele = scene.cailloux.getChildren()[0];
       t.caillou = scene.creerCaillou({ x: place.x, y: place.y, image: biomes.cailloux(biomes.biomeDuNiveau(scene.niveau))[0].cle, coups_restants: modele?.coups_restants ?? 3 });
       t.caillou.tuto = true; // il lâche à coup sûr une pierre (cf. frapper dans niveau1.js)
+      t.pierres_debut = pierres.nombrePierres(scene); // mesuré maintenant : la pierre peut être ramassée dès la casse du caillou
     },
     fait: (scene, t) => !t.caillou.active,
     cible: (scene, t) => (t.caillou.active ? t.caillou : null)
   },
   {
     texte: () => "Approche-toi de la pierre lunaire\npour la ramasser",
-    debut: (scene, t) => { t.pierres_debut = pierres.nombrePierres(scene); },
     fait: (scene, t) => pierres.nombrePierres(scene) > t.pierres_debut,
     cible: (scene, t, j) => pierreLaPlusProche(scene, j)
   },
@@ -74,7 +74,7 @@ const ETAPES = [
     cible: (scene, t) => (t.ennemi.active ? t.ennemi : null)
   },
   {
-    descente: true, // à partir de cette étape, le trou peut être utilisé (cf. descenteAutorisee)
+    echelle: true, // le trou ne peut être utilisé que pendant une étape d'échelle (cf. descenteAutorisee)
     texte: () => "Une échelle est apparue !\nApproche-toi, bouton " + lettre("interagir") + " : descends",
     debut: (scene, t, j) => {
       // le trou est normalement caché sous un caillou : ici on le pose à découvert, près du joueur
@@ -104,16 +104,16 @@ const ETAPES = [
     fait: (scene, t) => pierres.nombrePierres(scene) < t.pierres_debut
   },
   {
+    echelle: true,
     texte: () => "Prends l'échelle à droite :\nla vraie partie commence",
     fait: (scene) => scene.changement_niveau,
     cible: (scene) => scene.trou
   }
 ];
 const PREMIERE_ETAPE_SAFE = ETAPES.findIndex((etape) => etape.safe);
-const ETAPE_DESCENTE = ETAPES.findIndex((etape) => etape.descente);
 
-// le trou reste inutilisable tant que la consigne de l'échelle n'est pas atteinte (sinon on sauterait des leçons)
-export const descenteAutorisee = (scene) => scene.tuto_etat.etape >= ETAPE_DESCENTE;
+// le trou reste inutilisable hors des étapes d'échelle (sinon on sauterait des leçons, y compris celle de la statue)
+export const descenteAutorisee = (scene) => ETAPES[scene.tuto_etat.etape]?.echelle === true;
 
 // crée la bulle de consigne et la flèche, et lance la première étape
 export function creerTutoriel(scene) {
@@ -166,6 +166,7 @@ function afficher(scene, message, rang, couleur) {
 
 // chaque image (cf. update de niveau1.js) : suit le joueur, valide l'étape, passe à la suivante
 export function majTutoriel(scene) {
+  if (scene.changement_niveau) return; // la scène va être relancée : on n'enchaine rien
   const t = scene.tuto_etat;
   const j = scene.joueurs[0];
   const maintenant = scene.time.now;

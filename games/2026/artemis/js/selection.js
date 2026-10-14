@@ -104,6 +104,9 @@ export default class selection extends Phaser.Scene {
     this.load.spritesheet("sprite_alien_vert_tir", "./assets/enemy/alien_vert_tir.png", { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet("sprite_alien_rouge", "./assets/enemy/alien_rouge.png", { frameWidth: 32, frameHeight: 32 });
 
+    // ennemi cristal (cf. ennemis.js) : 4 frames de 48x48, une couleur par biome (cf. biomes.js)
+    biomes.BIOMES.forEach((biome) => this.load.spritesheet("sprite_ennemi_cristal_" + biome.ennemi_cristal, "./assets/enemy/crystal_enemy_" + biome.ennemi_cristal + ".png", { frameWidth: 48, frameHeight: 48 }));
+
     // passages entre les niveaux (32x32) : le trou avec son échelle pour descendre, l'échelle pour remonter
     this.load.image("img_trou", "./assets/map/hole_ladder.png");
     this.load.image("img_echelle", "./assets/map/ladder.png");
@@ -206,6 +209,9 @@ export default class selection extends Phaser.Scene {
 
     ["alien_vert", "alien_rouge"].forEach((nom) => {
       this.anims.create({ key: "anim_" + nom, frames: this.anims.generateFrameNumbers("sprite_" + nom), frameRate: 8, repeat: -1 });
+    });
+    biomes.BIOMES.forEach((biome) => {
+      this.anims.create({ key: "anim_ennemi_cristal_" + biome.ennemi_cristal, frames: this.anims.generateFrameNumbers("sprite_ennemi_cristal_" + biome.ennemi_cristal), frameRate: 6, repeat: -1 });
     });
     this.anims.create({ key: "anim_alien_vert_tir", frames: this.anims.generateFrameNumbers("sprite_alien_vert_tir"), frameRate: 14, repeat: 0 });
 

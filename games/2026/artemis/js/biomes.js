@@ -7,12 +7,13 @@ export const NIVEAUX_PAR_BIOME = 5; // niveaux 1 à 5 : premier biome (le 5 est 
 
 // tileset : clé Phaser des murs (cf. selection.js) ; cristal et anim_cristal : sprite et animation des cristaux
 // lumiere : couleur de la lueur des cristaux (la teinte moyenne de leurs pixels colorés)
+// ennemi_cristal : couleur du sprite de l'ennemi cristal (cf. ennemis.js), dans assets/enemy/crystal_enemy_<couleur>.png
 // les tuiles de mur ont les mêmes numéros dans tous les tilesets (cf. TUILES dans generation.js) ; le sol reste celui du biome gris
 export const BIOMES = [
-  { nom: "gris", tileset: "tiles_gris", cristal: "sprite_cristal", anim_cristal: "anim_cristal", lumiere: 0xffc060 },
-  { nom: "bleu", tileset: "tiles_bleu", cristal: "sprite_cristal_bleu", anim_cristal: "anim_cristal_bleu", lumiere: 0x619add },
-  { nom: "vert", tileset: "tiles_vert", cristal: "sprite_cristal_vert", anim_cristal: "anim_cristal_vert", lumiere: 0x6ec76c },
-  { nom: "violet", tileset: "tiles_violet", cristal: "sprite_cristal_violet", anim_cristal: "anim_cristal_violet", lumiere: 0xa878c8 }
+  { nom: "gris", tileset: "tiles_gris", cristal: "sprite_cristal", anim_cristal: "anim_cristal", lumiere: 0xffc060, ennemi_cristal: "jaune" },
+  { nom: "bleu", tileset: "tiles_bleu", cristal: "sprite_cristal_bleu", anim_cristal: "anim_cristal_bleu", lumiere: 0x619add, ennemi_cristal: "bleu" },
+  { nom: "vert", tileset: "tiles_vert", cristal: "sprite_cristal_vert", anim_cristal: "anim_cristal_vert", lumiere: 0x6ec76c, ennemi_cristal: "vert" },
+  { nom: "violet", tileset: "tiles_violet", cristal: "sprite_cristal_violet", anim_cristal: "anim_cristal_violet", lumiere: 0xa878c8, ennemi_cristal: "violet" }
 ];
 
 // les cailloux : quatre images par biome, dans assets/map (les deux dernières sont les cailloux lunaires à cristaux)
