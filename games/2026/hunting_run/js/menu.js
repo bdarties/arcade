@@ -75,7 +75,7 @@ export default class menu extends Phaser.Scene {
     const droite = [K.RIGHT, K.D];
     const haut = [K.UP, K.Z];
     const bas = [K.DOWN, K.S];
-    const valider = [K.ENTER, K.SPACE, K.O, K.G];
+    const valider = [K.ENTER, K.SPACE, K.O, K.T];
     this.input.keyboard.on("keydown", (e) => {
       const k = e.keyCode;
       if (gauche.includes(k)) {
