@@ -58,6 +58,8 @@ export default class combat extends Phaser.Scene {
     // groupes communs à toutes les arènes
     this.solides = []; // sol, caisses : on ne peut pas les traverser
     this.groupe_plateformes = this.physics.add.group({ allowGravity: false, immovable: true });
+    this.plateformesMobiles = []; // lustre, touches noires, pont de projecteurs
+    this.tempsPlateformes = 0;
     switch (arene.id) {
       case "piano":
         this.construirePiano();
@@ -78,8 +80,10 @@ export default class combat extends Phaser.Scene {
     this.combattants = [this.j1, this.j2];
 
     this.physics.add.collider(this.combattants, this.solides, this.surLeSol, null, this);
-    // plateformes traversables par le dessous
-    this.physics.add.collider(this.combattants, this.groupe_plateformes, null, this.traverserParDessous, this);
+    // plateformes traversables par le dessous (et par le dessus avec joystick bas)
+    this.physics.add.collider(this.combattants, this.groupe_plateformes, this.poserSurPlateforme, this.traverserParDessous, this);
+    // à chaque pas de la physique : on déplace les plateformes mobiles et ce qui est posé dessus
+    this.physics.world.on("worldstep", this.pasDePhysique, this);
 
     // notes de musique lancées (projectiles)
     this.groupe_notes = this.physics.add.group({ allowGravity: false });
@@ -93,13 +97,13 @@ export default class combat extends Phaser.Scene {
     // objets bonus qui tombent du ciel
     this.groupe_objets = this.physics.add.group();
     this.physics.add.collider(this.groupe_objets, this.solides);
-    this.physics.add.collider(this.groupe_objets, this.groupe_plateformes);
+    this.physics.add.collider(this.groupe_objets, this.groupe_plateformes, this.poserSurPlateforme, null, this);
     this.combattants.forEach((c) => this.physics.add.overlap(c, this.groupe_objets, this.ramasser, null, this));
 
     this.creerHUD();
     this.lancerIntro();
 
-    // pause : Échap au clavier, ou bouton F d'un des deux joueurs sur la borne
+    // pause : bouton Start d'un des deux joueurs sur la borne, ou Échap au clavier
     this.toucheEchap = this.input.keyboard.addKey("ESC");
     // pendant la pause, la scène ne reçoit plus le clavier : au retour on "relâche" toutes
     // les touches, sinon une touche lâchée pendant la pause resterait enfoncée
@@ -124,12 +128,12 @@ export default class combat extends Phaser.Scene {
     this.dessinerHUD(temps);
   }
 
-  // à lire AVANT combattant.gerer(), qui "consomme" les appuis du bouton F
+  // à lire AVANT combattant.gerer(), qui "consomme" les appuis de toutes les touches
   demandePause() {
     if (this.enTransition) return false;
     return Phaser.Input.Keyboard.JustDown(this.toucheEchap) ||
-      Phaser.Input.Keyboard.JustDown(this.j1.touches.F) ||
-      Phaser.Input.Keyboard.JustDown(this.j2.touches.F);
+      Phaser.Input.Keyboard.JustDown(this.j1.touches.start) ||
+      Phaser.Input.Keyboard.JustDown(this.j2.touches.start);
   }
 
   ouvrirPause() {
@@ -166,9 +170,8 @@ export default class combat extends Phaser.Scene {
     // deux balcons et une estrade en bois fixes
     [190, 1090].forEach((x) => this.creerPlateforme(x, 480, "balcon", 12));
     this.creerPlateforme(640, 530, "plateforme_bois", 14);
-    // le lustre monte et descend grâce à un tween
-    const lustre = this.creerPlateforme(640, 280, "lustre", 14);
-    this.tweens.add({ targets: lustre, y: 340, duration: 2600, ease: "Sine.easeInOut", yoyo: true, repeat: -1 });
+    // le lustre monte et descend
+    this.creerPlateformeMobile(640, 280, 340, 2600, "lustre", 14);
   }
 
   construirePiano() {
@@ -185,10 +188,8 @@ export default class combat extends Phaser.Scene {
     }
 
     // deux touches noires flottantes qui montent et descendent en alternance
-    const noire1 = this.creerPlateforme(150, 470, "touche_noire", 16);
-    const noire2 = this.creerPlateforme(1130, 390, "touche_noire", 16);
-    this.tweens.add({ targets: noire1, y: 390, duration: 2200, ease: "Sine.easeInOut", yoyo: true, repeat: -1 });
-    this.tweens.add({ targets: noire2, y: 470, duration: 2200, ease: "Sine.easeInOut", yoyo: true, repeat: -1 });
+    this.creerPlateformeMobile(150, 470, 390, 2200, "touche_noire", 16);
+    this.creerPlateformeMobile(1130, 390, 470, 2200, "touche_noire", 16);
     // le rebord du pupitre dessiné dans le décor sert de plateforme (zone invisible)
     const rebord = this.add.zone(640, 463, 780, 14);
     this.groupe_plateformes.add(rebord);
@@ -203,8 +204,7 @@ export default class combat extends Phaser.Scene {
     [170, 1110].forEach((x) => this.creerPlateforme(x, 430, "flight_case", 16));
     this.creerPlateforme(640, 450, "poutre_suspendue", 14, 28);
     // le pont de projecteurs monte et descend
-    const pont = this.creerPlateforme(640, 250, "pont_lumiere", 14);
-    this.tweens.add({ targets: pont, y: 310, duration: 2400, ease: "Sine.easeInOut", yoyo: true, repeat: -1 });
+    this.creerPlateformeMobile(640, 250, 310, 2400, "pont_lumiere", 14);
   }
 
   // plateforme dont seule une bande (épaisseur "hauteurCorps", à "decalage" px du haut
@@ -216,9 +216,61 @@ export default class combat extends Phaser.Scene {
     return plateforme;
   }
 
-  // processCallback : on ne collisionne que si le combattant arrive par le dessus
+  // Plateforme qui fait l'aller-retour entre yDepart et yArrivee (durée d'un trajet en ms).
+  // Elle n'est pas animée par un tween mais déplacée à chaque pas de la physique (pasDePhysique) :
+  // avec un tween, la plateforme et les combattants posés dessus n'avançaient pas au même
+  // rythme, et les combattants tremblaient.
+  creerPlateformeMobile(x, yDepart, yArrivee, duree, cle, hauteurCorps) {
+    const plateforme = this.creerPlateforme(x, yDepart, cle, hauteurCorps);
+    plateforme.body.moves = false; // c'est nous qui la déplaçons, pas la physique
+    plateforme.trajet = { depart: yDepart, arrivee: yArrivee, duree: duree };
+    this.plateformesMobiles.push(plateforme);
+    return plateforme;
+  }
+
+  // processCallback : on ne collisionne que si le combattant arrive par le dessus,
+  // et pas s'il est en train de descendre volontairement (joystick bas)
   traverserParDessous(combattant, plateforme) {
+    if (this.time.now < combattant.traverseeJusqua) return false;
     return combattant.body.velocity.y >= 0 && combattant.body.bottom <= plateforme.body.top + 16;
+  }
+
+  // callback de collision : on retient la plateforme sur laquelle l'objet (ou le combattant) est posé
+  poserSurPlateforme(objet, plateforme) {
+    if (objet.body.touching.down) objet.plateforme = plateforme;
+  }
+
+  // Appelée par la physique après chaque pas (événement "worldstep"), delta en secondes
+  pasDePhysique(delta) {
+    // 1. les plateformes mobiles avancent (aller-retour "en douceur", comme Sine.easeInOut)
+    this.tempsPlateformes += delta * 1000;
+    for (const plateforme of this.plateformesMobiles) {
+      const trajet = plateforme.trajet;
+      const avancement = (1 - Math.cos((Math.PI * this.tempsPlateformes) / trajet.duree)) / 2;
+      const y = trajet.depart + (trajet.arrivee - trajet.depart) * avancement;
+      plateforme.body.y += y - plateforme.y;
+      plateforme.y = y;
+    }
+    // 2. ce qui est posé dessus suit le mouvement
+    this.combattants.forEach((combattant) => this.suivrePlateforme(combattant));
+    this.groupe_objets.getChildren().forEach((objet) => this.suivrePlateforme(objet));
+  }
+
+  // garde l'objet collé sur sa plateforme tant qu'il ne saute pas et ne la quitte pas
+  suivrePlateforme(objet) {
+    const plateforme = objet.plateforme;
+    if (!plateforme) return;
+    const corps = objet.body;
+    const dessus = plateforme.body.top;
+    const toujoursDessus = corps.right > plateforme.body.left && corps.left < plateforme.body.right &&
+      corps.velocity.y >= 0 && Math.abs(corps.bottom - dessus) <= 12;
+    if (!toujoursDessus) {
+      objet.plateforme = null;
+      return;
+    }
+    corps.y = dessus - corps.height;
+    corps.velocity.y = 0;
+    corps.blocked.down = true; // considéré "au sol" jusqu'au prochain pas
   }
 
   // appelée à chaque collision avec le sol : sur le piano, la touche foulée joue sa note
@@ -315,6 +367,16 @@ export default class combat extends Phaser.Scene {
     if (this.combatFige) return;
     combattant.ramasserObjet(objet.definition);
     this.detruire(objet);
+  }
+
+  // "arrêt sur image" : la physique se fige un court instant pour donner du poids à un coup
+  // (pas pendant l'attaque spéciale, qui gère elle-même la pause de la physique)
+  arretSurImage(duree) {
+    if (this.qte) return;
+    this.physics.pause();
+    this.time.delayedCall(duree, () => {
+      if (!this.qte) this.physics.resume();
+    });
   }
 
   /*********************************************************************/
@@ -555,7 +617,7 @@ export default class combat extends Phaser.Scene {
     }
     this.texteChrono = this.add.text(640, 46, DUREE_MANCHE, fct.style(48, "#ffffff")).setOrigin(0.5).setDepth(101);
     this.add.text(640, 88, "Manche " + this.donnees.manche, fct.style(18, "#e8d8c0")).setOrigin(0.5).setDepth(101);
-    this.add.text(640, 706, "F / Échap : pause", fct.style(16, "#e8d8c0")).setOrigin(0.5).setAlpha(0.7).setDepth(101);
+    this.add.text(640, 706, "Start : pause", fct.style(16, "#e8d8c0")).setOrigin(0.5).setAlpha(0.7).setDepth(101);
 
     this.barres = this.combattants.map((c) => {
       // J1 en haut à gauche ; J2 en haut à droite, avec l'image en miroir

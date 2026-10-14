@@ -17,15 +17,16 @@ puis ouvrir http://localhost:8080.
 
 | Bouton | Action |
 | --- | --- |
-| Joystick | se déplacer, ↑ sauter, ↓ garde |
-| A | attaque rapide |
-| B | attaque puissante |
-| C | lancer une note de musique |
+| Joystick | se déplacer, ↑ sauter, ↓ descendre d'une plateforme |
+| A (maintenu) | se protéger |
+| B | attaque puissante (lente, gros dégâts, projette l'adversaire) |
+| C | esquive |
 | D | attaque spéciale (jauge de 5 notes pleine) |
-| E | esquive |
-| F (ou Échap) | pause |
+| E | attaque rapide (petits dégâts, enchaînable en combo) |
+| F | lancer une note de musique |
+| Start (ou Échap) | pause |
 
-Clavier : J1 = flèches + `I O P K L M`, J2 = `Z Q S D` + `R T Y F G H`.
+Clavier : J1 = flèches + `I O P K L M` + Start `X`, J2 = `Z Q S D` + `R T Y F G H` + Start `N`.
 
 ## Règles
 

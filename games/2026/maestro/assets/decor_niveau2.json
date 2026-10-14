@@ -1,0 +1,392 @@
+{
+ "frames": {
+  "pilier": {
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 287
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 94,
+    "h": 287
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 94,
+    "h": 287
+   }
+  },
+  "rideau": {
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 190,
+    "h": 269
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 190,
+    "h": 269
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 190,
+    "h": 269
+   }
+  },
+  "paravent": {
+   "frame": {
+    "x": 288,
+    "y": 0,
+    "w": 283,
+    "h": 215
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 283,
+    "h": 215
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 283,
+    "h": 215
+   }
+  },
+  "banniere": {
+   "frame": {
+    "x": 573,
+    "y": 0,
+    "w": 101,
+    "h": 205
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 101,
+    "h": 205
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 101,
+    "h": 205
+   }
+  },
+  "banniere2": {
+   "frame": {
+    "x": 676,
+    "y": 0,
+    "w": 53,
+    "h": 177
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 53,
+    "h": 177
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 53,
+    "h": 177
+   }
+  },
+  "lampadaire": {
+   "frame": {
+    "x": 731,
+    "y": 0,
+    "w": 49,
+    "h": 153
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 49,
+    "h": 153
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 49,
+    "h": 153
+   }
+  },
+  "pagode": {
+   "frame": {
+    "x": 782,
+    "y": 0,
+    "w": 109,
+    "h": 127
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 109,
+    "h": 127
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 109,
+    "h": 127
+   }
+  },
+  "escalier": {
+   "frame": {
+    "x": 0,
+    "y": 289,
+    "w": 145,
+    "h": 126
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 145,
+    "h": 126
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 145,
+    "h": 126
+   }
+  },
+  "lanterne": {
+   "frame": {
+    "x": 147,
+    "y": 289,
+    "w": 34,
+    "h": 122
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 34,
+    "h": 122
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 122
+   }
+  },
+  "lanterne2": {
+   "frame": {
+    "x": 183,
+    "y": 289,
+    "w": 34,
+    "h": 113
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 34,
+    "h": 113
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 113
+   }
+  },
+  "vase": {
+   "frame": {
+    "x": 219,
+    "y": 289,
+    "w": 50,
+    "h": 99
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 50,
+    "h": 99
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 50,
+    "h": 99
+   }
+  },
+  "tambour": {
+   "frame": {
+    "x": 271,
+    "y": 289,
+    "w": 68,
+    "h": 76
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 68,
+    "h": 76
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 68,
+    "h": 76
+   }
+  },
+  "plat_long": {
+   "frame": {
+    "x": 341,
+    "y": 289,
+    "w": 268,
+    "h": 61
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 268,
+    "h": 61
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 268,
+    "h": 61
+   }
+  },
+  "barriere": {
+   "frame": {
+    "x": 611,
+    "y": 289,
+    "w": 131,
+    "h": 58
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 131,
+    "h": 58
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 131,
+    "h": 58
+   }
+  },
+  "plat_pet": {
+   "frame": {
+    "x": 744,
+    "y": 289,
+    "w": 88,
+    "h": 56
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 88,
+    "h": 56
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 88,
+    "h": 56
+   }
+  },
+  "plat_mid": {
+   "frame": {
+    "x": 834,
+    "y": 289,
+    "w": 130,
+    "h": 55
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 130,
+    "h": 55
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 130,
+    "h": 55
+   }
+  },
+  "plat_moy": {
+   "frame": {
+    "x": 0,
+    "y": 417,
+    "w": 161,
+    "h": 51
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 161,
+    "h": 51
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 161,
+    "h": 51
+   }
+  },
+  "console": {
+   "frame": {
+    "x": 163,
+    "y": 417,
+    "w": 42,
+    "h": 47
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 42,
+    "h": 47
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 42,
+    "h": 47
+   }
+  },
+  "caisse": {
+   "frame": {
+    "x": 207,
+    "y": 417,
+    "w": 46,
+    "h": 44
+   },
+   "rotated": false,
+   "trimmed": false,
+   "sourceSize": {
+    "w": 46,
+    "h": 44
+   },
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 46,
+    "h": 44
+   }
+  }
+ },
+ "meta": {
+  "image": "decor_niveau2.png",
+  "size": {
+   "w": 1024,
+   "h": 468
+  },
+  "scale": "1"
+ }
+}
