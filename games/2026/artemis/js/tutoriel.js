@@ -74,6 +74,7 @@ const ETAPES = [
     cible: (scene, t) => (t.ennemi.active ? t.ennemi : null)
   },
   {
+    descente: true, // à partir de cette étape, le trou peut être utilisé (cf. descenteAutorisee)
     texte: () => "Une échelle est apparue !\nApproche-toi, bouton " + lettre("interagir") + " : descends",
     debut: (scene, t, j) => {
       // le trou est normalement caché sous un caillou : ici on le pose à découvert, près du joueur
@@ -109,6 +110,10 @@ const ETAPES = [
   }
 ];
 const PREMIERE_ETAPE_SAFE = ETAPES.findIndex((etape) => etape.safe);
+const ETAPE_DESCENTE = ETAPES.findIndex((etape) => etape.descente);
+
+// le trou reste inutilisable tant que la consigne de l'échelle n'est pas atteinte (sinon on sauterait des leçons)
+export const descenteAutorisee = (scene) => scene.tuto_etat.etape >= ETAPE_DESCENTE;
 
 // crée la bulle de consigne et la flèche, et lance la première étape
 export function creerTutoriel(scene) {

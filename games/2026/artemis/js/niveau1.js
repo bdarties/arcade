@@ -793,7 +793,7 @@ export default class niveau1 extends Phaser.Scene {
   // il faut que tous les joueurs soient proches ; l'un d'eux appuie. Renvoie true si on change de niveau.
   majPassages() {
     const passages = [];
-    if (this.trou.visible) passages.push({ objet: this.trou, niveau: this.niveau + 1, arrivee: "haut", verbe: "descendre", couleur: COULEUR_DESCENTE, vers_le_bas: true });
+    if (this.trou.visible && (!this.tuto || tutoriel.descenteAutorisee(this))) passages.push({ objet: this.trou, niveau: this.niveau + 1, arrivee: "haut", verbe: "descendre", couleur: COULEUR_DESCENTE, vers_le_bas: true });
     if (this.echelle_montee && !this.tuto) passages.push({ objet: this.echelle_montee, niveau: this.niveau - 1, arrivee: "bas", verbe: "monter", couleur: COULEUR_MONTEE, vers_le_bas: false });
 
     // on lit les appuis à chaque image, même loin d'un passage : JustDown garde un appui en mémoire
