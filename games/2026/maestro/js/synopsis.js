@@ -1,7 +1,7 @@
 import { creerClavierMenu } from "./controles.js";
 import { jouerMusique } from "./musique.js";
 
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const DELAI_LETTRE_MS = 35;
 const PARAGRAPHES = [
   "Le soir de sa dernière représentation, le grand Maestro disparaît en pleine scène.",

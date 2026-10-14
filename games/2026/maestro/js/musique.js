@@ -39,22 +39,23 @@ export function arreterMusique(scene) {
 const SONS_NOTES = ["attack_do", "attack_mi", "attack_sol"];
 
 // Le son d'un ennemi (tuba, cristal) : cle = le fichier à jouer. Un délai évite que ça tourne en boucle.
-const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
-let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
+const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux fois le même son d'ennemi : pas de spam
+const dernierSon = {}; // l'heure du dernier son, pour chaque fichier (le tuba n'est pas bloqué par le cristal)
 
+// Joue le son d'un ennemi (tuba, cristal). cle = le fichier à jouer.
 export function jouerSonEnnemi(scene, cle) {
   if (scene.cache.audio.exists(cle) == false) {
     return; // fichier absent : on joue sans ce son
   }
   const maintenant = performance.now(); // l'heure actuelle, en millisecondes
-  if (maintenant - dernierSonEnnemi < DELAI_SON_ENNEMI_MS) {
-    return; // trop tôt depuis le dernier son : on se tait
+  if (maintenant - (dernierSon[cle] || 0) < DELAI_SON_ENNEMI_MS) {
+    return; // ce son vient de jouer : on attend
   }
-  dernierSonEnnemi = maintenant;
-  scene.sound.play(cle, { volume: 0.6 });
+  dernierSon[cle] = maintenant;
+  scene.sound.play(cle, { volume: cle == "son_tuba" ? 0.8 : 0.6 }); // le tuba est un peu plus fort
 }
 
-// Le son correspondant à la note de chaque onde lancée par la Cantatrice.
+// Une note courte (Do, Mi ou Sol) : quand la Cantatrice lance une onde
 export function jouerSonNote(scene, indexNote) {
   const cle = SONS_NOTES[indexNote] || SONS_NOTES[0];
   if (!scene.cache.audio.exists(cle)) {
