@@ -60,12 +60,6 @@ export default class niveau2 extends niveau1 {
   }
 
   create() {
-    [["renard", 4], ["renard_attaque", 10]].forEach(([cle, attendu]) => { //vérifie que les spritesheets sont bien découpés
-      const nombre = this.textures.get(cle).frameTotal - 1;
-      if (nombre < attendu) {
-        console.error(cle + ".png : " + nombre + " image(s) trouvée(s) au lieu de " + attendu + ". Corrige frameWidth / frameHeight dans preload() de niveau2.js.");
-      }
-    });
     if (!this.anims.exists("animation_renard_standing")) {
       this.anims.create({
         key: "animation_renard_standing",
