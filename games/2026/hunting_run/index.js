@@ -1,4 +1,4 @@
-import "./js/donnees.js"; // sauvegarde des scores (lireDonneesJSON / ecrireDonneesJSON)
+import "./js/donnees.js"; // sauvegarde des scores
 // chargement des scènes
 import accueil from "./js/accueil.js";
 import menu from "./js/menu.js";
@@ -19,7 +19,7 @@ var config = {
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 800},
+      gravity: { y: 700},
       debug: false
     }
   },

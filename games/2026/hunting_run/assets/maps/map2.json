@@ -157,6 +157,30 @@
         }, 
         {
          "draworder":"topdown",
+         "id":13,
+         "name":"horloge",
+         "objects":[
+                {
+                 "height":0,
+                 "id":13,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":372,
+                 "y":462.666666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":12,
          "name":"potion coeur",
          "objects":[
@@ -398,8 +422,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":13,
- "nextobjectid":10,
+ "nextlayerid":14,
+ "nextobjectid":14,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",
@@ -421,7 +445,7 @@
         {
          "columns":5,
          "firstgid":337,
-         "image":"..\/..\/..\/..\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,
@@ -434,7 +458,7 @@
         {
          "columns":10,
          "firstgid":352,
-         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu5.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/maps jeu 301\/TuileDeJeu5.png",
          "imageheight":320,
          "imagewidth":320,
          "margin":0,
@@ -447,7 +471,7 @@
         {
          "columns":6,
          "firstgid":452,
-         "image":"..\/..\/..\/..\/TuileDeJeu4.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu4.png",
          "imageheight":128,
          "imagewidth":192,
          "margin":0,

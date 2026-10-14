@@ -278,6 +278,30 @@
          "y":0
         }, 
         {
+         "draworder":"topdown",
+         "id":13,
+         "name":"horloge",
+         "objects":[
+                {
+                 "height":0,
+                 "id":14,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1634.66666666667,
+                 "y":496
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -447,8 +471,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":13,
- "nextobjectid":14,
+ "nextlayerid":14,
+ "nextobjectid":15,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",
@@ -470,7 +494,7 @@
         {
          "columns":16,
          "firstgid":337,
-         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu2.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/maps jeu 301\/TuileDeJeu2.png",
          "imageheight":960,
          "imagewidth":512,
          "margin":0,
@@ -483,7 +507,7 @@
         {
          "columns":5,
          "firstgid":817,
-         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/maps jeu 301\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,

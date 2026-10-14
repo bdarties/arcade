@@ -312,8 +312,7 @@ export const POINTS = {
 
 /*ÉTATS DE LA PARTIE à remettre à zéro à chaque nouvelle partie*/
 
-export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue", "score", "bibliotheque_resolue", "puits_resolu"];
-
+export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue", "score", "bibliotheque_resolue", "puits_resolu", "horloges_prises", "lien", "exclusions"];
 /*ÉCRANS D'HISTOIRE*/
 
 export const ECRANS = {
@@ -333,8 +332,9 @@ export const ECRANS = {
 
 export const DUREE_PARTIE = 210; // secondes : 3 min 30 (3 minutes + 30 secondes)
 export const REVIE = {
-  pv: 34 // points de vie quand on revit (34 = 1 seul cœur)
-};
+  pv: 100 // points de vie quand on revit (100 = 3 cœurs pleins ; 34 = 1 seul cœur)
+}
+;
 export const SCORES = {
   nbMax: 10 // nombre de scores gardés dans le tableau
 };
@@ -360,7 +360,8 @@ export const SPRITES = {
 export const IMAGES_COMBAT = {
   boule_joueur: { fichier: "./assets/sprites/boule_verte.png",  echelle: 1.6, regardeDroite: false }, // PROVISOIRE : le dessin regarde vers la GAUCHE
   boule_ennemi: { fichier: "./assets/sprites/boule_orange.png", echelle: 1.1, regardeDroite: true },
-  potion:       { fichier: "./assets/sprites/potion.png",       echelle: 1 }
+  potion:       { fichier: "./assets/sprites/potion.png",       echelle: 1 },
+  horloge:      { fichier: "./assets/sprites/horloge.png",      echelle: 1 }
 };
 
 /*COMBAT*/
@@ -410,6 +411,12 @@ export const CALQUES_TILED = {
   "potion pouvoir": { genre: "potion", type: "pouvoir" },
   "potion coeur":   { genre: "potion", type: "soin" }
 };
+
+export const HORLOGE = {
+  calque: "horloge", // nom du calque d'objets dans Tiled
+  secondes: 15       // temps ajouté au chrono quand on la ramasse
+};
+
 // un garde patrouille de chaque côté de son point, sur cette distance (en tuiles)
 export const PATROUILLE_GARDE = 4;
 

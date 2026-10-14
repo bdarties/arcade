@@ -32,6 +32,7 @@ export default class jeu extends Phaser.Scene {
     this.nomMap = (data && data.map) || "map1";
     this.origine = data && data.origine;
     this.hasard = !!(data && data.hasard);
+    this.porteIdx = data && data.porteIdx; // numéro de la porte devant laquelle on apparaît
     this.spawnForce = data && data.spawn; // point d'apparition imposé (quand on REVIT dans la même salle)
   }
 
@@ -90,6 +91,9 @@ export default class jeu extends Phaser.Scene {
     this.enTransition = false;
     this.partiEnCours = false;
     this.perdu = false;
+    this.gel = false; // true pendant l'écran figé "Temps écoulé"
+    this.anims.resumeAll(); // au cas où l'écran figé les avait mises en pause
+    this.events.once("shutdown", () => this.anims.resumeAll());
     this.gagne = false; // passe à true quand on franchit la porte de fin
     this.physics.resume(); // au cas où on rejoue après un "game over"
     this.cameras.main.fadeIn(250);
@@ -141,12 +145,13 @@ export default class jeu extends Phaser.Scene {
 
     /*PORTES*/
 
-    this.portes = cfg.portes.map((p) => {
+      this.portes = cfg.portes.map((p, idx) => {
       const l = p.l || 2; // largeur de la porte en tuiles
       const h = p.h || 3; // hauteur de la porte en tuiles
       const zone = this.add.zone((p.x + l / 2) * 32, (p.y + h / 2) * 32, l * 32, h * 32);
       this.physics.add.existing(zone, true);
       zone.vers = p.vers;
+      zone.idx = idx; // numéro de la porte dans la map
       zone.cle = p.cle; // true : la porte est fermée à clé
       zone.enigme = p.enigme; // nom d'un état à résoudre avant de pouvoir passer (ex : énigme de la Dame blanche)
       return zone;
@@ -164,7 +169,9 @@ export default class jeu extends Phaser.Scene {
     // Au lancement du jeu (pas de map d'origine), on apparaît au point de départ de la map (cfg.depart).
     let porteDepart = cfg.portes.find((p) => p.vers === this.origine);
     // arrivée par une porte aléatoire : on apparaît devant une des portes "hasard" de la map, tirée au sort
-    if (this.hasard) {
+        if (this.porteIdx !== undefined && cfg.portes[this.porteIdx]) {
+      porteDepart = cfg.portes[this.porteIdx]; // porte d'arrivée déjà choisie (aller ou retour)
+    } else if (this.hasard) {
       const possibles = cfg.portes.filter((p) => p.vers === "hasard");
       if (possibles.length) porteDepart = Phaser.Utils.Array.GetRandom(possibles);
     }
@@ -385,20 +392,52 @@ export default class jeu extends Phaser.Scene {
     return j.sheet2 ? nom + "_2" : nom;
   }
 
-  changerDeMap(destination, origine, hasard = false) {
+    changerDeMap(destination, origine, hasard = false, porteIdx) {
     if (this.enTransition || !MAPS[destination]) return;
     this.enTransition = true;
     this.cameras.main.fadeOut(250);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       if (this.perdu) return; // le temps s'est écoulé pendant le fondu : on reste sur "Tu as perdu"
-      this.scene.restart({ map: destination, origine: origine, hasard: hasard });
+      this.scene.restart({ map: destination, origine: origine, hasard: hasard, porteIdx: porteIdx });
     });
   }
 
-// tire au sort la map où mène une porte "hasard"
-destinationAleatoire() {
-  const candidates = Object.keys(MAPS).filter((m) => m !== this.nomMap && !HASARD.interdites.includes(m));
-    return Phaser.Utils.Array.GetRandom(candidates);
+  // tire au sort la map où mène une porte "hasard" (exclue : une map à éviter si possible)
+  destinationAleatoire(exclue) {
+    const base = Object.keys(MAPS).filter((m) => m !== this.nomMap && !HASARD.interdites.includes(m));
+    const candidates = base.filter((m) => m !== exclue);
+    return Phaser.Utils.Array.GetRandom(candidates.length ? candidates : base);
+  }
+
+  // PORTE ALÉATOIRE. Règles :
+  //  1) une porte mène à une map tirée au sort, et on arrive devant une de ses portes (la "porte d'arrivée") ;
+  //  2) si on reprend CETTE porte d'arrivée, on revient devant la porte d'où l'on était parti ;
+  //  3) si on reprend alors cette porte de départ, elle nous mène ailleurs : jamais dans la map qu'on vient de quitter.
+  // La mémoire est gardée dans le registry : "lien" (aller en cours) et "exclusions" (map à éviter pour une porte).
+  prendrePorteHasard(porte) {
+    const lien = this.registry.get("lien"); // { map, porte, versMap, versPorte }
+    const exclusions = { ...(this.registry.get("exclusions") || {}) };
+
+    // 2) retour par la porte d'arrivée
+    if (lien && lien.map === this.nomMap && lien.porte === porte.idx) {
+      exclusions[lien.versMap + ":" + lien.versPorte] = this.nomMap; // la prochaine fois, cette porte ne mènera plus ici
+      this.registry.set("exclusions", exclusions);
+      this.registry.remove("lien");
+      this.changerDeMap(lien.versMap, null, false, lien.versPorte);
+      return;
+    }
+
+    // 1) nouvelle destination (3 : on évite la map notée dans les exclusions pour cette porte)
+    const cle = this.nomMap + ":" + porte.idx;
+    const exclue = exclusions[cle];
+    delete exclusions[cle];
+    this.registry.set("exclusions", exclusions);
+    const dest = this.destinationAleatoire(exclue);
+    const portesDest = MAPS[dest].portes;
+    const arrivees = portesDest.map((p, i) => i).filter((i) => portesDest[i].vers === "hasard");
+    const arrivee = Phaser.Utils.Array.GetRandom(arrivees);
+    this.registry.set("lien", { map: dest, porte: arrivee, versMap: this.nomMap, versPorte: porte.idx });
+    this.changerDeMap(dest, null, true, arrivee);
   }
 
   // petit murmure d'ambiance quand on arrive par une porte aléatoire
@@ -760,11 +799,11 @@ destinationAleatoire() {
         .text(L / 2, H - 205, "SCORE : " + score, { fontFamily: "Georgia, serif", fontSize: "34px", color: "#ffd24a", fontStyle: "bold" })
         .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
     );
-    if (peutRevivre) {
-      elements.push(
+      if (peutRevivre) {
+    const nbC = Math.max(1, Math.round(REVIE.pv / (JOUEUR.pvMax / HUD.nbCoeurs))); // nombre de cœurs rendus
+    elements.push(
         this.add
-          .text(L / 2, H - 165, "Revivre : tu gardes ta progression mais tu n'as qu'UN cœur et ton score retombe à 0", { fontSize: "18px", color: "#ffffff" })
-          .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
+        .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
       );
     }
 
@@ -776,7 +815,7 @@ destinationAleatoire() {
       return b;
     };
     if (peutRevivre) {
-      // bouton REVIVRE 
+      // bouton REVIVRE
       const revivre = this.add.image(L / 2 - 230, H - 80, "revivre").setOrigin(0.5);
         revivre.base = 0.5;
         this.goBoutons.push({ obj: revivre, action: () => this.revivre() });
@@ -836,6 +875,72 @@ destinationAleatoire() {
       this.majChoixGameOver();
     }
     if (valider && this.perduPret) this.goBoutons[this.goChoix].action();
+  }
+
+    // le temps est écoulé : l'écran se FIGE (tout s'arrête), on voit en gros "TEMPS ÉCOULÉ", puis l'écran Game Over
+  tempsEcoule() {
+    if (this.gel || this.perdu) return;
+    this.perdu = true;
+    this.gel = true;
+    this.couperLasers();
+    this.fermerEnigme(); // (perdu = true : la physique ne repart pas)
+    if (this.dialogue) {
+      const d = this.dialogue;
+      this.dialogue = null;
+      d.minuteur.remove(false);
+      d.objets.forEach((o) => o.destroy());
+    }
+    // on fige tout : physique, animations, mouvements de tweens
+    this.physics.pause();
+    this.anims.pauseAll();
+    try {
+      (this.tweens.getTweens ? this.tweens.getTweens() : this.tweens.getAllTweens()).forEach((t) => t.pause());
+    } catch (e) {
+      /* tant pis : seuls les petits flottements (potions...) continuent */
+    }
+    this.texteTimer.setText("00:00").setColor("#ff3333");
+    jouer(this, "gameOver");
+
+    const L = this.scale.width;
+    const H = this.scale.height;
+    const fixe = (o, prof) => o.setScrollFactor(0).setDepth(prof);
+    const objets = [];
+    const voile = fixe(this.add.rectangle(L / 2, H / 2, L, H, 0x300000, 1), 1900).setAlpha(0);
+    objets.push(voile);
+    this.tweens.add({ targets: voile, alpha: 0.55, duration: 400 });
+    this.cameras.main.resetFX(); // au cas où un fondu de porte était en cours
+    this.cameras.main.flash(250, 255, 0, 0);
+
+    const police = { fontFamily: "Georgia, serif", fontStyle: "bold" };
+    const gros = fixe(this.add.text(L / 2, H / 2 - 95, "00:00", { ...police, fontSize: "150px", color: "#ff3333", stroke: "#000000", strokeThickness: 10 }).setOrigin(0.5), 1901);
+    const titre = fixe(this.add.text(L / 2, H / 2 + 40, "TEMPS ÉCOULÉ !", { ...police, fontSize: "80px", color: "#ffffff", stroke: "#990000", strokeThickness: 10 }).setOrigin(0.5), 1901);
+    const sous = fixe(this.add.text(L / 2, H / 2 + 115, "Le manoir t'a piégé pour toujours...", { fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "28px", color: "#dddddd" }).setOrigin(0.5), 1901);
+    objets.push(gros, titre, sous);
+    [gros, titre, sous].forEach((o, i) => {
+      o.setAlpha(0).setScale(1.6);
+      this.tweens.add({ targets: o, alpha: 1, scale: 1, duration: 450, delay: 150 + i * 250, ease: "Back.easeOut" });
+    });
+
+    // après un petit moment : écran Game Over (Rejouer)
+    this.time.delayedCall(3200, () => {
+      this.anims.resumeAll();
+      this.gel = false;
+      this.afficherGameOver("Le temps est écoulé", false);
+      this.time.delayedCall(700, () => objets.forEach((o) => o.destroy())); // le Game Over (fondu 500 ms) les recouvre
+    });
+  }
+
+  // une horloge est ramassée : on gagne des secondes (le chrono est dans le registry)
+  ajouterTemps(secondes) {
+    this.registry.set("finPartie", this.registry.get("finPartie") + secondes * 1000);
+    this.timerVertJusqua = this.time.now + 1200;
+    this.tweens.add({ targets: this.texteTimer, scale: 1.4, duration: 150, yoyo: true });
+    const t = this.add
+      .text(this.scale.width - 10, 52, "+" + secondes + " s", { fontSize: "30px", color: "#66ff88", fontStyle: "bold", stroke: "#000000", strokeThickness: 5 })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(1001);
+    this.tweens.add({ targets: t, y: 90, alpha: 0, duration: 1300, onComplete: () => t.destroy() });
   }
 
   // joueurs encore en vie
@@ -945,6 +1050,8 @@ destinationAleatoire() {
   }
 
   update(time, delta) {
+        // ÉCRAN FIGÉ "TEMPS ÉCOULÉ" : tout est gelé, on attend la fin de l'animation
+    if (this.gel) return;
     // GAME OVER : on attend le choix du joueur
     if (this.perdu) {
       this.gererGameOver();
@@ -956,9 +1063,9 @@ destinationAleatoire() {
     const mm = String(Math.floor(restant / 60)).padStart(2, "0");
     const ss = String(restant % 60).padStart(2, "0");
     this.texteTimer.setText(mm + ":" + ss);
-    this.texteTimer.setColor(restant <= 30 ? "#ff5555" : "#ffffff"); // rouge sur les 30 dernières secondes
-    if (restant <= 0 && !this.gagne) {
-      this.afficherGameOver();
+    // rouge sur les 30 dernières secondes, vert un instant quand on gagne du temps (horloge)
+    this.texteTimer.setColor(time < (this.timerVertJusqua || 0) ? "#66ff88" : restant <= 30 ? "#ff5555" : "#ffffff");    if (restant <= 0 && !this.gagne) {
+    this.tempsEcoule();
       return;
     }
 
@@ -997,9 +1104,12 @@ destinationAleatoire() {
       if (porte.vers && fermee && j.appuiAction) jouer(this, "verrou"); // porte fermée : clac !
       if (porte.vers && !fermee && j.appuiAction) {
         jouer(this, "porte");
-        if (porte.vers === "fin") this.finir(); // grande porte de la map6 : fin du jeu
-        else if (porte.vers === "hasard") this.changerDeMap(this.destinationAleatoire(), null, true); // on ne sait pas où elle mène !
-        else this.changerDeMap(porte.vers, this.nomMap);
+      if (porte.vers === "fin") this.finir(); // grande porte de la map6 : fin du jeu
+        else if (porte.vers === "hasard") this.prendrePorteHasard(porte); // on ne sait pas où elle mène !
+        else {
+          this.registry.remove("lien"); // porte fixe : plus de retour mémorisé
+          this.changerDeMap(porte.vers, this.nomMap);
+        }
         return;
       }
     }
@@ -1007,8 +1117,9 @@ destinationAleatoire() {
       const raison = this.raisonFermee(porteVisible);
       const fermee = !!raison;
       const mystere = porteVisible.vers === "hasard";
-      this.indice.setText(fermee ? raison : mystere ? "Appuie sur B... où mène-t-elle ?" : "Appuie sur B");
-      this.indice.setColor(fermee ? "#ff8888" : "#ffffff");
+      const lien = this.registry.get("lien");
+      const retour = mystere && lien && lien.map === this.nomMap && lien.porte === porteVisible.idx; // la porte par laquelle on est arrivé
+      this.indice.setText(fermee ? raison : retour ? "Appuie sur B... retour" : mystere ? "Appuie sur B... où mène-t-elle ?" : "Appuie sur B");      this.indice.setColor(fermee ? "#ff8888" : "#ffffff");
     }
     this.indice.setVisible(!!(porteVisible && porteVisible.vers));
     if (porteVisible) this.indice.setPosition(porteVisible.x, porteVisible.y - 60);
