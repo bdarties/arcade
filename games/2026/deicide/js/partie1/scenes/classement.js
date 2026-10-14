@@ -44,6 +44,14 @@ const arrondi = (ms) => Math.round(ms / 10) * 10; // les temps sont gardés au c
 function comparer(a, b) {
     return a.net - b.net || a.brut - b.brut || a.morts - b.morts;
 }
+// Une seule ligne par nom : on ajoute la ligne du joueur à la liste, on trie, et on ne garde que le MEILLEUR temps de chaque nom (à égalité parfaite, l'ancienne ligne reste).
+// Renvoie la nouvelle liste (10 lignes au plus) et « gardee » : vrai si la ligne du joueur y est (son temps bat l'ancien du même nom, ou le nom est nouveau).
+function fusionner(liste, ligne) {
+    const triee = [...liste, ligne].sort(comparer);
+    const vus = new Set();
+    const sansDoublon = triee.filter((l) => !vus.has(l.nom) && vus.add(l.nom)); // trié : la première ligne d'un nom est sa meilleure
+    return { liste: sansDoublon.slice(0, MAX_LIGNES), gardee: sansDoublon.slice(0, MAX_LIGNES).includes(ligne) };
+}
 const valide = (l) => l && typeof l.nom === "string" && Number.isFinite(l.net) && Number.isFinite(l.brut) && Number.isFinite(l.morts); // (on ignore une ligne abîmée)
 
 // Lit le panthéon sauvegardé : la liste triée (vide s'il n'y a rien encore), ou null si le stockage est impossible à lire. ecrireDonneesJSON remplace TOUT :
@@ -369,17 +377,20 @@ export default class classement extends Phaser.Scene {
         try {
             const liste = await lirePantheon(); // on relit juste avant d'écrire : ecrireDonneesJSON remplace tout le contenu précédent
             if (liste === null) throw new Error("panthéon illisible");
-            liste.push({ nom, ...this.monResultat(), date: new Date().toISOString().slice(0, 10) });
-            this.tableau = liste.sort(comparer).slice(0, MAX_LIGNES);
+            const ligne = { nom, ...this.monResultat(), date: new Date().toISOString().slice(0, 10) };
+            const { liste: nouvelle, gardee } = fusionner(liste, ligne); // un nom déjà présent : on garde le meilleur des deux temps
+            this.tableau = nouvelle;
+            this.ligneGardee = gardee;
             if ((await ecrireDonneesJSON(this.tableau)) === false) throw new Error("écriture impossible"); // la version de la borne renvoie false (sans erreur) quand elle ne peut pas écrire
         } catch (erreur) {
             console.warn("Enregistrement impossible :", erreur);
             reussi = false;
         }
-        this.nomJoueur = reussi ? nom : null; // pour surligner sa ligne
+        this.nomJoueur = reussi ? nom : null; // pour surligner sa ligne (même si c'est l'ancienne ligne du même nom qui est restée)
         this.pret = false;
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; });
-        this.ouvrirClassement(reussi ? "ENREGISTRE" : "ERREUR D'ENVOI", reussi ? OR : 0xff6b6b);
+        const message = !reussi ? "ERREUR D'ENVOI" : this.ligneGardee ? "ENREGISTRE" : "TON MEILLEUR TEMPS EST DEJA ENREGISTRE"; // (même nom, temps moins bon : la ligne de l'ancien temps reste)
+        this.ouvrirClassement(message, reussi ? OR : 0xff6b6b);
     }
 
     // ---- le classement : 10 lignes, la ligne du joueur en rose ----
@@ -388,10 +399,13 @@ export default class classement extends Phaser.Scene {
         const mien = this.monResultat(); // mes chiffres, arrondis comme dans le panthéon
         const reel = this.tableau.map((l) => ({ ...l })); // le panthéon est déjà trié : le temps le plus court en premier (on en fait une copie : on y glisse la ligne du joueur)
         if (this.etape === "saisie") {
-            const i = reel.findIndex((l) => comparer(mien, l) < 0); // à égalité parfaite, le joueur passe derrière
-            reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), ...mien, moi: true });
+            const nom = this.nom.join("").trimEnd();
+            const ligne = { nom, ...mien, moi: true };
+            const { liste, gardee } = fusionner(reel, ligne); // même règle que l'enregistrement : un nom déjà présent garde son meilleur temps
+            if (!gardee) { const ancienne = liste.find((l) => l.nom === nom); if (ancienne) ancienne.moi = true; } // son ancien temps est meilleur : c'est lui qu'on surligne
+            return liste;
         } else if (this.nomJoueur) {
-            const moi = reel.find((l) => l.nom === this.nomJoueur && l.net === mien.net && l.brut === mien.brut && l.morts === mien.morts && l.coups === mien.coups);
+            const moi = reel.find((l) => l.nom === this.nomJoueur);
             if (moi) moi.moi = true;
         }
         return reel.slice(0, 10);
