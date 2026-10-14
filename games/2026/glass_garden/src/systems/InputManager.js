@@ -40,17 +40,17 @@ import { CONTROL_MODES } from '../utils/constants.js';
 // ? Arcade : le joystick est supposé envoyer les FLÈCHES (le template du prof utilise les flèches).
 // À vérifier sur la borne : si c'est autre chose, ne changer que les lignes « arcade ».
 // ? La touche I (interagir) est la première des six boutons. Les cinq autres (O P pour la rangée du haut,
-// K L M pour celle du bas) ne servent pas encore, sauf O : le tir.
+// K L M pour celle du bas) ne servent pas encore, sauf O : le tir, et P : le dash.
 // ? Les touches du joueur 2 sont provisoires, et identiques dans les deux modes : à définir avec la borne.
-// ? La touche E (interagir, mode pc) n'est PAS définitive. La touche A (tirer, mode pc) non plus.
+// ? La touche E (interagir, mode pc) n'est PAS définitive. La touche A (tirer, mode pc) et Shift (dash, mode pc) non plus.
 const BINDINGS = {
   [CONTROL_MODES.ARCADE]: {
-    1: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'I', shoot: 'O' },
-    2: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'ENTER', shoot: 'SPACE' },
+    1: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'I', shoot: 'O', dash: 'P' },
+    2: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'ENTER', shoot: 'SPACE', dash: 'SHIFT' },
   },
   [CONTROL_MODES.PC]: {
-    1: { up: 'Z', down: 'S', left: 'Q', right: 'D', interact: 'E', shoot: 'A' },
-    2: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'ENTER', shoot: 'SPACE' },
+    1: { up: 'Z', down: 'S', left: 'Q', right: 'D', interact: 'E', shoot: 'A', dash: 'SHIFT' },
+    2: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'ENTER', shoot: 'SPACE', dash: 'SHIFT' },
   },
 };
 

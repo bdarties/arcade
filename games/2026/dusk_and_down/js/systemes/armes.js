@@ -15,8 +15,18 @@ export function mettreAJourArme(scene, joueur) {
   if (joueur.estMort || scene.tempsJeu < arme.prochaineAttaque) {
     return;
   }
-  arme.prochaineAttaque = scene.tempsJeu + arme.recharge;
+  arme.prochaineAttaque = scene.tempsJeu + Math.max(arme.rechargeMin, arme.recharge * joueur.stats.recharge);
   coupEpee(scene, joueur, arme);
+}
+
+export function infligerDegats(scene, joueur, ennemi, degats, sourceX, sourceY, recul) {
+  let total = degats;
+  let critique = false;
+  if (Math.random() < joueur.stats.critique) {
+    total *= 2;
+    critique = true;
+  }
+  blesserEnnemi(scene, ennemi, total, sourceX, sourceY, recul, critique);
 }
 
 function angleDeVisee(scene, joueur, distanceVisee) {
@@ -34,12 +44,19 @@ function angleDeVisee(scene, joueur, distanceVisee) {
 }
 
 function coupEpee(scene, joueur, arme) {
+  const portee = arme.portee * joueur.stats.portee;
   const demiAngle = Phaser.Math.DegToRad(arme.angle) / 2;
-  const angleVise = angleDeVisee(scene, joueur, arme.visee);
+  const angleVise = angleDeVisee(scene, joueur, Math.max(arme.visee, portee * 1.5));
+
+  const nbCoups = 1 + joueur.stats.coupsEpee;
+  const angles = [];
+  for (let i = 0; i < nbCoups; i++) {
+    angles.push(angleVise + (i * Math.PI * 2) / nbCoups);
+  }
 
   joueur.finAttaque = scene.tempsJeu + 320;
   joueur.anims.play(joueur.cleTexture + "_attaque", true);
-  dessinerCoupEpee(scene, joueur, arme, angleVise, demiAngle);
+  dessinerCoupEpee(scene, joueur, arme, portee, angles, demiAngle);
   jouerSon("epee");
 
   for (const ennemi of scene.groupeEnnemis.getChildren().slice()) {
@@ -49,29 +66,31 @@ function coupEpee(scene, joueur, arme) {
     const dx = ennemi.x - joueur.x;
     const dy = (ennemi.y - joueur.y) / ISO.ratioY;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance > arme.portee + ennemi.type.rayonCorps) {
+    if (distance > portee + ennemi.type.rayonCorps * ennemi.scaleX) {
       continue;
     }
     const angleEnnemi = Math.atan2(dy, dx);
-    const dansLArc = Math.abs(Phaser.Math.Angle.Wrap(angleEnnemi - angleVise)) <= demiAngle;
-    if (dansLArc || distance < 20) {
-      blesserEnnemi(scene, ennemi, arme.degats, joueur.x, joueur.y, arme.recul);
+    const dansUnArc = angles.some((angle) => Math.abs(Phaser.Math.Angle.Wrap(angleEnnemi - angle)) <= demiAngle);
+    if (dansUnArc || distance < 20) {
+      infligerDegats(scene, joueur, ennemi, arme.degats, joueur.x, joueur.y, arme.recul);
     }
   }
 }
 
-function dessinerCoupEpee(scene, joueur, arme, angle, demiAngle) {
+function dessinerCoupEpee(scene, joueur, arme, portee, angles, demiAngle) {
   const g = arme.visuel;
   g.clear();
   g.setPosition(joueur.x, joueur.y - 4);
   g.setScale(1, ISO.ratioY);
-  g.fillStyle(0xffffff, 0.22);
-  g.slice(0, 0, arme.portee, angle - demiAngle, angle + demiAngle, false);
-  g.fillPath();
-  g.lineStyle(6, 0xffffff, 0.95);
-  g.beginPath();
-  g.arc(0, 0, arme.portee, angle - demiAngle, angle + demiAngle, false);
-  g.strokePath();
+  for (const angle of angles) {
+    g.fillStyle(0xffffff, 0.22);
+    g.slice(0, 0, portee, angle - demiAngle, angle + demiAngle, false);
+    g.fillPath();
+    g.lineStyle(6, 0xffffff, 0.95);
+    g.beginPath();
+    g.arc(0, 0, portee, angle - demiAngle, angle + demiAngle, false);
+    g.strokePath();
+  }
   g.setAlpha(1);
   scene.tweens.killTweensOf(g);
   scene.tweens.add({ targets: g, alpha: 0, duration: 220 });

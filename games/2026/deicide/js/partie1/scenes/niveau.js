@@ -200,6 +200,7 @@ export default class niveau extends Phaser.Scene {
     ennemis.majEnnemis(this);
     verifierSalles(this); // ferme une salle de combat quand le joueur y entre, l'ouvre quand tous les ennemis sont morts
     this.cfg.arene(this); // si le joueur arrive en haut, on ferme l'arène
+    if (this.areneLancee) this.garderDansLArene(); // filet de sécurité : le robot ne peut pas sortir de la salle du boss
     lumiere.majVoile(this);
   }
 
@@ -210,6 +211,7 @@ export default class niveau extends Phaser.Scene {
     // juste après un coup : une seconde d'invincibilité, pour qu'une orbe et une lanterne ne fassent pas deux dégâts d'un coup
     if (this.time.now < this.invincibleJusqua) return;
     this.invincibleJusqua = this.time.now + DUREE_INVINCIBLE;
+    this.registry.set("coups", (this.registry.get("coups") ?? 0) + 1); // un coup de plus reçu dans la partie (affiché dans le panthéon) : ici seulement les vrais dégâts, pas les coups esquivés
     this.pv -= degats;
     this.hud.majPV(this.pv); // met la barre de vie à jour
     jouerSon(this, this.pv <= 0 ? "joueur_mort" : "joueur_touche"); // bruit de mort si plus de PV, sinon bruit d'impact
@@ -217,6 +219,28 @@ export default class niveau extends Phaser.Scene {
     console.log(cause);
     if (this.pv <= 0) this.mourir();
     else this.tweens.add({ targets: this.player, alpha: 0.35, duration: 90, yoyo: true, repeat: 5, onComplete: () => this.player.setAlpha(1) }); // il clignote pendant l'invincibilité
+  }
+
+  // Filet de sécurité de l'arène du boss : si le robot se retrouve SOUS le sol de l'arène ou hors de la salle (par exemple après des sauts et des dashs répétés
+  // dans un coin), on le remet à l'intérieur tout de suite. Le sol ne fait qu'une rangée de tuiles (32 px) : sans ça, une seule image « ratée » de la
+  // physique suffit pour passer dessous et tomber hors de l'écran.
+  garderDansLArene() {
+    const corps = this.player.body;
+    const bornes = this.physics.world.bounds;
+    const droite = this.murDroit ? this.murDroit.x : bornes.right; // la salle du niveau 1 est fermée par un mur à droite (il est brisé dans la partie 2)
+    const limiteSol = this.areneSolY + 20; // en atterrissant, le robot s'enfonce d'au plus 8 px dans le sol : au-delà de 20 px, il est passé dessous
+    if (corps.bottom > limiteSol) { // sous le sol : on le pose dessus
+      this.player.y -= corps.bottom - this.areneSolY;
+      this.player.setVelocityY(0);
+    }
+    if (corps.right > droite) { // dans le mur de droite (ou hors de la carte)
+      this.player.x -= corps.right - droite;
+      this.player.setVelocityX(0);
+    }
+    if (corps.left < bornes.left) { // hors de la carte à gauche
+      this.player.x += bornes.left - corps.left;
+      this.player.setVelocityX(0);
+    }
   }
 
   mourir() { // 0 PV : le robot meurt, puis le niveau recommence. Le chrono continue (la mort coûte du temps)

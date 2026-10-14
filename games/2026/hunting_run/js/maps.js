@@ -1,4 +1,4 @@
-export const DEBUG = true; // true : affiche le nom de la map
+export const DEBUG = false;
 
 export const PERSO = {
   cle: "img_perso",
@@ -31,18 +31,18 @@ export const TUILES = {
   tuiles4: "TuileDeJeu4.png",
   tuiles5: "TuileDeJeu5.png",
   tuiles6: "TuileDeJeu6.png",
-  salle:   "Tuile salle de bain.png"
+  salle:   "Tuile salle de bain.png",
+  tuiles8: "tuileDeJeu8.jpg"   // ciel de nuit du cimetière (map8)
 };
 
-/***************************************************************
-PORTES ALÉATOIRES
-***************************************************************/
+/*PORTES ALÉATOIRES*/
+
 // vers: "hasard" -> la porte mène vers une map tirée au sort À CHAQUE FOIS qu'on la prend.
 // Seule la porte de la map4 (derrière la bibliothèque) mène à la map6 : la map6 est donc interdite au tirage.
 export const HASARD = {
   interdites: ["map6"], // maps qui ne peuvent jamais sortir du tirage au sort
   // "poids" : plus il est grand, plus la map sort souvent (1 = normal). Mets 0.5 pour la rendre plus rare.
-  poids: { map1: 1, map2: 1, map3: 1, map4: 1, map5: 1 }
+  poids: { map1: 1, map2: 1, map3: 1, map4: 1, map5: 1, map7: 1, map8: 1 }
 };
 
 // phrases chuchotées au hasard quand on arrive par une porte aléatoire (ambiance)
@@ -137,13 +137,42 @@ export const MAPS = {
       // cle: true -> la porte reste fermée tant que les joueurs n'ont pas trouvé la clé (voir CLE plus bas)
       { x: 28, y: 11, l: 3, h: 4, vers: "fin", cle: true, enigme: "gardienne_resolue" } // + énigme de la gardienne (voir PNJS)
     ]
+  },
+  // map7 : le grand hall (2 étages, 2 escaliers, bibliothèque avec une énigme)
+  map7: {
+    fichier: "map7.json",
+    // sol: ligne (en tuiles) à partir de laquelle on met un SOL INVISIBLE (la map7 n'a pas de sol dans calque_platformes)
+    sol: 20,
+    tilesets: {
+      TuileDeJeu1: "tuiles1",
+      TuileDeJeu2: "tuiles2",
+      TuileDeJeu3: "tuiles3"
+    },
+    portes: [
+      { x: 1, y: 8, vers: "hasard" },   // étage, gauche
+      { x: 57, y: 8, vers: "hasard" },  // étage, droite
+      { x: 1, y: 17, vers: "hasard" },  // rez-de-chaussée, gauche
+      { x: 57, y: 17, vers: "hasard" }  // rez-de-chaussée, droite
+    ]
+  },
+  // map8 : le cimetière (énigme du puits)
+  map8: {
+    fichier: "map8.json",
+    tilesets: {
+      TuileDeJeu1: "tuiles1",
+      TuileDeJeu2: "tuiles2",
+      TuileDeJeu3: "tuiles3",
+      tuileDeJeu8: "tuiles8"
+    },
+    portes: [
+      { x: 2, y: 12, vers: "hasard" },  // porte gauche
+      { x: 54, y: 12, vers: "hasard" }  // porte droite
+    ]
   }
 };
 
+/*CLÉ CACHÉE (ouvre la grande porte de la map6)*/
 
-/***************************************************************
-CLÉ CACHÉE (ouvre la grande porte de la map6)
-***************************************************************/
 // La clé est invisible au départ : elle est au fond de la cuvette des toilettes (map5, salle de bain).
 // Elle n'apparaît qu'après les deux énigmes (le miroir, puis le bouton secret) : voir POINTS et ENIGMES.
 export const CLE = {
@@ -154,10 +183,8 @@ export const CLE = {
   echelle: 0.8     // taille de la clé dans le jeu (plus petite = plus discrète)
 };
 
+/*ÉNIGMES (questions à choix : joystick gauche/droite pour choisir, bouton A pour valider)*/
 
-/***************************************************************
-ÉNIGMES (questions à choix : joystick gauche/droite pour choisir, bouton A pour valider)
-***************************************************************/
 // bonne : numéro de la bonne réponse (0 = la première)
 // resolu : nom de l'état mémorisé quand l'énigme est résolue
 // degats : points de vie perdus en cas de mauvaise réponse
@@ -178,7 +205,28 @@ export const ENIGMES = {
     bonne: 2,
     resolu: "cle_revelee",
     degats: 10,
-    succes: ""
+  },
+  // nouvelle énigme : la bibliothèque du grand hall (map7). recompense : score + soin (en pv)
+  bibliotheque: {
+    titre: "Les livres chuchotent...",
+    question: "« J'ai des feuilles mais je ne suis pas un arbre.\nJ'ai un dos mais pas de jambes.\nQui suis-je ? »",
+    choix: ["Un livre", "Un fauteuil", "Un squelette"],
+    bonne: 0,
+    resolu: "bibliotheque_resolue",
+    degats: 10,
+    succes: "Un livre glisse de l'étagère... et une chaleur douce te enveloppe. (+300 points, +1 cœur)",
+    recompense: { score: 300, soin: 34 }
+  },
+  // nouvelle énigme : le puits du cimetière (map8)
+  puits: {
+    titre: "Une voix monte du puits...",
+    question: "« Je n'ai pas de poumons, mais j'ai besoin d'air.\nJe n'ai pas de bouche, mais l'eau me tue.\nQui suis-je ? »",
+    choix: ["Le feu", "Le vent", "Un puits"],
+    bonne: 0,
+    resolu: "puits_resolu",
+    degats: 10,
+    succes: "Une lueur bleue jaillit du puits... (+300 points, +1 cœur)",
+    recompense: { score: 300, soin: 34 }
   },
   // énigme posée par la Dame blanche, juste avant la grande porte (map6)
   gardienne: {
@@ -192,10 +240,8 @@ export const ENIGMES = {
   }
 };
 
+/*POINTS D'INTERACTION (notes à lire, miroir, bouton, cuvette) : on appuie sur B devant*/
 
-/***************************************************************
-POINTS D'INTERACTION (notes à lire, miroir, bouton, cuvette) : on appuie sur A devant
-***************************************************************/
 // x, y, l, h : zone en TUILES (coin haut-gauche, largeur, hauteur), comme les portes
 // type : "note" (texte à lire) | "enigme" | "bouton" | "toilettes"
 // si : l'élément n'est actif que si cet état est vrai (ex: le bouton n'existe qu'après le miroir)
@@ -228,6 +274,24 @@ export const POINTS = {
     { x: 29, y: 15, l: 4, h: 3, type: "note",
       texte: "Une lettre froissée :\n« Il existe un bouton que seul le miroir connaît.\nJe n'ai pas trouvé la réponse à temps... »" }
   ],
+  map7: [
+    { x: 14, y: 17, l: 2, h: 3, type: "note",
+      texte: "Une page jaunie :\n« Le hall a deux étages. Les escaliers se rejoignent au milieu...\net la bibliothèque, à droite, connaît une énigme. »" },
+    { x: 4, y: 8, l: 2, h: 3, type: "note", si: "cle",
+      texte: "Griffonné sur le mur :\n« La grande porte se cache derrière une bibliothèque, tout en haut à droite d'une autre pièce.\nLes portes, elles, ne mènent jamais deux fois au même endroit. »" },
+    // la bibliothèque (énigme bonus)
+    { x: 47, y: 17, l: 6, h: 3, type: "enigme", enigme: "bibliotheque",
+      deja: "La bibliothèque reste silencieuse. Elle t'a déjà tout dit." }
+  ],
+  map8: [
+    { x: 11, y: 12, l: 2, h: 3, type: "note",
+      texte: "Une épitaphe usée :\n« Ci-gît celui qui voulait sortir.\nLe puits, lui, répond à ceux qui savent écouter. »" },
+    { x: 24, y: 12, l: 2, h: 3, type: "note", si: "cle",
+      texte: "Gravé sur une tombe :\n« La clé ouvre la grande porte, tout au bout du manoir.\nCherche la porte cachée derrière les livres. »" },
+    // le puits (énigme bonus)
+    { x: 40, y: 12, l: 3, h: 3, type: "enigme", enigme: "puits",
+      deja: "Le puits est silencieux. Il t'a déjà tout dit." }
+  ],
   map5: [
     // INDICE après la clé
     { x: 47, y: 14, l: 2, h: 3, type: "note", si: "cle",
@@ -246,47 +310,46 @@ export const POINTS = {
   ]
 };
 
+/*ÉTATS DE LA PARTIE à remettre à zéro à chaque nouvelle partie*/
 
-/***************************************************************
-ÉTATS DE LA PARTIE à remettre à zéro à chaque nouvelle partie
-***************************************************************/
-export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue"];
+export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue", "score", "bibliotheque_resolue", "puits_resolu"];
 
+/*ÉCRANS D'HISTOIRE*/
 
-/***************************************************************
-ÉCRANS D'HISTOIRE
-***************************************************************/
 export const ECRANS = {
   histoire: ["./assets/ui/histoire.png"],
   fin: "./assets/ui/fin.png",
   // affichée quand on perd (temps écoulé ou K.O.)
   gameOver: "./assets/ui/game-over.png",
   // bouton "Rejouer" (écran Game Over et écran de fin)
-  boutonRejouer: "./assets/ui/rejouer.png"
+  boutonRejouer: "./assets/ui/rejouer.png",
+  // bouton "Revivre" (écran Game Over après un K.O.)
+  boutonRevivre: "./assets/ui/revivre.png"
 };
 
 
-/***************************************************************
-JOUEURS
-***************************************************************/
+/*JOUEURS*/
+/*DURÉE, SCORE, REVIE*/
+
+export const DUREE_PARTIE = 210; // secondes : 3 min 30 (3 minutes + 30 secondes)
+export const REVIE = {
+  pv: 34 // points de vie quand on revit (34 = 1 seul cœur)
+};
+export const SCORES = {
+  nbMax: 10 // nombre de scores gardés dans le tableau
+};
+
 export const JOUEUR = {
-  pvMax: 100,          // points de vie au départ
-  invincibilite: 1200  // ms d'invincibilité après avoir été touché
+  pvMax: 100, // points de vie au départ
+  invincibilite: 1200 // ms d'invincibilité après avoir été touché
 };
 
+/*CONTRÔLES DES NOUVELLES ACTIONS*/
 
-/***************************************************************
-CONTRÔLES DES NOUVELLES ACTIONS (voir jeu.js, tableau "reglages")
-***************************************************************/
-// J1 : bouton B = touche O      J2 : bouton B = touche G
-// Bouton B : coup de poing (sans pouvoir) / tir (avec pouvoir) / laser (si on MAINTIENT avec pouvoir)
+/*SPRITES*/
 
-
-/***************************************************************
-SPRITES (tes sprite sheets : remplace juste les fichiers dans assets/sprites/)
-***************************************************************/
 // frames : nombre d'images dans la bande ; regardeDroite : le dessin regarde vers la droite ?
-// corps : [largeur, hauteur, décalageX, décalageY] de la zone qui touche/est touchée (en pixels de l'image)
+// corps : [largeur, hauteur, décalageX, décalageY] de la zone qui touche/est touchée
 export const SPRITES = {
   butler:  { fichier: "./assets/sprites/butler_walk_strip.png",      fw: 32, fh: 40, frames: 8, fps: 8,  regardeDroite: true, echelle: 1.3, corps: [14, 34, 9, 6] },
   widow:   { fichier: "./assets/sprites/widow_idle_strip.png",       fw: 32, fh: 40, frames: 8, fps: 6,  regardeDroite: true, echelle: 1.3, corps: [14, 34, 9, 6] },
@@ -300,10 +363,8 @@ export const IMAGES_COMBAT = {
   potion:       { fichier: "./assets/sprites/potion.png",       echelle: 1 }
 };
 
+/*COMBAT*/
 
-/***************************************************************
-COMBAT
-***************************************************************/
 export const COMBAT = {
   // bouton B sans pouvoir : coup de poing
   coup: { degats: 1, portee: 46, hauteur: 44, recharge: 380, recul: 220 },
@@ -311,38 +372,37 @@ export const COMBAT = {
   tir: { degats: 1, vitesse: 520, recharge: 300, duree: 1100 },
   // bouton B MAINTENU avec pouvoir : laser
   laser: {
-    delai: 260,            // ms d'appui avant que le laser démarre (en dessous : simple tir)
-    longueur: 460,         // portée en pixels
+    delai: 260, // ms d'appui avant que le laser démarre (en dessous : simple tir)
+    longueur: 460, // portée en pixels
     epaisseur: 12,
-    degatsParTick: 0.5,    // dégâts toutes les "tick" ms
+    degatsParTick: 0.5, // dégâts toutes les "tick" ms
     tick: 120,
     energieMax: 100,
-    coutParSeconde: 40,    // l'énergie descend quand on laisse appuyé...
-    rechargeParSeconde: 22,// ...et remonte sinon
-    energieMin: 15         // énergie minimale pour relancer le laser
+    coutParSeconde: 40, // l'énergie descend quand on laisse appuyé...
+    rechargeParSeconde: 22, // ...et remonte sinon
+    energieMin: 15 // énergie minimale pour relancer le laser
   },
-  pouvoirDuree: 30000,     // durée du pouvoir après une potion violette, en ms (0 = pour toute la partie)
-  soinPotion: 34,          // points de vie rendus par une potion rouge (34 = 1 cœur)
-  chanceDropSoin: 0.2      // chance qu'un ennemi tué laisse une potion rouge
+  pouvoirDuree: 30000, // durée du pouvoir après une potion violette, en ms (0 = pour toute la partie)
+  soinPotion: 34, // points de vie rendus par une potion rouge (34 = 1 cœur)
+  chanceDropSoin: 0.2 // chance qu'un ennemi tué laisse une potion rouge
 };
 
 // 1 cœur = 34 pv (pvMax 100). Les dégâts sont en pv : 17 = un demi-cœur.
 // Il y a 2 types d'ennemis :
-//   "garde"  = ennemi 1 : corps à corps, il frappe     (calque Tiled "ennemis 1")
-//   "tireur" = ennemi 2 : il reste en place et tire     (calque Tiled "ennemis 2")
+// "garde"  = ennemi 1 : corps à corps, il frappe
+// "tireur" = ennemi 2 : il reste en place et tire
 export const TYPES_ENNEMIS = {
-  garde:  { sprite: "butler", anim: "marche", pv: 5, vitesse: 55, vitesseChasse: 100, degats: 17, portee: 44, preparation: 280, recharge: 1000, detection: 280, recul: 120 },
-  tireur: { sprite: "widow",  anim: "idle",   pv: 10, degats: 17, recharge: 2000, preparation: 350, detection: 560, vitesseBoule: 260 }
+  garde:  { sprite: "butler", anim: "marche", points: 100, pv: 5, vitesse: 55, vitesseChasse: 100, degats: 17, portee: 44, preparation: 280, recharge: 1000, detection: 280, recul: 120 },
+  tireur: { sprite: "widow",  anim: "idle",   points: 150, pv: 10, degats: 17, recharge: 2000, preparation: 350, detection: 560, vitesseBoule: 260 }
 };
 
-/***************************************************************
-ENNEMIS ET POTIONS : ILS VIENNENT DE TES CARTES TILED
-***************************************************************/
+/*ENNEMIS ET POTIONS : ILS VIENNENT DE TES CARTES TILED*/
+
 // Le jeu lit les calques d'objets (points) de chaque carte .json :
-//   "ennemis 1"      -> un garde (corps à corps) à chaque point
-//   "ennemis 2"      -> un tireur à chaque point
+//   "ennemis 1" -> un garde (corps à corps) à chaque point
+//   "ennemis 2" -> un tireur à chaque point
 //   "potion pouvoir" -> une potion violette (donne le pouvoir) à chaque point
-//   "potion coeur"   -> une potion rouge (soigne) à chaque point
+//   "potion coeur" -> une potion rouge (soigne) à chaque point
 // Pour ajouter / déplacer un ennemi ou une potion : fais-le dans Tiled, il n'y a rien à écrire ici.
 export const CALQUES_TILED = {
   "ennemis 1":      { genre: "ennemi", type: "garde" },
@@ -364,18 +424,15 @@ export const ENNEMIS = {
 // Potions posées à la main pour les cartes SANS calque Tiled : aucune.
 export const POTIONS = {};
 
+/*TROUS MORTELS : zone où l'on meurt en y entrant*/
 
-/***************************************************************
-TROUS MORTELS : zone où l'on meurt en y entrant (x1, x2 = colonnes en TUILES, y = ligne où les pieds touchent le fond noir)
-***************************************************************/
 export const TROUS = {
   map3: [{ x1: 13, x2: 40, y: 20 }], // le creux au milieu de la map3 : tomber dedans = mourir
   map4: [{ x1: 36, x2: 48, y: 18 }]  // le trou de la map 4
 };
 
-/***************************************************************
-PNJ QUI PARLENT (A devant eux). x = colonne, y = ligne du SOL, en tuiles
-***************************************************************/
+/*PNJ QUI PARLENT (B devant eux). x = colonne, y = ligne du SOL, en tuiles*/
+
 // auto: true  -> il se met à parler tout seul au début de la partie
 // gelerTemps: true -> le timer de 3 minutes est en pause pendant qu'il parle
 // avant / apres : quand le PNJ a une énigme (enigme: "...") :
@@ -386,9 +443,9 @@ export const PNJS = {
       nom: "L'Homme au chapeau", sprite: "guide", x: 6, y: 18, auto: true, gelerTemps: true, vu: "intro_vue",
       dialogue: [
         "Chut... Tu es enfin réveillé. Le manoir s'est refermé sur nous.",
-        "Tu as 3 minutes pour t'échapper. Pas une de plus.",
+        "Tu as 3 minutes et 30 secondes pour t'échapper. Pas une de plus.",
         "Les portes ne mènent jamais deux fois au même endroit. Fouille les pièces : notes, miroirs, boutons... chaque INDICE compte.",
-        "Méfie-toi, des créatures rôdent. Frappe avec le bouton B. Et cherche des potions : les rouges soignent, les violettes donnent un pouvoir.",
+        "Méfie-toi, des créatures rôdent. Frappe avec le bouton A. Et cherche des potions : les rouges soignent, les violettes donnent un pouvoir.",
         "Maintenant va. Et trouve la clé."
       ],
       rappel: ["Trouve la clé. Lis les notes. Résous les énigmes.", "Le temps file... ne reste pas là !"]

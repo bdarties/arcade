@@ -111,8 +111,7 @@ export default class resultats extends Phaser.Scene {
     if (unJoueurAppuie(this.touches, "a")) {
       this.choixFait = true;
       jouerSon(this, "valider");
-      this.scene.start(this.jeu.scene);
-    } else if (unJoueurAppuie(this.touches, "b")) {
+      this.scene.start(this.jeu.scene, { numEssai: 0, scores: [[], []] });    } else if (unJoueurAppuie(this.touches, "b")) {
       this.choixFait = true;
       jouerSon(this, "retour");
       this.scene.start("menu");

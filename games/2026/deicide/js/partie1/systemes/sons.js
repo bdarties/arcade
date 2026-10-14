@@ -81,7 +81,18 @@ export function surLeTemps(scene, ms) {
     return Math.max(0, cible - position);
 }
 
+// Pas plus de COPIES_MAX copies du MÊME son en même temps, et au moins ECART_MIN_MS entre deux départs du même son. Dans les combats de boss, plusieurs rayons
+// ou projectiles partent à la même croche avec le même son et la même hauteur : les copies identiques s'additionnent (jusqu'à 7 « dash » en même temps mesurés)
+// et le son devient un grondement de plus en plus fort. Une copie de plus ne s'entend de toute façon pas : on ne la joue pas.
+const COPIES_MAX = 2;
+const ECART_MIN_MS = 70;
+const dernierDepart = {}; // nom du son : instant (performance.now) de son dernier départ
+
 export function jouerSon(scene, nom, volumeEnPlus = 1) { // joue un son une fois
+    const maintenant = performance.now();
+    if (maintenant - (dernierDepart[nom] ?? -1e9) < ECART_MIN_MS) return; // le même son vient de partir
+    if (scene.sound.sounds.filter((son) => son.key === nom && son.isPlaying).length >= COPIES_MAX) return; // déjà assez de copies en train de jouer
+    dernierDepart[nom] = maintenant;
     const m = musiqueBossCourante();
     const accorde = Boolean(m) && nom in ACCORD; // pendant un combat de boss : sur une note de la gamme
     const variation = accorde ? ACCORD[nom] + m.ton : Phaser.Math.Between(-100, 100); // sinon, petite variation de hauteur au hasard
@@ -96,9 +107,16 @@ export function jouerSonSurLeTemps(scene, nom) {
     else scene.time.delayedCall(delai, () => jouerSon(scene, nom, 1.4));
 }
 
+// Coupe tous les bruitages encore en cours (la musique qui joue est gardée) : on le fait quand une nouvelle musique démarre et à la fin du combat du boss, pour repartir
+// d'un moteur audio sans aucun son qui traîne (sur le Raspberry Pi, des sons qui s'accumulent peuvent faire grésiller ou « moteuriser » le son).
+export function viderSons(scene) {
+    scene.sound.sounds.slice().forEach((son) => { if (son !== musique) son.destroy(); }); // slice : on parcourt une copie, car détruire un son le retire de la liste
+}
+
 function lancerMusique(scene, nom, base = VOLUME_MUSIQUE, boucle = true) { // lance une musique (en boucle par défaut), à la place de celle qui joue
     if (musique && musique.key === nom && musique.isPlaying) return; // cette musique joue déjà : on ne la relance pas depuis le début
     if (musique && musique.manager) { musique.stop(); musique.destroy(); } // (manager est vide si le son a déjà été détruit) // coupe l'ancienne musique et la libère (sans destroy, chaque nouvelle partie laissait un son de plus en mémoire)
+    viderSons(scene); // une nouvelle musique : on repart sans aucun bruitage qui traîne
     volumeBase = base; // on retient son volume de base : majVolumeMusique en a besoin quand le joueur règle le volume
     // crée la musique, au volume choisi dans le menu pause
     musique = scene.sound.add(nom, { loop: boucle, volume: base * reglages.musique / VOLUME_MAX });

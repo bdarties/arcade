@@ -28,6 +28,6 @@ export function finirPartie(scene) { // arrête le chrono et envoie le joueur au
     scene.time.delayedCall(DELAI_FIN, () => {
         const tempsBrutMs = scene.registry.get("chrono");
         const points = scene.registry.get("score");
-        scene.scene.start("credits", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0 }); // les crédits d'abord, puis le panthéon (credits.js les lui transmet)
+        scene.scene.start("credits", { tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0, coups: scene.registry.get("coups") ?? 0 }); // les crédits d'abord, puis le panthéon (credits.js les lui transmet)
     });
 }

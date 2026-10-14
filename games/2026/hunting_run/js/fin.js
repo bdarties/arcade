@@ -31,6 +31,13 @@ export default class fin extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
+    // score final
+    this.score = this.registry.get("score") || 0;
+    this.add
+      .text(L / 2, 335, "SCORE : " + this.score, { fontFamily: "Georgia, serif", fontSize: "44px", color: "#ffd24a", fontStyle: "bold" })
+      .setOrigin(0.5)
+      .setShadow(3, 3, "#000000", 6);
+
     if (this.textures.exists("rejouer")) {
       // bouton Rejouer (ton image) : ramène à l'accueil
       const bouton = this.add.image(L / 2, H - 80, "rejouer").setScale(0.5).setInteractive({ useHandCursor: true });
@@ -38,12 +45,12 @@ export default class fin extends Phaser.Scene {
       bouton.on("pointerout", () => bouton.setScale(0.5));
       bouton.on("pointerdown", () => this.retour());
       this.add
-        .text(L / 2, H - 24, "(ou appuie sur le bouton A)", { fontSize: "16px", color: "#cccccc" })
+        .text(L / 2, H - 24, "(ou appuie sur le bouton B)", { fontSize: "16px", color: "#cccccc" })
         .setOrigin(0.5)
         .setShadow(2, 2, "#000000", 4);
     } else {
       this.add
-        .text(L / 2, H - 25, "Bouton A : retour à l'accueil", { fontSize: "20px", color: "#cccccc" })
+        .text(L / 2, H - 25, "Bouton B : retour à l'accueil", { fontSize: "20px", color: "#cccccc" })
         .setOrigin(0.5)
         .setShadow(2, 2, "#000000", 4);
     }
@@ -53,7 +60,7 @@ export default class fin extends Phaser.Scene {
 
     // clavier / borne
     const K = Phaser.Input.Keyboard.KeyCodes;
-    const valider = [K.ENTER, K.SPACE, K.I, K.R];
+    const valider = [K.ENTER, K.SPACE, K.O, K.G];
     this.input.keyboard.on("keydown", (e) => {
       if (!e.repeat && valider.includes(e.keyCode)) this.retour();
     });
@@ -63,8 +70,8 @@ export default class fin extends Phaser.Scene {
     if (!this.pret || this.parti) return;
     this.parti = true;
     jouer(this, "valider");
-    ETATS_PARTIE.forEach((k) => this.registry.remove(k)); // timer, clé et énigmes repartent de zéro
+    // on passe par l'écran des scores pour sauvegarder le score (la partie est remise à zéro là-bas)
     this.cameras.main.fadeOut(400, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("accueil"));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("scores", { score: this.score, suite: "accueil" }));
   }
 }
