@@ -801,9 +801,9 @@ export default class niveau1 extends Phaser.Scene {
       J1boutonFeu = this.input.keyboard.addKey('O');
     //touches Joueur 2
       J2Haut = this.input.keyboard.addKey('Z');
-      J2Bas = this.input.keyboard.addKey('L');
-      J2Gauche = this.input.keyboard.addKey('K');
-      J2Droite = this.input.keyboard.addKey('M');
+      J2Bas = this.input.keyboard.addKey('S');
+      J2Gauche = this.input.keyboard.addKey('Q');
+      J2Droite = this.input.keyboard.addKey('D');
       J2Interaction = this.input.keyboard.addKey('R');
       J2boutonFeu = this.input.keyboard.addKey('T');
     /*************************************************
