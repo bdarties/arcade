@@ -84,7 +84,7 @@ export function battements(scene) { // deux battements de cœur, graves
     });
 }
 
-export function montee(scene, duree) { // la tension qui monte avant le coup : un son qui grimpe, avec un souffle
+export function montee(scene, duree) { // la tension qui monte avant le coup : un son qui grimpe, avec un souffle (duree en SECONDES)
     const c = contexte(scene); if (!c) return;
     const sortieMontee = sortie(c, 0.5), t = c.currentTime + 0.02;
     const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();

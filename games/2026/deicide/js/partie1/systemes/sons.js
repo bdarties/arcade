@@ -81,7 +81,18 @@ export function surLeTemps(scene, ms) {
     return Math.max(0, cible - position);
 }
 
+// Pas plus de COPIES_MAX copies du MÊME son en même temps, et au moins ECART_MIN_MS entre deux départs du même son. Dans les combats de boss, plusieurs rayons
+// ou projectiles partent à la même croche avec le même son et la même hauteur : les copies identiques s'additionnent (jusqu'à 7 « dash » en même temps mesurés)
+// et le son devient un grondement de plus en plus fort. Une copie de plus ne s'entend de toute façon pas : on ne la joue pas.
+const COPIES_MAX = 2;
+const ECART_MIN_MS = 70;
+const dernierDepart = {}; // nom du son : instant (performance.now) de son dernier départ
+
 export function jouerSon(scene, nom, volumeEnPlus = 1) { // joue un son une fois
+    const maintenant = performance.now();
+    if (maintenant - (dernierDepart[nom] ?? -1e9) < ECART_MIN_MS) return; // le même son vient de partir
+    if (scene.sound.sounds.filter((son) => son.key === nom && son.isPlaying).length >= COPIES_MAX) return; // déjà assez de copies en train de jouer
+    dernierDepart[nom] = maintenant;
     const m = musiqueBossCourante();
     const accorde = Boolean(m) && nom in ACCORD; // pendant un combat de boss : sur une note de la gamme
     const variation = accorde ? ACCORD[nom] + m.ton : Phaser.Math.Between(-100, 100); // sinon, petite variation de hauteur au hasard
