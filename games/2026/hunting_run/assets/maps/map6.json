@@ -324,7 +324,7 @@
         {
          "columns":16,
          "firstgid":337,
-         "image":"..\/..\/..\/..\/maps jeu 301\/TuileDeJeu2.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/maps jeu 301\/TuileDeJeu2.png",
          "imageheight":960,
          "imagewidth":512,
          "margin":0,
@@ -337,7 +337,7 @@
         {
          "columns":5,
          "firstgid":817,
-         "image":"..\/..\/..\/..\/TuileDeJeu3.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu3.png",
          "imageheight":96,
          "imagewidth":160,
          "margin":0,
@@ -350,13 +350,26 @@
         {
          "columns":6,
          "firstgid":832,
-         "image":"..\/..\/..\/..\/TuileDeJeu4.png",
+         "image":"..\/..\/..\/..\/..\/..\/..\/..\/Downloads\/TuileDeJeu4.png",
          "imageheight":128,
          "imagewidth":192,
          "margin":0,
          "name":"TuileDeJeu4",
          "spacing":0,
          "tilecount":24,
+         "tileheight":32,
+         "tilewidth":32
+        }, 
+        {
+         "columns":12,
+         "firstgid":856,
+         "image":"..\/tuiles\/TuileDeJeu1.png",
+         "imageheight":896,
+         "imagewidth":384,
+         "margin":0,
+         "name":"TuileDeJeu1",
+         "spacing":0,
+         "tilecount":336,
          "tileheight":32,
          "tilewidth":32
         }],
