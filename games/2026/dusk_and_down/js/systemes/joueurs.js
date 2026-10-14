@@ -23,12 +23,19 @@ export function creerJoueur(scene, numero, idClasse) {
   joueur.stats = {
     pvMax: classe.pvMax,
     vitesse: classe.vitesse,
-    rayonLumiere: JOUEUR.rayonLumiere
+    regeneration: classe.regeneration,
+    rayonCollecte: classe.rayonCollecte,
+    rayonLumiere: JOUEUR.rayonLumiere,
+    recharge: 1,
+    critique: 0,
+    portee: 1,
+    coupsEpee: 0
   };
   joueur.pv = classe.pvMax;
   joueur.estMort = false;
   joueur.finInvulnerabilite = 0;
   joueur.finAttaque = 0;
+  joueur.bienfaits = {};
   joueur.directionX = 1;
   joueur.directionY = 0;
 
@@ -50,7 +57,7 @@ export function creerJoueur(scene, numero, idClasse) {
   return joueur;
 }
 
-export function mettreAJourJoueur(scene, joueur) {
+export function mettreAJourJoueur(scene, joueur, delta) {
   if (joueur.estMort) {
     return;
   }
@@ -79,6 +86,10 @@ export function mettreAJourJoueur(scene, joueur) {
     if (!enAttaque) {
       joueur.anims.play(joueur.cleTexture + "_repos", true);
     }
+  }
+
+  if (joueur.stats.regeneration > 0) {
+    joueur.pv = Math.min(joueur.stats.pvMax, joueur.pv + (joueur.stats.regeneration * delta) / 1000);
   }
 
   if (scene.tempsJeu < joueur.finInvulnerabilite) {
