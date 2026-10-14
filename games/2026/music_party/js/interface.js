@@ -98,7 +98,7 @@ export function creerMedaillon(scene, x, y, perso, etiquette) {
 export function creerVies(scene, x, y, nombre) {
   var vies = [];
   for (var i = 0; i < nombre; i++) {
-    vies.push(scene.add.image(x + i * 26, y, "tx_vie").setDepth(30));
+    vies.push(scene.add.image(x + i * 26, y, "img_vie").setDepth(30));
   }
   return vies;
 }
