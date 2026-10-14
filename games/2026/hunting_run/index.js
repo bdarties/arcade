@@ -1,9 +1,11 @@
+import "./js/donnees.js"; // sauvegarde des scores (lireDonneesJSON / ecrireDonneesJSON)
 // chargement des scènes
 import accueil from "./js/accueil.js";
 import menu from "./js/menu.js";
 import histoire from "./js/histoire.js";
 import jeu from "./js/jeu.js";
 import fin from "./js/fin.js";
+import scores from "./js/scores.js";
 
 // configuration générale du jeu
 var config = {
@@ -21,7 +23,7 @@ var config = {
       debug: false
     }
   },
-  scene: [accueil, menu, histoire, jeu, fin], // accueil (Play) -> menu (solo / duo) -> histoire -> jeu -> fin
+  scene: [accueil, menu, histoire, jeu, fin, scores], // accueil (Play) -> menu (solo / duo) -> histoire -> jeu -> fin
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };
 

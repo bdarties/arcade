@@ -1,4 +1,5 @@
 import { jouer, chargerSons } from "./sons.js";
+import { lireScores } from "./scores.js";
 
 // Écran d'accueil : fond + bouton Play, puis passage à l'écran de choix du mode (scène "menu")
 export default class accueil extends Phaser.Scene {
@@ -11,7 +12,7 @@ export default class accueil extends Phaser.Scene {
     this.load.image("accueil_fond", "./assets/ui/accueil.png");
     this.load.image("play_hover", "./assets/ui/play-hover.png");
     this.load.audio("musique_demo", ["./assets/audio/demo.mp3"]);
-    chargerSons(this); // bruitages (une seule fois, ils restent en mémoire pour tout le jeu)
+    chargerSons(this); // bruitages
   }
 
   create() {
@@ -34,18 +35,26 @@ export default class accueil extends Phaser.Scene {
       .image(PLAY.x, PLAY.y, "play_hover")
       .setDisplaySize(PLAY.w, PLAY.h);
 
-    // souris / écran tactile ( JUSTE POUR TESTER, POUR LA BORNE ON L ENLEVERA )
+    // souris / écran tactile ( JUSTE POUR TESTER, POUR LE PC )
     const zone = this.add.zone(PLAY.x, PLAY.y, PLAY.w, PLAY.h).setInteractive({ useHandCursor: true });
     zone.on("pointerdown", () => this.lancer());
 
+    // meilleur score : lu dans la sauvegarde (asynchrone), affiché dès que c'est prêt
+    lireScores().then((liste) => {
+      const meilleur = (liste[0] || {}).score;
+      if (meilleur && this.scene.isActive()) {
+        this.add.text(L / 2, H - 80, "MEILLEUR SCORE : " + meilleur, { fontSize: "22px", color: "#cccccc", fontStyle: "bold" }).setOrigin(0.5).setShadow(2, 2, "#000000", 4);
+      }
+    });
+
     this.add
-      .text(L / 2, H - 40, "Bouton A : jouer", { fontSize: "22px", color: "#cccccc" })
+      .text(L / 2, H - 40, "Bouton B : jouer", { fontSize: "22px", color: "#cccccc" })
       .setOrigin(0.5)
       .setShadow(2, 2, "#000000", 4);
 
     // clavier / borne
     const K = Phaser.Input.Keyboard.KeyCodes;
-    const valider = [K.ENTER, K.SPACE, K.I, K.R];
+    const valider = [K.ENTER, K.SPACE, K.O, K.G];
     this.input.keyboard.on("keydown", (e) => {
       if (valider.includes(e.keyCode)) this.lancer();
     });
