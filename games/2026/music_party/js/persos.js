@@ -110,10 +110,8 @@ function trouverPerso(cle) {
 // ou J1 contre J2 (duo)
 export function participants(registry) {
   var duo = registry.get("mode") == "duo";
-  var persos;
-  if (registry.get("jeu") == "music_fall") persos = RENARDS;
-  else persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];
-  var joueurs = [{ ...persos[0], etiquette: "J1" }];
+  // les persos choisis sur l'écran de choix (pour les 2 mini-jeux)
+  var persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];  var joueurs = [{ ...persos[0], etiquette: "J1" }];
   if (duo) joueurs.push({ ...persos[1], etiquette: "J2" });
   return joueurs;
 }

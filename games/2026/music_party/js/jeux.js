@@ -27,7 +27,7 @@ export const JEUX = [
       "3 essais : le plus petit total gagne.",
     scene: "music_fall",
     fond: "img_fond_scene",
-    choixPersos: false,
+    choixPersos: true,
     image: "img_renard",
     echelleImage: 4.5,
     decor: [
