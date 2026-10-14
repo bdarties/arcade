@@ -4,7 +4,7 @@
 Joueur 1 | Joueur 2 
 
 Déplacer | flèches | Z Q S D |
-Bouton B (portes, notes, parler, valider) | O | G |
+Bouton B (portes, notes, parler, valider) | O | T |
 Saut | K | F |
 **Bouton A : frapper / tirer / laser** | **I** | **R** |
 
