@@ -9,15 +9,25 @@
 export const PERSOS = [
   {
     cle: "diva",
-    nom: "La Diva",
+    nom: "La Reine de la Nuit",
     titre: "La Diva dramatique",
     description: "Reine de la Nuit. \nSa voix brise les verres...",
     texture: "img_diva",
-    tete: "img_tete_diva",
+    tete: "img_tete_reine",
     marche: "img_marche_diva",           // spritesheet quand il marche (6 images)
     tailleMarche: [58, 83],              // largeur et hauteur d'une image
     animMarche: "anim_marche_diva",
     echelle: 1.1,
+    // planche d'animation affichée sur l'écran de fin (à la place de diva.png)
+    fin: {
+      texture: "img_fin_diva",
+      fichier: "reine.png",
+      taille: [172, 252],    // largeur et hauteur d'une image (6 images)
+      images: 6,
+      echelle: 1.1,          // 252 px de haut -> environ 277 px à l'écran
+      anim: "anim_fin_diva",
+      vitesse: 5
+    },
     couleur: "#9dbbff",
     teinte: 0x4f73e8,
     motif: [77, 81, 84, 89, 84, 89],
@@ -33,6 +43,15 @@ export const PERSOS = [
     tailleMarche: [47, 74],              // largeur et hauteur d'une image
     animMarche: "anim_marche_figaro",
     echelle: 1.1,
+    fin: {
+      texture: "img_fin_figaro",
+      fichier: "figaro.png",
+      taille: [176, 252],
+      images: 6,
+      echelle: 1.1,
+      anim: "anim_fin_figaro",
+      vitesse: 5
+    },
     couleur: "#7ee0b8",
     teinte: 0x2aa37c,
     motif: [67, 67, 67, 72, 67, 72, 76],
@@ -48,6 +67,15 @@ export const PERSOS = [
     tailleMarche: [48, 64],              // largeur et hauteur d'une image
     animMarche: "anim_marche_carmen",
     echelle: 1.1,
+    fin: {
+      texture: "img_fin_carmen",
+      fichier: "carmen.png",
+      taille: [184, 252],
+      images: 6,
+      echelle: 1.1,
+      anim: "anim_fin_carmen",
+      vitesse: 5
+    },
     couleur: "#ff8080",
     teinte: 0xd8324a,
     motif: [74, 73, 72, 71, 70, 69],
@@ -63,6 +91,15 @@ export const PERSOS = [
     tailleMarche: [45, 66],              // largeur et hauteur d'une image
     animMarche: "anim_marche_maestro",
     echelle: 1.1,
+    fin: {
+      texture: "img_fin_maestro",
+      fichier: "don_giovanni.png",
+      taille: [167, 252],
+      images: 6,
+      echelle: 1.1,
+      anim: "anim_fin_maestro",
+      vitesse: 5
+    },
     couleur: "#c9a2ff",
     teinte: 0x7d4bc9,
     motif: [81, 79, 81, 79, 77, 76, 74, 73, 74],

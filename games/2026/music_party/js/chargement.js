@@ -37,8 +37,7 @@ export default class chargement extends Phaser.Scene {
     // Les persos
     PERSOS.forEach((perso) => {
       var planche = { carmen: [184, 252], figaro: [176, 252] }[perso.cle];
-      if (planche) this.load.spritesheet(perso.texture, "./assets/images/" + perso.cle + ".png", { frameWidth: planche[0], frameHeight: planche[1] });
-      else this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
+      if (perso.fin) this.load.spritesheet(perso.fin.texture, "./assets/images/" + perso.fin.fichier, { frameWidth: perso.fin.taille[0], frameHeight: perso.fin.taille[1] });      else this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
       this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
       this.load.spritesheet(perso.marche, "./assets/images/marche_" + perso.cle + ".png", { frameWidth: perso.tailleMarche[0], frameHeight: perso.tailleMarche[1] });
       this.load.spritesheet("img_grand_" + perso.cle, "./assets/images/grand_" + perso.cle + ".png", { frameWidth: 288, frameHeight: 360 });
