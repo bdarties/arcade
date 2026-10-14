@@ -200,32 +200,6 @@
          "objects":[
                 {
                  "height":0,
-                 "id":2,
-                 "name":"",
-                 "opacity":1,
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":614,
-                 "y":504
-                }, 
-                {
-                 "height":0,
-                 "id":3,
-                 "name":"",
-                 "opacity":1,
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":718,
-                 "y":480
-                }, 
-                {
-                 "height":0,
                  "id":5,
                  "name":"",
                  "opacity":1,
@@ -236,6 +210,30 @@
                  "width":0,
                  "x":74,
                  "y":510
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":9,
+         "name":"horloge",
+         "objects":[
+                {
+                 "height":0,
+                 "id":6,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":1184,
+                 "y":481.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -258,8 +256,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":524,
-                 "y":538
+                 "x":710,
+                 "y":503
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -301,8 +299,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":9,
- "nextobjectid":6,
+ "nextlayerid":10,
+ "nextobjectid":7,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",

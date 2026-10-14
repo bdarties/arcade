@@ -4,7 +4,7 @@ import { jouer } from "./sons.js";
 // lit le classement sauvegardé (tableau d'objets { nom, score }, du meilleur au moins bon)
 export async function lireScores() {
   try {
-    const liste = await lireDonneesJSON(); // fonction du prof (null si rien n'a encore été sauvegardé)
+    const liste = await lireDonneesJSON(); // fonction du prof
     return Array.isArray(liste) ? liste.filter((x) => x && typeof x.score === "number").sort((a, b) => b.score - a.score) : [];
   } catch (e) {
     return [];

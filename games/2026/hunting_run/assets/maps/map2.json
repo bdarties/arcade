@@ -157,6 +157,30 @@
         }, 
         {
          "draworder":"topdown",
+         "id":13,
+         "name":"horloge",
+         "objects":[
+                {
+                 "height":0,
+                 "id":13,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":372,
+                 "y":462.666666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":12,
          "name":"potion coeur",
          "objects":[
@@ -398,8 +422,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":13,
- "nextobjectid":10,
+ "nextlayerid":14,
+ "nextobjectid":14,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.0",

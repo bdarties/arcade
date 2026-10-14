@@ -36,6 +36,18 @@ Pour déplacer / ajouter un ennemi ou une potion, il suffit de le faire dans Til
 - js/combat.js : ennemis, tirs, laser, potions, PNJ, dialogues
 - js/sons.js : bruitages (générés par code)
 
+## Horloges (temps bonus)
+Dans Tiled, ajoute un **calque d'objets nommé `horloge`** et pose un **point** à chaque endroit voulu (comme pour les potions : l'horloge se pose sur le sol sous le point). En la ramassant : `+15 s` au chrono (`HORLOGE.secondes` dans maps.js). Image : `assets/sprites/horloge.png` (provisoire, 32x32 ; remplace-la par la tienne, même nom ou change `IMAGES_COMBAT.horloge`).
+
+## Portes aléatoires : aller / retour
+1. Une porte mène à une map tirée au sort (ex : porte 2 -> map4), on arrive devant une de ses portes.
+2. Si on reprend **cette porte d'arrivée**, on revient devant la porte de départ (porte 2).
+3. Si on reprend alors la porte 2, elle mène **ailleurs** (jamais map4 cette fois).
+Code : `prendrePorteHasard()` dans jeu.js. La mémoire est dans le registry (`lien`, `exclusions`), remise à zéro à chaque nouvelle partie (`ETATS_PARTIE`).
+
+## Temps écoulé
+Quand le chrono arrive à 0 : l'écran se **fige**, un grand « 00:00 / TEMPS ÉCOULÉ ! » apparaît (`tempsEcoule()` dans jeu.js), puis l'écran Game Over (Rejouer).
+
 ## Nouveautés
 - **Boutons A et B inversés** : A = O / G, B = I / R.
 - **Temps** : 3 min 30 (`DUREE_PARTIE` dans maps.js).

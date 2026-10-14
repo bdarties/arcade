@@ -1,5 +1,5 @@
 import {
-  SPRITES, IMAGES_COMBAT, COMBAT, TYPES_ENNEMIS, ENNEMIS, POTIONS, CALQUES_TILED, PATROUILLE_GARDE, TROUS, PNJS, MAPS, ENIGMES
+  SPRITES, IMAGES_COMBAT, COMBAT, TYPES_ENNEMIS, ENNEMIS, POTIONS, CALQUES_TILED, PATROUILLE_GARDE, TROUS, PNJS, MAPS, ENIGMES, HORLOGE
 } from "./maps.js";
   import { jouer, laserOn } from "./sons.js";
 
@@ -64,6 +64,7 @@ const combat = {
     this.plateformes = plateformes;
     this.ennemis = [];
     this.potions = [];
+    this.horloges = [];
     this.dialogue = null;
     this.derniereAlertePotion = 0;
 
@@ -129,6 +130,7 @@ const combat = {
     this.creerPotions();
     this.creerPNJ();
     this.creerIndiceHautPorte();
+    this.creerHorloges();
 
     // si on quitte la map pendant un laser, on coupe le son
     this.events.once("shutdown", () => this.joueurs.forEach((j) => j.sonLaser && j.sonLaser.stop()));
@@ -503,6 +505,47 @@ const combat = {
     }
   },
 
+    /*HORLOGES (ajoutent du temps au chrono)*/
+
+  // calque Tiled "horloge" (voir HORLOGE dans maps.js) : une horloge à chaque point, posée sur le sol juste en dessous
+  creerHorloges() {
+    const prises = this.registry.get("horloges_prises") || [];
+    this.pointsTiled(HORLOGE.calque).forEach((o, i) => {
+      const id = this.nomMap + "_h" + i;
+      if (prises.includes(id)) return;
+      this.creerHorloge(o.x, this.solSous(o.x, o.y), id);
+    });
+  },
+
+  creerHorloge(px, py, id) {
+    if (!this.textures.exists("im_horloge")) return;
+    const lueur = this.add.circle(px, py - 16, 22, 0xffd24a, 0.28).setDepth(79);
+    const img = this.add.image(px, py, "im_horloge").setOrigin(0.5, 1).setScale(IMAGES_COMBAT.horloge.echelle).setDepth(80);
+    this.tweens.add({ targets: img, y: py - 5, duration: 800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: lueur, alpha: 0.08, scale: 1.4, duration: 800, yoyo: true, repeat: -1 });
+    this.horloges.push({ img, lueur, id, zone: new Phaser.Geom.Rectangle(px - 20, py - 40, 40, 46) });
+  },
+
+  majHorloges() {
+    for (let i = this.horloges.length - 1; i >= 0; i--) {
+      const h = this.horloges[i];
+      for (const j of this.vivants()) {
+        if (!Phaser.Geom.Intersects.RectangleToRectangle(this.rectCorps(j.sprite), h.zone)) continue;
+        this.ajouterTemps(HORLOGE.secondes);
+        jouer(this, "potion");
+        this.etincelles(h.img.x, h.img.y - 20, 0xffd24a, 10);
+        const prises = (this.registry.get("horloges_prises") || []).concat(h.id);
+        this.registry.set("horloges_prises", prises);
+        this.tweens.killTweensOf(h.img);
+        this.tweens.killTweensOf(h.lueur);
+        h.img.destroy();
+        h.lueur.destroy();
+        this.horloges.splice(i, 1);
+        break;
+      }
+    }
+  },
+
   /*TROUS MORTELS*/
 
   majTrous() {
@@ -669,10 +712,9 @@ const combat = {
     });
   },
 
-  /*************************
-   *  BARRES (ennemis, HUD) *
-   *************************/
-  majBarresCombat() {
+   /*BARRES (ennemis, HUD)*/
+
+   majBarresCombat() {
     const g = this.barresGfx;
     g.clear();
     this.ennemis.forEach((s) => {
@@ -707,6 +749,7 @@ const combat = {
     this.majAttaques(time, delta);
     this.majEnnemis(time);
     this.majPotions();
+    this.majHorloges();
     this.majTrous();
     this.majBarresCombat();
     this.orienterPNJ();
@@ -723,9 +766,8 @@ const combat = {
     });
   },
 
-  /*************************
-   *  PNJ + DIALOGUES       *
-   *************************/
+  /*  PNJ + DIALOGUES       */
+
   creerPNJ() {
     (PNJS[this.nomMap] || []).forEach((def) => {
       const sp = SPRITES[def.sprite];
