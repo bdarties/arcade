@@ -38,6 +38,13 @@ const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'éche
 const NB_CAILLOUX = 14;
 const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
 const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
+// test automatique pour la borne (sans clavier) : au lancement du niveau, chaque poste de DIAG (cf. lumiere.js) est coupé à tour de rôle
+// pendant DUREE_PHASE_BENCH ms, et la moyenne des FPS de chaque phase s'affiche en bas à gauche. Mettre false une fois les chiffres relevés.
+// Pendant le test : ne pas bouger (ou bouger de la même façon), torche allumée, et jouer dans la situation qui pose problème (duo ?)
+const BENCH_AUTO = true;
+const DUREE_PHASE_BENCH = 10000; // ms par phase
+const ECHAUFFEMENT_BENCH = 2000; // ms ignorées au début de chaque phase : le compteur de FPS met un moment à se stabiliser
+const PHASES_BENCH = [["tout actif", []], ["sans teintes", ["teintes"]], ["sans noir", ["noir"]], ["sans torche", ["torche"]], ["sans ennemis", ["ennemis"]], ["tout actif (contrôle)", []]];
 const DISTANCE_MIN_DEPART = 28; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (une case voisine, pas dessus ; dans la portée d'interaction)
 const PORTEE_INTERACTION = 40; // px : distance max à l'échelle de montée pour l'utiliser
 const COULEUR_DESCENTE = { texte: "#FFAC80", forme: 0xffac80 }; // orange de la palette
@@ -232,6 +239,9 @@ export default class niveau1 extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(fct.PROFONDEUR.hud);
       this.prochain_fps = 0;
+      // diagnostic : les touches 1 à 4 coupent ou rallument les teintes, le noir, la torche et les ennemis (cf. DIAG dans lumiere.js)
+      this.touches_diag = this.input.keyboard.addKeys({ teintes: "ONE", noir: "TWO", torche: "THREE", ennemis: "FOUR" });
+      this.bench = BENCH_AUTO ? { debut: null, phase: 0, mesures: [], resultats: [], fini: false } : null;
       // le processeur graphique utilisé par le navigateur : "SwiftShader", "llvmpipe" ou "software" veut dire que le WebGL est calculé par le processeur (très lent)
       const gl = this.game.renderer.gl;
       const extension = gl?.getExtension("WEBGL_debug_renderer_info");
@@ -770,11 +780,40 @@ export default class niveau1 extends Phaser.Scene {
     if (time < this.prochain_fps) return;
     this.prochain_fps = time + PERIODE_FPS;
     const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : this.pinceaux ? "  lumières " + this.nb_pinceaux : "";
-    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres + "\n" + this.info_gpu);
+    const coupes = Object.keys(lumiere.DIAG).filter((nom) => !lumiere.DIAG[nom]);
+    if (this.bench) this.majBench(time);
+    const bench = this.bench ? "\n" + this.bench.resultats.map(([nom, fps]) => nom + " : " + fps + " FPS").join("\n") + (this.bench.fini ? "\nTEST TERMINE" : "\nTest " + (this.bench.phase + 1) + "/" + PHASES_BENCH.length + " : " + PHASES_BENCH[this.bench.phase][0]) : "";
+    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres + (coupes.length ? "  SANS " + coupes.join(", ") : "") + "\n" + this.info_gpu + bench);
+  }
+
+  // test automatique (cf. BENCH_AUTO) : change de phase toutes les DUREE_PHASE_BENCH ms et garde la moyenne des FPS de chaque phase
+  majBench(time) {
+    const b = this.bench;
+    if (b.fini) return;
+    if (b.debut === null) b.debut = time;
+    const ecoule = time - b.debut;
+    const phase = Math.floor(ecoule / DUREE_PHASE_BENCH);
+    if (phase !== b.phase) { // la phase qui se termine : sa moyenne est gardée
+      const moyenne = b.mesures.length ? Math.round(b.mesures.reduce((somme, fps) => somme + fps, 0) / b.mesures.length) : 0;
+      b.resultats.push([PHASES_BENCH[b.phase][0], moyenne]);
+      b.mesures = [];
+      b.phase = phase;
+      if (phase >= PHASES_BENCH.length) { // fin : tout est rallumé
+        b.fini = true;
+        b.phase = PHASES_BENCH.length - 1;
+        Object.keys(lumiere.DIAG).forEach((nom) => { lumiere.DIAG[nom] = true; });
+        return;
+      }
+    }
+    Object.keys(lumiere.DIAG).forEach((nom) => { lumiere.DIAG[nom] = !PHASES_BENCH[b.phase][1].includes(nom); });
+    if (ecoule % DUREE_PHASE_BENCH >= ECHAUFFEMENT_BENCH) b.mesures.push(this.game.loop.actualFps);
   }
 
   update(time, delta) {
-    if (this.texte_fps) this.majFps(time);
+    if (this.texte_fps) {
+      Object.keys(this.touches_diag).forEach((nom) => { if (Phaser.Input.Keyboard.JustDown(this.touches_diag[nom])) lumiere.DIAG[nom] = !lumiere.DIAG[nom]; });
+      this.majFps(time);
+    }
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
       return;
@@ -812,7 +851,7 @@ export default class niveau1 extends Phaser.Scene {
 
     const secondes = delta / 1000;
     this.joueurs.forEach((j) => this.majJoueur(j, secondes));
-    ennemis.majEnnemis(this);
+    if (lumiere.DIAG.ennemis) ennemis.majEnnemis(this);
     butin.majButin(this, secondes);
     if (this.etat.safe) offrande.majOffrande(this);
     this.placerCible();

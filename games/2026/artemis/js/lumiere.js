@@ -27,6 +27,8 @@ import * as biomes from "./biomes.js";
 const MODE = "degrade";
 const LIGHT2D = MODE === "light2d";
 const DEGRADE = MODE === "degrade";
+// diagnostic de performance (touches 1 à 4, cf. niveau1.js) : coupe un poste à chaud pour mesurer son coût sur la borne ; tout est actif par défaut
+export const DIAG = { teintes: true, noir: true, torche: true, ennemis: true };
 // essais de performance sur la borne : ce que Light2D éclaire (false : pleine luminosité, donc plus rapide mais sans obscurité)
 const ECLAIRER_SOL = true; // le calque du sol, qui couvre tout l'écran
 const ECLAIRER_MURS = true; // le calque des murs
@@ -392,7 +394,7 @@ function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) 
   if (!scene.pinceaux[i]) scene.pinceaux[i] = scene.make.image({ key: "degrade_lumiere" }, false);
   // le noir est en ECHELLE_NOIR : le pinceau y est placé et dimensionné à la même échelle (les teintes, elles, restent à l'échelle du monde)
   scene.pinceaux[i].setPosition((x - camera.scrollX) * ECHELLE_NOIR, (y - camera.scrollY) * ECHELLE_NOIR).setDisplaySize(rayon * 2 * ECHELLE_NOIR, rayon * 2 * ECHELLE_NOIR).setAlpha(Math.min(force, 1));
-  if (!TEINTE_CHAUDE || !ajuster) {
+  if (!TEINTE_CHAUDE || !ajuster || !DIAG.teintes) {
     scene.teintes[i]?.setVisible(false); // cet indice a pu servir à une lumière teintée à l'image précédente
     return;
   }
@@ -406,7 +408,7 @@ function majDegrade(scene) {
   scene.joueurs.forEach((j) => {
     pinceau(scene, j.sprite.x, j.sprite.y, HALO_JOUEUR_DEGRADE.rayon, HALO_JOUEUR_DEGRADE.force, COULEUR_JOUEUR);
     pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1, 0xffffff, false);
-    if (!j.torche_allumee) return;
+    if (!j.torche_allumee || !DIAG.torche) return;
     // la torche : une chaîne de pinceaux devant le joueur, qui s'arrête avant le premier mur (comme avec Light2D)
     const portee = porteeTorche(j);
     const distance = distanceMur(scene, j, portee); // mesurée depuis les pieds, comme les collisions
@@ -440,6 +442,8 @@ function majDegrade(scene) {
 
   // les teintes des lumières disparues sont cachées ; puis tout le noir, moins ce que les pinceaux gomment (un seul appel pour tous)
   for (let i = scene.nb_pinceaux; i < scene.teintes.length; i++) scene.teintes[i]?.setVisible(false);
+  scene.obscurite.setVisible(DIAG.noir);
+  if (!DIAG.noir) return;
   scene.obscurite.clear();
   scene.obscurite.fill(COULEUR_NOIR, OPACITE_NOIR);
   scene.obscurite.erase(scene.pinceaux.slice(0, scene.nb_pinceaux));
