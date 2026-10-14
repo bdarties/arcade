@@ -159,7 +159,7 @@ export default class niveau2 extends niveau1 {
     this.listeTubas = TUBAS; // deux Tubas dans ce niveau
     this.listeCristaux = CRISTAUX;
     this.numeroNiveau = 2; // son numéro dans la progression (voir progression.js)
-    this.formeUnique = false; // au niveau 2, les deux personnages restent séparés (comme avant)
+    this.formeUnique = true; // en solo, un seul corps : la Cantatrice se transforme en Détective avec K (comme au niveau 1)
     this.musiqueNiveau = "musique_niveau2"; // la piste propre au niveau 2
     this.messageVictoire = "Niveau 2 terminé !";
     this.objectif = "OBJECTIF : ramasse " + NOTES_REQUISES + " notes de musique pour révéler la PARTITION,\npuis prends-la et franchis la porte en haut à droite";
