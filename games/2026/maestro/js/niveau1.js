@@ -143,8 +143,8 @@ export default class niveau1 extends Phaser.Scene {
     return image;
   }
 
-  // Surveille la vitesse du jeu : F2 affiche le compteur ; si le jeu reste lent plusieurs secondes de suite,
-  // on passe en mode économique tout seul.
+  // Affiche la vitesse du jeu : F2 montre ou cache le compteur d'images par seconde (en bas à droite).
+  // Le mode économique n'est pas activé ici : il est déjà allumé dès le lancement (voir chargement.js).
   installerSurveillance() {
     this.compteurFps = this.add // le texte du compteur, en bas à droite
       .text(1270, 712, "", { fontFamily: "monospace", fontSize: "12pt", color: "#9dffb0", stroke: "#000000", strokeThickness: 3 })
