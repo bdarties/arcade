@@ -3,10 +3,10 @@
 
 import { creerClavierMenu, aideBorne, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";
+import { POLICE } from "./reglages.js";
 
 // La scène qui s'ouvre quand on appuie sur PLAY
 const SCENE_SUIVANTE = "choix_mode";
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 
 // Les trois boutons, de gauche à droite (l'image de chaque bouton est chargée dans chargement.js)
 const BOUTONS = [

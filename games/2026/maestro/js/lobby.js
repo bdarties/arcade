@@ -2,15 +2,15 @@
 
 // On importe ce dont le lobby a besoin : les réglages (vitesses, sauts), les touches,
 // la musique, et la progression (quelles portes sont ouvertes).
-import { REGLAGES } from "./reglages.js";
+import { REGLAGES, POLICE } from "./reglages.js";
 import { creerPanneau, aideClavier } from "./controles.js";
 import { jouerMusique } from "./musique.js";
 import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } from "./progression.js";
+import { toucheEnfoncee, toucheAppuyee, lacherEchelle, gererEchelle } from "./controles.js";
 
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
 const LARGEUR_CARTE = 1024; // largeur de la carte, en pixels
 const HAUTEUR_CARTE = 1536; // hauteur de la carte, en pixels
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif'; // police de tous les textes du lobby
 
 // Les zones SOLIDES du lobby : [x, y, largeur, hauteur] en pixels de la carte.
 // La carte Tiled ne les décrit pas (et son calque "Plateforme" contient aussi des tuiles invisibles) :
@@ -171,65 +171,6 @@ export default class lobby extends Phaser.Scene {
     };
     // on calcule le haut et le bas de chaque échelle, calés sur les plateformes
     this.echelles = ECHELLES.map((e) => ({ centreX: e.x, haut: caler(e.x, e.haut), bas: caler(e.x, e.bas) }));
-  }
-
-  // Haut / bas du joystick devant une échelle pour s'y accrocher (même principe qu'au niveau 1)
-  gererEchelle(perso, controle) {
-    const corps = perso.body; // le corps physique du personnage (sa boîte de collision)
-    const pied = corps.bottom; // hauteur des pieds
-    // on cherche une échelle à laquelle le personnage peut s'accrocher (centré dessus, pieds à la bonne hauteur)
-    const echelle = this.echelles.find(function (e) {
-      return Math.abs(corps.center.x - e.centreX) <= 16 && pied >= e.haut - 3 && pied <= e.bas + 3;
-    });
-
-    // S'accrocher : on monte (sauf si on est déjà tout en haut) ou on descend (sauf si on est tout en bas)
-    if (perso.enEchelle == false && controle == true && echelle !== undefined) {
-      const veutMonter = this.toucheEnfoncee(perso, "haut") && pied > echelle.haut + 2;
-      const veutDescendre = this.toucheEnfoncee(perso, "bas") && pied < echelle.bas - 2;
-      if (veutMonter || veutDescendre) {
-        perso.enEchelle = true; // le personnage est maintenant accroché
-      }
-    }
-    if (perso.enEchelle == false) {
-      return; // pas accroché : rien à faire ici
-    }
-    if (echelle === undefined) {
-      this.lacherEchelle(perso); // accroché mais plus d'échelle sous lui : on lâche
-      return;
-    }
-
-    let vitesseY = 0; // vitesse verticale sur l'échelle (0 = immobile)
-    if (controle == true) {
-      if (this.toucheEnfoncee(perso, "haut")) {
-        vitesseY = -REGLAGES.echelle.vitesse; // négatif = vers le haut
-      } else if (this.toucheEnfoncee(perso, "bas")) {
-        vitesseY = REGLAGES.echelle.vitesse; // positif = vers le bas
-      }
-      // Bouton A : on saute de l'échelle
-      if (this.toucheAppuyee(perso, "A")) {
-        this.lacherEchelle(perso);
-        perso.setVelocityY(REGLAGES.saut); // on lance un petit saut
-        return;
-      }
-    }
-    perso.body.setAllowGravity(false);
-    perso.setVelocity(0, vitesseY); // pas de marche sur l'échelle, seulement monter ou descendre
-    perso.x = echelle.centreX; // on reste bien au milieu de l'échelle
-
-    // Arrivé en haut ou en bas : on se pose sur la plateforme et on lâche l'échelle
-    if (vitesseY < 0 && pied <= echelle.haut) {
-      perso.y += echelle.haut - pied; // on le remet pile sur le dessus de la plateforme
-      this.lacherEchelle(perso);
-    } else if (vitesseY > 0 && pied >= echelle.bas) {
-      perso.y -= pied - echelle.bas; // on le remet pile en bas de l'échelle
-      this.lacherEchelle(perso);
-    }
-  }
-
-  // Lâcher l'échelle : la gravité revient et le personnage n'est plus « accroché »
-  lacherEchelle(perso) {
-    perso.enEchelle = false;
-    perso.body.setAllowGravity(true);
   }
 
   // --------------------------------------------------------------------------
@@ -427,27 +368,17 @@ export default class lobby extends Phaser.Scene {
     }
   }
 
-  // Vrai si le bouton est maintenu enfoncé (une touche de ce personnage est appuyée)
-  toucheEnfoncee(perso, bouton) {
-    return perso.touches.some((clavier) => clavier[bouton].isDown);
-  }
-
-  // Vrai UNE SEULE FOIS par appui (pas tant que la touche reste enfoncée)
-  toucheAppuyee(perso, bouton) {
-    return perso.touches.map((clavier) => Phaser.Input.Keyboard.JustDown(clavier[bouton])).includes(true);
-  }
-
   // Marcher, sauter, animer. En solo, seul le personnage actif obéit aux touches.
   gererPersonnage(perso) {
     const controle = this.mode == "duo" || perso == this.actif; // ce personnage est-il commandé par le joueur ?
-    this.gererEchelle(perso, controle); // d'abord : l'échelle peut changer son mouvement
+    gererEchelle(this, perso, controle); // d'abord : l'échelle peut changer son mouvement
     const aTerre = perso.body.blocked.down || perso.body.touching.down; // vrai s'il touche le sol
 
     let direction = 0; // -1 gauche, 0 immobile, 1 droite
     if (controle == true && perso.enEchelle == false) {
-      if (this.toucheEnfoncee(perso, "gauche")) {
+      if (toucheEnfoncee(perso, "gauche")) {
         direction = -1;
-      } else if (this.toucheEnfoncee(perso, "droite")) {
+      } else if (toucheEnfoncee(perso, "droite")) {
         direction = 1;
       }
     }
@@ -458,7 +389,7 @@ export default class lobby extends Phaser.Scene {
     if (direction != 0) {
       perso.setFlipX(direction < 0); // les images regardent vers la droite : on les retourne
     }
-    if (controle == true && perso.enEchelle == false && aTerre && this.toucheAppuyee(perso, "A")) {
+    if (controle == true && perso.enEchelle == false && aTerre && toucheAppuyee(perso, "A")) {
       perso.setVelocityY(REGLAGES.saut); // saut seulement depuis le sol
     }
 
@@ -484,7 +415,7 @@ export default class lobby extends Phaser.Scene {
         const controle = this.mode == "duo" || perso == this.actif;
         if (Phaser.Geom.Rectangle.Contains(porte.zone, perso.x, perso.y)) {
           quelquUnDevant = true;
-          if (controle == true && this.toucheAppuyee(perso, "B")) {
+          if (controle == true && toucheAppuyee(perso, "B")) {
             this.utiliserPorte(porte); // le joueur a appuyé sur B devant la porte
           }
         }

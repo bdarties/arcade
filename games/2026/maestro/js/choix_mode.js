@@ -1,11 +1,10 @@
 // Choix du mode : Solo ou Duo, gardé pour les autres écrans.
 
 import { creerClavierMenu } from "./controles.js";
-import { REGLAGES } from "./reglages.js";
+import { REGLAGES, POLICE } from "./reglages.js";
 import { nouvellePartie } from "./progression.js";
 import { jouerMusique } from "./musique.js";
 
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const SCENE_SUIVANTE = "synopsis"; // le synopsis précède l'arrivée dans le lobby
 
 // Les deux choix proposés
@@ -104,6 +103,7 @@ export default class choix_mode extends Phaser.Scene {
     return { conteneur: conteneur, cadre: cadre };
   }
 
+  // Petit personnage animé affiché dans un panneau (le choix du mode)
   creerApercu(perso, decalageX, retourner) {
     const sprite = this.add.sprite(decalageX, -10, perso + "_idle");
     sprite.setScale(3);

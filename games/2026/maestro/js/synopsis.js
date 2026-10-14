@@ -2,8 +2,8 @@
 
 import { creerClavierMenu } from "./controles.js";
 import { jouerMusique } from "./musique.js";
+import { POLICE } from "./reglages.js";
 
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const DELAI_LETTRE_MS = 35;
 const PARAGRAPHES = [
   "Le soir de sa dernière représentation, le grand Maestro disparaît en pleine scène.",
@@ -55,6 +55,7 @@ export default class synopsis extends Phaser.Scene {
     this.cameras.main.fadeIn(400, 0, 0, 0);
   }
 
+  // Affiche le paragraphe courant, lettre par lettre
   afficherParagraphe() {
     this.arreterEcriture();
     this.lignes.forEach((ligne) => ligne.texte.destroy());
@@ -103,6 +104,7 @@ export default class synopsis extends Phaser.Scene {
     });
   }
 
+  // Montre les lettres déjà écrites du paragraphe
   revelerTexte() {
     let restants = this.caractere;
     this.lignes.forEach((ligne) => {
@@ -111,6 +113,7 @@ export default class synopsis extends Phaser.Scene {
     });
   }
 
+  // Arrête l'écriture lettre par lettre
   arreterEcriture() {
     if (this.minuteur) {
       this.minuteur.remove(false);
@@ -118,6 +121,7 @@ export default class synopsis extends Phaser.Scene {
     }
   }
 
+  // Affiche tout le paragraphe d'un coup
   terminerEcriture() {
     this.arreterEcriture();
     this.caractere = this.nombreCaracteres;
@@ -133,6 +137,7 @@ export default class synopsis extends Phaser.Scene {
     }
   }
 
+  // Passe au paragraphe suivant (ou à la suite du jeu)
   avancer() {
     if (this.enTransition) return;
     if (!this.ecritureTerminee) {

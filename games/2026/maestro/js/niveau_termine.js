@@ -2,8 +2,8 @@
 
 import { creerClavierMenu } from "./controles.js";
 import { NIVEAUX, niveauxTermines } from "./progression.js";
+import { POLICE } from "./reglages.js";
 
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const SCENE_SUIVANTE = "lobby";
 
 export default class niveau_termine extends Phaser.Scene {

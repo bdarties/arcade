@@ -1,10 +1,11 @@
 // Niveau 1 : Les Coulisses. Lampe, passerelles fantômes, ondes, Tuba et cristaux.
 
 // On importe ce dont le niveau a besoin : réglages, touches, progression, musique et sons
-import { REGLAGES } from "./reglages.js";
+import { REGLAGES, POLICE } from "./reglages.js";
 import { creerPanneau, aideBorne, aideClavier } from "./controles.js";
 import { enregistrerVictoire, NIVEAUX } from "./progression.js";
 import { jouerMusique, arreterMusique, jouerSonNote, jouerSonEnnemi } from "./musique.js";
+import { toucheEnfoncee, toucheAppuyee, lacherEchelle, gererEchelle } from "./controles.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
 const LARGEUR_MONDE = 2176;
@@ -19,7 +20,6 @@ const MARGE_REPRISE = 96; // à la réapparition, le héros est au moins à 96 p
 const FIGE_REPRISE_MS = 500; // et il est figé 0,5 s pour ne pas retomber avec une touche encore enfoncée
 const SEUIL_TIR_LAMPE_MS = 350; // au-delà de ce temps d'appui sur B, c'est un tir (et non un allumage de lampe)
 const CADENCE_ECLAT_MS = 600; // délai minimum entre deux éclats
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif'; // police de tous les textes du niveau
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
 const NOTES = [
@@ -685,7 +685,7 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     // Solo : le bouton D change de personnage
-    if (this.mode == "solo" && this.toucheAppuyee(this.actif, "D")) {
+    if (this.mode == "solo" && toucheAppuyee(this.actif, "D")) {
       this.changerDePerso(); // on change (ou on se transforme) une seule fois par appui
     }
 
@@ -752,19 +752,6 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------------
-  //  Lecture des touches (un perso peut avoir plusieurs claviers : voir creerPersonnages)
-  // --------------------------------------------------------------------------
-  // Vrai si le bouton est maintenu enfoncé (une touche de ce personnage est appuyée)
-  toucheEnfoncee(perso, bouton) {
-    return perso.touches.some((clavier) => clavier[bouton].isDown);
-  }
-
-  // Vrai UNE SEULE FOIS par appui (pas tant que la touche reste enfoncée)
-  toucheAppuyee(perso, bouton) {
-    return perso.touches.map((clavier) => Phaser.Input.Keyboard.JustDown(clavier[bouton])).includes(true);
-  }
-
-  // --------------------------------------------------------------------------
   //  Un personnage : échelle, déplacement, saut, pouvoir, animation
   // --------------------------------------------------------------------------
   gererPersonnage(perso, temps, delta) {
@@ -774,14 +761,14 @@ export default class niveau1 extends Phaser.Scene {
     const controle = (this.mode == "duo" || perso == this.actif) && fige == false; // ce personnage est-il commandé ?
     const sonne = temps < perso.sonneJusqua; // vient d'être touché : pas de contrôle un court instant
 
-    this.gererEchelle(perso, controle, sonne); // l'échelle peut modifier le mouvement
+    gererEchelle(this, perso, controle, sonne); // l'échelle peut modifier le mouvement
     const aTerre = perso.body.blocked.down || perso.body.touching.down; // vrai s'il touche le sol
 
     let direction = 0; // -1 gauche, 0 immobile, 1 droite
     if (controle && sonne == false && perso.enEchelle == false) {
-      if (this.toucheEnfoncee(perso, "gauche")) {
+      if (toucheEnfoncee(perso, "gauche")) {
         direction = -1;
-      } else if (this.toucheEnfoncee(perso, "droite")) {
+      } else if (toucheEnfoncee(perso, "droite")) {
         direction = 1;
       }
     }
@@ -797,7 +784,7 @@ export default class niveau1 extends Phaser.Scene {
 
     if (controle && sonne == false) {
       // Bouton A : sauter (seulement depuis le sol)
-      if (perso.enEchelle == false && this.toucheAppuyee(perso, "A") && aTerre) {
+      if (perso.enEchelle == false && toucheAppuyee(perso, "A") && aTerre) {
         perso.setVelocityY(REGLAGES.saut); // saut vers le haut
       }
       // Pouvoir propre à chaque personnage
@@ -832,85 +819,17 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------------
-  //  Échelles : haut / bas du joystick devant une échelle pour s'y accrocher
-  // --------------------------------------------------------------------------
-  gererEchelle(perso, controle, sonne) {
-    const corps = perso.body; // le corps physique du personnage
-    const pied = corps.bottom; // hauteur des pieds
-
-    // L'échelle devant le personnage : alignée en x, et les pieds entre le haut et le bas de l'échelle
-    const echelle = this.echelles.find(function (e) {
-      return Math.abs(corps.center.x - e.centreX) <= 16 && pied >= e.haut - 3 && pied <= e.bas + 3;
-    });
-
-    if (sonne == true) {
-      this.lacherEchelle(perso); // un coup fait lâcher prise
-      return;
-    }
-
-    // S'accrocher : on monte (sauf si on est déjà tout en haut) ou on descend (sauf si on est tout en bas)
-    if (perso.enEchelle == false && controle == true && echelle !== undefined) {
-      const veutMonter = this.toucheEnfoncee(perso, "haut") && pied > echelle.haut + 2;
-      const veutDescendre = this.toucheEnfoncee(perso, "bas") && pied < echelle.bas - 2;
-      if (veutMonter || veutDescendre) {
-        perso.enEchelle = true; // il s'accroche
-      }
-    }
-    if (perso.enEchelle == false) {
-      return; // pas accroché : rien à faire ici
-    }
-
-    // Accroché : si on n'est plus devant une échelle, on lâche
-    if (echelle === undefined) {
-      this.lacherEchelle(perso);
-      return;
-    }
-    let vitesseY = 0; // vitesse verticale sur l'échelle (0 = immobile)
-    if (controle == true) {
-      if (this.toucheEnfoncee(perso, "haut")) {
-        vitesseY = -REGLAGES.echelle.vitesse; // négatif = vers le haut
-      } else if (this.toucheEnfoncee(perso, "bas")) {
-        vitesseY = REGLAGES.echelle.vitesse; // positif = vers le bas
-      }
-      // Bouton A : on saute de l'échelle
-      if (this.toucheAppuyee(perso, "A")) {
-        this.lacherEchelle(perso);
-        perso.setVelocityY(REGLAGES.saut); // on lance un petit saut
-        return;
-      }
-    }
-    perso.body.setAllowGravity(false);
-    perso.setVelocity(0, vitesseY); // pas de marche sur l'échelle, seulement monter ou descendre
-    perso.x = echelle.centreX; // on reste bien au milieu de l'échelle
-
-    // Arrivé en haut ou en bas : on se pose sur la plateforme et on lâche l'échelle
-    if (vitesseY < 0 && pied <= echelle.haut) {
-      perso.y += echelle.haut - pied; // on le remet pile sur le dessus de la plateforme
-      this.lacherEchelle(perso);
-    } else if (vitesseY > 0 && pied >= echelle.bas) {
-      perso.y -= pied - echelle.bas; // on le remet pile en bas de l'échelle
-      this.lacherEchelle(perso);
-    }
-  }
-
-  // Lâcher l'échelle : la gravité revient et le personnage n'est plus « accroché »
-  lacherEchelle(perso) {
-    perso.enEchelle = false;
-    perso.body.setAllowGravity(true);
-  }
-
-  // --------------------------------------------------------------------------
   //  Pouvoirs
   // --------------------------------------------------------------------------
   // La Cantatrice : C change de note, B chante une onde
   pouvoirCantatrice(perso, temps) {
     // Bouton C : changer de note (Do -> Mi -> Sol -> Do...)
-    if (this.toucheAppuyee(perso, "C")) {
+    if (toucheAppuyee(perso, "C")) {
       this.noteActuelle = (this.noteActuelle + 1) % NOTES.length; // la note suivante, et on revient à Do après Sol
       this.majNote(); // on met à jour l'affichage de la note
     }
     // Bouton B : chanter une onde (tenir appuyé = une onde toutes les 500 ms)
-    if (this.toucheEnfoncee(perso, "B") && temps - perso.dernierTir >= REGLAGES.onde.cadenceMs) {
+    if (toucheEnfoncee(perso, "B") && temps - perso.dernierTir >= REGLAGES.onde.cadenceMs) {
       perso.dernierTir = temps; // on retient l'instant du tir
       perso.tireJusqua = temps + 500; // l'animation de tir dure 0,5 s
       perso.anims.play("cantatrice_shoot"); // on force le redémarrage de l'animation
@@ -936,7 +855,7 @@ export default class niveau1 extends Phaser.Scene {
   // Le Détective : B (appui court = lampe, appui long = éclat), C recharge (en duo), haut / bas orientent la lampe
   pouvoirDetective(perso, temps, delta) {
     // Bouton B : un APPUI COURT allume / éteint la lampe ; un appui MAINTENU plus de 0,35 s tire un éclat de lumière.
-    const bTenu = this.toucheEnfoncee(perso, "B"); // B est-il maintenu ?
+    const bTenu = toucheEnfoncee(perso, "B"); // B est-il maintenu ?
     if (bTenu == true && perso.appuiB === undefined) {
       perso.appuiB = temps; // début de l'appui
     }
@@ -955,10 +874,10 @@ export default class niveau1 extends Phaser.Scene {
     // Haut / bas du joystick : orienter la lampe (sauf sur une échelle, où ils servent à grimper)
     if (this.lampe.allumee == true && perso.enEchelle == false) {
       const pas = REGLAGES.lampe.vitesseVisee * (delta / 1000); // de combien tourner pendant cette image
-      if (this.toucheEnfoncee(perso, "haut")) {
+      if (toucheEnfoncee(perso, "haut")) {
         this.lampe.angle += pas; // vers le haut
       }
-      if (this.toucheEnfoncee(perso, "bas")) {
+      if (toucheEnfoncee(perso, "bas")) {
         this.lampe.angle -= pas; // vers le bas
       }
       this.lampe.angle = Phaser.Math.Clamp(this.lampe.angle, -REGLAGES.lampe.angleMax, REGLAGES.lampe.angleMax); // on reste dans les limites
@@ -1319,7 +1238,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Recul + animation "hurt"
     const sens = perso.x < sourceX ? -1 : 1; // on le repousse à l'opposé du coup
-    this.lacherEchelle(perso); // s'il était sur une échelle, il la lâche
+    lacherEchelle(perso); // s'il était sur une échelle, il la lâche
     perso.sonneJusqua = temps + REGLAGES.recul.dureeMs; // pendant le recul il ne contrôle plus rien
     perso.setVelocity(sens * REGLAGES.recul.x, REGLAGES.recul.y); // la poussée : sur le côté et un petit saut
     perso.anims.play(perso.nom + "_hurt"); // animation de blessure
@@ -1393,7 +1312,7 @@ export default class niveau1 extends Phaser.Scene {
     const depart = perso == this.cantatrice ? this.departs.j1 : this.departs.j2; // le point de départ de ce personnage
     // sa dernière position sûre, ou le point de départ s'il n'en a pas encore
     const sure = perso.positionSure !== undefined ? perso.positionSure : { x: depart.x, y: depart.y - 40 };
-    this.lacherEchelle(perso); // il lâche l'échelle s'il y était
+    lacherEchelle(perso); // il lâche l'échelle s'il y était
     // body.reset : la bonne façon de téléporter un corps physique (position ET vitesse remises à zéro).
     // Avec un simple setPosition, le corps garde sa vitesse de chute : le héros s'enfonçait dans le sol et retombait.
     perso.body.reset(sure.x, sure.y); // on le replace à sa position sûre
@@ -1408,7 +1327,7 @@ export default class niveau1 extends Phaser.Scene {
     this.fini = true; // le niveau est terminé (perdu)
     this.arreterSonPartition(); // le chœur s'arrête
     this.persos.forEach((perso) => {
-      this.lacherEchelle(perso); // plus d'échelle
+      lacherEchelle(perso); // plus d'échelle
       perso.setVelocityX(0); // on arrête la marche
       perso.setAlpha(1); // on le rend bien visible pour l'animation de mort
       perso.anims.play(perso.nom + "_death"); // animation de mort
@@ -1449,7 +1368,7 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.fini = true; // le niveau est gagné
     this.persos.forEach((perso) => {
-      this.lacherEchelle(perso); // plus d'échelle
+      lacherEchelle(perso); // plus d'échelle
       perso.setVelocity(0, 0); // on arrête les personnages
       this.jouerAnimation(perso, perso.nom + "_idle"); // animation d'attente
     });

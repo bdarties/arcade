@@ -1,8 +1,8 @@
 // Niveau 3 : la Grande Scène. Ascension, combat contre le Maestro, chant final.
 
 import niveau1 from "./niveau1.js";
-import { REGLAGES } from "./reglages.js";
-import { creerPanneau } from "./controles.js";
+import { REGLAGES, POLICE } from "./reglages.js";
+import { creerPanneau, toucheEnfoncee } from "./controles.js";
 import { jouerMusique, arreterMusique } from "./musique.js";
 
 // ---- Le monde : une tour de 4 écrans de haut. La Grande Scène est tout en haut (le 1er écran). ----
@@ -11,7 +11,6 @@ const HAUTEUR_MONDE = 2880;
 const SOL_SCENE = 540; // la hauteur du plancher de la Grande Scène (dessiné dans le fond)
 const SOL_DEPART = 2820; // le sol tout en bas de la tour
 const TRAPPE = { x: 580, largeur: 120 }; // le trou dans le plancher de la scène, par où on arrive
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 
 // Les 3 notes (mêmes couleurs que les ondes et les cristaux)
 const NOTES = [
@@ -414,6 +413,7 @@ export default class niveau3 extends niveau1 {
     this.porteOuverte = false; // (pas de porte : le niveau finit par le chant final)
   }
 
+  // Collisions de la Grande Scène : fragments, marches et Maestro
   collisionsObjets() {
     // Les héros se posent sur les marches spéciales seulement quand elles sont solides, et par le dessus
     this.physics.add.collider(this.persos, this.groupe_scene, null, (perso, marche) => {
@@ -450,6 +450,7 @@ export default class niveau3 extends niveau1 {
     this.barreVieMaestro = fixe(this.add.rectangle(390, 80, 500, 12, 0xb0306a).setOrigin(0, 0.5)).setVisible(false);
   }
 
+  // Affiche les points gagnés à un endroit donné
   ajouterPoints(points, x, y) {
     this.score += points;
     this.texteScore.setText(String(this.score));
@@ -548,6 +549,7 @@ export default class niveau3 extends niveau1 {
     });
   }
 
+  // Une marche de note s'effondre quand on la rate
   effondrer(marche) {
     marche.cassee = true;
     marche.chute = undefined;
@@ -603,7 +605,7 @@ export default class niveau3 extends niveau1 {
 
   // ---- L'onde vers le haut : en maintenant HAUT, la Cantatrice chante vers le plafond ----
   lancerOnde(perso) {
-    if (this.toucheEnfoncee(perso, "haut") == false) {
+    if (toucheEnfoncee(perso, "haut") == false) {
       super.lancerOnde(perso); // l'onde normale, vers l'avant
       this.groupe_ondes.getChildren().slice(-1)[0].yDepart = perso.y;
       return;
@@ -663,6 +665,7 @@ export default class niveau3 extends niveau1 {
     this.cible_camera.setPosition(640, y);
   }
 
+  // Caméra de la Grande Scène : suit les personnages dans la tour
   creerCamera() {
     super.creerCamera();
     this.cible_camera.setPosition(640, this.dernierPalier - 100);
@@ -720,6 +723,7 @@ export default class niveau3 extends niveau1 {
     this.tweens.add({ targets: cadre, alpha: 1, duration: 400, hold: 3800, yoyo: true, onComplete: () => cadre.destroy() });
   }
 
+  // Animation et comportement du Maestro à chaque image
   mettreAJourMaestro(temps) {
     const m = this.maestro;
     if (m.pret == false || m.pv <= 0) {
@@ -748,6 +752,7 @@ export default class niveau3 extends niveau1 {
     }
   }
 
+  // La lampe révèle le point faible du Maestro pendant quelques secondes
   reveler() {
     if (this.time.now > this.maestro.reveleJusqua) {
       this.afficherMessage("Point faible : " + NOTES[this.maestro.faiblesse].texte + " ! Chante cette note !", 2000);
@@ -798,10 +803,12 @@ export default class niveau3 extends niveau1 {
     }
   }
 
+  // Met à jour la barre de vie du Maestro
   majVieMaestro() {
     this.barreVieMaestro.setSize(500 * Math.max(0, this.maestro.pv) / MAESTRO.pv, 12);
   }
 
+  // Le noir : les lumières s'éteignent à mi-vie du Maestro
   eteindreLaScene() {
     this.sceneEteinte = true;
     this.tweens.add({ targets: this.voileNoir, fillAlpha: 0.82, duration: 1200 });
@@ -957,6 +964,7 @@ export default class niveau3 extends niveau1 {
     return partition;
   }
 
+  // Déroulé du chant final, à chaque image
   mettreAJourChant(temps) {
     const c = this.chant;
     const ecoule = temps - c.debut;
@@ -996,6 +1004,7 @@ export default class niveau3 extends niveau1 {
     }
   }
 
+  // La Cantatrice chante une note du chant final
   chanter(ligne, ecoule) {
     const c = this.chant;
     this.cantatrice.anims.play("cantatrice_shoot");
@@ -1022,6 +1031,7 @@ export default class niveau3 extends niveau1 {
     this.maestro.setTint(Phaser.Display.Color.GetColor(teinte.r, teinte.g, teinte.b));
   }
 
+  // Affiche le jugement d'une note (parfait, raté…)
   juger(texte, couleur) {
     this.texteJugement.setText(texte).setColor(couleur).setAlpha(1).setScale(1.2);
     this.tweens.add({ targets: this.texteJugement, scale: 1, alpha: 0, duration: 600, delay: 150 });
@@ -1042,6 +1052,7 @@ export default class niveau3 extends niveau1 {
     this.time.delayedCall(1200, () => this.fermerRideau());
   }
 
+  // Le rideau se ferme à la fin du chant
   fermerRideau() {
     const rideau = (x) => {
       const g = this.add.graphics().setDepth(90);

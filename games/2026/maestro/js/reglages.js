@@ -1,3 +1,6 @@
+// Police unique de tout le jeu (texte gras sans empattement, lisible sur borne)
+export const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
+
 // Tous les réglages du jeu (vitesse, lampe, vies, ennemis) au même endroit.
 
 export const REGLAGES = {
