@@ -8,6 +8,8 @@
 //   tempsBrutMs : le chrono tel qu'il s'est arrêté (millisecondes)
 //   points      : le score de la partie (chaque point retire du temps, voir tempsNet dans points.js)
 //   tempsNetMs  : le temps qui sert au classement (plus petit = meilleur)
+// Depuis le menu (bouton CLASSEMENT) : this.scene.start("classement", { consultation: true }) montre seulement le panthéon, sans animation
+// et sans saisie : un appui sur I (ou Entrée, Espace) ramène à l'accueil.
 //
 import { jouerSon } from "../systemes/sons.js";
 import { creerTextureHalo, creerTexturePixel, creerPolice, plaque, GLYPHES, LARGEUR_CASE } from "../systemes/dessins.js"; // les dessins faits en code (halo, particules, police pixel, plaques)
@@ -88,11 +90,12 @@ export default class classement extends Phaser.Scene {
         this.points = donnees.points ?? 0;
         this.tempsNetMs = donnees.tempsNetMs ?? this.tempsBrutMs;
         this.morts = donnees.morts ?? 0;
+        this.consultation = donnees.consultation ?? false; // vrai quand on vient du bouton CLASSEMENT du menu : on regarde le panthéon, c'est tout
     }
 
     create() {
         this.cameras.main.setBackgroundColor("#0e0e11");
-        this.cameras.main.fadeIn(500, 0, 0, 0);
+        if (!this.consultation) this.cameras.main.fadeIn(500, 0, 0, 0);
         creerPolice(this);
         this.etape = "intro"; // intro -> choix (nouveau record) -> saisie -> (envoi) -> classement ; ou intro -> classement
         this.enregistrer = 0; // le choix « enregistrer mon score » : 0 = OUI, 1 = NON
@@ -108,7 +111,7 @@ export default class classement extends Phaser.Scene {
 
         this.decor();
         this.construirePanneaux();
-        this.lancerSequence();
+        if (this.consultation) this.montrerPantheon(); else this.lancerSequence();
         this.input.keyboard.on("keydown", (evenement) => this.touche(evenement.code));
         this.charger();
     }
@@ -169,6 +172,22 @@ export default class classement extends Phaser.Scene {
         this.pied = ecrire(this, 640, 676, "", 2, { teinte: GRIS_VIOLET }); // l'aide des touches, en bas
     }
 
+    // ---- la consultation : le panthéon seul, tout de suite, au centre de l'écran ----
+
+    montrerPantheon() {
+        changerTexte(this.titre, "PANTHEON"); // « VICTOIRE » a le même nombre de lettres
+        this.titre.y = 0; // à sa place, sans la chute
+        const decalage = -290; // le panneau de droite se place au centre (son centre passe de 930 à 640)
+        this.entete.destroy();
+        this.entete = ecrire(this, 930, 200, "MEILLEURS TEMPS", 4, { teinte: CLAIR });
+        const droite = [this.plaqueDroite, this.entete, this.traitEntete, ...this.titresColonnes, this.groupeTableau];
+        droite.forEach((objet) => { objet.x += decalage; objet.setAlpha(1); }); // le tableau (un conteneur) est décalé d'un bloc
+        this.titre.setAlpha(1);
+        this.etape = "classement"; // l'étape où I ramène à l'accueil (voir touche)
+        this.ouvrirClassement(null); // pas de message : celui de la fin de partie n'a pas de sens ici
+        this.time.delayedCall(300, () => { this.pret = true; }); // l'appui qui a ouvert l'écran ne doit pas le refermer
+    }
+
     // ---- la séquence d'ouverture ----
 
     lancerSequence() {
@@ -213,6 +232,7 @@ export default class classement extends Phaser.Scene {
         this.pantheonDispo = liste !== null;
         this.tableau = liste || [];
         this.donneesPretes = true;
+        if (this.consultation) this.afficherTableau(); // pas de séquence à attendre : le tableau est montré dès qu'il est lu
         this.decider(); // si la séquence n'est pas finie, elle appellera decider() à sa fin
     }
 
@@ -302,7 +322,7 @@ export default class classement extends Phaser.Scene {
     ouvrirClassement(message, couleur = GRIS_VIOLET) { // le classement seul, sous le temps final
         this.etape = "classement";
         this.zoneNom.removeAll(true);
-        this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
+        if (message) this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur }));
         this.pied.destroy();
         this.pied = ecrire(this, 640, 696, "I  RETOUR A L'ACCUEIL", 3, { teinte: CLAIR });
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 });
