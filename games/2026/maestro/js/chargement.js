@@ -109,6 +109,9 @@ export default class chargement extends Phaser.Scene {
     this.load.audio("son_tambour", "./assets/son_tambour.m4a"); // le tambour du niveau 2
     this.load.audio("son_lampe", "./assets/son_lampe.m4a"); // le son de la lampe qui tire un éclat
     this.load.audio("son_maestro", "./assets/son_maestro.m4a"); // le son du Maestro (pour le boss, pas encore utilisé)
+    this.load.audio("attack_do", "./assets/attack_do.mp3");
+    this.load.audio("attack_mi", "./assets/attack_mi.mp3");
+    this.load.audio("attack_sol", "./assets/attack_sol.mp3");
 
     // ---- Divers ----
     this.load.image("img_partition", "./assets/partition.png");
