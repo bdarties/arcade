@@ -46,6 +46,7 @@ export default class synopsis extends Phaser.Scene {
   // fondu au noir, puis la page suivante (ou le niveau 1 après la dernière)
   suivante() {
     this.verrou = true;
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_sortant"); // on quitte la page
     this.cameras.main.fadeOut(DUREE_FONDU);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.page++;

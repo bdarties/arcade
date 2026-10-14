@@ -69,7 +69,7 @@ const VARIANTE_SPRITE = { pioche: "", laser: "_gun" };
 /* >>>>> AJOUT SON <<<<< */ var musique_de_fond;
 /* >>>>> AJOUT SON <<<<< */ var son_echelle;
 /* >>>>> AJOUT SON <<<<< */ var son_game_over;
-/* >>>>> AJOUT SON <<<<< */ var musique_en_cours = false;
+/* >>>>> AJOUT SON <<<<< */ var musique_safe; // ambiance de la salle safe : remplace la musique de fond le temps qu'on y reste
 
 // scene de jeu : elle est relancée à chaque changement de niveau (descente ou montée), avec le numéro du niveau voulu
 // l'état de chaque niveau visité est gardé dans this.registry ("niveaux") : on retrouve un niveau tel qu'on l'a laissé
@@ -102,12 +102,10 @@ export default class niveau1 extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ musique_de_fond = this.sound.add("fondSonore");
     /* >>>>> AJOUT SON <<<<< */ son_echelle = this.sound.add("echelle");
     /* >>>>> AJOUT SON <<<<< */ son_game_over = this.sound.add("gameOver");
+    /* >>>>> AJOUT SON <<<<< */ musique_safe = this.sound.add("map_safe");
     /* >>>>> AJOUT SON <<<<< */ }
     /* >>>>> AJOUT SON <<<<< */ son_echelle.stop(); // on vient d'arriver : le bruit d'échelle s'arrête
-    /* >>>>> AJOUT SON <<<<< */ if (!musique_en_cours) {
-    /* >>>>> AJOUT SON <<<<< */ musique_de_fond.play({ loop: true, volume: 0.5 });
-    /* >>>>> AJOUT SON <<<<< */ musique_en_cours = true;
-    /* >>>>> AJOUT SON <<<<< */ }
+    /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause = []; // sons gelés par le menu pause (cf. update et reprendreSons)
     /* >>>>> AJOUT SON <<<<< */ this.game_over = false;
     this.game_over_lance = false; // true une fois l'écran de game over programmé (cf. update)
 
@@ -138,6 +136,7 @@ export default class niveau1 extends Phaser.Scene {
       };
     }
     this.etat = niveaux[this.niveau];
+    /* >>>>> AJOUT SON <<<<< */ this.majMusique();
     let map, calque_sol, calque_murs;
     if (this.etat.safe) {
       ({ map, calque_sol, calque_murs } = salle_safe.creerCarte(this));
@@ -523,6 +522,7 @@ export default class niveau1 extends Phaser.Scene {
     projectile.body.setSize(8, 8);
     projectile.setDepth(fct.PROFONDEUR.projectiles); // au-dessus du décor, sous l'obscurité
     projectile.setVelocity(j.regard.x * VITESSE_LASER, j.regard.y * VITESSE_LASER);
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("tir_laser"); // chaque tir de fusil, joueur 1 comme joueur 2
     this.time.delayedCall(DUREE_VIE_LASER, () => projectile.destroy());
   }
 
@@ -567,6 +567,7 @@ export default class niveau1 extends Phaser.Scene {
       return;
     }
 
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("stone_break"); // caillou cassé (tous les cailloux, celui du trou et ceux du tutoriel compris)
     if (caillou === this.caillou_trou) this.trou.setVisible(true);
     // à la base du rocher ; le caillou du tutoriel lâche toujours une pierre (la leçon suivante en a besoin)
     if (caillou.tuto) pierres.lacherPierres(this, caillou.x, caillou.y + 8, 1, 1, 1);
@@ -753,8 +754,30 @@ export default class niveau1 extends Phaser.Scene {
   // abandon de la partie depuis le menu pause : les sons de la partie s'arrêtent (la prochaine partie relancera la musique)
   quitterPartie() {
     musique_de_fond.stop();
+    /* >>>>> AJOUT SON <<<<< */ musique_safe.stop();
     son_echelle.stop();
-    musique_en_cours = false;
+    /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause.forEach((son) => son.stop()); // bruitages gelés par la pause (impact, laser...)
+    /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause = [];
+  }
+
+  /* >>>>> AJOUT SON <<<<< */ // musique selon le niveau : l'ambiance de la salle safe y coupe la musique de fond (mise en pause),
+  /* >>>>> AJOUT SON <<<<< */ // qui reprend là où elle s'était arrêtée quand on quitte la salle
+  majMusique() {
+    if (this.etat.safe) {
+      if (musique_de_fond.isPlaying) musique_de_fond.pause();
+      if (!musique_safe.isPlaying) musique_safe.play({ loop: true, volume: 0.425 }); // 15 % plus bas que la musique de fond (0.5)
+      return;
+    }
+    musique_safe.stop();
+    if (musique_de_fond.isPaused) musique_de_fond.resume();
+    else if (!musique_de_fond.isPlaying) musique_de_fond.play({ loop: true, volume: 0.5 }); // début de partie
+  }
+
+  /* >>>>> AJOUT SON <<<<< */ // fin du menu pause (cf. pause.js) : seuls les sons gelés par la pause repartent
+  /* >>>>> AJOUT SON <<<<< */ // (pas de resumeAll : il relancerait la musique de fond mise en pause par la salle safe)
+  reprendreSons() {
+    this.sons_en_pause.forEach((son) => son.resume());
+    this.sons_en_pause = [];
   }
 
   // trou (descente) et échelle (montée) : un joueur proche voit l'indication, et le bouton "interagir" change de niveau
@@ -848,8 +871,8 @@ export default class niveau1 extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ // game over : tous les joueurs sont à 0 PV
     /* >>>>> AJOUT SON <<<<< */ if (!this.game_over && this.joueurs.every((j) => j.pv <= 0)) {
     /* >>>>> AJOUT SON <<<<< */ this.game_over = true;
-    /* >>>>> AJOUT SON <<<<< */ musique_de_fond.stop();
-    /* >>>>> AJOUT SON <<<<< */ musique_en_cours = false; // la prochaine partie relancera la musique
+    /* >>>>> AJOUT SON <<<<< */ musique_de_fond.stop(); // la prochaine partie relancera la musique
+    /* >>>>> AJOUT SON <<<<< */ musique_safe.stop();
     /* >>>>> AJOUT SON <<<<< */ son_echelle.stop();
     /* >>>>> AJOUT SON <<<<< */ son_game_over.play();
     /* >>>>> AJOUT SON <<<<< */ }
@@ -869,8 +892,9 @@ export default class niveau1 extends Phaser.Scene {
 
     // bouton Pause d'un joueur (I / R) : menu pause (cf. pause.js), qui gèle ce niveau jusqu'à la reprise
     if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
-      this.sound.pauseAll();
-      this.scene.pause();
+      /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause = this.sound.getAllPlaying(); // on retient ce qui jouait pour le relancer à la reprise
+      /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause.forEach((son) => son.pause());
+      /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // ouverture du menu pause (joué après le gel des sons : il n'est pas mis en pause)      this.scene.pause();
       this.scene.launch("pause");
       return;
     }

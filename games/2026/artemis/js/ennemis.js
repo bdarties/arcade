@@ -235,6 +235,7 @@ function viser(scene, ennemi, cible) {
     tir.setRotation(direction.angle());
     tir.body.setSize(8, 8);
     tir.setVelocity(direction.x * VITESSE_TIR, direction.y * VITESSE_TIR);
+    /* >>>>> AJOUT SON <<<<< */ scene.sound.play("laser_ennemi"); // chaque tir d'alien
     scene.time.delayedCall(DUREE_VIE_TIR, () => tir.destroy());
     ennemi.vise = false;
     ennemi.prochain_tir = scene.time.now + DELAI_TIR;
@@ -245,6 +246,7 @@ function viser(scene, ennemi, cible) {
 // dégâts à un ennemi : clignotement rouge, recul dans la direction du coup, mort à 0 PV
 export function blesserEnnemi(scene, ennemi, degats, direction) {
   if (!ennemi.active) return;
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("impact_ennemi"); // un joueur touche un ennemi (pioche ou laser), coup fatal compris
   ennemi.pv -= degats;
   if (ennemi.pv <= 0) {
     ennemi.body.enable = false;
@@ -272,6 +274,7 @@ function degatsJoueur(scene, j, degats) {
   if (j.pv <= 0 || maintenant < (j.invulnerable_jusqua ?? 0)) return false;
   j.pv = Math.max(j.pv - degats, 0);
   j.invulnerable_jusqua = maintenant + INVULNERABILITE_JOUEUR;
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("impact_ennemi"); // coup reçu, au contact comme par un tir (une fois par coup grâce à l'invulnérabilité)
   scene.tweens.add({ targets: j.sprite, alpha: 0.3, duration: 90, yoyo: true, repeat: 4, onComplete: () => j.sprite.setAlpha(1) });
   scene.cameras.main.shake(120, 0.004);
   return true;

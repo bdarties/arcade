@@ -183,6 +183,7 @@ export function majTutoriel(scene) {
 // fondu puis retour au menu principal
 function sortir(scene) {
   scene.tuto_etat.sortie = true;
+  /* >>>>> AJOUT SON <<<<< */ scene.sound.play("son_touche_sortant"); // on quitte la page du tutoriel
   scene.fondu();
   scene.cameras.main.once("camerafadeoutcomplete", () => {
     scene.quitterPartie(); // arrête la musique du niveau

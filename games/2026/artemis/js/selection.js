@@ -148,8 +148,11 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("echelle", "./assets/sons/ladder.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("map_safe", "./assets/sons/ambiance_map_safe.mp3");
-    /* >>>>> AJOUT SON <<<<< */ this.load.audio("impact_ennemi", "./assets/sons/impact_enemi.mp3");
-    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi_vert", "./assets/sons/laser_ennemi_vert.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("impact_ennemi", "./assets/sons/impact_ennemi.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi", "./assets/sons/Laser_ennemi.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("tir_laser", "./assets/sons/tir_laser.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("cristal_brise", "./assets/sons/cristal_brisé.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("stone_break", "./assets/sons/stone_break.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("son_touche_entrant", "./assets/sons/son_touche_entrant.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("son_touche_sortant", "./assets/sons/son_touche_sortant.mp3");
     /* >>>>> AJOUT commande solo <<<<< */this.load.image("img_commandes_solo", "./assets/commandes_solo.png");
