@@ -17,6 +17,7 @@ const DECOR_OPERA = [
 export const JEUX = [
   {
     cle: "music_fall",
+    apercu: "apercu_music_fall",
     titre: "MUSIC FALL",
     slogan: "Tamponne ta note au plus près de la ligne dorée !",
     description: "Tamponne ta note\nau plus près de\nla ligne dorée !",
@@ -40,6 +41,7 @@ export const JEUX = [
   },
   {
     cle: "piano_time",
+    apercu: "apercu_piano_time",
     titre: "PIANO TIME",
     slogan: "Joue la mélodie sur le PIANO TIME géant !",
     description: "Joue la mélodie\nen rythme sur\nle PIANO TIME géant !",
@@ -50,6 +52,7 @@ export const JEUX = [
       "3 notes ratées ou fausses notes : c'est fini !",
     scene: "piano_time",
     fond: "img_fond_scene",
+    fichier: "apercu_piano_time",
     choixPersos: true,
     image: "img_figaro",
     echelleImage: 0.8,

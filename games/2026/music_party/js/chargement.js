@@ -2,7 +2,7 @@ import { PERSOS } from "./persos.js";
 import { JEUX } from "./jeux.js";
 
 // Scène de chargement : on charge TOUTES les images et la musique une seule
-// fois, on dessine les petites textures et on crée les animations.
+// fois, puis on crée les animations.
 // Ensuite on passe à l'écran titre.
 export default class chargement extends Phaser.Scene {
   constructor() {
@@ -27,13 +27,15 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_fond_accueil", "./assets/images/fond_accueil.jpg");
     this.load.image("img_fond_scene", "./assets/images/fond_scene.jpg");
 
-    // Écrans de sélection et personnages de la version d'Abdul.
+    // Écran de sélection des jeux : titre, cadre doré et vignettes
     this.load.image("img_choisis_jeu", "./assets/images/choisis_jeu.png");
     this.load.image("img_cadre_jeu", "./assets/images/cadre_jeu.png");
-        JEUX.forEach((jeu) => {
-      if (jeu.apercu) this.load.image(jeu.apercu, "./assets/images/apercu_" + jeu.cle + ".jpg");
+    JEUX.forEach((jeu) => {
+      if (jeu.apercu) this.load.image(jeu.apercu, "./assets/images/apercu_" + jeu.cle + ".png");
     });
-PERSOS.forEach((perso) => {
+
+    // Les persos
+    PERSOS.forEach((perso) => {
       var planche = { carmen: [184, 252], figaro: [176, 252] }[perso.cle];
       if (planche) this.load.spritesheet(perso.texture, "./assets/images/" + perso.cle + ".png", { frameWidth: planche[0], frameHeight: planche[1] });
       else this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
@@ -44,6 +46,8 @@ PERSOS.forEach((perso) => {
       this.load.image("img_portrait_nb_" + perso.cle, "./assets/images/portrait_" + perso.cle + "_nb.jpg");
       this.load.image("img_nom_" + perso.cle, "./assets/images/nom_" + perso.cle + ".png");
     });
+
+    // Page de choix des persos
     this.load.image("img_fond_choix", "./assets/images/fond_choix.jpg");
     this.load.image("img_choisis", "./assets/images/choisis.png");
     this.load.image("img_zone_texte", "./assets/images/zone_texte.png");
@@ -52,6 +56,7 @@ PERSOS.forEach((perso) => {
     this.load.image("img_cadre", "./assets/images/cadre.png");
     this.load.image("img_cadre_choisi", "./assets/images/cadre_choisi.png");
 
+    // Petites images des jeux (à la place de l'ancien textures.js)
     this.load.image("img_vie", "./assets/images/vie.png");
     this.load.image("img_etoile", "./assets/images/etoile.png");
     this.load.image("img_note", "./assets/images/note.png");
@@ -74,14 +79,12 @@ PERSOS.forEach((perso) => {
       this.load.image("img_touche" + i, "./assets/images/touche" + i + ".png");
     }
 
-    // Tuto son : fichiers préchargés, puis ajoutés au gestionnaire dans Memory Song.::::
-    [67, 69, 72, 60, 62, 64].forEach((note) => this.load.audio("saxo_" + note, "./assets/sons/saxo_" + note + ".wav"));
-
     // musique de fond (pack SunnyLand Music)
     this.load.audio("musique", "./assets/sons/musique.ogg");
   }
 
   create() {
+    // animations des persos : marche (Piano Time) et grande planche (page de choix)
     PERSOS.forEach((perso) => {
       this.anims.create({ key: perso.animMarche, frames: this.anims.generateFrameNumbers(perso.marche, { start: 0, end: 5 }), frameRate: 10, repeat: -1 });
       this.anims.create({ key: "anim_grand_" + perso.cle, frames: this.anims.generateFrameNumbers("img_grand_" + perso.cle, { start: 0, end: 3 }), frameRate: 5, repeat: -1 });

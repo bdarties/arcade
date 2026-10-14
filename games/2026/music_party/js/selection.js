@@ -26,7 +26,7 @@ export default class selection extends Phaser.Scene {
     fondAssombri(this, "img_fond_scene", 0.6);
     var titre = this.add.image(640, 50, "img_choisis_jeu");
     titre.scaleX = 0.9;
-    titre.scaleY = 0.9;
+    titre.scaleY = 0.9;  
     this.vignettes = JEUX.map((jeu, i) => this.creerVignette(jeu, i));
 
     // le cadre doré autour du jeu choisi (le trou du cadre est au milieu de l'image)
@@ -46,10 +46,7 @@ export default class selection extends Phaser.Scene {
     var bas = haut + HAUTEUR;
 
     // Tuto menu : images préchargées et texte, sans masque ni Graphics.
-    var image = this.add.image(x, y, jeu.apercu);
-
-    this.add.text(gauche + 16, haut + 14, jeu.titre, { ...style(24, OR, 6), backgroundColor: "rgba(11, 6, 24, 0.75)", padding: { x: 12, y: 4 } });
-
+    var image = this.add.image(x, y, jeu.apercu).setDisplaySize(LARGEUR, HAUTEUR);
     this.add.text(x, bas - 20, jeu.slogan, { ...styleTexte(14), backgroundColor: "#1b1030", fixedWidth: LARGEUR, padding: { y: 8 } }).setOrigin(0.5);
     return { image: image, x: x, y: y };
   }
