@@ -10,7 +10,7 @@
 import { creerClavierMenu } from "./controles.js";
 import { NIVEAUX, niveauxTermines } from "./progression.js";
 
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const SCENE_SUIVANTE = "lobby";
 
 export default class niveau_termine extends Phaser.Scene {

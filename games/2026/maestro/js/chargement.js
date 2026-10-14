@@ -58,7 +58,7 @@ export default class chargement extends Phaser.Scene {
     const barre = this.add.rectangle(342, 360, 0, 20, 0xf5d97a).setOrigin(0, 0.5);
     this.add
       .text(640, 310, "Chargement...", {
-        fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+        fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
         fontSize: "28pt",
         color: "#f5d97a"
       })
@@ -125,6 +125,7 @@ export default class chargement extends Phaser.Scene {
   // create : textures dessinées en code + animations, puis on passe à l'accueil
   // --------------------------------------------------------------------------
   create() {
+    this.registry.set("modeLeger", true); // mode économique dès le départ : c'est ce qui fait tourner le jeu correctement sur la borne
     this.creerTextures();
     this.creerAnimations();
     this.scene.start("accueil");

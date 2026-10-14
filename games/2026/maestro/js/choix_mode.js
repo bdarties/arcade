@@ -13,7 +13,7 @@ import { REGLAGES } from "./reglages.js";
 import { nouvellePartie } from "./progression.js";
 import { jouerMusique } from "./musique.js";
 
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const SCENE_SUIVANTE = "synopsis"; // le synopsis précède l'arrivée dans le lobby
 
 // Les deux choix proposés

@@ -603,7 +603,7 @@ export default class niveau2 extends niveau1 {
 
     this.etiquettePartition = this.add // le texte au-dessus de la partition
       .text(x, y - 78, "PARTITION verrouillée\n(ramasse " + NOTES_REQUISES + " notes)", {
-        fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+        fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
         fontSize: "12pt",
         color: "#cdd3e8",
         align: "center",
@@ -775,7 +775,7 @@ export default class niveau2 extends niveau1 {
     this.texteNotes = fixe( // le compteur de notes, à gauche de l'icône
       this.add
         .text(1074, 44, "0 / " + NOTES_REQUISES, {
-          fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+          fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
           fontSize: "16pt",
           color: "#dfe6ff",
           stroke: "#000000",

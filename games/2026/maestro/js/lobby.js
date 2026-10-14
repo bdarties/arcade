@@ -26,7 +26,7 @@ import { NIVEAUX, estTermine, estDebloque, niveauxTermines, prochainNiveau } fro
 // ---- Dimensions de la carte (64 x 96 tuiles de 16 px) : elle est plus HAUTE que large ----
 const LARGEUR_CARTE = 1024; // largeur de la carte, en pixels
 const HAUTEUR_CARTE = 1536; // hauteur de la carte, en pixels
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif'; // police de tous les textes du lobby
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif'; // police de tous les textes du lobby
 
 // Les zones SOLIDES du lobby : [x, y, largeur, hauteur] en pixels de la carte.
 // La carte Tiled ne les décrit pas (et son calque "Plateforme" contient aussi des tuiles invisibles) :

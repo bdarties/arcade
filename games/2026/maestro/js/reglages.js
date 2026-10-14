@@ -22,7 +22,6 @@ export const REGLAGES = {
   },
 
   // ---- Détective : la lampe torche ----
-  // Les valeurs de batterie sont des POURCENTAGES (100 = pleine).
   lampe: {
     rayon: 150, // rayon de la tache de lumière projetée par la lampe (px)
     portee: 130, // distance entre le Détective et le centre de la tache de lumière (px)
@@ -33,24 +32,19 @@ export const REGLAGES = {
     // le Détective la révèle, puis l'autre personnage peut la traverser sans qu'il ait à rester là).
     // false = elle disparaît quand la lumière la quitte (et reste solide persistanceMs après).
     passerellesFixes: true,
-    persistanceMs: 1200, // (si passerellesFixes = false) elle reste solide ce temps après avoir quitté la lumière (ms)
-    batterieSec: 45, // durée d'une batterie pleine allumée en continu (s)
-    rechargeParAppui: 15, // % de batterie gagnés à chaque appui sur le bouton C
-    seuilClignote: 20 // sous ce % la lumière clignote
+    persistanceMs: 1200 // (si passerellesFixes = false) elle reste solide ce temps après avoir quitté la lumière (ms)
   },
 
   // ---- Échelles ----
   echelle: {
     vitesse: 120 // vitesse de montée / descente (px/s)
   },
-
   // ---- Points de vie (cœurs) ----
   vies: {
     solo: 5,
     duo: 8, // cœurs partagés entre les deux joueurs
     invincibiliteMs: 1500 // temps sans dégâts après avoir été touché (ms)
   },
-
   // ---- Ennemis ----
   tuba: {
     vitesse: 60, // vitesse de patrouille (px/s)
@@ -67,7 +61,6 @@ export const REGLAGES = {
     apparitionMinMs: 4000,
     apparitionMaxMs: 7000
   },
-
   // ---- Choc quand un personnage est touché ----
   recul: {
     x: 280, // poussée horizontale (px/s)

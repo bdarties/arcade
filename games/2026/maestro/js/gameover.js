@@ -1,6 +1,6 @@
 import { creerClavierMenu } from "./controles.js";
 
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 const SCENE_RETOUR = "lobby"; // après un Game Over on réapparaît au lobby (spawn)
 
 export default class gameover extends Phaser.Scene {

@@ -38,7 +38,7 @@ const HAUTEUR_MONDE = 2880;
 const SOL_SCENE = 540; // la hauteur du plancher de la Grande Scène (dessiné dans le fond)
 const SOL_DEPART = 2820; // le sol tout en bas de la tour
 const TRAPPE = { x: 580, largeur: 120 }; // le trou dans le plancher de la scène, par où on arrive
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif';
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
 
 // Les 3 notes (mêmes couleurs que les ondes et les cristaux)
 const NOTES = [
@@ -88,11 +88,7 @@ const MARCHES = [
 const PALIERS = [2250, 1650, 1070];
 
 // Les cristaux de l'ascension (note : 0 = Do, 1 = Mi, 2 = Sol)
-const CRISTAUX = [
-  { x: 330, y: 1160, note: 0 },
-  { x: 1000, y: 1420, note: 1 },
-  { x: 700, y: 820, note: 2 }
-];
+const CRISTAUX = []; // pas d'ennemis dans la Grande Scène
 
 // ---- Le rythme ----
 const BPM_DEPART = 96; // tempo en bas de la tour (battements par minute)
@@ -401,6 +397,11 @@ export default class niveau3 extends niveau1 {
     zone.groupe = m.groupe;
     const couleurNote = ["n3_note_rouge", "n3_note_bleue", "n3_note_doree"]; // Do, Mi, Sol
     const texture = m.type == "or" ? "n3_or" : m.type == "rythme" ? "n3_rythme" : couleurNote[m.note] || "n3_note";
+    if (m.type == "rythme") {
+      // le projecteur à activer se voit mieux : un contour doré et une lueur
+      this.add.rectangle(m.x + m.l / 2, m.y + 8, m.l + 6, 22).setStrokeStyle(3, 0xffe070).setDepth(4);
+      this.lueur(m.x + m.l / 2, m.y + 8, 1.4, 0.45, 0xffe9a0, 4);
+    }
     // Une note : l'image entière, étirée sur toute la largeur. Les autres : répétée (tileSprite)
     zone.dessin = estNote
       ? this.add.image(m.x, m.y, texture).setOrigin(0, 0).setDisplaySize(m.l, H).setDepth(5)
@@ -627,14 +628,6 @@ export default class niveau3 extends niveau1 {
     super.blesser(perso, sourceX);
   }
 
-  // En solo la lampe ne se recharge pas avec C (C change la note) : ici elle se recharge toute seule, éteinte
-  mettreAJourLampe(temps, delta) {
-    if (this.lampe.allumee == false && this.lampe.batterie < 100) {
-      this.lampe.batterie = Math.min(100, this.lampe.batterie + (delta / 1000) * 8); // + 8 % par seconde
-    }
-    super.mettreAJourLampe(temps, delta);
-  }
-
   // ---- L'onde vers le haut : en maintenant HAUT, la Cantatrice chante vers le plafond ----
   lancerOnde(perso) {
     if (this.toucheEnfoncee(perso, "haut") == false) {
@@ -797,15 +790,16 @@ export default class niveau3 extends niveau1 {
     if (m.pret == false || m.pv <= 0) {
       return;
     }
-    if (note == "lumiere") {
-      this.reveler(); // l'éclat du Détective révèle aussi le point faible
-      return;
-    }
     if (this.time.now > m.reveleJusqua) {
-      this.afficherMessage("Il faut d'abord trouver son point faible : éclaire-le !", 2000);
+      if (note == "lumiere") {
+        this.reveler(); // un éclat dans le noir révèle seulement le Maestro
+      } else {
+        this.afficherMessage("Il faut d'abord trouver son point faible : éclaire-le !", 2000);
+      }
       return;
     }
-    if (note != NOTES[m.faiblesse].nom) {
+    // Un éclat du Détective blesse le Maestro comme une bonne note (il est révélé)
+    if (note != "lumiere" && note != NOTES[m.faiblesse].nom) {
       this.combo = 0;
       this.texteCombo.setText("");
       this.afficherMessage("Fausse note ! Son point faible est " + NOTES[m.faiblesse].texte, 2000);
@@ -853,13 +847,11 @@ export default class niveau3 extends niveau1 {
     }
     m.play("maestro_attack"); // il lève sa baguette
     m.once("animationcomplete", () => m.play("maestro_walk"));
-    const choix = Phaser.Math.Between(1, 6);
-    if (choix <= 3) {
+    // Deux attaques seulement : une petite volée, ou une pluie de notes avec un trou (les cristaux sont retirés)
+    if (Phaser.Math.Between(1, 2) == 1) {
       this.voleeDeNotes();
-    } else if (choix <= 5) {
-      this.pluieDeNotes();
     } else {
-      this.invoquerCristal();
+      this.pluieDeNotes();
     }
   }
 
@@ -879,29 +871,19 @@ export default class niveau3 extends niveau1 {
     const m = this.maestro;
     const cible = this.persoLePlusProche(m);
     const angle = Phaser.Math.Angle.Between(m.x, m.y, cible.x, cible.y);
-    [-0.25, 0, 0.25].forEach((ecart) => {
+    [-0.2, 0.2].forEach((ecart) => { // deux notes seulement
       this.noteEnnemie(m.x, m.y + 30, Math.cos(angle + ecart) * 230, Math.sin(angle + ecart) * 230);
     });
   }
 
   // Une rangée de notes qui tombent, avec un trou pour passer
   pluieDeNotes() {
-    const trou = Phaser.Math.Between(1, 8);
-    for (let i = 0; i < 10; i++) {
+    const trou = Phaser.Math.Between(1, 4);
+    for (let i = 0; i < 6; i++) { // 6 notes au lieu de 10, avec deux places libres pour passer
       if (i != trou && i != trou + 1) {
-        this.noteEnnemie(80 + i * 125, 20, 0, 190);
+        this.noteEnnemie(120 + i * 200, 20, 0, 190);
       }
     }
-  }
-
-  // Un cristal possédé sort des coulisses (2 au maximum)
-  invoquerCristal() {
-    if (this.groupe_cristaux.countActive() >= 2) {
-      this.voleeDeNotes();
-      return;
-    }
-    const cote = Phaser.Math.Between(0, 1) == 0 ? 60 : 1220;
-    this.creerCristal(cote, 300, Phaser.Math.Between(0, 2));
   }
 
   // Un cristal détruit rapporte des points

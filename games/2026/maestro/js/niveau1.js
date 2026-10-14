@@ -7,7 +7,6 @@
 //
 //  - Cantatrice (J1) : O = tire une onde · P = change de note (Do / Mi / Sol)
 //  - Détective (J2)  : T = allume / éteint la lampe · haut / bas du joystick = oriente la lampe
-//                      Y = recharge la batterie
 //  - Les deux        : flèches ou ZQSD pour marcher, bouton A pour sauter,
 //                      haut / bas devant une échelle pour monter / descendre
 //  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.
@@ -37,8 +36,7 @@ const MARGE_REPRISE = 96; // à la réapparition, le héros est au moins à 96 p
 const FIGE_REPRISE_MS = 500; // et il est figé 0,5 s pour ne pas retomber avec une touche encore enfoncée
 const SEUIL_TIR_LAMPE_MS = 350; // au-delà de ce temps d'appui sur B, c'est un tir (et non un allumage de lampe)
 const CADENCE_ECLAT_MS = 600; // délai minimum entre deux éclats
-const COUT_ECLAT = 6; // % de batterie pour un éclat
-const POLICE = 'Georgia, "Goudy Bookletter 1911", Times, serif'; // police de tous les textes du niveau
+const POLICE = 'Arial Black, Arial, Helvetica, sans-serif'; // police de tous les textes du niveau
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
 const NOTES = [
@@ -114,7 +112,7 @@ export default class niveau1 extends Phaser.Scene {
     this.sonPartitionJoue = false; // le chœur de la partition n'a pas encore été lancé
     this.events.once("shutdown", () => this.arreterSonPartition()); // en quittant la scène, on coupe le chœur
     this.noteActuelle = 0; // 0 = Do, 1 = Mi, 2 = Sol
-    this.lampe = { allumee: false, batterie: 100, angle: 0 }; // batterie en %, angle en degrés (0 = à l'horizontale)
+    this.lampe = { allumee: false, angle: 0 }; // angle de la lampe en degrés (0 = à l'horizontale)
     this.viesMax = this.mode == "duo" ? REGLAGES.vies.duo : REGLAGES.vies.solo; // 8 cœurs en duo, 5 en solo
     this.vies = this.viesMax; // les cœurs sont partagés entre les deux personnages
     this.messageJusqua = 0; // le message en bas de l'écran est vide
@@ -133,7 +131,7 @@ export default class niveau1 extends Phaser.Scene {
     this.creerObjets(); // le parchemin et la porte de sortie
     this.creerCollisions(); // qui touche qui
     this.creerCamera(); // la caméra qui suit les personnages
-    this.creerInterface(); // cœurs, note, batterie, fragment
+    this.creerInterface(); // cœurs, note, fragment
 
     this.creerPanneauCommandes(); // le cadre fixe en bas : les commandes restent toujours visibles
     this.afficherIntroduction(); // l'objectif, au centre de l'écran, avant de commencer à jouer
@@ -162,24 +160,6 @@ export default class niveau1 extends Phaser.Scene {
     return image;
   }
 
-  // Supprime les effets décoratifs et simplifie la lampe : le jeu devient moins joli mais bien plus fluide
-  activerModeLeger() {
-    if (this.modeLeger == true && this.effets.length == 0) {
-      return; // déjà en mode économique et plus rien à supprimer
-    }
-    this.registry.set("modeLeger", true); // on retient le mode économique pour la suite
-    this.effets.forEach((effet) => {
-      if (effet && effet.active) {
-        this.tweens.killTweensOf(effet); // on arrête ses animations
-        effet.destroy(); // puis on le supprime
-      }
-    });
-    this.effets = []; // la liste est vide
-    this.faisceau.setBlendMode(Phaser.BlendModes.NORMAL); // le mode additif coûte cher à dessiner
-    this.halo.setBlendMode(Phaser.BlendModes.NORMAL);
-    this.afficherMessage("Mode économique : effets lumineux réduits", 4000);
-  }
-
   // Surveille la vitesse du jeu : F2 affiche le compteur ; si le jeu reste lent plusieurs secondes de suite,
   // on passe en mode économique tout seul.
   installerSurveillance() {
@@ -190,7 +170,6 @@ export default class niveau1 extends Phaser.Scene {
       .setDepth(200)
       .setVisible(false); // caché au départ
     this.input.keyboard.on("keydown-F2", () => this.compteurFps.setVisible(this.compteurFps.visible == false)); // F2 affiche ou cache le compteur
-    this.secondesLentes = 0; // combien de secondes de suite le jeu a été lent
     this.time.addEvent({
       delay: 1000, // toutes les secondes
       loop: true, // en boucle
@@ -198,13 +177,6 @@ export default class niveau1 extends Phaser.Scene {
         const fps = this.game.loop.actualFps; // les images par seconde réellement obtenues
         const rendu = this.game.renderer.type == Phaser.CANVAS ? "Canvas" : "WebGL"; // le moteur de dessin utilisé
         this.compteurFps.setText(Math.round(fps) + " fps · " + rendu + (this.modeLeger == true ? " · éco" : "")); // on affiche le compteur
-        if (document.hidden == true || this.fini == true || this.time.now - this.debutNiveau < 3000) {
-          return; // onglet caché, niveau fini ou démarrage : on ne juge pas
-        }
-        this.secondesLentes = fps < 22 ? this.secondesLentes + 1 : 0; // on compte les secondes lentes d'affilée
-        if (this.secondesLentes >= 4 && this.modeLeger == false) {
-          this.activerModeLeger(); // 4 secondes lentes de suite : mode économique
-        }
       }
     });
   }
@@ -675,7 +647,7 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------------
-  //  Interface (fixée à l'écran : setScrollFactor(0)) : cœurs, note, batterie, fragment
+  //  Interface (fixée à l'écran : setScrollFactor(0)) : cœurs, note, fragment
   // --------------------------------------------------------------------------
   creerInterface() {
     const fixe = (objet) => objet.setScrollFactor(0).setDepth(100); // petite aide : objet fixe à l'écran, au-dessus de tout
@@ -690,16 +662,6 @@ export default class niveau1 extends Phaser.Scene {
       this.add.text(18, 66, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
     );
 
-    // Batterie de la lampe du Détective
-    this.texteLampe = fixe(
-      this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", fontStyle: "bold", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
-    );
-    this.barreBatterie = fixe(this.add.graphics());
-    if (this.mode == "solo") {
-      // en solo, pas de recharge de la lampe : on n'affiche pas la batterie
-      this.texteLampe.setVisible(false);
-      this.barreBatterie.setVisible(false);
-    }
 
     // Fragment de partition en haut à droite
     this.iconeFragment = fixe(this.add.image(1236, 44, "img_partition")).setDisplaySize(54, 54).setTint(0x444444); // l'icône, grise au départ
@@ -749,7 +711,7 @@ export default class niveau1 extends Phaser.Scene {
         this.gererPersonnage(perso, temps, delta);
       }
     });
-    this.mettreAJourLampe(temps, delta); // la batterie, le faisceau et la tache de lumière
+    this.mettreAJourLampe(temps, delta); // le faisceau et la tache de lumière
     this.actualiserFantomes(temps); // les passerelles s'allument ou s'éteignent
 
     this.groupe_tubas.getChildren().forEach((tuba) => this.mettreAJourTuba(tuba, temps)); // chaque Tuba
@@ -761,7 +723,7 @@ export default class niveau1 extends Phaser.Scene {
       this.limiterEcartDuo(); // en duo, on ne peut pas trop s'éloigner
     }
     this.mettreAJourCamera(); // la caméra suit
-    this.mettreAJourInterface(temps); // les textes et la barre de batterie
+    this.mettreAJourInterface(temps); // les textes et les messages
     this.verifierSonPartition(); // le chœur de la partition
   }
 
@@ -1007,10 +969,6 @@ export default class niveau1 extends Phaser.Scene {
         this.tirerEclat(perso, temps); // appui maintenu : l'éclat, répété tant que le bouton est tenu
       }
     }
-    // Bouton C : recharger la batterie (appuis répétés). En DUO seulement : en solo, C ne sert qu'à changer de note
-    if (this.mode == "duo" && this.toucheAppuyee(perso, "C")) {
-      this.lampe.batterie = Math.min(100, this.lampe.batterie + REGLAGES.lampe.rechargeParAppui); // +15 %, sans dépasser 100
-    }
     // Haut / bas du joystick : orienter la lampe (sauf sur une échelle, où ils servent à grimper)
     if (this.lampe.allumee == true && perso.enEchelle == false) {
       const pas = REGLAGES.lampe.vitesseVisee * (delta / 1000); // de combien tourner pendant cette image
@@ -1024,29 +982,21 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
-  // Appui court : allume la lampe (si la batterie le permet) ou l'éteint
+  // Appui court : allume la lampe ou l'éteint
   basculerLampe(perso, temps) {
     if (this.lampe.allumee == true) {
       this.lampe.allumee = false; // elle était allumée : on l'éteint
-    } else if (this.lampe.batterie > 0) {
-      this.lampe.allumee = true; // elle était éteinte et il reste de la batterie : on l'allume
+    } else {
+      this.lampe.allumee = true; // elle était éteinte : on l'allume
       this.lampe.angle = 0; // on repart avec la lampe à l'horizontale
       perso.tireJusqua = temps + 500; // petite animation d'allumage
       perso.anims.play("detective_shoot"); // le faisceau de la lampe apparaît dans l'animation
-    } else {
-      this.afficherMessage(this.mode == "duo" ? "Batterie vide ! Appuie sur le bouton C pour recharger" : "Batterie vide !", 2500); // batterie vide
     }
   }
 
   // Appui maintenu : un éclat de lumière qui part devant le Détective. Il ÉTOURDIT les cristaux et les Tubas
-  // (il ne les détruit pas : seules les notes détruisent les cristaux). Coûte un peu de batterie.
+  // (il ne les détruit pas : seules les notes détruisent les cristaux).
   tirerEclat(perso, temps) {
-    if (this.lampe.batterie < COUT_ECLAT) {
-      this.afficherMessage(this.mode == "duo" ? "Pas assez de batterie pour un éclat : recharge avec C" : "Pas assez de batterie pour un éclat", 2000); // pas assez de batterie
-      perso.dernierEclat = temps; // on ne répète pas le message à chaque image
-      return;
-    }
-    this.lampe.batterie -= COUT_ECLAT; // l'éclat coûte de la batterie
     perso.dernierEclat = temps; // on retient l'instant de l'éclat
     perso.tireJusqua = temps + 350; // petite animation de tir
     perso.anims.play("detective_shoot");
@@ -1073,16 +1023,9 @@ export default class niveau1 extends Phaser.Scene {
     return { ox: ox, oy: oy, dx: dx, dy: dy, cx: ox + dx * REGLAGES.lampe.portee, cy: oy + dy * REGLAGES.lampe.portee }; // cx, cy = centre de la tache
   }
 
-  // La batterie se vide tant que la lampe est allumée (même si on joue l'autre personnage)
+  // (la lampe ne se vide pas : elle reste allumée tant qu'on ne l'éteint pas)
   mettreAJourLampe(temps, delta) {
     const lampe = this.lampe;
-    if (lampe.allumee == true) {
-      lampe.batterie -= (delta / 1000) * (100 / REGLAGES.lampe.batterieSec); // la batterie baisse (en %) selon le temps écoulé
-      if (lampe.batterie <= 0) {
-        lampe.batterie = 0; // plus rien : on s'arrête à zéro
-        lampe.allumee = false; // la lampe s'éteint toute seule
-      }
-    }
 
     this.faisceau.clear(); // on efface le faisceau dessiné à l'image précédente
     this.halo.setVisible(lampe.allumee); // la tache de lumière n'est visible que si la lampe est allumée
@@ -1090,9 +1033,7 @@ export default class niveau1 extends Phaser.Scene {
     if (lampe.allumee == false) {
       return; // éteinte : rien d'autre à dessiner
     }
-    // batterie faible : la lumière clignote
-    const faible = lampe.batterie <= REGLAGES.lampe.seuilClignote; // vrai sous 20 %
-    const intensite = faible && Math.floor(temps / 120) % 2 == 0 ? 0.3 : 1; // clignotement : plus faible une image sur deux
+    const intensite = 1; // la lumière reste pleine
 
     const f = this.calculerFaisceau(); // où pointe la lampe
     // le cône de lumière : un triangle de la main du Détective jusqu'à la tache de lumière
@@ -1131,7 +1072,7 @@ export default class niveau1 extends Phaser.Scene {
           }
         }
       }
-      // sinon : lampe éteinte (ou batterie vide) = la passerelle disparaît tout de suite
+      // sinon : lampe éteinte = la passerelle disparaît tout de suite
       const eclairee = passerelle.revelee == true || (lampe.allumee == true && temps < passerelle.eclaireJusqua); // solide maintenant ?
       passerelle.setData("allumee", eclairee); // le collider lit cette valeur
 
@@ -1609,24 +1550,11 @@ export default class niveau1 extends Phaser.Scene {
     this.texteNote.setText("Onde : " + note.texte).setColor(note.couleur); // le texte et sa couleur
   }
 
-  // Chaque image : la barre de batterie, l'estompage des personnages non actifs, et le message
+  // Chaque image : l'estompage des personnages non actifs, et le message
   mettreAJourInterface(temps) {
-    // Barre de batterie : jaune, puis rouge quand elle est faible. On ne la redessine que si elle a changé.
-    const faible = this.lampe.batterie <= REGLAGES.lampe.seuilClignote; // vrai sous 20 %
-    const cle = Math.round(this.lampe.batterie) + (faible ? "f" : "n"); // une clé qui change quand l'affichage doit changer
-    if (cle != this.cleBatterie) {
-      this.cleBatterie = cle; // on retient la nouvelle clé
-      this.barreBatterie.clear(); // on efface l'ancienne barre
-      this.barreBatterie.fillStyle(0x000000, 0.6).fillRect(104, 96, 154, 18); // le fond noir de la barre
-      this.barreBatterie.fillStyle(faible ? 0xff4a4a : 0xffd24a).fillRect(106, 98, 150 * (this.lampe.batterie / 100), 14); // le niveau : rouge si faible, sinon doré
-      this.barreBatterie.lineStyle(2, 0xf5d97a).strokeRect(104, 96, 154, 18); // le contour doré
-    }
-
     // Solo : on met en avant les informations du personnage actif
     if (this.mode == "solo") {
       this.texteNote.setAlpha(this.actif == this.cantatrice ? 1 : 0.45); // la note est pleine si la Cantatrice est active
-      this.texteLampe.setAlpha(this.actif == this.detective ? 1 : 0.45); // la batterie est pleine si le Détective est actif
-      this.barreBatterie.setAlpha(this.actif == this.detective ? 1 : 0.45);
       this.fleche.setPosition(this.actif.x, this.actif.y - 46 + Math.sin(temps / 150) * 4); // la flèche suit le personnage actif, en oscillant
     }
 
