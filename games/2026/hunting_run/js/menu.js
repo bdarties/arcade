@@ -1,7 +1,7 @@
 import { JOUEUR, ETATS_PARTIE } from "./maps.js";
 import { jouer } from "./sons.js";
 
-// Écran de choix du mode : 1 joueur / 2 joueurs (+ bouton Exit pour revenir à l'accueil)
+// Écran de choix du mode : 1 joueur / 2 joueurs
 export default class menu extends Phaser.Scene {
   constructor() {
     super({ key: "menu" });
@@ -55,11 +55,11 @@ export default class menu extends Phaser.Scene {
     });
 
     this.add
-      .text(L / 2, H - 25, "Joystick : choisir      Bouton A : valider", { fontSize: "20px", color: "#cccccc" })
+      .text(L / 2, H - 25, "Joystick : choisir      Bouton B : valider", { fontSize: "20px", color: "#cccccc" })
       .setOrigin(0.5)
       .setShadow(2, 2, "#000000", 4);
 
-    // souris / écran tactile ( JUSTE POUR TESTER, POUR LA BORNE ON L ENLEVERA )
+    // souris / écran tactile
     CARTES.forEach((c, i) => {
       const z = this.add.zone(c.x, c.y, c.w, c.h).setInteractive({ useHandCursor: true });
       z.on("pointerover", () => this.selectionner(i));
@@ -75,7 +75,7 @@ export default class menu extends Phaser.Scene {
     const droite = [K.RIGHT, K.D];
     const haut = [K.UP, K.Z];
     const bas = [K.DOWN, K.S];
-    const valider = [K.ENTER, K.SPACE, K.I, K.R];
+    const valider = [K.ENTER, K.SPACE, K.O, K.T];
     this.input.keyboard.on("keydown", (e) => {
       const k = e.keyCode;
       if (gauche.includes(k)) {
