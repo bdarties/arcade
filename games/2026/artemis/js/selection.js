@@ -154,6 +154,7 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("impact_ennemi", "./assets/sons/impact_ennemi.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi", "./assets/sons/Laser_ennemi.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("tir_laser", "./assets/sons/tir_laser.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_de_zinzin", "./assets/sons/laser_de_zinzin.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("cristal_brise", "./assets/sons/cristal_casser.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("stone_break", "./assets/sons/stone_break.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("son_touche_entrant", "./assets/sons/son_touche_entrant.mp3");

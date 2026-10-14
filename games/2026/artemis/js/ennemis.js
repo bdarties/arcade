@@ -254,6 +254,7 @@ function majCristal(scene, ennemi, cible, distance, maintenant, bloquees) {
     if (maintenant >= ennemi.fin_etat) {
       ennemi.etat_rayon = "tir";
       ennemi.fin_etat = maintenant + DUREE_TIR;
+      /* >>>>> AJOUT SON <<<<< */ scene.sound.play("laser_de_zinzin"); // le rayon part (cristal de n'importe quelle couleur)
     }
   } else if (maintenant >= ennemi.fin_etat) { // fin du tir
     ennemi.etat_rayon = "repos";
