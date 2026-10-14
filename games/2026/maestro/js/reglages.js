@@ -19,7 +19,8 @@ export const REGLAGES = {
     portee: 300, // distance max parcourue avant de disparaître (px)
     cadenceMs: 500, // délai minimum entre deux ondes (ms)
     etourdissementMs: 1000 // durée pendant laquelle un ennemi touché est étourdi (ms)
-  }
+  },
+
   // ---- Détective : la lampe torche ----
   lampe: {
     rayon: 150, // rayon de la tache de lumière projetée par la lampe (px)
@@ -37,13 +38,13 @@ export const REGLAGES = {
   // ---- Échelles ----
   echelle: {
     vitesse: 120 // vitesse de montée / descente (px/s)
-  }
+  },
   // ---- Points de vie (cœurs) ----
   vies: {
     solo: 5,
     duo: 8, // cœurs partagés entre les deux joueurs
     invincibiliteMs: 1500 // temps sans dégâts après avoir été touché (ms)
-  }
+  },
   // ---- Ennemis ----
   tuba: {
     vitesse: 60, // vitesse de patrouille (px/s)
@@ -59,7 +60,7 @@ export const REGLAGES = {
     // Pour plus tard (niveau 3) : le cristal apparaîtra toutes les 4 à 7 secondes
     apparitionMinMs: 4000,
     apparitionMaxMs: 7000
-  }
+  },
   // ---- Choc quand un personnage est touché ----
   recul: {
     x: 280, // poussée horizontale (px/s)
