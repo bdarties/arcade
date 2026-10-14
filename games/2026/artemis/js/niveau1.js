@@ -38,7 +38,7 @@ const DUREE_ENTREE_ECHELLE = 160; // ms : le joueur se place sur l'échelle
 const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'échelle, avant le changement de niveau
 const NB_CAILLOUX = 14;
 const NB_CAILLOUX_TUTO = 5; // le tutoriel est un niveau presque vide : on y pose lui-même les cailloux dont il a besoin
-const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
+const AFFICHER_FPS = false; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
 const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
 const DECOR_FIGE = true; // le sol et les murs d'un niveau généré sont dessinés une seule fois dans une image (cf. figerDecor) : false pour revenir aux calques de tuiles
 // test automatique pour la borne (sans clavier) : au lancement du niveau, chaque poste de DIAG (cf. lumiere.js) est coupé à tour de rôle
@@ -88,7 +88,8 @@ export default class niveau1 extends Phaser.Scene {
     // "haut" : on arrive par l'échelle de montée (on vient de descendre) ; "bas" : on arrive à côté du trou (on vient de remonter)
     this.arrivee = data.arrivee || "haut";
     this.donnees_joueurs = data.joueurs || []; // { pv, stamina, equipement } de chaque joueur, transmis d'un niveau à l'autre
-    this.tuto = !!data.tuto; // tutoriel (cf. tutoriel.js) : un seul niveau, des consignes, pas de passage ni de game over
+    this.tuto = !!data.tuto; // tutoriel (cf. tutoriel.js) : des consignes, pas de game over ; la grotte, puis la salle safe, puis la vraie partie
+    this.tuto_safe = !!data.tuto_safe; // seconde partie du tutoriel : la vraie salle safe
   }
 
   preload() {
@@ -120,7 +121,7 @@ export default class niveau1 extends Phaser.Scene {
     const nouveau = !niveaux[this.niveau];
     if (nouveau) {
       // la salle safe ferme chaque biome (niveaux 5, 10, 15...) ; avec "?safe" dans l'adresse, elle apparait à chaque fois (jamais deux de suite)
-      const safe = biomes.estNiveauSafe(this.niveau) || (this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && salle_safe.safeForcee());
+      const safe = this.tuto_safe || biomes.estNiveauSafe(this.niveau) || (this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && salle_safe.safeForcee());
       niveaux[this.niveau] = safe ? {
         safe: true, // salle de temple faite sous Tiled : éclairée, sans ennemi ni caillou (cf. salle_safe.js)
         grille: null,
@@ -371,7 +372,7 @@ export default class niveau1 extends Phaser.Scene {
     const distance = (a, b) => Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
 
     let origine;
-    const premier_depart = nouveau && this.niveau === 1; // pas d'échelle : le premier joueur se place sur l'origine
+    const premier_depart = nouveau && this.niveau === 1 && !this.etat.safe; // pas d'échelle : le premier joueur se place sur l'origine
     if (premier_depart) {
       origine = centre(Phaser.Utils.Array.GetRandom(cases_sol));
     } else {
@@ -664,6 +665,14 @@ export default class niveau1 extends Phaser.Scene {
     // l'écran s'assombrit pendant la fin de l'animation
     this.time.delayedCall(DUREE_ENTREE_ECHELLE + DUREE_ECHELLE - DUREE_FONDU, () => this.fondu());
     this.cameras.main.once("camerafadeoutcomplete", () => {
+      if (this.tuto) { // la grotte du tutoriel mène à sa salle safe, puis la salle safe à la vraie partie (niveau 1, remis à zéro)
+        this.registry.set("niveaux", {});
+        if (this.tuto_safe) this.registry.set("pierres_lunaires", 0);
+        this.scene.restart(this.tuto_safe
+          ? { niveau: 1 }
+          : { niveau: 1, tuto: true, tuto_safe: true, joueurs: this.joueurs.map((j) => ({ pv: j.pv, stamina: j.stamina, equipement: j.equipement, effets: j.effets })) });
+        return;
+      }
       this.scene.restart({
         niveau: niveau,
         arrivee: arrivee,
@@ -762,7 +771,7 @@ export default class niveau1 extends Phaser.Scene {
   majPassages() {
     const passages = [];
     if (this.trou.visible) passages.push({ objet: this.trou, niveau: this.niveau + 1, arrivee: "haut", verbe: "descendre", couleur: COULEUR_DESCENTE, vers_le_bas: true });
-    if (this.echelle_montee) passages.push({ objet: this.echelle_montee, niveau: this.niveau - 1, arrivee: "bas", verbe: "monter", couleur: COULEUR_MONTEE, vers_le_bas: false });
+    if (this.echelle_montee && !this.tuto) passages.push({ objet: this.echelle_montee, niveau: this.niveau - 1, arrivee: "bas", verbe: "monter", couleur: COULEUR_MONTEE, vers_le_bas: false });
 
     // on lit les appuis à chaque image, même loin d'un passage : JustDown garde un appui en mémoire
     // jusqu'à sa lecture, sinon un appui d'avant servirait au moment d'arriver près de l'échelle
@@ -885,10 +894,7 @@ export default class niveau1 extends Phaser.Scene {
     this.limiterAEcran();
     lumiere.majLumieres(this);
 
-    if (this.tuto) { // pas de changement de niveau : le tutoriel se termine par sa dernière consigne
-      tutoriel.majTutoriel(this);
-      return;
-    }
+    if (this.tuto) tutoriel.majTutoriel(this);
     if (this.majPassages()) return;
   }
 }
