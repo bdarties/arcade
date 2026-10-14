@@ -5,38 +5,13 @@
 // Utilisation : tenterDropPV(scene, x, y) quand un ennemi meurt ; preparerBonus(scene) dans le create() du niveau.
 import { volumeEffets } from "../systemes/sons.js"; // le bip suit le réglage des bruitages
 import { textePoints, clignoter } from "../systemes/effets.js"; // pour afficher « +1 PV » à l'endroit où on la ramasse
-import { PV_MAX_BARRE } from "../personnage/barreDeVie.js"; // nombre de cellules de la barre (le maximum de PV)
+import { PV_MAX_BARRE } from "../personnage/barre_de_vie.js"; // nombre de cellules de la barre (le maximum de PV)
+import { creerTextureCroix } from "../systemes/dessins.js"; // la croix de soin (dessinée en code)
 
 const CHANCE_PV = 0.3; // 30 % de chances qu'un ennemi tué laisse un PV
 const ECHELLE = 4; // la croix fait 9 x 9 pixels : 36 px à l'écran
 
-// La croix de soin : un simple « + » blanc, dessiné pixel par pixel (# = pixel blanc, . = transparent)
-const MOTIF_CROIX = [
-    "...###...",
-    "...###...",
-    "...###...",
-    "#########",
-    "#########",
-    "#########",
-    "...###...",
-    "...###...",
-    "...###..."
-];
 
-function creerTextureCroix(scene) {
-    if (scene.textures.exists("bonus_pv")) return; // déjà dessinée (autre niveau, ou scène relancée)
-    const texture = scene.textures.createCanvas("bonus_pv", 9, 9);
-    const ctx = texture.getContext();
-    MOTIF_CROIX.forEach((ligne, y) => {
-        [...ligne].forEach((lettre, x) => {
-            if (lettre === ".") return; // transparent
-            ctx.fillStyle = "#ffffff"; // blanc
-            ctx.fillRect(x, y, 1, 1);
-        });
-    });
-    texture.refresh();
-    texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // pixel art : pas de flou quand on agrandit
-}
 
 // à appeler quand un ennemi meurt, à l'endroit où il est mort
 export function tenterDropPV(scene, x, y) {

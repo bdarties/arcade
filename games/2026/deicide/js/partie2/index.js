@@ -5,17 +5,17 @@
 // index.js (à la racine du jeu) appelle installerPartie2() avant de créer le jeu, et ajoute les scènes de scenesPartie2 à la liste des scènes.
 import niveau2 from "./niveau2.js";
 import niveau3 from "./niveau3.js";
-import fauxPantheon from "./fauxPantheon.js"; // le faux écran de victoire qui se fissure (avant la forme finale du boss)
-import { installerBossFinal } from "./bossFinal.js";
+import fauxPantheon from "./faux_pantheon.js"; // le faux écran de victoire qui se fissure (avant la forme finale du boss)
+import { installerBossFinal } from "./boss_final.js";
 import { installerMusique } from "./musique.js";
 import { preparerFuite } from "./fuite.js";
 import { CHARGEMENTS_SUPPLEMENTAIRES } from "../partie1/systemes/chargement.js";
 import { EXTENSIONS_NIVEAU1 } from "../partie1/scenes/niveau1.js";
-export { activerTestsPartie2 } from "./testsBorne.js"; // touches de test F9 et F10 (à retirer avant la borne)
+export { activerTestsPartie2 } from "./tests_borne.js"; // touches de test F9 et F10 (à retirer avant la borne)
 
 export const scenesPartie2 = [niveau2, niveau3, fauxPantheon]; // les écrans de la suite du jeu
 
-function chargerPartie2(scene) { // les maps de la suite (dessinées dans Tiled / générées par outils/generer_niveaux.py)
+function chargerPartie2(scene) { // les maps de la suite (des fichiers Tiled)
     scene.load.tilemapTiledJSON("carte_niveau2", "./assets/maps/niveau2.json"); // map du niveau 2 (dessinée dans Tiled)
     scene.load.tilemapTiledJSON("carte_arene_dieu", "./assets/maps/arene_dieu.json"); // arène du dernier combat
 }

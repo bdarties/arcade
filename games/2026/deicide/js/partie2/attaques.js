@@ -1,4 +1,4 @@
-// attaques.js : les attaques du boss final (le Dieu enragé du dernier combat, voir bossFinal.js) : lasers, geysers, spirale, piqué, et le balayage qui suit
+// attaques.js : les attaques du boss final (le Dieu enragé du dernier combat, voir boss_final.js) : lasers, geysers, spirale, piqué, et le balayage qui suit
 // les colonnes. Elles sont ajoutées à la table ATTAQUES du moteur de boss (partie1/ennemis/boss.js), qui sait les lancer sans rien en connaître.
 // Une attaque = { charge, apres, annoncer, executer, ... } : voir le commentaire de ATTAQUES dans boss.js.
 import { jouerSonSurLeTemps } from "../partie1/systemes/sons.js";
@@ -60,7 +60,7 @@ function declencherLaser(scene, boss, laser, sens) { // le rayon part (il tourne
     laser.rayon = scene.add.rectangle(laser.ox, laser.oy, LONGUEUR_LASER, EPAISSEUR_LASER, 0xfff2c0, 0.95).setOrigin(0, 0.5).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setRotation(laser.angle);
     scene.tweens.add({ targets: laser.rayon, alpha: 0, scaleY: 0.3, duration: 600, ease: "Quad.In" });
 }
-// Un rayon qui tourne autour d'un point fixe (la forme finale s'en sert pour l'horloge : voir attaquesUltimes.js). C'est un laser comme les autres :
+// Un rayon qui tourne autour d'un point fixe (la forme finale s'en sert pour l'horloge : voir attaques_ultimes.js). C'est un laser comme les autres :
 // majLasers le fait tourner et le fait blesser le robot qui le touche (un seul coup par attaque).
 // `grace` : pendant ces ms le rayon est « dormant » (transparent, il ne blesse pas) : un robot qui se trouve près du rayon à son apparition a le temps de s'écarter.
 export function poserRayonTournant(scene, { ox, oy, angle, balayage, duree, grace = 0, epaisseur = EPAISSEUR_LASER }) {

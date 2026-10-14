@@ -15,6 +15,7 @@ import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction 
 import { creerHud } from "../personnage/hud.js";
 import * as ennemis from "../ennemis/ennemis.js";
 import * as lumiere from "../mecanismes/lumiere.js";
+import { creerTextureHalo } from "../systemes/dessins.js"; // les dessins faits en code
 import { jouerSon, musiqueDeScene, chargerMusiqueBoss, chargerMusiqueBossEnArrierePlan } from "../systemes/sons.js"; // bruitages et musique
 import { majBoule } from "../personnage/boule.js"; // le robot immobile se met en boule
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
@@ -26,7 +27,7 @@ import { preparerPause } from "./pause.js"; // menu pause (Échap ou X) : régla
 import { preparerBonus } from "../mecanismes/bonus.js"; // les PV que lâchent les ennemis
 import { montrerGuide } from "../systemes/guide.js"; // le but, affiché une fois au début de la partie
 import { preparerBoost } from "../mecanismes/boost.js"; // le boost du robot (rafale, vitesse, reflet)
-import { preparerLanternesVivantes } from "../ennemis/lanterneVivante.js"; // les lanternes ailées qui donnent le boost
+import { preparerLanternesVivantes } from "../ennemis/lanterne_vivante.js"; // les lanternes ailées qui donnent le boost
 
 const PV_DEPART = 5; // PV du robot au début d'un niveau
 const DUREE_GRACE = 2500; // ms d'invincibilité quand le niveau (re)commence : réapparaître ne doit pas coûter un PV tout de suite
@@ -152,7 +153,7 @@ export default class niveau extends Phaser.Scene {
   creerLumieres(carte) {
     this.zonesLumiere = this.physics.add.staticGroup(); // groupe des zones de lumière (dégâts)
     this.prochainDegatLumiere = 0; // instant à partir duquel la lumière peut de nouveau blesser le joueur
-    lumiere.creerTextureHalo(this); // dessine la texture du halo avant de poser les lumières
+    creerTextureHalo(this); // dessine la texture du halo avant de poser les lumières
     // une zone de lumière sur chaque point du calque "lumière" de Tiled
     objetsDe(carte, "lumière").forEach(point => lumiere.creerZoneRonde(this, point.x, point.y, 100));
     this.lanternes = this.physics.add.staticGroup(); // groupe des lanternes

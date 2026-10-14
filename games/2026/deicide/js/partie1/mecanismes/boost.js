@@ -1,4 +1,4 @@
-// boost.js : le boost du robot, que lui donnent les lanternes vivantes qu'il abat (voir lanterneVivante.js)
+// boost.js : le boost du robot, que lui donnent les lanternes vivantes qu'il abat (voir lanterne_vivante.js)
 // Chaque lanterne abattue ajoute un niveau de boost (3 au maximum) et relance le compte à rebours de 8 secondes.
 // À chaque niveau, le robot :
 //   - marche 10 % plus vite     (personnage.js, BONUS_VITESSE_BOOST)

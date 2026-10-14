@@ -11,7 +11,7 @@
 // TOUCHES DE TEST DU CLAVIER (TEMPORAIRES, à retirer avant la borne) :
 //   - F4 : lance directement l'écran de victoire (classement.js, avec un temps de test)
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
-//   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/testsBorne.js)
+//   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/tests_borne.js)
 const COMBOS = [
     { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)
 ];

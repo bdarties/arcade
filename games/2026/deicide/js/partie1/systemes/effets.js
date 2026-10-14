@@ -1,3 +1,4 @@
+import { creerTexturePixel } from "./dessins.js"; // le petit carré blanc des particules (dessiné en code)
 // effets.js : tous les effets qui rendent les actions satisfaisantes (tremblements, flashs, éclats, traînée de dash, alertes)
 // chaque effet est une petite fonction qu'on appelle au bon moment depuis les autres fichiers
 
@@ -9,14 +10,6 @@ export function clignoter(scene, objet, proprietes) {
     return tween;
 }
 
-function creerTexturePixel(scene) { // crée une texture d'un carré blanc de 4 x 4 px, utilisée pour toutes les particules
-    if (scene.textures.exists("pixel")) return; // déjà créée : on la réutilise
-    const dessin = scene.make.graphics({ add: false }); // un dessin qui n'est pas affiché à l'écran
-    dessin.fillStyle(0xffffff); // couleur blanche : on pourra la teinter de n'importe quelle couleur ensuite
-    dessin.fillRect(0, 0, 4, 4); // un carré de 4 px
-    dessin.generateTexture("pixel", 4, 4); // transforme le dessin en texture nommée "pixel"
-    dessin.destroy(); // le dessin ne sert plus, seule la texture compte
-}
 
 // les trois sortes d'éclats du jeu : [couleur, vitesse]. Un émetteur de particules est assez long à fabriquer, alors on en
 // garde un par sorte (OPTIMISATION pour la borne) et on le réutilise à chaque fois, au lieu d'en fabriquer puis détruire un à chaque tir.

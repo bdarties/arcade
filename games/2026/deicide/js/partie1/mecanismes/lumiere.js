@@ -6,18 +6,9 @@
 // Utilisé par : niveau.js (les crée à chaque niveau), pause.js (la luminosité), classement.js et versus.js (le halo).
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
+import { ecrire } from "../scenes/classement.js"; // l'écriture en police pixel (pour le message de l'easter egg)
 import { reglages } from "../systemes/reglages.js"; // luminosité choisie dans le menu pause
-export function creerTextureHalo(scene) {
-    if (scene.textures.exists("halo")) return; // si le halo existe deja il est réutilisé ici
-    const tex = scene.textures.createCanvas("halo", 256, 256); // permet de créer la zone de dessin
-    const ctx = tex.getContext(); // ctx est une constante qui fait office de pinceau à chaque fois qu'on veut creer quelque chose
-    const degrade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128); // créer le dégradé pour le halo de lumière
-    degrade.addColorStop(0, "rgba(255,255,255,0.8)"); // haut du dégradé
-    degrade.addColorStop(1, "rgba(255,255,255,0)");// bas du dégradé
-    ctx.fillStyle = degrade; // dis au pinceau de pindre avec le dégradé qu'on a crée
-    ctx.fillRect(0, 0, 256, 256);
-    tex.refresh();
-}
+import { creerTextureHalo, creerTexturesLanterne, creerPolice } from "../systemes/dessins.js"; // les textures du halo et des lanternes (dessinées en code)
 export function creerZoneRonde(scene, x, y, rayon) {
     const halo = scene.add.image(x, y, "halo"); // affiche le halo sur les positions x,y
     halo.setScale(rayon / 128); // permet de creer la forme de rayon
@@ -65,6 +56,13 @@ function clignoterBrulure(scene) { // fait clignoter le robot en blanc doré, de
     if (Math.floor(scene.time.now / periode) % 2 === 0) joueur.setTintFill(0xfff2c0); // une période sur deux : le robot est rempli de lumière
     else joueur.clearTint(); // l'autre période : ses vraies couleurs
 }
+// Easter egg : quand TOUTES les lanternes du niveau sont éteintes, un message s'affiche (la fonction s'arrête plus haut si la lanterne était déjà éteinte : il ne s'affiche qu'une fois par niveau).
+function annoncerObscurite(scene) { // le message de l'easter egg : il apparaît en fondu, reste 3 secondes, puis disparaît
+    creerPolice(scene); // la police pixel du jeu (même texte que l'écran de fin : sans accents)
+    const message = ecrire(scene, 640, 150, "L'OBSCURITE COMMENCE A REGNER DANS CE MONDE", 3, { teinte: 0xbcd0ff, profondeur: 110 }); // 110 : au-dessus du voile (50) et de l'interface (100)
+    message.setScrollFactor(0).setAlpha(0); // collé à l'écran, invisible au départ
+    scene.tweens.add({ targets: message, alpha: 1, duration: 600, hold: 3000, yoyo: true, onComplete: () => message.destroy() }); // apparaît (600 ms), reste (3 s), repart en fondu
+}
 export function eteindreLanterne(scene, tir, lanterne) {
     tir.destroy(); // permet de détruire le tir
     if (lanterne.eteinte) return; // si la lanterne est deja eteinte on return juste
@@ -76,43 +74,7 @@ export function eteindreLanterne(scene, tir, lanterne) {
     const halo = lanterne.zone.halo; // on range l'image du halo dans un variable halo
     scene.zonesLumiere.remove(lanterne.zone, true, true); // on retire alors du groupe des zones de dégats lumineuse la lanterne en question
     scene.tweens.add({ targets: halo, alpha: 0, duration: 300, onComplete: () => halo.destroy() });
-}
-// dessin de la lanterne en pixel art : chaque lettre est un pixel, "." = transparent
-export const MOTIF_LANTERNE = [ // (exporté : lanterneVivante.js s'en sert pour dessiner la lanterne vivante)
-    "....##....", // anneau pour l'accrocher
-    "...#..#...",
-    "....##....",
-    "..######..", // chapeau en métal
-    ".########.",
-    ".#VVVVVV#.", // verre, entouré du cadre
-    ".#VVJJVV#.",
-    ".#VJBBJV#.", // flamme : B = coeur blanc, J = jaune autour
-    ".#VJBBJV#.",
-    ".#VVJJVV#.",
-    ".#VVVVVV#.",
-    ".########.", // socle
-    "..######..",
-    "...####...",
-];
-function dessinerLanterne(scene, cle, couleurs) { // dessine le motif dans une texture, avec les couleurs données
-    const tex = scene.textures.createCanvas(cle, 10, MOTIF_LANTERNE.length); // une zone de dessin de la taille du motif
-    const ctx = tex.getContext(); // le pinceau
-    MOTIF_LANTERNE.forEach((ligne, y) => { // pour chaque ligne du motif
-        [...ligne].forEach((lettre, x) => { // pour chaque lettre de la ligne
-            if (lettre === ".") return; // un point = pixel transparent, on ne peint rien
-            ctx.fillStyle = couleurs[lettre]; // prend la couleur qui correspond à la lettre
-            ctx.fillRect(x, y, 1, 1); // peint un seul pixel
-        });
-    });
-    tex.refresh(); // envoie le dessin à Phaser
-    tex.setFilter(Phaser.Textures.FilterMode.NEAREST); // garde les pixels nets quand on agrandit (sinon le dessin devient flou)
-}
-function creerTexturesLanterne(scene) { // crée la lanterne allumée et la lanterne éteinte, une seule fois
-    if (scene.textures.exists("lanterne_allumee")) return; // déjà dessinées : on les réutilise
-    // cadre en fer, verre doré lumineux, flamme
-    dessinerLanterne(scene, "lanterne_allumee", { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" });
-    // même cadre, verre sombre et flamme morte
-    dessinerLanterne(scene, "lanterne_eteinte", { "#": "#3b3634", V: "#4a4a52", J: "#3a3a40", B: "#2e2e33" });
+    if (scene.lanternes.getChildren().every((l) => l.eteinte)) annoncerObscurite(scene); // la dernière vient de tomber : le message de l'easter egg
 }
 export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de creer les lanternes
     creerTexturesLanterne(scene); // dessine les textures de la lanterne si elles n'existent pas encore

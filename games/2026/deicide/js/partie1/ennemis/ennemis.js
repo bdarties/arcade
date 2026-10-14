@@ -6,6 +6,7 @@ import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 import { gagnerPoints } from "../systemes/points.js"; // ajoute les points au score
 import { tenterDropPV } from "../mecanismes/bonus.js"; // un ennemi tué peut laisser un PV à ramasser
+import { creerTextureHaloDoux } from "../systemes/dessins.js"; // le halo doux des ennemis (dessiné en code)
 const PORTEE_COUP = 90; // distance (px) à partir de laquelle l'orc donne son coup de faux (la faux porte jusqu'à environ 130 px)
 const VITESSE_ORC = 90; // vitesse de marche de l'orc (px/s)
 export function chargerEnnemis(scene) {
@@ -81,6 +82,7 @@ export function creerMage(scene, x, y) { // fonction qui permet de creer un mage
     const mage = scene.ennemis.create(x, y, "mage_idle"); // crée le mage dans le groupe ennemis, comme les archers
     mage.setScale(0.8); // réduit le mage pour qu'il fasse la taille des autres personnages
     mage.body.setSize(30, 70); // met la taille du corps physique du mage (largeur de son corps, de la tête aux pieds)
+    mage.body.setOffset(mage.body.offset.x, 70); // le bas de la hitbox est calé sur les pieds du dessin (ligne 140 de l'image : 70 + 70 de haut) : avant, les pieds s'enfonçaient de 8 px dans le sol
     mage.type = "mage"; // défini le type en mage, toucherEnnemi s'en sert pour jouer mage_touche et mage_mort
     mage.pv = 3; // nombre de pv du mage, plus résistant que l'archer
     mage.points = 200; // nombre de points quand on tue le mage
@@ -113,18 +115,6 @@ function orienterOrc(orc, versDroite) { // tourne l'orc et recale sa hitbox sur 
     orc.body.updateFromGameObject(); // recalcule la position du corps avec le nouveau décalage
     orc.x += ancienX - orc.body.x; // décale l'image d'autant : le corps ne bouge pas quand l'orc se retourne, seule l'image change de sens
     orc.body.updateFromGameObject(); // et remet le corps à sa place
-}
-function creerTextureHaloDoux(scene) { // dessine un dégradé large et peu concentré pour les halos des ennemis
-    if (scene.textures.exists("halo_doux")) return; // si la texture existe deja on la réutilise
-    const tex = scene.textures.createCanvas("halo_doux", 256, 256); // crée une zone de dessin de 256 x 256 px
-    const ctx = tex.getContext(); // récupère le pinceau pour dessiner dans la zone
-    const degrade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128); // dégradé rond qui part du centre jusqu'au bord
-    degrade.addColorStop(0, "rgba(255,255,255,0.35)"); // centre : seulement 35 % d'opacité, au lieu de 80 %
-    degrade.addColorStop(0.5, "rgba(255,255,255,0.15)"); // à mi-chemin il reste encore de la lumière
-    degrade.addColorStop(1, "rgba(255,255,255,0)"); // au bord : complètement transparent
-    ctx.fillStyle = degrade; // dit au pinceau de peindre avec ce dégradé
-    ctx.fillRect(0, 0, 256, 256); // peint tout le carré avec le dégradé
-    tex.refresh(); // envoie le dessin à Phaser pour qu'il puisse l'utiliser
 }
 function ajouterHalo(scene, ennemi, rayon) { // fonction qui ajoute un halo violet autour d'un ennemi
     creerTextureHaloDoux(scene); // crée la texture du halo doux si elle n'existe pas encore
