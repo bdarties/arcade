@@ -1,8 +1,8 @@
-import { creerTextures } from "./textures.js";
 import { PERSOS } from "./persos.js";
+import { JEUX } from "./jeux.js";
 
 // Scène de chargement : on charge TOUTES les images et la musique une seule
-// fois, on dessine les petites textures et on crée les animations.
+// fois, puis on crée les animations.
 // Ensuite on passe à l'écran titre.
 export default class chargement extends Phaser.Scene {
   constructor() {
@@ -13,29 +13,46 @@ export default class chargement extends Phaser.Scene {
     // comme dans le template : les chemins sont relatifs à la page du jeu
     this.load.setBaseURL(this.sys.game.config.baseURL);
 
-    this.add
-      .text(640, 330, "Chargement...", { fontFamily: "Arial", fontSize: "28px", color: "#ffffffff" })
-      .setOrigin(0.5);
-    var barre = this.add.graphics();
-    this.load.on("progress", function (valeur) {
-      barre.clear();
-      barre.fillStyle(0xffc83d, 1);
-      barre.fillRect(440, 370, 400 * valeur, 16);
-    });
 
     // fonds et logo (dossier "Logo et son background" + document Idées)
     this.load.image("img_fond_accueil", "./assets/images/fond_accueil.jpg");
     this.load.image("img_fond_scene", "./assets/images/fond_scene.jpg");
 
-    // les 4 persos d'opéra et leur tete (affichée à coté du score)
-  PERSOS.forEach((perso) => {
-    if (perso.cle == "diva") {
-      this.load.spritesheet(perso.texture, "./assets/images/La_reine_de_la_nuit_spritesheet.png", { frameWidth: 235, frameHeight: 256 });
-    } else {
-      this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
-    }
-    this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
-  });
+    // Écran de sélection des jeux : titre, cadre doré et vignettes
+    this.load.image("img_choisis_jeu", "./assets/images/choisis_jeu.png");
+    this.load.image("img_cadre_jeu", "./assets/images/cadre_jeu.png");
+    JEUX.forEach((jeu) => {
+      if (jeu.apercu) this.load.image(jeu.apercu, "./assets/images/apercu_" + jeu.cle + ".png");
+    });
+
+    // Les persos
+    PERSOS.forEach((perso) => {
+      var planche = { carmen: [184, 252], figaro: [176, 252] }[perso.cle];
+      if (planche) this.load.spritesheet(perso.texture, "./assets/images/" + perso.cle + ".png", { frameWidth: planche[0], frameHeight: planche[1] });
+      else this.load.image(perso.texture, "./assets/images/" + perso.cle + ".png");
+      this.load.image(perso.tete, "./assets/images/tete_" + perso.cle + ".png");
+      this.load.spritesheet(perso.marche, "./assets/images/marche_" + perso.cle + ".png", { frameWidth: perso.tailleMarche[0], frameHeight: perso.tailleMarche[1] });
+      this.load.spritesheet("img_grand_" + perso.cle, "./assets/images/grand_" + perso.cle + ".png", { frameWidth: 288, frameHeight: 360 });
+      this.load.image("img_portrait_" + perso.cle, "./assets/images/portrait_" + perso.cle + ".jpg");
+      this.load.image("img_portrait_nb_" + perso.cle, "./assets/images/portrait_" + perso.cle + "_nb.jpg");
+      this.load.image("img_nom_" + perso.cle, "./assets/images/nom_" + perso.cle + ".png");
+    });
+
+    // Page de choix des persos
+    this.load.image("img_fond_choix", "./assets/images/fond_choix.jpg");
+    this.load.image("img_choisis", "./assets/images/choisis.png");
+    this.load.image("img_zone_texte", "./assets/images/zone_texte.png");
+    this.load.image("img_fleche_gauche", "./assets/images/fleche_gauche.png");
+    this.load.image("img_fleche_droite", "./assets/images/fleche_droite.png");
+    this.load.image("img_cadre", "./assets/images/cadre.png");
+    this.load.image("img_cadre_choisi", "./assets/images/cadre_choisi.png");
+
+    // Petites images des jeux (à la place de l'ancien textures.js)
+    this.load.image("img_vie", "./assets/images/vie.png");
+    this.load.image("img_etoile", "./assets/images/etoile.png");
+    this.load.image("img_note", "./assets/images/note.png");
+    this.load.image("img_page", "./assets/images/page.png");
+    this.load.image("img_rideau", "./assets/images/rideau.png");
 
     // Music Fall : persos du pack Sunny Land
     // renard : repos 0-3, course 4-9, saut 10, music_fall 11, blessé 12-13
@@ -46,12 +63,23 @@ export default class chargement extends Phaser.Scene {
     this.load.image("img_tete_renard2", "./assets/images/tete_renard2.png");
     this.load.image("img_touche_note", "./assets/images/touche_note.png");
 
+    // Memory Song : le décor, le saxophone et ses six touches.
+    this.load.image("img_fond_opera", "./assets/images/fond_opera.jpg");
+    this.load.image("img_saxo", "./assets/images/saxo.png");
+    for (var i = 1; i <= 6; i++) {
+      this.load.image("img_touche" + i, "./assets/images/touche" + i + ".png");
+    }
+
     // musique de fond (pack SunnyLand Music)
     this.load.audio("musique", "./assets/sons/musique.ogg");
   }
 
   create() {
-    creerTextures(this);
+    // animations des persos : marche (Piano Time) et grande planche (page de choix)
+    PERSOS.forEach((perso) => {
+      this.anims.create({ key: perso.animMarche, frames: this.anims.generateFrameNumbers(perso.marche, { start: 0, end: 5 }), frameRate: 10, repeat: -1 });
+      this.anims.create({ key: "anim_grand_" + perso.cle, frames: this.anims.generateFrameNumbers("img_grand_" + perso.cle, { start: 0, end: 3 }), frameRate: 5, repeat: -1 });
+    });
 
     // les persos Sunny Land sont en pixel art tout petit : quand on les
     // agrandit, on garde des pixels nets au lieu de les flouter
@@ -75,15 +103,7 @@ export default class chargement extends Phaser.Scene {
     this.registry.set("jeu", "music_fall");
     this.registry.set("mode", "solo");
     this.registry.set("perso1", "carmen");
-    this.registry.set("perso2", "maestro");
+    this.registry.set("perso2", "figaro");
     this.scene.start("accueil");
-    this.anims.create({
-      key: "anim_diva",
-      frames: this.anims.generateFrameNumbers("img_diva", { start: 0, end: 3 }),
-      frameRate: 8,
-      repeat: -1
-    });
   }
-
-  
 }

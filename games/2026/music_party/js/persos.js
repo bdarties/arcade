@@ -2,6 +2,7 @@
 //   texture : l'image du perso        tete : sa tete, affichée à coté du score
 //   echelle : taille quand on l'affiche en grand (écran des résultats)
 //   couleur : couleur de son texte     teinte : couleur de ses effets
+//   marche : sa spritesheet de marche (Piano Time, quand il change de touche)
 
 // Les 4 persos du document "Idées" (des archétypes d'opéra), pour piano_time_time Time,
 // Memory Song et Note Catcher. "motif" = son petit air quand on le choisit.
@@ -13,6 +14,9 @@ export const PERSOS = [
     description: "Reine de la Nuit. \nSa voix brise les verres...",
     texture: "img_diva",
     tete: "img_tete_diva",
+    marche: "img_marche_diva",           // spritesheet quand il marche (6 images)
+    tailleMarche: [58, 83],              // largeur et hauteur d'une image
+    animMarche: "anim_marche_diva",
     echelle: 1.1,
     couleur: "#9dbbff",
     teinte: 0x4f73e8,
@@ -25,6 +29,9 @@ export const PERSOS = [
     description: "Figaro ci, Figaro là...\ntoujours pressé,\njamais fatigué !",
     texture: "img_figaro",
     tete: "img_tete_figaro",
+    marche: "img_marche_figaro",           // spritesheet quand il marche (6 images)
+    tailleMarche: [47, 74],              // largeur et hauteur d'une image
+    animMarche: "anim_marche_figaro",
     echelle: 1.1,
     couleur: "#7ee0b8",
     teinte: 0x2aa37c,
@@ -37,6 +44,9 @@ export const PERSOS = [
     description: "Libre comme l'oiseau...\net très mauvaise\nperdante !",
     texture: "img_carmen",
     tete: "img_tete_carmen",
+    marche: "img_marche_carmen",           // spritesheet quand il marche (6 images)
+    tailleMarche: [48, 64],              // largeur et hauteur d'une image
+    animMarche: "anim_marche_carmen",
     echelle: 1.1,
     couleur: "#ff8080",
     teinte: 0xd8324a,
@@ -49,6 +59,9 @@ export const PERSOS = [
     description: "Il dirige l'orchestre\ndepuis les coulisses...\nsans jamais se montrer.",
     texture: "img_maestro",
     tete: "img_tete_maestro",
+    marche: "img_marche_maestro",           // spritesheet quand il marche (6 images)
+    tailleMarche: [45, 66],              // largeur et hauteur d'une image
+    animMarche: "anim_marche_maestro",
     echelle: 1.1,
     couleur: "#c9a2ff",
     teinte: 0x7d4bc9,
@@ -97,10 +110,8 @@ function trouverPerso(cle) {
 // ou J1 contre J2 (duo)
 export function participants(registry) {
   var duo = registry.get("mode") == "duo";
-  var persos;
-  if (registry.get("jeu") == "music_fall") persos = RENARDS;
-  else persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];
-  var joueurs = [{ ...persos[0], etiquette: "J1" }];
+  // les persos choisis sur l'écran de choix (pour les 2 mini-jeux)
+  var persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];  var joueurs = [{ ...persos[0], etiquette: "J1" }];
   if (duo) joueurs.push({ ...persos[1], etiquette: "J2" });
   return joueurs;
 }
