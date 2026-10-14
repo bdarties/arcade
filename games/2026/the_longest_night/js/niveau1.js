@@ -3,7 +3,7 @@ import * as fct from "./fonctions.js";
 /***********************************************************************/
 /** VARIABLES GLOBALES 
 /***********************************************************************/
-var mode_fantome = false;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions reste actives.
+var mode_fantome = true;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions reste actives.
 var player; // désigne le sprite du joueur
 var player2;
 var clavier; // pour la gestion du clavier
@@ -25,11 +25,14 @@ var groupe_araignee;
 var tableau_ennemis; //tableau qui serivira a choisir et répartir alétoirement les ennemis
 var groupe_recharges;
 var groupe_soin;
+var porte;
 var araignee;
 var vies;
 var cles_restantes
 var son_feu;
-var nombre_ennemis_apparissant;
+var nombre_ennemis_apparaissant;
+var nombre_recharges_apparaissant;
+var nombre_soins_apparaissant;
 var musique_niveau1;
 var camJ1;
 var camJ1UI;
@@ -40,6 +43,7 @@ var score_J1_affiche;
 var score_J2_affiche;
 var balle_restanteJ1_affiche;
 var balle_restanteJ2_affiche;
+var timerIcon;
 var son_blesse;
 var son_areignne_blesse;
 var son_cle;
@@ -180,25 +184,62 @@ export default class niveau1 extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 64
     });
+    this.load.spritesheet("cle_argent", "./assets/keys/Key_silver.png", {
+      frameWidth: 32,
+      frameHeight: 64
+    });
+    this.load.spritesheet("cle_or", "./assets/keys/Key_gold.png", {
+      frameWidth: 32,
+      frameHeight: 64
+    });
     this.load.spritesheet("areignee_ennemie", "./assets/enemies/araignee.png", {
       frameWidth: 48,
       frameHeight:48
     });
-    this.load.spritesheet("pv_bar", "./assets/pv_bar.png",{
+    this.load.spritesheet("pv_bar", "./assets/UI/pv_bar.png",{
       frameWidth : 64,
       frameHeight : 16
     });
-    this.load.spritesheet("pv_bar2", "./assets/pv_bar_2.png",{
+    this.load.spritesheet("pv_bar2", "./assets/UI/pv_bar_2.png",{
       frameWidth : 64,
       frameHeight : 16
     });
-    this.load.image("bullet", "./assets/star.png");
-    this.load.image("recharge", "./assets/star_of_dawn.png");
-    this.load.image("soin", "./assets/medkit.png")
-    this.load.image("sortie1_fermee", "./assets/door.png");
-    this.load.image("sortie1_ouverte", "./assets/door1_ouverte.png")
-    this.load.image("sortie2", "./assets/door2.png");
-    this.load.image("sortie3", "./assets/door3.png");
+    this.load.spritesheet("porte_ouverture_animation", "./assets/door_open.png",{
+      frameWidth : 48,
+      frameHeight : 48
+    });
+    this.load.spritesheet("animation_balle_droite", "./assets/bullets/bullet_right.png",{
+      frameWidth : 48,
+      frameHeight : 16
+    });
+    this.load.spritesheet("animation_balle_gauche", "./assets/bullets/bullet_left.png",{
+      frameWidth : 48,
+      frameHeight : 16
+    });
+    this.load.spritesheet("animation_balle_haut", "./assets/bullets/bullet_up.png",{
+      frameWidth : 16,
+      frameHeight : 48
+    });
+    this.load.spritesheet("animation_balle_bas", "./assets/bullets/bullet_down.png",{
+      frameWidth : 16,
+      frameHeight : 48
+    });
+    this.load.spritesheet("animation_porte_ouverte", "./assets/door_open.png",{
+      frameWidth : 48,
+      frameHeight : 48
+    });
+    this.load.spritesheet("soin", "./assets/buff/soin.png",{
+      frameWidth : 32,
+      frameHeight : 32
+    });
+    this.load.spritesheet("recharge", "./assets/buff/recharge.png",{
+      frameWidth : 32,
+      frameHeight : 32
+    });
+    this.load.image("sortie_fermee", "./assets/door.png");
+    this.load.image("Score", "./assets/UI/score_icon.png");
+    this.load.image("timer_icone", "./assets/UI/timer_icon.png");
+    this.load.image("bullet_icone", "./assets/UI/bullet_icon.png");
     this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3")
     this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3")
     this.load.audio("blesse","./assets/musique_et_sons/blesse.mp3")
@@ -221,7 +262,9 @@ export default class niveau1 extends Phaser.Scene {
       //definition des paramètres du jeu
       temps_restant = 80;
       cles_creees = 0;
-      nombre_ennemis_apparissant = 4
+      nombre_ennemis_apparaissant = 4;
+      nombre_recharges_apparaissant = 1;
+      nombre_soins_apparaissant = 1;
       sortie_ouverte = false;
 
     /*************************************
@@ -270,7 +313,7 @@ export default class niveau1 extends Phaser.Scene {
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  this.porte1 = this.physics.add.staticSprite(600, 414, "sortie1_fermee");
+  porte = this.physics.add.staticSprite(600, 414, "sortie_fermee");
   groupe_cle = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
   groupe_soin = this.physics.add.group();
@@ -280,7 +323,7 @@ export default class niveau1 extends Phaser.Scene {
       repeat: temps_restant - 1,
       callback: () => {
         temps_restant -= 1;
-        temps_restant_affiche.setText('Temps : ' + temps_restant);
+        temps_restant_affiche.setText(String(temps_restant));
       }});
       
     
@@ -301,7 +344,9 @@ export default class niveau1 extends Phaser.Scene {
     // propriétées physique de l'objet player :
     player.setCollideWorldBounds(true);
     calque_mur.setCollisionByProperty({estSolide: true});
-    this.physics.add.collider(player, calque_mur);
+    if (!mode_fantome){
+      this.physics.add.collider(player, calque_mur);
+    }
     //joueur 2
     if (mode_deux_joueurs == true){
       player2 = this.physics.add.sprite(player2_spawn.x, player2_spawn.y, "player2");
@@ -551,6 +596,24 @@ export default class niveau1 extends Phaser.Scene {
       repeat: -1 
     });
     this.anims.create({
+      key: "animation_cle_argent",
+      frames: this.anims.generateFrameNumbers("cle_argent", {
+        start: 0,
+        end: 10
+      }), 
+      frameRate: 10, 
+      repeat: -1 
+    });
+    this.anims.create({
+      key: "animation_cle_or",
+      frames: this.anims.generateFrameNumbers("cle_or", {
+        start: 0,
+        end: 10
+      }), 
+      frameRate: 10, 
+      repeat: -1 
+    });
+    this.anims.create({
       key: "animation_areignee",
       frames: this.anims.generateFrameNumbers("areignee_ennemie", {
         start: 0,
@@ -558,6 +621,69 @@ export default class niveau1 extends Phaser.Scene {
       }), 
       frameRate: 3, 
       repeat: -1 
+    });
+    this.anims.create({
+      key: "animation_areignee",
+      frames: this.anims.generateFrameNumbers("areignee_ennemie", {
+        start: 0,
+        end: 7
+      }), 
+      frameRate: 3, 
+      repeat: -1 
+    });
+    this.anims.create({
+      key: "animation_balle_droite",
+      frames: this.anims.generateFrameNumbers("animation_balle_droite", {
+        start: 0,
+        end: 5
+      }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: "animation_balle_gauche",
+      frames: this.anims.generateFrameNumbers("animation_balle_gauche", {
+        start: 0,
+        end: 5
+      }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: "animation_balle_haut",
+      frames: this.anims.generateFrameNumbers("animation_balle_haut", {
+        start: 0,
+        end: 5
+      }),
+      frameRate: 10,
+      repeat: 0
+    });
+    this.anims.create({
+      key: "animation_porte_ouverte",
+      frames: this.anims.generateFrameNumbers("animation_porte_ouverte", {
+        start: 0,
+        end: 3
+      }),
+      frameRate: 10,
+      repeat: -1
+    });
+    this.anims.create({
+      key: "animation_soin",
+      frames: this.anims.generateFrameNumbers("soin", {
+        start: 0,
+        end: 4
+      }),
+      frameRate: 6,
+      repeat: -1
+    });
+    this.anims.create({
+      key: "recharge",
+      frames: this.anims.generateFrameNumbers("recharge", {
+        start: 0,
+        end: 3
+      }),
+      frameRate: 6,
+      repeat: -1
     });
     
 
@@ -601,29 +727,46 @@ export default class niveau1 extends Phaser.Scene {
      * ELEMENTS DE L'UI
     ************************************/
     //élements de l'UI du joueur 1
-    score_J1_affiche = this.add.text(100, 16, 'Score : ' + player.score, { fontSize: '32px', fill: '#3bd5f0'});
-    score_J1_affiche.setOrigin(0.5, 0);
+    player.iconeScore = this.add.image(30, 0, "Score").setDisplaySize(24, 24);
+    player.iconeScore.setScale(2);
+    player.iconeScore.setOrigin(0.5, 0);
+    player.iconeScore.setScrollFactor(0);
+    score_J1_affiche = this.add.text(64, 16, String(player.score), { fontSize: '32px', fill: '#3bd5f0'});
     score_J1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    balle_restanteJ1_affiche = this.add.text(180,64,'Balle restante : ' + player.balle_restante,{ fontSize: '32px', fill: '#c9a326'})
-    balle_restanteJ1_affiche.setOrigin(0.5, 0);
+    player.iconeRecharge = this.add.image(32, 68, "bullet_icone").setDisplaySize(24, 24);
+    player.iconeRecharge.setScale(2);
+    player.iconeRecharge.setOrigin(0.5, 0);
+    player.iconeRecharge.setScrollFactor(0);
+    balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326'});
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    player.barreVie = this.add.sprite(100, 144, "pv_bar", player.points_vies);
+    balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
+    player.barreVie = this.add.sprite(60, 140, "pv_bar", player.points_vies);
     player.barreVie.setScale(2);
     player.barreVie.setOrigin(0.5, 0);
     player.barreVie.setScrollFactor(0);
-    temps_restant_affiche = this.add.text(100, 100, 'Temps : ' + temps_restant, {fontSize: '32px', fill: '#000000'});
+    timerIcon = this.add.image(600, 50, "timer_icone").setDisplaySize(24, 24);
+    timerIcon.setScale(3);
+    timerIcon.setOrigin(0.5, 0);
+    timerIcon.setScrollFactor(0);
+    
+    temps_restant_affiche = this.add.text(580, 80, String(temps_restant), {fontSize: '32px', fill: '#000000'});
     temps_restant_affiche.setScrollFactor(0);
-    temps_restant_affiche.setOrigin(0.5, 0);
 
     //élements de l'UI du joueur 2
     if (mode_deux_joueurs){
-      score_J2_affiche = this.add.text(100, 16, 'Score : ' + player2.score, { fontSize: '32px', fill: '#f03b3b' });
-      score_J2_affiche.setOrigin(0.5, 0);
+      player2.iconeScore = this.add.image(30, 0, "Score").setDisplaySize(24, 24);
+      player2.iconeScore.setScale(2);
+      player2.iconeScore.setOrigin(0.5, 0);
+      player2.iconeScore.setScrollFactor(0);
+      player2.iconeRecharge = this.add.image(32, 68, "bullet_icone").setDisplaySize(24, 24);
+      player2.iconeRecharge.setScale(2);
+      player2.iconeRecharge.setOrigin(0.5, 0);
+      player2.iconeRecharge.setScrollFactor(0);
+      score_J2_affiche = this.add.text(64, 16, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
       score_J2_affiche.setScrollFactor(0)
-      balle_restanteJ2_affiche = this.add.text(180,64,'Balles restante : ' + player2.balle_restante,{ fontSize: '32px', fill: '#571881'})
-      balle_restanteJ2_affiche.setOrigin(0.5, 0)
-      balle_restanteJ2_affiche.setScrollFactor(0)
-      player2.barreVie = this.add.sprite(160, 144, "pv_bar2", player2.points_vies);
+      balle_restanteJ2_affiche = this.add.text(64, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
+      balle_restanteJ2_affiche.setScrollFactor(0);
+      player2.barreVie = this.add.sprite(60, 140, "pv_bar2", player2.points_vies);
       player2.barreVie.setScale(2);
       player2.barreVie.setOrigin(0.5, 0);
       player2.barreVie.setScrollFactor(0);
@@ -664,7 +807,7 @@ export default class niveau1 extends Phaser.Scene {
       J2Interaction = this.input.keyboard.addKey('R');
       J2boutonFeu = this.input.keyboard.addKey('T');
     /*************************************************
-     * AJOUT DES ENNEMIS ET ELEMENTS DU JEU (sauf la porte)                      *
+     * AJOUT DES ENNEMIS                             *
      ************************************************/
     //on rajoute les ennemis dans ce tableau pour qu'ils soient réorganisés plus tard.
     groupe_araignee = this.physics.add.group();
@@ -678,15 +821,21 @@ export default class niveau1 extends Phaser.Scene {
       score : 100
     }];
     //on appelera ensuite apparition_elements pour
-    for (let i = 0; i < nombre_ennemis_apparissant + cles_creees ; i++){
+    const nombre_appels_apparition = Math.max(
+      nombre_ennemis_apparaissant,
+      nombre_cles,
+      nombre_recharges_apparaissant,
+      nombre_soins_apparaissant
+    );
+    for (let i = 0; i < nombre_appels_apparition; i++){
       apparition_elements();
     }
     /*****************************************************
      *  GESTION DES INTERATIONS ENTRE  GROUPES ET ELEMENTS(+ ignorance de la caméra) *
      ******************************************************/
     this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
-    this.physics.add.collider(player,groupe_recharges,recharger,null,this);
-    this.physics.add.collider(player,groupe_soin,soigner,null,this);
+    this.physics.add.overlap(player,groupe_recharges,recharger,null,this);
+    this.physics.add.overlap(player,groupe_soin,soigner,null,this);
     if (mode_deux_joueurs) {
       this.physics.add.collider(player,player2);
       this.physics.add.collider(player2, groupe_recharges, recharger, null, this);
@@ -699,19 +848,19 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
-    hudJ1 = [score_J1_affiche, balle_restanteJ1_affiche, player.barreVie];
+    hudJ1 = [score_J1_affiche, player.iconeScore, balle_restanteJ1_affiche, player.iconeRecharge, player.barreVie];
     if (mode_deux_joueurs){
-      hudJ2 = [score_J2_affiche, balle_restanteJ2_affiche, player2.barreVie]
+      hudJ2 = [score_J2_affiche, player2.iconeScore, balle_restanteJ2_affiche, player2.iconeRecharge, player2.barreVie]
     }
     else{
       hudJ2 = []
     }
-    hudCommun = [temps_restant_affiche, cles_restantes_affiche];
+    hudCommun = [temps_restant_affiche, timerIcon, cles_restantes_affiche];
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
     camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-      camJ2UI.ignore([...hudJ1, temps_restant_affiche]);
+      camJ2UI.ignore([...hudJ1, temps_restant_affiche, timerIcon]);
     }
       camGlobalUI.ignore([...hudJ1, ...hudJ2]);
     }
@@ -779,7 +928,7 @@ export default class niveau1 extends Phaser.Scene {
           tirer.call(this, player);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte1)) {
+    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte)) {
       this.scene.start("Ecran_score", {
         scoreJ1: player.score,
         temps_restant,
@@ -835,7 +984,7 @@ export default class niveau1 extends Phaser.Scene {
           tirer.call(this, player2);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte1)) {
+    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte)) {
       gagnant = "Joueur 2";
       this.scene.start("Ecran_score", {
         scoreJ1: player2.score,
@@ -909,10 +1058,16 @@ function deplacement_areignee() {
 
 function apparition_elements() {
   if (cles_creees < nombre_cles && groupe_cle.countActive(true) < nombre_cles && tableau_spawn.length > 0) { //partie des clés
+    const typeCle = Phaser.Utils.Array.GetRandom([ //tableau qui contient les trois clés avec leur animations et leur score. Permet de les organiser plus facilement. Ici on en selectionne une clé aléatoire et on la met dans le tableur TypeCle.
+      { texture: "cle_bronze", animation: "animation_cle_bronze", score: 500 },
+      { texture: "cle_argent", animation: "animation_cle_argent", score: 500 },
+      { texture: "cle_or", animation: "animation_cle_or", score: 800 }
+    ]);
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
-    cle = groupe_cle.create(position.x, position.y, "cle_bronze");
+    cle = groupe_cle.create(position.x, position.y, typeCle.texture); //comment on selectionne les clés aléatoirement, on a deja par défaut une texture, animation et score associé a TypeCle que l'on peut deja sortir du tableur.
+    cle.score = typeCle.score;
     cles_creees += 1;
-    cle.anims.play("animation_cle_bronze", true);
+    cle.anims.play(typeCle.animation, true); 
     camJ1UI.ignore(cle);
     camGlobalUI.ignore(cle);
     if (mode_deux_joueurs) {
@@ -920,25 +1075,27 @@ function apparition_elements() {
       camJ2UI.ignore(cle);
     }
   }
-  if (groupe_recharges.countActive(true) < 1 && tableau_spawn.length > 0) { //partie des recharges
+  if (groupe_recharges.countActive(true) < nombre_recharges_apparaissant && tableau_spawn.length > 0) { //partie des recharges
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const recharge = groupe_recharges.create(position.x, position.y, "recharge");
+    recharge.anims.play("recharge", true);
     camJ1UI.ignore(recharge);
     camGlobalUI.ignore(recharge);
     if (mode_deux_joueurs) {
       camJ2UI.ignore(recharge);
     }
   }
-  if (groupe_soin.countActive(true) < 1 && tableau_spawn.length > 0) {
+  if (groupe_soin.countActive(true) < nombre_soins_apparaissant && tableau_spawn.length > 0) {
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const medkit = groupe_soin.create(position.x, position.y, "soin");
+    medkit.anims.play("animation_soin", true);
     camJ1UI.ignore(medkit);
     camGlobalUI.ignore(medkit);
     if (mode_deux_joueurs) {
       camJ2UI.ignore(medkit);
     }
   }
-  if (groupe_araignee.countActive(true) < nombre_ennemis_apparissant && tableau_spawn.length > 0) { //partie des ennemis
+  if (groupe_araignee.countActive(true) < nombre_ennemis_apparaissant && tableau_spawn.length > 0) { //partie des ennemis
     const definition = Phaser.Utils.Array.GetRandom(tableau_ennemis);
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const ennemi = groupe_araignee.create(position.x, position.y, definition.texture);
@@ -958,7 +1115,6 @@ function degat_contact_ennemi(player, ennemi) {
   if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) {
     return;
   }
-  player.barreVie.setFrame(player.points_vies);
   player.points_vies = Math.max(0, player.points_vies - ennemi.degats);
   player.prochaineDegat = this.time.now + 1000;
   player.colliderEnnemis.active = false;
@@ -1003,7 +1159,7 @@ function degat_contact_ennemi(player, ennemi) {
           player.enRechargement = false;
           player.peutTirer = true;
           texteBalles.setAlpha(1);
-          texteBalles.setText('Balle restante : ' + player.balle_restante);
+          texteBalles.setText(String(player.balle_restante));
         });
       }
 
@@ -1021,23 +1177,26 @@ function degat_contact_ennemi(player, ennemi) {
             {coefDir = 1}
         }
         if (player.direction == 'left' || player.direction == 'right'){
-            bullet = groupeBullets.create(player.x + (25 * coefDir), player.y, 'bullet');
             if (player.direction == 'left'){
               player.anims.play("anim_attaque_gauche_J1",true);
+              bullet = groupeBullets.create(player.x + (25 * coefDir), player.y, 'animation_balle_gauche');
             }
             else{
-              player.anims.play("anim_attaque_droite_J1",true); 
+              player.anims.play("anim_attaque_droite_J1",true);
+              bullet = groupeBullets.create(player.x + (25 * coefDir), player.y, 'animation_balle_droite');
             }
           }
           if (player.direction == 'up' || player.direction == 'down'){
-            bullet = groupeBullets.create(player.x , player.y + (25 * coefDir), 'bullet');  //balle crée dans la direction haut bas donc on inverse les coordonnées x et y.
             if (player.direction == 'up'){
               player.anims.play("anim_attaque_haut_J1",true);
+              bullet = groupeBullets.create(player.x , player.y + (25 * coefDir), 'animation_balle_haut');
             }
             else{
-              player.anims.play("anim_attaque_bas_J1",true); 
+              player.anims.play("anim_attaque_bas_J1",true);
+              bullet = groupeBullets.create(player.x , player.y + (25 * coefDir), 'animation_balle_bas');
             }
           }
+          bullet.anims.play(bullet.texture.key);
           bullet.tireur = player;
           camJ1UI.ignore(bullet); //on est obligé d'ignorer les balles a ce moment la car elle sont crées qu'a ce moment la.
           camGlobalUI.ignore(bullet);
@@ -1050,11 +1209,10 @@ function degat_contact_ennemi(player, ennemi) {
         if (player.direction == 'up' || player.direction == 'down'){
           bullet.setVelocity(0, 500 * coefDir); //on met les coordonées inverse pour que la balle aille en haut ou en bas au lieu de la gauche ou la droite
         }
-          bullet.setAngularVelocity(180); //permet de faire en sorte que l'objet tournee en continue
           son_feu.play();
           player.balle_restante -= 1;
           const balleRestanteText = player === player2 ? balle_restanteJ2_affiche : balle_restanteJ1_affiche;
-          balleRestanteText.setText('Balle restante: ' + player.balle_restante);
+          balleRestanteText.setText(String(player.balle_restante));
           player.peutTirer = false;
 
        var timerTirOk = this.time.delayedCall(800,
@@ -1063,7 +1221,7 @@ function degat_contact_ennemi(player, ennemi) {
            },
            null,this);
            //partie reservée a détruire le bullet si il est actif plus de 3 secondes.
-      this.time.delayedCall((3000), () => { 
+      this.time.delayedCall((1000), () => { 
           if (bullet.active) { 
             bullet.destroy();
           }
@@ -1081,7 +1239,7 @@ function degat_contact_ennemi(player, ennemi) {
         bullet.destroy();
         ennemi.points_vie -= 1;
         son_areignne_blesse.play();
-        this.time.delayedCall(200), () => {
+        this.time.delayedCall(500), () => {
           ennemi.setColor('0xFF0000')
         }
         if (ennemi.points_vie <= 0){
@@ -1089,13 +1247,15 @@ function degat_contact_ennemi(player, ennemi) {
           if (tireur){ //défini simplement qui est le tireur
             tireur.score += ennemi.score;
             const scoreText = tireur === player2 ? score_J2_affiche : score_J1_affiche;
-            scoreText.setText('Score: ' + tireur.score);
+            scoreText.setText(String(tireur.score));
           }
         }
       };
     function recuperer_cle(player, cle){
-      player.score += 500
-      son_cle.play();
+        player.score += cle.score;
+        const scoreText = player === player2 ? score_J2_affiche : score_J1_affiche;
+        scoreText.setText(String(player.score));
+        son_cle.play();
       cles_restantes -= 1;
       cle.destroy();
       if (cles_restantes>0){
@@ -1105,12 +1265,14 @@ function degat_contact_ennemi(player, ennemi) {
         cles_restantes_affiche.setText('Dirigez vous vers la sortie !');
       }
       if (cles_creees >= nombre_cles && groupe_cle.countActive(true) === 0){
-        this.porte1.setTexture("sortie1_ouverte");
+        porte.anims.play("animation_porte_ouverte");
         sortie_ouverte = true;
       }
     }
     function soigner(cible, medkit) {
-        cible.points_vies = Math.min(cible.points_vies + 1, 5);
+      if (cible.points_vie == 5) {
+          return;
+        }
+        cible.points_vies = Math.min(cible.points_vies + 2, 5);
       medkit.destroy();
     }; 
-
