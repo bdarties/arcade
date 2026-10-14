@@ -106,6 +106,9 @@ export default class chargement extends Phaser.Scene {
     this.load.audio("son_partition", "./assets/son_partition.m4a"); // chœur qui s'élève quand on approche de la partition
     this.load.audio("son_ennemi", "./assets/son_ennemi.m4a"); // le son des ennemis (Tuba, cristal)
     this.load.audio("son_lampe", "./assets/son_lampe.m4a"); // le son de la lampe qui tire un éclat
+    this.load.audio("son_cristal", "./assets/son_cristal.m4a"); // le cri des petits monstres de cristal
+    this.load.audio("son_tuba", "./assets/son_tuba.m4a"); // une note de tuba, quand un Tuba crache son onde
+    this.load.audio("son_tambour", "./assets/son_tambour.m4a"); // le « boing » du tambour-trampoline (niveau 2)
     this.load.audio("son_maestro", "./assets/son_maestro.m4a"); // le son du Maestro (pour le boss, pas encore utilisé)
 
     // ---- Divers ----

@@ -52,8 +52,10 @@ function contexteAudio(scene) {
 const DELAI_SON_ENNEMI_MS = 1500; // au moins 1,5 s entre deux sons d'ennemi : pas de spam
 let dernierSonEnnemi = 0; // l'heure du dernier son (horloge du navigateur, valable d'un écran à l'autre)
 
-export function jouerSonCreature(scene) {
-  if (scene.cache.audio.exists("son_ennemi") == false) {
+// cle = le son à jouer : "son_ennemi" si on ne précise rien, "son_cristal" pour les cristaux, "son_tuba" pour les Tubas
+// (le délai de 1,5 s est commun à tous : jamais deux cris de monstres l'un sur l'autre)
+export function jouerSonCreature(scene, cle = "son_ennemi") {
+  if (scene.cache.audio.exists(cle) == false) {
     return; // fichier absent : on joue sans ce son
   }
   const maintenant = performance.now(); // l'heure actuelle, en millisecondes
@@ -61,7 +63,7 @@ export function jouerSonCreature(scene) {
     return; // trop tôt depuis le dernier son : on se tait
   }
   dernierSonEnnemi = maintenant;
-  scene.sound.play("son_ennemi", { volume: 0.6 }); // 0,6 = audible, sans être agressif
+  scene.sound.play(cle, { volume: 0.6 }); // 0,6 = audible, sans être agressif
 }
 
 // Une note courte (Do, Mi ou Sol) : quand la Cantatrice lance une onde
