@@ -91,7 +91,7 @@ export default class resultat extends Phaser.Scene {
             this,
             "Fin du spectacle",
             "Mini-jeux réussis : " + nbReussites + " sur " + cles.length +
-            "  (il en faut " + REUSSITES_POUR_GAGNER + ")"
+            "  (il en faut au moins " + REUSSITES_POUR_GAGNER + ")"
         );
 
         // Grand titre : victoire ou game over
