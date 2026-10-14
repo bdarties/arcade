@@ -261,11 +261,11 @@ export default class niveau1 extends Phaser.Scene {
       
       //definition des paramètres du premier niveau
       temps_restant = 120;
-      var nombre_cles = 1
+      nombre_cles = 1;
       cles_restantes = nombre_cles;
       nombre_ennemis_apparaissant = 4;
       nombre_recharges_apparaissant = 1;
-      nombre_soins_apparaissant = 2;
+      nombre_soins_apparaissant = 1;
       sortie_ouverte = false;
 
     /*************************************
@@ -781,8 +781,6 @@ export default class niveau1 extends Phaser.Scene {
       player2.iconeRecharge.setScale(1.5);
       player2.iconeRecharge.setOrigin(0.5, 0);
       player2.iconeRecharge.setScrollFactor(0);
-      score_J2_affiche = this.add.text(544, 160, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
-      score_J2_affiche.setScrollFactor(0)
       balle_restanteJ2_affiche = this.add.text(544, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881'});
       balle_restanteJ2_affiche.setScrollFactor(0);
       player2.barreVie = this.add.sprite(550, 10, "pv_bar2", player2.points_vies);
@@ -1136,7 +1134,7 @@ function apparition_elements() {
     const definition = Phaser.Utils.Array.GetRandom(tableau_ennemis);
     const position = Phaser.Utils.Array.RemoveRandomElement(tableau_spawn);
     const ennemi = groupe_araignee.create(position.x, position.y, definition.texture);
-    ennemi.points_vie = definition.points_vie;
+    ennemi.points_vies = definition.points_vies;
     ennemi.degats = definition.degats;
     ennemi.score = definition.score;
     ennemi.anims.play(definition.animation, true);
@@ -1274,12 +1272,12 @@ function degat_contact_ennemi(player, ennemi) {
       function Elimination_ennemi(bullet, ennemi){ //gère le contact entre ennemi et balle et leur elimination
         const tireur = bullet.tireur;
         bullet.destroy();
-        ennemi.points_vie -= 1;
+        ennemi.points_vies -= 1;
         son_areignne_blesse.play();
         this.time.delayedCall(500), () => {
           ennemi.setColor('0xFF0000')
         }
-        if (ennemi.points_vie <= 0){
+        if (ennemi.points_vies <= 0){
           ennemi.destroy();
           if (tireur){ //défini simplement qui est le tireur
             tireur.score += ennemi.score;
@@ -1301,10 +1299,12 @@ function degat_contact_ennemi(player, ennemi) {
         sortie_ouverte = true;
       }
     }
-    function soigner(cible, medkit) {
-      if (cible.points_vie == 5) {
-          return;
-        }
+    function soigner(cible, objet) {
+      if (cible.points_vies >= 5) {
+        return;
+      }
+      else{
         cible.points_vies = Math.min(cible.points_vies + 2, 5);
-      medkit.destroy();
+        objet.destroy();
+      }
     }; 

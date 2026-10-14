@@ -1,5 +1,6 @@
 // chargement des librairies
 import niveau1 from "./js/Niveau1.js";
+import niveau2 from "./js/niveau2.js";
 import Ecran_score from "./js/Ecran_score.js";
 import Game_over from "./js/Game_over.js";
 import Menu from "./js/menu.js";
@@ -29,7 +30,7 @@ var config = {
       debug: true // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [Menu, niveau1, Ecran_score, Game_over],
+  scene: [Menu, niveau1, niveau2, Ecran_score, Game_over],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
