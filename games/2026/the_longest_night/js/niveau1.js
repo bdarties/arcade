@@ -59,8 +59,41 @@ var sortie_ouverte = false; //définit si toutes les clés ont été trouvées, 
 var gameOver = false; //fonction pouvant etre utilisée pour définir si la partie se termine ou non. N'a pas d'utilité pour l'instant.
 // définition de la classe "selection"
 export default class niveau1 extends Phaser.Scene {
-  constructor() {
-    super({ key: "niveau1" }); // mettre le meme nom que le nom de la classe
+  constructor(cle = "niveau1") {
+    super({ key: cle }); // niveau2 hérite de cette classe et passe sa propre clé
+  }
+
+  init(data) {
+    this.donnees = data || {}; // scores transmis par le niveau précédent (vide pour le niveau 1)
+  }
+
+  /** Tous les réglages qui changent d'un niveau à l'autre sont ici.
+   *  niveau2.js redéfinit cette méthode pour changer la carte, les ennemis, etc. */
+  parametres_niveau() {
+    return {
+      carte_cle: "carte1",
+      carte_fichier: "./assets/map/niveau_1.json",
+      tileset_nom: "tileset_good",
+      tileset_image: "Phaser_tuileGood",
+      temps: 120,
+      nombre_cles: 1,
+      nombre_ennemis: 4,
+      nombre_recharges: 1,
+      nombre_soins: 1,
+      player_spawn: { x: 93.3333, y: 672.0 },
+      player2_spawn: { x: 243.333, y: 673.333 },
+      tableau_spawn: [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}],
+      porte: { x: 600, y: 414 },
+      ennemis: [{
+        nom: "groupe_araignee",
+        texture: "areignee_ennemie",
+        animation: "animation_areignee",
+        points_vies: 3,
+        degats: 1,
+        score: 100
+      }],
+      niveau_suivant: "niveau2"
+    };
   }
 
 
@@ -79,7 +112,8 @@ export default class niveau1 extends Phaser.Scene {
     
     // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
     this.load.image("Phaser_tuileGood", "./assets/map/tileset_good.png");
-    this.load.tilemapTiledJSON("carte1", "./assets/map/niveau_1.json"); 
+    const cfg_carte = this.parametres_niveau();
+    this.load.tilemapTiledJSON(cfg_carte.carte_cle, cfg_carte.carte_fichier); 
     this.load.image("img_background", "./assets/arriere_plan.jpg");
     this.load.image("player1", "./assets/player_1/joueur1_image.png"); //servira a définir le joueur directement. L'image a en réalité peu d'importance car on verra l'animation d'attente du bas dès le début.
     this.load.image("player2", "./assets/player_2/joueur2_image.png");
@@ -262,12 +296,15 @@ export default class niveau1 extends Phaser.Scene {
   create() {
       
       //definition des paramètres du premier niveau
-      temps_restant = 120;
-      nombre_cles = 1;
+      const cfg = this.parametres_niveau();
+      this.cfg = cfg;
+      temps_restant = cfg.temps;
+      nombre_cles = cfg.nombre_cles;
       cles_restantes = nombre_cles;
-      nombre_ennemis_apparaissant = 4;
-      nombre_recharges_apparaissant = 1;
-      nombre_soins_apparaissant = 1;
+      cles_creees = 0; //remis à zéro à chaque (re)lancement de niveau
+      nombre_ennemis_apparaissant = cfg.nombre_ennemis;
+      nombre_recharges_apparaissant = cfg.nombre_recharges;
+      nombre_soins_apparaissant = cfg.nombre_soins;
       sortie_ouverte = false;
 
     /*************************************
@@ -275,11 +312,22 @@ export default class niveau1 extends Phaser.Scene {
      *************************************/
 
 
-    const carteDuNiveau = this.make.tilemap({ key:"carte1"});
+    if (!this.cache.tilemap.exists(cfg.carte_cle)) { //la carte n'a pas été chargée (fichier absent, mauvais chemin, 404...)
+      throw new Error("Carte introuvable : " + cfg.carte_fichier + " n'a pas été chargé. Vérifie le chemin et le nom du fichier.");
+    }
+    const carteDuNiveau = this.make.tilemap({ key: cfg.carte_cle });
+    ["calque_sol", "calque_details", "calque_mur"].forEach((nom) => {
+      if (!carteDuNiveau.layers.some((calque) => calque.name === nom)) {
+        throw new Error("Calque '" + nom + "' absent de " + cfg.carte_fichier + ". Calques trouvés : " + carteDuNiveau.layers.map((c) => c.name).join(", "));
+      }
+    });
     const tileset = carteDuNiveau.addTilesetImage(
-      "tileset_good",
-      "Phaser_tuileGood"
+      cfg.tileset_nom,
+      cfg.tileset_image
     );
+    if (!tileset) {
+      throw new Error("Tileset '" + cfg.tileset_nom + "' introuvable dans " + cfg.carte_fichier + ". Tilesets trouvés : " + carteDuNiveau.tilesets.map((t) => t.name).join(", "));
+    }
         const calque_sol = carteDuNiveau.createLayer(
           "calque_sol",
           tileset
@@ -308,15 +356,15 @@ export default class niveau1 extends Phaser.Scene {
   }); 
   */
 
-  player_spawn = {x:93.3333,y:672.0} 
-  player2_spawn = {x:243.333, y:673.333};
-  tableau_spawn = [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}]; //le tableau de spawn. Entrez les coordonées voulue dans celui-ci et les éléments du jeu seront répartis sur ces points avec la fonction repartition_element(). Il définit par la même occasion le nombre d'éléments qui peuvent apparaitre : plus il y'a de points, plus il peut y avoir d'éléments dans le jeu.
+  player_spawn = cfg.player_spawn;
+  player2_spawn = cfg.player2_spawn;
+  tableau_spawn = cfg.tableau_spawn; //défini dans parametres_niveau()
 
   /**************************
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  porte = this.physics.add.staticSprite(600, 414, "sortie_fermee");
+  porte = this.physics.add.staticSprite(cfg.porte.x, cfg.porte.y, "sortie_fermee");
   groupe_cle = this.physics.add.group();
   groupe_araignee = this.physics.add.group
   groupe_recharges = this.physics.add.group();
@@ -341,7 +389,7 @@ export default class niveau1 extends Phaser.Scene {
     player.peutTirer = true; //on l'associe que une fois car on utilisera cette valeur de la même façon pour les deux joueurs
     player.balle_max= 10;
     player.balle_restante = player.balle_max;
-    player.score = 0;
+    player.score = this.donnees.scoreJ1 ?? 0;
     player.points_vies = 5;
     player.prochaineDegat = 0;
     player.direction = "down"; //on définit une direction par défaut au lencement du jeu pour éviter qu'on se retrouve sans animation dès le début du jeu.
@@ -358,7 +406,7 @@ export default class niveau1 extends Phaser.Scene {
       player2.peutTirer = true;
       player2.balle_max = 10;
       player2.balle_restante = player2.balle_max;
-      player2.score = 0;
+      player2.score = this.donnees.scoreJ2 ?? 0;
       player2.points_vies = 5;
       player2.prochaineDegat = 0;
       player2.direction = "down";
@@ -698,7 +746,7 @@ export default class niveau1 extends Phaser.Scene {
     camJ1 = this.cameras.main; //on initisalise les caméras maintenant pour qu'elle puissent ignorer les éléménts d'UI des deux joueurs plus tard.
     camJ1.setViewport(0, 0, 1280/2, 720);
     camJ1.startFollow(player, true, 0.1, 0.1); 
-    camJ1.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.widthInPixels); 
+    camJ1.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.heightInPixels); 
     camJ1.setZoom(2); //Définit un zoom et l'applique a la caméra, tout simplement. Une plus grande valeur définira un zoom plus grand.
     //Les caméras UI ont comme objectif de n'afficher que les UI des deux joueurs afin qu'ils ne soient pas afféctés par le zoom des caméras normales.
     camJ1UI = this.cameras.add(0, 0, 1280 / 2, 720);
@@ -710,7 +758,7 @@ export default class niveau1 extends Phaser.Scene {
     if (mode_deux_joueurs){
       camJ2.startFollow(player2, true, 0.1, 0.1);
     }
-    camJ2.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.widthInPixels);
+    camJ2.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.heightInPixels);
     camJ2.setZoom(2);
      if (mode_deux_joueurs){
     camJ2UI = this.cameras.add(1280 / 2, 0, 1280 / 2, 720);
@@ -844,15 +892,8 @@ export default class niveau1 extends Phaser.Scene {
     
     groupe_araignee = this.physics.add.group();
     this.physics.add.collider(groupe_araignee, calque_mur);
-    tableau_ennemis = [{ //on rajoute les ennemis dans ce tableau pour qu'ils soient réorganisés plus tard. Ce tableau permet aussi de mettre des informations liées aux ennemis comme leur score donné une fois éliminé par exemple
-      nom: "groupe_araignee",
-      texture: "areignee_ennemie",
-      animation: "animation_areignee",
-      points_vie: 3,
-      degats: 1,
-      score : 100
-    }];
-     nombre_appels_apparition = Math.max( //on rassemble le nombre d'élément total que l'on shouaiterais ici.
+    tableau_ennemis = cfg.ennemis; //défini dans parametres_niveau()
+     const nombre_appels_apparition = Math.max( //on rassemble le nombre d'élément total que l'on shouaiterais ici.
       nombre_ennemis_apparaissant,
       nombre_cles,
       nombre_recharges_apparaissant,
@@ -968,8 +1009,8 @@ export default class niveau1 extends Phaser.Scene {
           tirer.call(this, player);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, this.porte)) {
-      this.scene.run("niveau2")
+    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, porte)) {
+      aller_niveau_suivant.call(this);
     }
   //commandes joueur2
   if (mode_deux_joueurs){
@@ -1021,12 +1062,8 @@ export default class niveau1 extends Phaser.Scene {
           tirer.call(this, player2);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, this.porte)) {
-      gagnant = "Joueur 2";
-      this.scene.start("Ecran_score", {
-        scoreJ1: player2.score,
-        temps_restant,
-      });
+    if (Phaser.Input.Keyboard.JustDown(J2Interaction) && sortie_ouverte && this.physics.overlap(player2, porte)) {
+      aller_niveau_suivant.call(this);
     }
     }
   }
@@ -1068,6 +1105,10 @@ function deplacement_areignee() { //définit le comportement de l'areignée, un 
   const joueurs = mode_deux_joueurs ? [player, player2] : [player];
   groupe_araignee.children.iterate((ennemi) => {
     if (!ennemi || !ennemi.active || !ennemi.body) {
+      return;
+    }
+    if (ennemi.comportement === "rodeur") {
+      comportement_rodeur.call(this, ennemi, joueurs);
       return;
     }
     let joueur_cible = null;
@@ -1139,6 +1180,18 @@ function apparition_elements() { //la fonction la plus complexe. Elle sert a fai
     ennemi.points_vies = definition.points_vies;
     ennemi.degats = definition.degats;
     ennemi.score = definition.score;
+    ennemi.comportement = definition.comportement || "poursuite"; //"poursuite" (araignée) ou "rodeur" (renard)
+    ennemi.degats_au_contact = definition.degats_au_contact !== false; //false : ne blesse que par son attaque
+    ennemi.animation_marche = definition.animation;
+    ennemi.animation_attaque = definition.animation_attaque;
+    ennemi.rayon = definition.rayon_detection;
+    ennemi.vitesse = definition.vitesse || 45;
+    ennemi.delai_impact = definition.delai_impact || 500; //ms après le début de l'attaque avant que le coup touche
+    ennemi.duree_attaque = definition.duree_attaque || 900; //ms : durée totale de l'attaque, après quoi il reprend sa balade (indépendant de l'animation)
+    ennemi.texture_marche = definition.texture;
+    ennemi.etat = "balade";
+    ennemi.prochaine_attaque = 0;
+    ennemi.prochain_changement = 0;
     ennemi.anims.play(definition.animation, true);
     camJ1UI.ignore(ennemi);
     camGlobalUI.ignore(ennemi);
@@ -1148,7 +1201,10 @@ function apparition_elements() { //la fonction la plus complexe. Elle sert a fai
   }
 }
 
-function degat_contact_ennemi(player, ennemi) {
+function degat_contact_ennemi(player, ennemi, attaque = false) {
+  if (ennemi.degats_au_contact === false && !attaque) { //le renard ne blesse pas en simple contact, seulement avec son attaque
+    return;
+  }
   if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) { //si le prochain degat déclenché par l'ennemi  est supérieur aux PV actuels de la cible (donc le joueur), on ne declenche pas la fonctions.
     return;
   }
@@ -1310,3 +1366,78 @@ function degat_contact_ennemi(player, ennemi) {
           objet.destroy();
        }
       }; 
+
+function aller_niveau_suivant() { //arrête la musique puis lance le niveau défini dans parametres_niveau() en lui transmettant les scores
+  musique_niveau1.stop();
+  this.scene.start(this.cfg.niveau_suivant, {
+    scoreJ1: player.score,
+    scoreJ2: mode_deux_joueurs ? player2.score : 0,
+    temps_restant
+  });
+}
+
+function comportement_rodeur(ennemi, joueurs) { //se balade au hasard ; attaque sur place si un joueur entre dans son rayon, sans jamais le poursuivre
+  if (ennemi.etat === "attaque") {
+    ennemi.setVelocity(0, 0);
+    return;
+  }
+  const maintenant = this.time.now;
+  let cible = null;
+  let distance_min = Infinity;
+  joueurs.forEach((joueur) => {
+    if (!joueur || !joueur.active || joueur.points_vies <= 0) {
+      return;
+    }
+    const distance = Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y);
+    if (distance < distance_min) {
+      distance_min = distance;
+      cible = joueur;
+    }
+  });
+  if (cible && distance_min <= ennemi.rayon && maintenant >= ennemi.prochaine_attaque) {
+    attaque_rodeur.call(this, ennemi, cible, joueurs);
+    return;
+  }
+  //balade : on change de direction toutes les 1,5 à 3,5 s, ou tout de suite si on est bloqué par un mur
+  const bloque = !ennemi.body.blocked.none || !ennemi.body.touching.none;
+  if (maintenant >= ennemi.prochain_changement || bloque) {
+    ennemi.prochain_changement = maintenant + Phaser.Math.Between(1500, 3500);
+    if (Phaser.Math.Between(0, 100) < 30) { //une fois sur trois environ, il s'arrête un moment
+      ennemi.setVelocity(0, 0);
+      ennemi.anims.play(ennemi.animation_marche, true); //même animation à l'arrêt qu'en marchant
+    } else {
+      const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      ennemi.setVelocity(Math.cos(angle) * ennemi.vitesse, Math.sin(angle) * ennemi.vitesse);
+      ennemi.setFlipX(ennemi.body.velocity.x < 0); //suppose que le sprite regarde vers la droite par défaut
+      ennemi.anims.play(ennemi.animation_marche, true);
+    }
+  }
+}
+
+function attaque_rodeur(ennemi, cible, joueurs) {
+  ennemi.etat = "attaque";
+  ennemi.setVelocity(0, 0);
+  ennemi.setFlipX(cible.x < ennemi.x);
+  ennemi.anims.play(ennemi.animation_attaque, true);
+  if (!this.anims.exists(ennemi.animation_attaque)) {
+    console.error("Animation d'attaque introuvable : " + ennemi.animation_attaque);
+  }
+  this.time.delayedCall(ennemi.duree_attaque, () => { //fin de l'attaque : retour à la balade après un temps de repos
+    if (!ennemi.active) {
+      return;
+    }
+    ennemi.etat = "balade";
+    ennemi.prochaine_attaque = this.time.now + 1500;
+    ennemi.prochain_changement = 0;
+  });
+  this.time.delayedCall(ennemi.delai_impact, () => { //le coup touche en plein milieu de l'animation : tout joueur encore dans le rayon est blessé
+    if (!ennemi.active || ennemi.etat !== "attaque") {
+      return;
+    }
+    joueurs.forEach((joueur) => {
+      if (joueur && joueur.active && Phaser.Math.Distance.Between(ennemi.x, ennemi.y, joueur.x, joueur.y) <= ennemi.rayon) {
+        degat_contact_ennemi.call(this, joueur, ennemi, true);
+      }
+    });
+  });
+}
