@@ -1250,6 +1250,10 @@ export default class niveau1 extends Phaser.Scene {
       this.time.delayedCall(400, () => { // 0,4 s après le début de l'attaque
         if (tuba.active && this.time.now >= tuba.etourdiJusqua) { // s'il n'est pas étourdi entre-temps
           this.lancerOndeTuba(tuba); // l'onde part
+          // une note de tuba, mais seulement si on voit ce Tuba à l'écran (pas de bruit pour un Tuba lointain)
+          if (this.cameras.main.worldView.contains(tuba.x, tuba.y)) {
+            jouerSonCreature(this, "son_tuba");
+          }
         }
       });
     }
@@ -1286,7 +1290,7 @@ export default class niveau1 extends Phaser.Scene {
     if (distance < REGLAGES.cristal.detectionPx) {
       if (cristal.reveille !== true) {
         cristal.reveille = true; // il vient de se réveiller : un petit son, une seule fois par réveil
-        jouerSonCreature(this);
+        jouerSonCreature(this, "son_cristal");
       }
       this.physics.moveToObject(cristal, cible, REGLAGES.cristal.vitesse); // il se dirige vers lui
     } else {
@@ -1329,7 +1333,7 @@ export default class niveau1 extends Phaser.Scene {
     if (note != cristal.note) {
       // mauvaise note : il est juste étourdi un court instant
       this.etourdir(cristal, REGLAGES.cristal.etourdissementMauvaiseNoteMs);
-      jouerSonCreature(this); // le cristal grince sous la mauvaise note
+      jouerSonCreature(this, "son_cristal"); // le cristal grince sous la mauvaise note
       this.afficherMessage("Mauvaise note ! Ce cristal est " + cristal.note.toUpperCase() + " (P pour changer de note)", 2500); // on aide le joueur
       return;
     }

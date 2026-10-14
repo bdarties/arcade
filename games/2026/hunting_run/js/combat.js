@@ -1,17 +1,12 @@
 import {
   SPRITES, IMAGES_COMBAT, COMBAT, TYPES_ENNEMIS, ENNEMIS, POTIONS, CALQUES_TILED, PATROUILLE_GARDE, TROUS, PNJS, MAPS, ENIGMES
 } from "./maps.js";
-import { SONS, jouer } from "./sons.js";
+  import { jouer, laserOn } from "./sons.js";
 
-/*
-  Tout le COMBAT du jeu : coup de poing, tir, laser, ennemis, potions, PNJ qui parlent.
-  Ces fonctions sont ajoutées à la scène "jeu" (voir la dernière ligne de jeu.js) : "this" = la scène.
-  Les réglages (vitesse, pv, positions...) sont tous dans maps.js.
-*/
 const combat = {
-  /*************************
-   *  CHARGEMENT            *
-   *************************/
+
+  /*CHARGEMENT*/
+
   chargerCombat() {
     Object.entries(SPRITES).forEach(([cle, s]) => {
       if (!this.textures.exists("sp_" + cle)) {
@@ -46,7 +41,7 @@ const combat = {
         ctx.putImageData(donnees, 0, 0);
         ct.refresh();
       } catch (e) {
-        /* image non modifiable : on utilisera une teinte rouge à la place */
+        /*image non modifiable : on utilise une teinte rouge à la place*/
       }
     }
   },
@@ -63,9 +58,8 @@ const combat = {
     });
   },
 
-  /*************************
-   *  INITIALISATION        *
-   *************************/
+  /*INITIALISATION*/
+
   initCombat(plateformes) {
     this.plateformes = plateformes;
     this.ennemis = [];
@@ -141,7 +135,7 @@ const combat = {
 
     // le PNJ du début se met à parler tout seul, une seule fois
     const intro = (PNJS[this.nomMap] || []).find((p) => p.auto && !(p.vu && this.registry.get(p.vu)));
-    if (intro && !this.origine && !this.hasard) {
+    if (intro && !this.origine && !this.hasard && !this.spawnForce) {
       this.time.delayedCall(700, () => {
         const j = this.vivants()[0];
         if (j && !this.dialogue) this.parler(intro, j);
@@ -160,9 +154,8 @@ const combat = {
     );
   },
 
-  /*************************
-   *  OUTILS                *
-   *************************/
+  /*OUTILS*/
+
   aPouvoir(j) {
     return (this.registry.get("pouvoir_" + j.num) || 0) > Date.now();
   },
@@ -170,8 +163,7 @@ const combat = {
   donnerPouvoir(j) {
     const fin = COMBAT.pouvoirDuree > 0 ? Date.now() + COMBAT.pouvoirDuree : Number.MAX_SAFE_INTEGER;
     this.registry.set("pouvoir_" + j.num, fin);
-    this.cameras.main.flash(300, 170, 80, 255); // (le son vient déjà du fichier "potion")
-    this.message("Potion violette ! Tu as un POUVOIR.\nBouton B : tirer      MAINTIENS B : laser", 5500);
+    this.message("Potion violette ! Tu as un POUVOIR.\nBouton A : tirer      MAINTIENS A : laser", 5500);
   },
 
   couperLasers() {
@@ -235,9 +227,8 @@ const combat = {
     }
   },
 
-  /*************************
-   *  ENNEMIS               *
-   *************************/
+  /*ENNEMIS*/
+
   // points posés dans Tiled : [{ x, y }, ...] en PIXELS pour un calque d'objets (liste vide s'il n'existe pas)
   pointsTiled(nomCalque) {
     const calque = this.carte && this.carte.getObjectLayer(nomCalque);
@@ -281,7 +272,7 @@ const combat = {
     });
   },
 
-  // le dessin regarde-t-il à droite ? (flipX si l'orientation voulue est l'inverse du dessin)
+  // le dessin regarde-t-il à droite ?
   orienter(s, dir) {
     s.setFlipX(s.e.sp.regardeDroite ? dir < 0 : dir > 0);
   },
@@ -297,7 +288,8 @@ const combat = {
     });
   },
 
-  // ---- GARDE : corps à corps, il frappe ----
+  //GARDE : corps à corps, il frappe 
+
   iaGarde(s, e, time, cible) {
     const t = e.t;
     const z = e.zone;
@@ -354,7 +346,8 @@ const combat = {
     this.tweens.add({ targets: g, alpha: 0, duration: 160, onComplete: () => g.destroy() });
   },
 
-  // ---- TIREUR : reste en place et envoie des boules orange ----
+  //TIREUR : reste en place et envoie des boules orange
+
   iaTireur(s, e, time, cible) {
     const t = e.t;
     const voit = cible && Math.abs(cible.dx) < t.detection && Math.abs(cible.dy) < 160;
@@ -420,11 +413,12 @@ const combat = {
     const e = s.e;
     e.mort = true;
     jouer(this, "mortEnnemi");
+    this.ajouterScore(e.t.points || 100, s.x, s.y - 60); // SCORE
     this.etincelles(s.x, s.y - 20, 0xffffff, 10);
     s.disableBody(true, false);
     s.clearTint();
     this.tweens.add({
-      targets: s, alpha: 0, scaleX: s.scaleX * 1.3, scaleY: s.scaleY * 0.6, duration: 1000,
+      targets: s, alpha: 0, scaleX: s.scaleX * 1.3, scaleY: s.scaleY * 0.6, duration: 320,
       onComplete: () => s.destroy()
     });
     // parfois il laisse une potion rouge
@@ -434,16 +428,15 @@ const combat = {
     }
   },
 
-  /*************************
-   *  POTIONS               *
-   *************************/
+  /*POTIONS*/
+
   // toutes les potions de la map : calques Tiled "potion pouvoir" (violette) / "potion coeur" (rouge) + celles écrites à la main (POTIONS)
   listePotions() {
     const liste = [];
     Object.entries(CALQUES_TILED).forEach(([nomCalque, c]) => {
       if (c.genre !== "potion") return;
       this.pointsTiled(nomCalque).forEach((o) => {
-        // le point Tiled est en l'air : on pose la potion sur le sol juste en dessous
+      // le point Tiled est en l'air : on pose la potion sur le sol juste en dessous
         liste.push({ px: o.x, py: this.solSous(o.x, o.y), type: c.type });
       });
     });
@@ -510,9 +503,8 @@ const combat = {
     }
   },
 
-  /*************************
-   *  TROUS MORTELS         *
-   *************************/
+  /*TROUS MORTELS*/
+
   majTrous() {
     const defs = TROUS[this.nomMap];
     if (!defs) return;
@@ -540,9 +532,8 @@ const combat = {
     this.tweens.add({ targets: f, y: f.y - 12, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   },
 
-  /*************************
-   *  ATTAQUES DU JOUEUR    *
-   *************************/
+  /*ATTAQUES DU JOUEUR*/
+
   majAttaques(time, delta) {
     const L = COMBAT.laser;
     this.vivants().forEach((j) => {
@@ -626,7 +617,7 @@ const combat = {
     j.laserActif = true;
     j.laserCePress = true;
     j.prochainTick = 0;
-    j.sonLaser = SONS.laserOn(this);
+    j.sonLaser = laserOn(this);
   },
 
   arreterLaser(j) {
@@ -788,7 +779,7 @@ const combat = {
     objets.push(fixe(this.add.rectangle(L / 2, H - 110, 1040, 170, 0x0d0610, 0.95).setStrokeStyle(3, 0x8a1c1c), 1400));
     objets.push(fixe(this.add.text(L / 2 - 490, H - 180, pnj.nom, { ...police, fontSize: "24px", fontStyle: "italic", color: "#c9a24a" }), 1401));
     const texte = fixe(this.add.text(L / 2 - 490, H - 148, "", { ...police, fontSize: "24px", color: "#ffffff", wordWrap: { width: 980 } }), 1401);
-    const suite = fixe(this.add.text(L / 2 + 490, H - 50, "A ▶", { ...police, fontSize: "18px", color: "#999999" }).setOrigin(1, 0.5), 1401);
+    const suite = fixe(this.add.text(L / 2 + 490, H - 50, "B ▶", { ...police, fontSize: "18px", color: "#999999" }).setOrigin(1, 0.5), 1401);
     objets.push(texte, suite);
 
     const d = { pnj, lignes, i: 0, texte, suite, objets, quandFini, car: 0, fini: false, debut: Date.now(), gele: !!pnj.gelerTemps };
