@@ -8,6 +8,8 @@ import * as butin from "./butin.js";
 import * as bonus from "./bonus.js";
 import * as cristaux from "./cristaux.js";
 import * as lumiere from "./lumiere.js";
+import * as biomes from "./biomes.js";
+import * as tutoriel from "./tutoriel.js";
 
 const LARGEUR_NIVEAU = 50; // cases de 32 px
 const HAUTEUR_NIVEAU = 34;
@@ -21,6 +23,7 @@ const STAMINA_MAX = 100;
 // équilibrage : ~0,6 pierre par caillou cassé (cf. pierres.js), 14 cailloux par niveau, la salle safe est rare
 // -> quelques dizaines de pierres entre deux salles : à 5 PV par pierre, ça couvre un à deux barres de vie, pas plus
 const PV_PAR_PIERRE = 5;
+const ECHELLE_STAMINA = 1.5; // taille de la barre de stamina à l'écran (la barre de vie reste à 2) : 96x16 -> 144x24
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
 const ZOOM_CAMERA = 1.5; // zoom maximal (joueurs proches ou solo) ; la caméra HUD n'est pas zoomée, cf. creerCameraHud
@@ -34,9 +37,18 @@ const DUREE_FONDU = 400; // ms
 const DUREE_ENTREE_ECHELLE = 160; // ms : le joueur se place sur l'échelle
 const DUREE_ECHELLE = 900; // ms : animation de descente (ou de montée) d'échelle, avant le changement de niveau
 const NB_CAILLOUX = 14;
+const NB_CAILLOUX_TUTO = 5; // le tutoriel est un niveau presque vide : on y pose lui-même les cailloux dont il a besoin
 const AFFICHER_FPS = true; // compteur d'images par seconde en bas à gauche, pour mesurer sur la borne : mettre false pour le retirer
 const PERIODE_FPS = 500; // ms entre deux mises à jour du compteur
-const DISTANCE_MIN_DEPART = 72; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (hors de portée d'interaction)
+const DECOR_FIGE = true; // le sol et les murs d'un niveau généré sont dessinés une seule fois dans une image (cf. figerDecor) : false pour revenir aux calques de tuiles
+// test automatique pour la borne (sans clavier) : au lancement du niveau, chaque poste de DIAG (cf. lumiere.js) est coupé à tour de rôle
+// pendant DUREE_PHASE_BENCH ms, et la moyenne des FPS de chaque phase s'affiche en bas à gauche. Mettre false une fois les chiffres relevés.
+// Pendant le test : ne pas bouger (ou bouger de la même façon), torche allumée, et jouer dans la situation qui pose problème (duo ?)
+const BENCH_AUTO = false;
+const DUREE_PHASE_BENCH = 10000; // ms par phase
+const ECHAUFFEMENT_BENCH = 2000; // ms ignorées au début de chaque phase : le compteur de FPS met un moment à se stabiliser
+const PHASES_BENCH = [["tout actif", []], ["sans teintes", ["teintes"]], ["sans noir", ["noir"]], ["sans torche", ["torche"]], ["sans ennemis", ["ennemis"]], ["tout actif (contrôle)", []]];
+const DISTANCE_MIN_DEPART = 28; // px : à l'arrivée, on apparaît à cette distance minimale de l'échelle (une case voisine, pas dessus ; dans la portée d'interaction)
 const PORTEE_INTERACTION = 40; // px : distance max à l'échelle de montée pour l'utiliser
 const COULEUR_DESCENTE = { texte: "#FFAC80", forme: 0xffac80 }; // orange de la palette
 const COULEUR_MONTEE = { texte: "#9DD9FF", forme: 0x9dd9ff }; // bleu de la palette
@@ -76,6 +88,7 @@ export default class niveau1 extends Phaser.Scene {
     // "haut" : on arrive par l'échelle de montée (on vient de descendre) ; "bas" : on arrive à côté du trou (on vient de remonter)
     this.arrivee = data.arrivee || "haut";
     this.donnees_joueurs = data.joueurs || []; // { pv, stamina, equipement } de chaque joueur, transmis d'un niveau à l'autre
+    this.tuto = !!data.tuto; // tutoriel (cf. tutoriel.js) : un seul niveau, des consignes, pas de passage ni de game over
   }
 
   preload() {
@@ -106,8 +119,8 @@ export default class niveau1 extends Phaser.Scene {
     const niveaux = this.registry.get("niveaux");
     const nouveau = !niveaux[this.niveau];
     if (nouveau) {
-      // une salle safe apparait rarement, jamais au niveau 1 ni deux fois de suite
-      const safe = this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && Math.random() < salle_safe.chanceSafe();
+      // la salle safe ferme chaque biome (niveaux 5, 10, 15...) ; avec "?safe" dans l'adresse, elle apparait à chaque fois (jamais deux de suite)
+      const safe = biomes.estNiveauSafe(this.niveau) || (this.niveau > 1 && !niveaux[this.niveau - 1]?.safe && salle_safe.safeForcee());
       niveaux[this.niveau] = safe ? {
         safe: true, // salle de temple faite sous Tiled : éclairée, sans ennemi ni caillou (cf. salle_safe.js)
         grille: null,
@@ -132,7 +145,9 @@ export default class niveau1 extends Phaser.Scene {
       // grille[y][x] = true si mur (cf. generation.js), puis on la traduit en tuiles
       const grille = this.etat.grille;
       map = this.make.tilemap({ tileWidth: 32, tileHeight: 32, width: LARGEUR_NIVEAU, height: HAUTEUR_NIVEAU });
-      const tileset = map.addTilesetImage("walls_floor", "tiles_walls_floor");
+      // murs et sol viennent du tileset du biome du niveau (mêmes numéros de tuiles dans les quatre)
+      const biome = biomes.biomeDuNiveau(this.niveau);
+      const tileset = map.addTilesetImage("tileset_" + biome.nom, biome.tileset);
       calque_sol = map.createBlankLayer("sol", tileset);
       calque_murs = map.createBlankLayer("murs", tileset);
       grille.forEach((ligne, y) => ligne.forEach((mur, x) => {
@@ -140,6 +155,7 @@ export default class niveau1 extends Phaser.Scene {
         else calque_sol.putTileAt(generation.TUILES.sol, x, y);
       }));
       calque_murs.setCollisionByExclusion([-1]); // toutes les tuiles non vides du calque "murs" sont solides
+      if (DECOR_FIGE) this.figerDecor(calque_sol, calque_murs);
     }
 
     /****************************
@@ -176,7 +192,7 @@ export default class niveau1 extends Phaser.Scene {
       this.physics.add.collider(this.projectiles, obstacles, (projectile) => this.impactLaser(projectile));
       offrande.creerOffrande(this); // bulle au-dessus de la statue
     }
-    ennemis.creerEnnemis(this, calque_sol, calque_murs, this.etat.safe ? 0 : undefined); // aucun ennemi dans la salle safe
+    ennemis.creerEnnemis(this, calque_sol, calque_murs, this.etat.safe || this.tuto ? 0 : undefined); // aucun ennemi dans la salle safe, ni au début du tutoriel
    
     // indication au-dessus d'un passage proche : texte + flèche (vers le bas pour descendre, vers le haut pour monter)
     // profondeur au-dessus de l'obscurité : sinon le texte serait noyé dans le noir
@@ -207,6 +223,7 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     lumiere.creerObscurite(this); // le noir qui couvre l'écran (cf. lumiere.js)
     this.calque_murs = calque_murs; // les rayons de lumière s'arrêtent sur ce calque
+    this.calque_sol = calque_sol;
     lumiere.eclairerCalques(this, [calque_sol, calque_murs]);
     lumiere.eclairerObjets(this);
 
@@ -215,7 +232,8 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     this.joueurs.forEach((j) => this.creerHud(j));
     pierres.creerCompteur(this);
-    this.add.text(this.scale.width / 2, 20, "Niveau " + this.niveau + (this.etat.safe ? " · salle sûre" : ""), { fontFamily: fct.POLICES.texte, fontSize: "28px", color: "#E8EBF0" })
+    if (this.tuto) tutoriel.creerTutoriel(this); // bulle de consigne au-dessus du joueur
+    this.add.text(this.scale.width / 2, 20, this.tuto ? "Tutoriel" : "Niveau " + this.niveau + (this.etat.safe ? " · salle sûre" : ""), { fontFamily: fct.POLICES.texte, fontSize: "28px", color: "#E8EBF0" })
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(fct.PROFONDEUR.hud);
@@ -228,6 +246,9 @@ export default class niveau1 extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(fct.PROFONDEUR.hud);
       this.prochain_fps = 0;
+      // diagnostic : les touches 1 à 4 coupent ou rallument les teintes, le noir, la torche et les ennemis (cf. DIAG dans lumiere.js)
+      this.touches_diag = this.input.keyboard.addKeys({ teintes: "ONE", noir: "TWO", torche: "THREE", ennemis: "FOUR" });
+      this.bench = BENCH_AUTO ? { debut: null, phase: 0, mesures: [], resultats: [], fini: false } : null;
       // le processeur graphique utilisé par le navigateur : "SwiftShader", "llvmpipe" ou "software" veut dire que le WebGL est calculé par le processeur (très lent)
       const gl = this.game.renderer.gl;
       const extension = gl?.getExtension("WEBGL_debug_renderer_info");
@@ -248,6 +269,17 @@ export default class niveau1 extends Phaser.Scene {
   // - le HUD (objets collés à l'écran) : seulement la caméra du HUD
   // - l'obscurité : seulement la caméra principale (elle grossit avec le monde, la lumière reste bien placée)
   // - le monde (tout le reste, y compris ce qui sera créé plus tard) : seulement la caméra principale
+  // le décor d'un niveau ne change jamais, mais Phaser redessine chaque tuile visible à chaque image, en JavaScript : sur la borne, des centaines
+  // de tuiles par image coûtent cher. On dessine donc le sol et les murs une seule fois dans une image, et on cache les calques.
+  // Les calques restent dans la scène : ils servent toujours aux collisions, à la torche et au placement des objets (seul leur affichage est coupé).
+  figerDecor(calque_sol, calque_murs) {
+    const image = this.add.renderTexture(0, 0, LARGEUR_NIVEAU * 32, HAUTEUR_NIVEAU * 32).setOrigin(0, 0).setDepth(0); // sous les sprites, comme les calques
+    image.draw([calque_sol, calque_murs]); // à faire avant de cacher les calques : un calque caché ne se dessine pas
+    image.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // pas de flou : les pixels du décor restent nets, comme avec les tuiles
+    calque_sol.setVisible(false);
+    calque_murs.setVisible(false);
+  }
+
   creerCameraHud() {
     const camera_hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
     this.camera_hud = camera_hud;
@@ -296,10 +328,11 @@ export default class niveau1 extends Phaser.Scene {
   creerHud(j) {
     const a_droite = j.definition.numero === 2;
     j.barre_vie = fct.creerBarre(this, 0, 20, "sprite_barre_vie");
-    j.barre_stamina = fct.creerBarre(this, 0, 60, "sprite_barre_stamina");
+    j.barre_stamina = fct.creerBarre(this, 0, 60, "sprite_barre_stamina", ECHELLE_STAMINA);
     const x_barres = a_droite ? this.scale.width - 132 - j.barre_vie.displayWidth : 132;
     j.barre_vie.setX(x_barres);
-    j.barre_stamina.setX(x_barres);
+    // la barre de stamina, plus petite, reste alignée du côté de la bulle (donc à droite pour le joueur 2)
+    j.barre_stamina.setX(a_droite ? x_barres + j.barre_vie.displayWidth - j.barre_stamina.displayWidth : x_barres);
     // équipement actuel en grand, suivant en petit (en bas de la grande, du côté des barres il s'arrête avant elles)
     const x_bulle = a_droite ? this.scale.width - 56 : 56;
     j.bulles = fct.creerBullesEquipement(this, x_bulle, 56, EQUIPEMENTS, j.equipement, a_droite ? -1 : 1, j.definition.icones);
@@ -379,10 +412,10 @@ export default class niveau1 extends Phaser.Scene {
       this.distanceAuxJoueurs(tuile.getCenterX(), tuile.getCenterY()) >= DISTANCE_MIN_CAILLOU
     );
     Phaser.Utils.Array.Shuffle(cases_libres);
-    this.etat.cailloux = cases_libres.slice(0, NB_CAILLOUX).map((tuile) => ({
+    this.etat.cailloux = cases_libres.slice(0, this.tuto ? NB_CAILLOUX_TUTO : NB_CAILLOUX).map((tuile) => ({
       x: tuile.getCenterX(),
       y: tuile.getCenterY(),
-      image: Phaser.Utils.Array.GetRandom(["img_caillou_1", "img_caillou_2", "img_caillou_lune_1", "img_caillou_lune_2"]),
+      image: Phaser.Utils.Array.GetRandom(biomes.cailloux(biomes.biomeDuNiveau(this.niveau))).cle, // les cailloux ont la couleur du biome
       coups_restants: COUPS_CAILLOU,
       cache_le_trou: false
     }));
@@ -398,14 +431,20 @@ export default class niveau1 extends Phaser.Scene {
   creerCailloux() {
     this.cailloux = this.physics.add.staticGroup();
     this.etat.cailloux.forEach((donnees) => {
-      const caillou = this.cailloux.create(donnees.x, donnees.y, donnees.image);
-      // hitbox sur le bas du caillou : le joueur peut passer derrière le haut
-      caillou.body.setSize(24, 15); // colonnes 5 à 28 (centrée sur le caillou), lignes 16 à 30 : la base du rocher
-      caillou.body.setOffset(5, 16);
-      caillou.setDepth(caillou.y); // tri d'affichage vue de dessus : plus bas = devant
-      caillou.coups_restants = donnees.coups_restants;
+      const caillou = this.creerCaillou(donnees);
       if (donnees.cache_le_trou) this.caillou_trou = caillou;
     });
+  }
+
+  // un caillou à partir de ses données { x, y, image, coups_restants } (le groupe this.cailloux existe déjà)
+  creerCaillou(donnees) {
+    const caillou = this.cailloux.create(donnees.x, donnees.y, donnees.image);
+    // hitbox sur le bas du caillou : le joueur peut passer derrière le haut
+    caillou.body.setSize(24, 15); // colonnes 5 à 28 (centrée sur le caillou), lignes 16 à 30 : la base du rocher
+    caillou.body.setOffset(5, 16);
+    caillou.setDepth(caillou.y); // tri d'affichage vue de dessus : plus bas = devant
+    caillou.coups_restants = donnees.coups_restants;
+    return caillou;
   }
 
   // le trou (descente) est sous son caillou, invisible tant que celui-ci n'est pas cassé ;
@@ -425,17 +464,19 @@ export default class niveau1 extends Phaser.Scene {
 
   // la caméra suit le milieu des joueurs
   placerCible() {
-    const n = this.joueurs.length;
-    const x = this.joueurs.reduce((somme, j) => somme + j.sprite.x, 0) / n;
-    const y = this.joueurs.reduce((somme, j) => somme + j.sprite.y, 0) / n;
+    const en_jeu = this.joueursEnJeu();
+    const n = en_jeu.length;
+    const x = en_jeu.reduce((somme, j) => somme + j.sprite.x, 0) / n;
+    const y = en_jeu.reduce((somme, j) => somme + j.sprite.y, 0) / n;
     this.cible_camera.setPosition(x, y);
   }
 
   // zoom voulu : le plus grand possible (jusqu'à ZOOM_CAMERA) pour que tous les joueurs tiennent à l'écran, avec une marge
   // avec un seul joueur la largeur et la hauteur sont celles de la marge seule : on retombe sur ZOOM_CAMERA
   zoomVoulu() {
-    const xs = this.joueurs.map((j) => j.sprite.x);
-    const ys = this.joueurs.map((j) => j.sprite.y);
+    const en_jeu = this.joueursEnJeu();
+    const xs = en_jeu.map((j) => j.sprite.x);
+    const ys = en_jeu.map((j) => j.sprite.y);
     const largeur = Math.max(...xs) - Math.min(...xs) + 2 * MARGE_ZOOM;
     const hauteur = Math.max(...ys) - Math.min(...ys) + 2 * MARGE_ZOOM;
     return Phaser.Math.Clamp(Math.min(this.scale.width / largeur, this.scale.height / hauteur), ZOOM_MIN, ZOOM_CAMERA);
@@ -454,7 +495,7 @@ export default class niveau1 extends Phaser.Scene {
     if (this.joueurs.length < 2) return;
     const vue = this.cameras.main.worldView;
     if (vue.width <= 2 * MARGE_ECRAN) return; // la caméra n'a pas encore calculé sa vue (toute première image)
-    this.joueurs.forEach((j) => {
+    this.joueursEnJeu().forEach((j) => { // un joueur à terre reste où il est
       j.sprite.x = Phaser.Math.Clamp(j.sprite.x, vue.left + MARGE_ECRAN, vue.right - MARGE_ECRAN);
       j.sprite.y = Phaser.Math.Clamp(j.sprite.y, vue.top + MARGE_ECRAN, vue.bottom - MARGE_ECRAN);
     });
@@ -527,9 +568,28 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     if (caillou === this.caillou_trou) this.trou.setVisible(true);
-    pierres.lacherPierres(this, caillou.x, caillou.y + 8); // à la base du rocher
+    // à la base du rocher ; le caillou du tutoriel lâche toujours une pierre (la leçon suivante en a besoin)
+    if (caillou.tuto) pierres.lacherPierres(this, caillou.x, caillou.y + 8, 1, 1, 1);
+    else pierres.lacherPierres(this, caillou.x, caillou.y + 8);
     bonus.lacherBonus(this, caillou.x, caillou.y + 8);
     caillou.destroy();
+  }
+
+  // un joueur à 0 PV est à terre : il ne bouge plus, les ennemis l'ignorent, il ne bloque pas les passages
+  // seule la statue de la salle safe le relève (cf. recevoirOffrande) ; la partie est perdue quand tous sont à terre
+  estMort(j) {
+    return j.pv <= 0;
+  }
+
+  // les joueurs encore debout (tous, si plus personne ne l'est : c'est l'image du game over)
+  joueursEnJeu() {
+    const debout = this.joueurs.filter((j) => !this.estMort(j));
+    return debout.length > 0 ? debout : this.joueurs;
+  }
+
+  // offrande à la statue (cf. offrande.js) : le joueur à terre est servi avant celui qui donne
+  beneficiaireOffrande(j) {
+    return this.joueurs.find((autre) => this.estMort(autre)) || j;
   }
 
   // offrande à la statue (cf. offrande.js) : nombre de pierres pour tout récupérer (0 si le joueur est au maximum)
@@ -545,6 +605,12 @@ export default class niveau1 extends Phaser.Scene {
     j.pv = Math.min(j.pv + nombre * PV_PAR_PIERRE, PV_MAX);
     j.stamina = STAMINA_MAX;
     j.essouffle = false;
+    if (avant <= 0 && j.pv > 0) { // relevé : il reparaît à côté de son coéquipier
+      const debout = this.joueurs.find((autre) => autre !== j && !this.estMort(autre));
+      if (debout) j.sprite.setPosition(debout.sprite.x, debout.sprite.y);
+      j.sprite.clearTint();
+      j.torche_allumee = true;
+    }
     return j.pv - avant;
   }
 
@@ -609,6 +675,18 @@ export default class niveau1 extends Phaser.Scene {
   // déplacement, actions et animation d'un joueur, selon ses touches
   majJoueur(j, secondes) {
     const touches = j.touches;
+    if (this.estMort(j)) {
+      // à terre : grisé et immobile ; on vide les appuis en attente pour qu'ils ne partent pas une fois relevé
+      j.frappe = null;
+      j.torche_allumee = false;
+      j.sprite.setVelocity(0, 0).setTint(0x777788);
+      j.sprite.anims.stop();
+      j.sprite.setDepth(j.sprite.y);
+      [touches.changer_equipement, touches.frapper_tirer, touches.torche].forEach((touche) => Phaser.Input.Keyboard.JustDown(touche));
+      fct.majBarre(j.barre_vie, j.pv, PV_MAX);
+      fct.majBarre(j.barre_stamina, j.stamina, STAMINA_MAX);
+      return;
+    }
     this.majEffets(j, secondes);
     let vx = 0;
     let vy = 0;
@@ -688,23 +766,24 @@ export default class niveau1 extends Phaser.Scene {
 
     // on lit les appuis à chaque image, même loin d'un passage : JustDown garde un appui en mémoire
     // jusqu'à sa lecture, sinon un appui d'avant servirait au moment d'arriver près de l'échelle
-    const appuis = this.joueurs.filter((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir));
+    // un joueur à terre ne compte pas : il ne bloque pas le passage et suit les autres
+    const en_jeu = this.joueursEnJeu();
+    const appuis = this.joueurs.filter((j) => Phaser.Input.Keyboard.JustDown(j.touches.interagir) && en_jeu.includes(j));
 
     this.passage_proche = null;
     for (const p of passages) {
-      const proches = this.joueurs.filter((j) =>
+      const proches = en_jeu.filter((j) =>
         Phaser.Math.Distance.Between(j.sprite.body.center.x, j.sprite.body.center.y, p.objet.x, p.objet.y) <= PORTEE_INTERACTION);
       if (proches.length === 0) continue;
 
-      const tous = proches.length === this.joueurs.length;
+      const tous = proches.length === en_jeu.length;
       if (tous && appuis.some((j) => proches.includes(j))) {
         this.changerDeNiveau(p.niveau, p.arrivee);
         return true;
       }
 
       // indication : "[I] descendre" quand tout le monde est là, sinon "descendre 1/2"
-      const touches = this.joueurs.map((j) => j.definition.touches.interagir).join(" / ");
-      this.compteur_echelle.setText(tous ? "[" + touches + "] " + p.verbe : p.verbe + " " + proches.length + "/" + this.joueurs.length);
+      this.compteur_echelle.setText(tous ? "[" + fct.ETIQUETTES.interagir + "] " + p.verbe : p.verbe + " " + proches.length + "/" + en_jeu.length);
       this.compteur_echelle.setColor(p.couleur.texte);
       // la flèche oscille doucement, dans le sens du passage
       const oscillation = Math.sin(this.time.now / 180) * 3;
@@ -727,11 +806,40 @@ export default class niveau1 extends Phaser.Scene {
     if (time < this.prochain_fps) return;
     this.prochain_fps = time + PERIODE_FPS;
     const lumieres = this.lights.active ? "  lumières " + this.lights.visibleLights + "/" + this.lights.getLightCount() : this.pinceaux ? "  lumières " + this.nb_pinceaux : "";
-    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres + "\n" + this.info_gpu);
+    const coupes = Object.keys(lumiere.DIAG).filter((nom) => !lumiere.DIAG[nom]);
+    if (this.bench) this.majBench(time);
+    const bench = this.bench ? "\n" + this.bench.resultats.map(([nom, fps]) => nom + " : " + fps + " FPS").join("\n") + (this.bench.fini ? "\nTEST TERMINE" : "\nTest " + (this.bench.phase + 1) + "/" + PHASES_BENCH.length + " : " + PHASES_BENCH[this.bench.phase][0]) : "";
+    this.texte_fps.setText(Math.round(this.game.loop.actualFps) + " FPS" + lumieres + (coupes.length ? "  SANS " + coupes.join(", ") : "") + "\n" + this.info_gpu + bench);
+  }
+
+  // test automatique (cf. BENCH_AUTO) : change de phase toutes les DUREE_PHASE_BENCH ms et garde la moyenne des FPS de chaque phase
+  majBench(time) {
+    const b = this.bench;
+    if (b.fini) return;
+    if (b.debut === null) b.debut = time;
+    const ecoule = time - b.debut;
+    const phase = Math.floor(ecoule / DUREE_PHASE_BENCH);
+    if (phase !== b.phase) { // la phase qui se termine : sa moyenne est gardée
+      const moyenne = b.mesures.length ? Math.round(b.mesures.reduce((somme, fps) => somme + fps, 0) / b.mesures.length) : 0;
+      b.resultats.push([PHASES_BENCH[b.phase][0], moyenne]);
+      b.mesures = [];
+      b.phase = phase;
+      if (phase >= PHASES_BENCH.length) { // fin : tout est rallumé
+        b.fini = true;
+        b.phase = PHASES_BENCH.length - 1;
+        Object.keys(lumiere.DIAG).forEach((nom) => { lumiere.DIAG[nom] = true; });
+        return;
+      }
+    }
+    Object.keys(lumiere.DIAG).forEach((nom) => { lumiere.DIAG[nom] = !PHASES_BENCH[b.phase][1].includes(nom); });
+    if (ecoule % DUREE_PHASE_BENCH >= ECHAUFFEMENT_BENCH) b.mesures.push(this.game.loop.actualFps);
   }
 
   update(time, delta) {
-    if (this.texte_fps) this.majFps(time);
+    if (this.texte_fps) {
+      Object.keys(this.touches_diag).forEach((nom) => { if (Phaser.Input.Keyboard.JustDown(this.touches_diag[nom])) lumiere.DIAG[nom] = !lumiere.DIAG[nom]; });
+      this.majFps(time);
+    }
     if (this.changement_niveau) {
       lumiere.majLumieres(this); // la lumière suit les joueurs pendant l'animation d'échelle
       return;
@@ -769,7 +877,7 @@ export default class niveau1 extends Phaser.Scene {
 
     const secondes = delta / 1000;
     this.joueurs.forEach((j) => this.majJoueur(j, secondes));
-    ennemis.majEnnemis(this);
+    if (lumiere.DIAG.ennemis) ennemis.majEnnemis(this);
     butin.majButin(this, secondes);
     if (this.etat.safe) offrande.majOffrande(this);
     this.placerCible();
@@ -777,6 +885,10 @@ export default class niveau1 extends Phaser.Scene {
     this.limiterAEcran();
     lumiere.majLumieres(this);
 
+    if (this.tuto) { // pas de changement de niveau : le tutoriel se termine par sa dernière consigne
+      tutoriel.majTutoriel(this);
+      return;
+    }
     if (this.majPassages()) return;
   }
 }

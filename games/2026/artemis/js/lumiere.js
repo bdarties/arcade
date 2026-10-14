@@ -1,6 +1,7 @@
 import * as fct from "./fonctions.js";
 import * as bonus from "./bonus.js";
 import * as cristaux from "./cristaux.js";
+import * as biomes from "./biomes.js";
 
 /***********************************************************************/
 /** LUMIERE : le jeu est dans le noir, la torche et quelques objets éclairent
@@ -26,6 +27,8 @@ import * as cristaux from "./cristaux.js";
 const MODE = "degrade";
 const LIGHT2D = MODE === "light2d";
 const DEGRADE = MODE === "degrade";
+// diagnostic de performance (touches 1 à 4, cf. niveau1.js) : coupe un poste à chaud pour mesurer son coût sur la borne ; tout est actif par défaut
+export const DIAG = { teintes: true, noir: true, torche: true, ennemis: true };
 // essais de performance sur la borne : ce que Light2D éclaire (false : pleine luminosité, donc plus rapide mais sans obscurité)
 const ECLAIRER_SOL = true; // le calque du sol, qui couvre tout l'écran
 const ECLAIRER_MURS = true; // le calque des murs
@@ -47,7 +50,7 @@ const DISTANCE_MIN_TORCHE = 24; // px : face à un mur collé, les lumières res
 // lumières des objets qui brillent : rayon (px), couleur, intensité
 const LUMIERE_LASER = { rayon: 70, intensite: 1, couleurs: { bleu: 0x6fb8ff, rouge: 0xff6f6f } };
 const LUMIERE_TIR_ENNEMI = { rayon: 60, intensite: 0.9, couleur: 0x7cff7c };
-const LUMIERE_CRISTAL = { rayon: 110, intensite: 0.9, couleur: 0xffc060 };
+const LUMIERE_CRISTAL = { rayon: 110, intensite: 0.9 }; // la couleur vient du biome (cf. biomes.js)
 const LUMIERE_POTION = { rayon: 60, intensite: 0.8, couleur: 0xffe9b0 };
 const LUMIERE_ECLAT = { couleur: 0xffd9a0, rayon_par_px: 1.5 }; // rayon = celui du halo de l'ancien système x 1,5
 
@@ -147,7 +150,7 @@ function majLight2D(scene) {
     if (tir.active) suivre(scene, tir, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.couleur, LUMIERE_TIR_ENNEMI.intensite);
   });
   scene.cristaux.forEach((cristal) => {
-    if (cristal.active) suivre(scene, cristal, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.couleur, LUMIERE_CRISTAL.intensite);
+    if (cristal.active) suivre(scene, cristal, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, biomes.biomeDuNiveau(scene.niveau).lumiere, LUMIERE_CRISTAL.intensite);
   });
 
   // les éclats d'impact : ils faiblissent jusqu'à disparaître
@@ -362,12 +365,18 @@ function creerTextureDegrade(scene) {
   canvas.refresh();
 }
 
+// le noir est dessiné à cette part de la résolution de l'écran, puis agrandi (filtre doux) : le noir n'est qu'un dégradé flou,
+// donc on ne voit presque pas la différence, mais il y a 1/ECHELLE_NOIR² fois moins de pixels à remplir et à gommer (1 : pleine résolution)
+const ECHELLE_NOIR = 0.5;
+
 function creerDegrade(scene) {
   creerTextureDegrade(scene);
-  scene.obscurite = scene.etat.safe ? null : scene.add.renderTexture(0, 0, scene.scale.width, scene.scale.height)
+  scene.obscurite = scene.etat.safe ? null : scene.add.renderTexture(0, 0, Math.ceil(scene.scale.width * ECHELLE_NOIR), Math.ceil(scene.scale.height * ECHELLE_NOIR))
     .setOrigin(0, 0)
+    .setScale(1 / ECHELLE_NOIR)
     .setScrollFactor(0) // il reste collé à l'écran quand la caméra bouge
     .setDepth(fct.PROFONDEUR.obscurite);
+  scene.obscurite?.texture.setFilter(Phaser.Textures.FilterMode.LINEAR); // sinon pixelArt l'agrandirait en gros carrés
   scene.pinceaux = []; // images réutilisées d'une image à l'autre : jamais affichées, seulement gommées dans le noir
   scene.teintes = []; // images colorées (mélange multiplicatif) posées dans le monde, juste sous le noir
   scene.nb_pinceaux = 0;
@@ -383,8 +392,9 @@ function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) 
     force *= REGLAGE_DEGRADE.force;
   }
   if (!scene.pinceaux[i]) scene.pinceaux[i] = scene.make.image({ key: "degrade_lumiere" }, false);
-  scene.pinceaux[i].setPosition(x - camera.scrollX, y - camera.scrollY).setDisplaySize(rayon * 2, rayon * 2).setAlpha(Math.min(force, 1));
-  if (!TEINTE_CHAUDE || !ajuster) {
+  // le noir est en ECHELLE_NOIR : le pinceau y est placé et dimensionné à la même échelle (les teintes, elles, restent à l'échelle du monde)
+  scene.pinceaux[i].setPosition((x - camera.scrollX) * ECHELLE_NOIR, (y - camera.scrollY) * ECHELLE_NOIR).setDisplaySize(rayon * 2 * ECHELLE_NOIR, rayon * 2 * ECHELLE_NOIR).setAlpha(Math.min(force, 1));
+  if (!TEINTE_CHAUDE || !ajuster || !DIAG.teintes) {
     scene.teintes[i]?.setVisible(false); // cet indice a pu servir à une lumière teintée à l'image précédente
     return;
   }
@@ -398,7 +408,7 @@ function majDegrade(scene) {
   scene.joueurs.forEach((j) => {
     pinceau(scene, j.sprite.x, j.sprite.y, HALO_JOUEUR_DEGRADE.rayon, HALO_JOUEUR_DEGRADE.force, COULEUR_JOUEUR);
     pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1, 0xffffff, false);
-    if (!j.torche_allumee) return;
+    if (!j.torche_allumee || !DIAG.torche) return;
     // la torche : une chaîne de pinceaux devant le joueur, qui s'arrête avant le premier mur (comme avec Light2D)
     const portee = porteeTorche(j);
     const distance = distanceMur(scene, j, portee); // mesurée depuis les pieds, comme les collisions
@@ -421,7 +431,7 @@ function majDegrade(scene) {
     if (tir.active) pinceau(scene, tir.x, tir.y, LUMIERE_TIR_ENNEMI.rayon, LUMIERE_TIR_ENNEMI.intensite, LUMIERE_TIR_ENNEMI.couleur);
   });
   scene.cristaux.forEach((cristal) => {
-    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, LUMIERE_CRISTAL.couleur);
+    if (cristal.active) pinceau(scene, cristal.x, cristal.y, LUMIERE_CRISTAL.rayon, LUMIERE_CRISTAL.intensite, biomes.biomeDuNiveau(scene.niveau).lumiere);
   });
   scene.eclats = scene.eclats.filter((eclat) => scene.time.now < eclat.fin);
   scene.eclats.forEach((eclat) => {
@@ -432,6 +442,8 @@ function majDegrade(scene) {
 
   // les teintes des lumières disparues sont cachées ; puis tout le noir, moins ce que les pinceaux gomment (un seul appel pour tous)
   for (let i = scene.nb_pinceaux; i < scene.teintes.length; i++) scene.teintes[i]?.setVisible(false);
+  scene.obscurite.setVisible(DIAG.noir);
+  if (!DIAG.noir) return;
   scene.obscurite.clear();
   scene.obscurite.fill(COULEUR_NOIR, OPACITE_NOIR);
   scene.obscurite.erase(scene.pinceaux.slice(0, scene.nb_pinceaux));

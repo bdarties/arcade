@@ -161,14 +161,14 @@ export default class clicker extends Phaser.Scene {
 
         if (this.nombreJoueurs === 1) {
             lignes = [
-                "Clique sur le gros bouton, ou appuie sur les boutons A à F, le plus vite possible.",
+                "Appuie sur les boutons A à F, le plus vite possible.",
                 "La jauge descend toute seule : ne t'arrête pas !",
                 "Remplis-la avant la fin du temps pour gagner."
             ];
         } else {
             lignes = [
                 "Chacun son bouton : joueur 1 à gauche, joueur 2 à droite.",
-                "Appuie sur les boutons A à F de ta manette le plus vite possible.",
+                "Appuie sur les boutons A à F, le plus vite possible.",
                 "Le nœud de la corde va vers celui qui clique le plus. Le plus rapide gagne !"
             ];
         }
@@ -577,7 +577,7 @@ export default class clicker extends Phaser.Scene {
 
 
     // ==============================
-    // UPDATE (environ 60 fois par seconde)
+    // UPDATE (environ 60 fois par seconde. Données? darties.fr of course)
     // ==============================
 
     // "delta" = temps écoulé depuis la dernière image, en millisecondes.

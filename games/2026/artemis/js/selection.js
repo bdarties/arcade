@@ -1,5 +1,6 @@
 import * as fct from "./fonctions.js";
 import * as salle_safe from "./salle_safe.js";
+import * as biomes from "./biomes.js";
 
 /***********************************************************************/
 /** VARIABLES GLOBALES
@@ -12,6 +13,12 @@ const DIRECTIONS = ["down", "up", "right", "down_diagonal", "up_diagonal"];
 const VARIANTES_JOUEUR = ["", "_gun"];
 // coup de pioche : 3 directions seulement (les diagonales et la gauche réutilisent ces sprites, cf. niveau1.js)
 const DIRECTIONS_PIOCHE = ["down", "up", "right"];
+// biomes colorés : [nom, fichier du cristal] ; le tileset est assets/map/tileset_<nom>.png (cf. preload)
+const BIOMES_COLORES = [
+  ["bleu", "DarkBlueCrystal.png"],
+  ["vert", "GreenCrystal.png"],
+  ["violet", "PurpleCrystal.png"]
+];
 
 // définition de la classe "selection"
 export default class selection extends Phaser.Scene {
@@ -35,9 +42,10 @@ export default class selection extends Phaser.Scene {
     // map de test (export JSON de Tiled) et ses tilesets
     // le nom du tileset doit etre le meme que dans Tiled
     this.load.tilemapTiledJSON("map_test", "./assets/map/map_test.tmj");
-    this.load.image("tiles_decorative_cracks_floor", "./assets/map/decorative_cracks_floor.png");
-    this.load.image("tiles_decorative_cracks_walls", "./assets/map/decorative_cracks_walls.png");
-    this.load.image("tiles_walls_floor", "./assets/map/walls_floor.png");
+
+    // tilesets des niveaux générés, un par biome (13 x 5 tuiles : murs et sol, cf. generation.js) : "tiles_gris", "tiles_bleu", "tiles_vert", "tiles_violet"
+    this.load.image("tiles_gris", "./assets/map/tileset.png");
+    BIOMES_COLORES.forEach(([nom]) => this.load.image("tiles_" + nom, "./assets/map/tileset_" + nom + ".png"));
 
     // salle safe (map Tiled) et ses tilesets (cf. salle_safe.js)
     this.load.tilemapTiledJSON(salle_safe.CLE_MAP, salle_safe.FICHIER_MAP);
@@ -57,7 +65,9 @@ export default class selection extends Phaser.Scene {
     this.load.image("img_pierre_lunaire", "./assets/ui/pierre_lunaire.png");
 
     // cristaux décoratifs des niveaux (cf. cristaux.js) : 24 images de 38x39
+    // le jaune est celui du biome gris ; les autres : "sprite_cristal_bleu", "_vert", "_violet"
     this.load.spritesheet("sprite_cristal", "./assets/map/yellow_crystal.png", { frameWidth: 38, frameHeight: 39 });
+    BIOMES_COLORES.forEach(([nom, fichier_cristal]) => this.load.spritesheet("sprite_cristal_" + nom, "./assets/map/" + fichier_cristal, { frameWidth: 38, frameHeight: 39 }));
 
     // potions lâchées par les cailloux (cf. bonus.js) : frames de 16x16, animées
     ["heal", "vision", "vitesse"].forEach((nom) => {
@@ -67,7 +77,7 @@ export default class selection extends Phaser.Scene {
     // menu (cf. menu.js et infos.js) : fond, logo et boutons
     this.load.image("img_fond_menu", "./assets/ui/background_artemis.jpg");
     this.load.image("img_logo", "./assets/ui/logo_artemis.png");
-    ["solo", "duo", "controles", "credits"].forEach((nom) => {
+    ["solo", "duo", "tuto", "controles", "credits"].forEach((nom) => {
       this.load.image("img_bouton_" + nom, "./assets/ui/bouton_" + nom + ".png");
     });
 
@@ -86,10 +96,8 @@ export default class selection extends Phaser.Scene {
     this.load.image("img_titre_game_over", "./assets/ui/game_over.png");
 
     // cailloux (32x32)
-    this.load.image("img_caillou_1", "./assets/rock1_3_no_shadow.png");
-    this.load.image("img_caillou_2", "./assets/rock5_3_no_shadow.png");
-    this.load.image("img_caillou_lune_1", "./assets/map/caillou_lune.png"); // cailloux lunaires à cristaux roses
-    this.load.image("img_caillou_lune_2", "./assets/map/caillou_lune2.png");
+    // quatre par biome, dans la couleur du biome (cf. biomes.js)
+    biomes.BIOMES.forEach((biome) => biomes.cailloux(biome).forEach(({ cle, fichier }) => this.load.image(cle, fichier)));
 
     // ennemis (cf. ennemis.js) : slime et aliens, 8 frames de 32x32 ; l'alien vert a en plus 6 frames de tir
     this.load.spritesheet("sprite_alien_vert", "./assets/enemy/alien_vert.png", { frameWidth: 32, frameHeight: 32 });
@@ -139,7 +147,8 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("fondSonore", "./assets/sons/fond_sonore.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("echelle", "./assets/sons/ladder.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
-    /* >>>>> AJOUT IMAGE <<<<< */ this.load.image("img_commandes", "./assets/commandes.png");
+    /* >>>>> AJOUT commande solo <<<<< */this.load.image("img_commandes_solo", "./assets/commandes_solo.png");
+    /* >>>>> AJOUT commande duo <<<<< */ this.load.image("img_commandes_duo", "./assets/commandes_duo.png"); 
   }
 
   /***********************************************************************/
@@ -196,6 +205,9 @@ export default class selection extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers("sprite_cristal"),
       frameRate: 10,
       repeat: -1
+    });
+    BIOMES_COLORES.forEach(([nom]) => {
+      this.anims.create({ key: "anim_cristal_" + nom, frames: this.anims.generateFrameNumbers("sprite_cristal_" + nom), frameRate: 10, repeat: -1 });
     });
 
     ["heal", "vision", "vitesse"].forEach((nom) => {

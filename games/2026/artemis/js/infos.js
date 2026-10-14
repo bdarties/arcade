@@ -42,7 +42,10 @@ export default class infos extends Phaser.Scene {
     this.cameras.main.fadeIn(DUREE_FONDU);
     if (this.page === "commandes") {
       // une image de 1280x720 qui contient tout : fond, titre et schéma des deux joueurs
-      this.add.image(0, 0, "img_commandes").setOrigin(0, 0);
+      const imageCommandes = this.depuis_pause && this.registry.get("nb_joueurs") === 1
+        ? "img_commandes_solo"
+        : "img_commandes_duo";
+      this.add.image(0, 0, imageCommandes).setOrigin(0, 0);
     } else {
       this.add.image(0, 0, "img_fond_menu").setOrigin(0, 0);
       // voile sombre sous le texte, pour qu'il reste lisible sur le décor
@@ -51,7 +54,7 @@ export default class infos extends Phaser.Scene {
     }
 
     // le contour garde la consigne lisible sur l'image des commandes
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur un bouton pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur le bouton " + fct.ETIQUETTES.frapper_tirer + " pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     this.touches = fct.JOUEURS.map((joueur) => fct.creerTouches(this, joueur.touches));

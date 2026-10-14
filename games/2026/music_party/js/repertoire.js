@@ -4,6 +4,7 @@
 //   72 = Do aigu (une octave au-dessus)... +1 = un demi-ton plus haut.
 // Chaque morceau est découpé en phrases : dans piano_time on laisse un temps
 // de silence entre 2 phrases, comme un musicien qui respire.
+// pour le jeu piano_time, le son correspond aux notes de la mélodie
 const MORCEAUX = [
   {
     titre: "French Cancan",

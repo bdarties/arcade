@@ -1,0 +1,6 @@
+{
+  "title": "applicationData",
+  "description": "Démo du stockage JSON par jeu : ajout et lecture de données (prénom, nom, score) avec lireDonneesJSON / ecrireDonneesJSON.",
+  "genre": "Demo",
+  "authors": ["Benoit Darties"]
+}

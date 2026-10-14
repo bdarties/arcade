@@ -5,18 +5,19 @@ import * as fct from "./fonctions.js";
 /***********************************************************************/
 
 // les boutons, de haut en bas (images chargées dans selection.js)
-// nb_joueurs : lance la partie ; page : ouvre l'écran d'informations correspondant (cf. infos.js)
+// nb_joueurs : lance la partie ; tuto : lance le tutoriel (cf. tutoriel.js) ; page : ouvre l'écran d'informations correspondant (cf. infos.js)
 const OPTIONS = [
   { image: "img_bouton_solo", nb_joueurs: 1 },
   { image: "img_bouton_duo", nb_joueurs: 2 },
+  { image: "img_bouton_tuto", tuto: true },
   { image: "img_bouton_controles", page: "commandes" },
   { image: "img_bouton_credits", page: "credits" }
 ];
 const LARGEUR_BOUTON = 460; // px : largeur affichée des boutons (les images font 920 px : net sur un grand écran)
 const LARGEUR_LOGO = 450; // px
 const Y_LOGO = 125; // px
-const Y_PREMIER_BOUTON = 300; // px
-const ECART_BOUTONS = 100; // px
+const Y_PREMIER_BOUTON = 275; // px
+const ECART_BOUTONS = 85; // px : 5 boutons doivent tenir au-dessus de la consigne du bas
 const ECHELLE_SELECTION = 1.08; // le bouton choisi est un peu plus grand...
 const OPACITE_AUTRES = 0.55; // ... et les autres sont assombris
 const DUREE_FONDU = 300; // ms
@@ -55,7 +56,7 @@ export default class menu extends Phaser.Scene {
     this.choix = data?.choix ?? 0;
     this.majSelection();
 
-    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
+    this.add.text(this.scale.width / 2, this.scale.height - 34, "Joystick : choisir      Bouton " + fct.ETIQUETTES.frapper_tirer + " : valider", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
 
     // les touches des deux joueurs (cf. fonctions.js)
@@ -89,7 +90,14 @@ export default class menu extends Phaser.Scene {
     // nouvelle partie : on oublie les niveaux visités (le jeu garde en mémoire l'état de chaque niveau pour pouvoir y revenir)
     this.registry.set("niveaux", {});
     this.registry.set("pierres_lunaires", 0);
-    this.registry.set("nb_joueurs", option.nb_joueurs);
+    this.registry.set("nb_joueurs", option.tuto ? 1 : option.nb_joueurs);
+    if (option.tuto) { // le tutoriel se joue seul et commence tout de suite, sans synopsis
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        this.sound.get("accueil")?.stop();
+        this.scene.start("niveau1", { niveau: 1, tuto: true });
+      });
+      return;
+    }
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("synopsis"));
   }
 

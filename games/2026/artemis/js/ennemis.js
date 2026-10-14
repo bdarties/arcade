@@ -81,6 +81,25 @@ export function chercherChemin(bloquees, largeur, hauteur, depart, arrivee) {
   return [];
 }
 
+// un ennemi du type donné ("slime", "alien_vert" ou "alien_rouge") en (x, y) : le groupe scene.ennemis existe déjà (cf. creerEnnemis)
+export function creerEnnemi(scene, nom, x, y) {
+  const type = TYPES[nom];
+  const ennemi = scene.ennemis.create(x, y, type.sprite);
+  ennemi.setScale(ECHELLE_ENNEMI);
+  ennemi.body.setSize(type.corps[0], type.corps[1]); // hitbox sur le bas du corps (pixels du sprite d'origine)
+  ennemi.body.setOffset(type.corps[2], type.corps[3]);
+  ennemi.type = type;
+  ennemi.pv = type.pv;
+  ennemi.chemin = [];
+  ennemi.alerte = false;
+  ennemi.prochain_chemin = 0;
+  ennemi.recul_jusqua = 0;
+  ennemi.prochain_tir = 0;
+  ennemi.vise = false; // true pendant l'animation de tir
+  ennemi.anims.play(type.anim);
+  return ennemi;
+}
+
 // crée les ennemis sur des cases de sol libres, loin des joueurs
 // nombre : par défaut selon le niveau (la salle safe en demande 0)
 export function creerEnnemis(scene, calque_sol, calque_murs, nombre = Math.min(NB_ENNEMIS + Math.floor((scene.niveau - 1) / 3), NB_ENNEMIS_MAX)) {
@@ -92,20 +111,7 @@ export function creerEnnemis(scene, calque_sol, calque_murs, nombre = Math.min(N
     Math.min(...scene.joueurs.map((j) => Phaser.Math.Distance.Between(tuile.getCenterX(), tuile.getCenterY(), j.sprite.x, j.sprite.y))) >= DISTANCE_MIN_APPARITION
   );
   Phaser.Utils.Array.Shuffle(cases_libres).slice(0, nombre).forEach((tuile) => {
-    const type = TYPES[tirerType(scene.niveau)];
-    const ennemi = scene.ennemis.create(tuile.getCenterX(), tuile.getCenterY(), type.sprite);
-    ennemi.setScale(ECHELLE_ENNEMI);
-    ennemi.body.setSize(type.corps[0], type.corps[1]); // hitbox sur le bas du corps (pixels du sprite d'origine)
-    ennemi.body.setOffset(type.corps[2], type.corps[3]);
-    ennemi.type = type;
-    ennemi.pv = type.pv;
-    ennemi.chemin = [];
-    ennemi.alerte = false;
-    ennemi.prochain_chemin = 0;
-    ennemi.recul_jusqua = 0;
-    ennemi.prochain_tir = 0;
-    ennemi.vise = false; // true pendant l'animation de tir
-    ennemi.anims.play(type.anim);
+    creerEnnemi(scene, tirerType(scene.niveau), tuile.getCenterX(), tuile.getCenterY());
   });
 
   scene.physics.add.collider(scene.ennemis, calque_murs);
@@ -150,7 +156,7 @@ export function majEnnemis(scene) {
     const position = ennemi.body.center;
     let cible = null;
     let distance = Infinity;
-    scene.joueurs.forEach((j) => {
+    scene.joueursEnJeu().forEach((j) => { // un joueur à terre n'est plus une cible
       const d = Phaser.Math.Distance.Between(position.x, position.y, j.sprite.body.center.x, j.sprite.body.center.y);
       if (d < distance) { distance = d; cible = j.sprite.body.center; }
     });
@@ -220,7 +226,7 @@ function viser(scene, ennemi, cible) {
   scene.time.delayedCall(DUREE_VISEE, () => {
     if (!ennemi.active) return; // tué pendant qu'il visait
     const origine = ennemi.body.center;
-    const but = scene.joueurs.reduce((proche, j) => // le joueur le plus proche, maintenant
+    const but = scene.joueursEnJeu().reduce((proche, j) => // le joueur debout le plus proche, maintenant
       Phaser.Math.Distance.Between(origine.x, origine.y, j.sprite.x, j.sprite.y) < Phaser.Math.Distance.Between(origine.x, origine.y, proche.sprite.x, proche.sprite.y) ? j : proche
     ).sprite.body.center;
     const direction = new Phaser.Math.Vector2(but.x - origine.x, but.y - origine.y).normalize();

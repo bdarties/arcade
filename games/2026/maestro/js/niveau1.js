@@ -1251,6 +1251,10 @@ export default class niveau1 extends Phaser.Scene {
       this.time.delayedCall(400, () => { // 0,4 s après le début de l'attaque
         if (tuba.active && this.time.now >= tuba.etourdiJusqua) { // s'il n'est pas étourdi entre-temps
           this.lancerOndeTuba(tuba); // l'onde part
+          // une note de tuba, mais seulement si on voit ce Tuba à l'écran (pas de bruit pour un Tuba lointain)
+          if (this.cameras.main.worldView.contains(tuba.x, tuba.y)) {
+            jouerSonEnnemi(this, "son_tuba");
+          }
         }
       });
     }

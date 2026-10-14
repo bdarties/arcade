@@ -408,6 +408,9 @@ export default class niveau2 extends niveau1 {
     perso.setVelocityY(FORCE_TAMBOUR); // on le relance vers le haut, très fort
     this.sound.play("son_tambour", { volume: 0.5 }); // le tambour résonne
     this.tweens.add({ targets: tambour, scaleY: 0.7, duration: 70, yoyo: true }); // le tambour s'écrase un instant
+    if (this.cache.audio.exists("son_tambour")) { // si le son a bien été chargé
+      this.sound.play("son_tambour", { volume: 0.5 }); // « boing » !
+    }
   }
 
   // Un héros posé sur une plateforme mobile doit être EMPORTÉ avec elle, sinon la plateforme glisse sous ses pieds

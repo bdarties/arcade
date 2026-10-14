@@ -15,19 +15,19 @@ import { participants } from "./persos.js";
 const PX_PAR_CM = 8;                 // 8 pixels à l'écran = 1 cm
 const Y_DEPART = 215;                // hauteur des pattes au départ
 const Y_LIGNE = 610;                 // hauteur de la ligne dorée à viser
+const Y_SOL = 700;                   // si la note arrive ici sans tampon : raté
 const ECART_LIGNES = 14;             // écart entre les lignes de la portée
 const CM_RATE = 60;                  // score si on dépasse la ligne
 const X_DUO = [440, 840];            // position du perso de J1 et de J2 en duo
 const X_SOLO = 640;                  // position du perso en solo
-const ECHELLE_PERSO = 3;             // le perso fait 32 px, on le grossit x3
+const ECHELLE_PERSO = 2;             // le perso fait 32 px, on le grossit x3
 const POLICE = '"Arial Black", Arial';
 
 // les 3 essais, de plus en plus durs
 const ESSAIS = [
-  { titre: "Première lecture", consigne: "Tamponne-toi au plus près de la ligne dorée !", gravite: 520, rideau: false },
-  { titre: "Presto !", consigne: "Attention, ça tombe beaucoup plus vite...", gravite: 820, rideau: false },
-  { titre: "Derrière le rideau", consigne: "Le rideau cache la fin de la chute : anticipe !", gravite: 640, rideau: true }
-];
+  { titre: "Première lecture", consigne: "Tamponne ta note pile sur sa cible !", gravite: 520, cibleMin: 400, cibleMax: 640, rideau: false },
+  { titre: "Presto !", consigne: "Attention, ça tombe beaucoup plus vite...", gravite: 820, cibleMin: 400, cibleMax: 640, rideau: false },
+  { titre: "Derrière le rideau", consigne: "Le rideau cache la chute : anticipe !", gravite: 640, cibleMin: 610, cibleMax: 660, rideau: true }];
 
 // ordre d'affichage (plus le chiffre est grand, plus c'est devant)
 const PROFONDEUR = { tampon: 2, perso: 4, note: 5, fleche: 8, rideau: 10, texte: 20 };
@@ -56,9 +56,10 @@ export default class music_fall extends Phaser.Scene {
     this.clavier = creerTouches(this);
 
     this.creerDecor();
+    this.yCible = Phaser.Math.Between(this.essai.cibleMin, this.essai.cibleMax);
     this.joueurs = participants(this.registry).map((perso, i) => this.creerJoueur(perso, i));
     if (this.essai.rideau) {
-      this.rideau = this.add.image(640, 230, "tx_rideau").setOrigin(0.5, 0).setDepth(PROFONDEUR.rideau);
+      this.rideau = this.add.image(640, 230, "img_rideau").setOrigin(0.5, 0).setDepth(PROFONDEUR.rideau);
     }
     this.creerScores();
 
@@ -92,7 +93,7 @@ export default class music_fall extends Phaser.Scene {
       joueur.note.y = joueur.sprite.y;
 
       if (vientDAppuyer(joueur.touches.a)) this.tamponner(joueur);
-      else if (joueur.note.y > Y_LIGNE) this.rater(joueur);
+      else if (joueur.note.y > Y_SOL) this.rater(joueur);
     });
 
     var tousFinis = this.joueurs.every((joueur) => joueur.etat != "chute");
@@ -104,28 +105,8 @@ export default class music_fall extends Phaser.Scene {
   // ===========================================================================
   creerDecor() {
     this.add.image(0, 0, "img_fond_music_fall").setOrigin(0).setDisplaySize(1280, 720);
-    this.add.image(190, 30, "tx_page").setOrigin(0);
+    this.add.image(190, 30, "img_page").setOrigin(0);
 
-    // la portée : 4 lignes grises + la ligne dorée à viser
-    var dessin = this.add.graphics();
-    dessin.lineStyle(3, 0x3b3550);
-    for (var i = 1; i < 5; i++) {
-      dessin.lineBetween(250, Y_LIGNE + i * ECART_LIGNES, 1040, Y_LIGNE + i * ECART_LIGNES);
-    }
-    dessin.lineBetween(250, Y_LIGNE, 250, Y_LIGNE + 4 * ECART_LIGNES); // barres de mesure
-    dessin.lineBetween(1040, Y_LIGNE, 1040, Y_LIGNE + 4 * ECART_LIGNES);
-    dessin.lineStyle(5, 0xe0a818);
-    dessin.lineBetween(250, Y_LIGNE, 1040, Y_LIGNE);
-    this.add
-      .text(275, Y_LIGNE + 28, "4\n4", {
-        fontFamily: "Georgia, serif",
-        fontSize: "26px",
-        fontStyle: "bold",
-        color: "#3b3550",
-        align: "center",
-        lineSpacing: -10
-      })
-      .setOrigin(0.5);
 
     // en duo : pointillés entre les 2 joueurs
     if (!this.solo) {
@@ -133,75 +114,40 @@ export default class music_fall extends Phaser.Scene {
       pointilles.lineStyle(2, 0xc9bfae);
       for (var y = 120; y < Y_LIGNE - 10; y += 18) pointilles.lineBetween(640, y, 640, y + 9);
     }
-    this.creerRegle();
   }
 
-// ----- LA RÈGLE -----
-  // règle graduée en cm à droite (0 = la ligne dorée)
-  creerRegle() {
-    var dessin = this.add.graphics();                         // pour dessiner des formes (rectangles, traits)
-    var x = 1080;
-    var styleChiffres = { fontFamily: "Arial", fontSize: "13px", fontStyle: "bold", color: "#6b4127" };
 
-    // LE FOND DE LA RÈGLE 
-
-    dessin.fillStyle(0xf3e3b5);                               // on choisit la couleur de remplissage : jaune clair
- 
-    dessin.fillRect(x - 22, Y_DEPART - 10, 26, Y_LIGNE - Y_DEPART + 14);        
-    // il commence un peu au-dessus du départ du perso (Y_DEPART - 10), il commence un peu au-dessus du départ du perso 
-
-
-    // LES TRAITS DE GRADUATION 
-    dessin.lineStyle(1, 0x6b4127);
-
-    // une boucle : on fait un trait pour chaque centimètre
-    for (var cm = 0; cm * PX_PAR_CM <= Y_LIGNE - Y_DEPART; cm++) {
-
-      // la hauteur à l'écran de ce centimètre :
-      // on part de la ligne dorée et on remonte de 8 pixels par cm
-      // (sur l'écran, y plus petit = plus haut)
-      var y = Y_LIGNE - cm * PX_PAR_CM;
-
-      var longueur = 5;
-      if (cm % 5 == 0) longueur = 10;               // moyen (10 px) si cm est un multiple de 5  (5, 15, 25...),
-      if (cm % 10 == 0) longueur = 16;              // grand (16 px) si cm est un multiple de 10 (0, 10, 20...)
-      // (% = le reste de la division : cm % 5 == 0 veut dire "divisible par 5")
-
-      dessin.lineBetween(x, y, x - longueur, y);    // on trace le trait horizontal, du bord droit vers la gauche
-
-      // tous les 10 cm, on écrit le chiffre à gauche du trait
-      // (String(cm) transforme le nombre en texte,
-      //  setOrigin(1, 0.5) = le texte est collé à droite et centré en hauteur)
-      if (cm % 10 == 0) this.add.text(x - 26, y, String(cm), styleChiffres).setOrigin(1, 0.5);
-    }
-
-    // LE MOT "cm" EN HAUT DE LA RÈGLE 
-    this.add.text(x - 8, Y_DEPART - 26, "cm", styleChiffres).setOrigin(0.5);
-  }
 
   // ===========================================================================
   // JOUEURS
   // ===========================================================================
   creerJoueur(perso, i) {
     var x = this.solo ? X_SOLO : X_DUO[i];
-    var ecartNote = i == 0 ? 40 : -40; // la note est à coté du perso
-
+    var ecartNote = i == 0 ? 70 : -70; // la note est à coté du perso
     // la note, de la couleur du perso. Son bas est au niveau des pattes :
     // c'est ce point qu'on mesure
     var note = this.add
-      .image(x + ecartNote, Y_DEPART, "tx_note")
+      .image(x + ecartNote, Y_DEPART, "img_note")
       .setOrigin(0.5, 1)
       .setScale(0.9)
       .setTint(perso.teinte)
       .setDepth(PROFONDEUR.note);
 
+          // la cible : la même note, transparente, posée sur la partition
+    var cible = this.add
+      .image(x + ecartNote, this.yCible, "img_note")
+      .setOrigin(0.5, 1)
+      .setScale(0.9)
+      .setTint(perso.teinte)
+      .setAlpha(0.3)
+      .setDepth(1);
+
+    // le perso choisi : image 0 de sa spritesheet de marche (debout), pieds en bas
     var player = this.add
-      .sprite(x, Y_DEPART, perso.texture)
+      .sprite(x, Y_DEPART, perso.marche, 0)
       .setScale(ECHELLE_PERSO)
-      .setOrigin(0.5, perso.piedRepos)
-      .setDepth(PROFONDEUR.perso);
-    player.anims.play(perso.anim);
-    if (i == 1) player.setFlipX(true); // J2 regarde vers le milieu
+      .setOrigin(0.5, 1)
+      .setDepth(PROFONDEUR.perso);    if (i == 1) player.setFlipX(true); // J2 regarde vers le milieu
 
     return {
       perso: perso,
@@ -209,6 +155,7 @@ export default class music_fall extends Phaser.Scene {
       x: x,
       sprite: player,
       note: note,
+      cible: cible,
       touches: this.clavier[i],
       etat: "attente", // attente -> chute -> tamponne ou rate
       vitesse: 0,
@@ -228,12 +175,9 @@ export default class music_fall extends Phaser.Scene {
     // pour chaque joueur : la tete de son perso, J1/J2, et son total en cm
     this.textesScore = this.joueurs.map((joueur) => {
       var tete = this.add
-        .image(joueur.x - 60, 82, joueur.perso.texture, 0)
-        .setCrop(0, 0, 35, 20) // on ne garde que le haut de l'image = la tete
-        .setScale(2.4)
+        .image(joueur.x - 60, 70, joueur.perso.tete) // la tete du perso choisi
+        .setScale(0.7)
         .setDepth(PROFONDEUR.texte);
-      if (joueur.i == 1) tete.setFlipX(true);
-
       this.add
         .text(joueur.x - 60, 94, joueur.perso.etiquette, { ...style, fontSize: "14px", strokeThickness: 4 })
         .setOrigin(0.5, 0)
@@ -347,15 +291,12 @@ fermerPanneau() {
     // gravité un peu différente à chaque fois (+/- 15 %)
     this.gravite = this.essai.gravite * Phaser.Math.FloatBetween(0.85, 1.15);
     // durée de la chute jusqu'à la ligne : t = racine(2 x hauteur / gravité)
-    var duree = Math.sqrt((2 * (Y_LIGNE - Y_DEPART)) / this.gravite);
+    var duree = Math.sqrt((2 * (Y_SOL - Y_DEPART)) / this.gravite);
     this.sonChute = sifflet(this, duree);
 
     this.joueurs.forEach((joueur) => {
       joueur.etat = "chute";
       joueur.vitesse = 0;
-      joueur.sprite.anims.stop();
-      joueur.sprite.setFrame(joueur.perso.imagemusic_fall); // image "je tombe"
-      joueur.sprite.setOrigin(0.5, joueur.perso.piedmusic_fall);
     });
   }
 
@@ -363,18 +304,15 @@ fermerPanneau() {
   // PENDANT LA CHUTE : tampon ou raté
   // ===========================================================================
   tamponner(joueur) {
-    var distance = Y_LIGNE - joueur.note.y; // en pixels
-    if (distance < 0) {
-      this.rater(joueur);
-      return;
-    }
     joueur.etat = "tamponne";
+    // écart entre le bas de la note et le bas de la cible (au-dessus ou en dessous)
+    var distance = Math.abs(joueur.cible.y - joueur.note.y);
     joueur.cm = Math.round(distance / PX_PAR_CM);
 
     // le tampon : une copie de la note qui reste sur la partition
     var note = joueur.note;
     joueur.tampon = this.add
-      .image(note.x, note.y, "tx_note")
+      .image(note.x, note.y, "img_note")
       .setOrigin(0.5, 1)
       .setScale(0.9)
       .setTint(joueur.perso.teinte)
@@ -397,7 +335,7 @@ fermerPanneau() {
     this.tweens.add({ targets: joueur.note, y: 900, duration: 700, ease: "Quad.easeIn" });
 
     var texte = this.add
-      .text(joueur.x, Y_LIGNE - 70, "Trop tard !", {
+      .text(joueur.x, this.yCible - 70, "Trop tard !", {
         fontFamily: POLICE,
         fontSize: "34px",
         color: "#e0463c",
@@ -423,17 +361,7 @@ fermerPanneau() {
       this.tweens.add({ targets: this.rideau, y: -320, duration: 900, ease: "Quad.easeIn" });
       attente = 1000;
     }
-    this.time.delayedCall(attente, () => this.decoller());
-  }
-
-  // le perso et sa note remontent : il ne reste que le tampon
-  decoller() {
-    this.joueurs.forEach((joueur) => {
-      if (joueur.etat != "tamponne") return;
-      this.tweens.add({ targets: [joueur.sprite, joueur.note], y: "-=70", alpha: 0.4, duration: 350, ease: "Quad.easeOut" });
-    });
-    this.time.delayedCall(450, () => this.afficherMesures());
-  }
+  this.time.delayedCall(attente, () => this.afficherMesures());  }
 
   afficherMesures() {
     this.joueurs.forEach((joueur) => {
@@ -453,20 +381,16 @@ fermerPanneau() {
       var yTampon = joueur.tampon.y; // bas de la note tamponnée
       var xFleche = joueur.x + (joueur.i == 0 ? -85 : 85);
 
-      // trait rouge depuis le tampon, puis double flèche jusqu'à la ligne dorée
+       // un trait rouge entre le bas du tampon et le bas de la cible
       var dessin = this.add.graphics().setDepth(PROFONDEUR.fleche);
       dessin.lineStyle(3, 0xd0342c);
-      dessin.lineBetween(joueur.tampon.x - 10, yTampon, xFleche, yTampon);
-      if (Y_LIGNE - yTampon > 12) {
-        dessin.lineBetween(xFleche, yTampon, xFleche, Y_LIGNE);
-        dessin.fillStyle(0xd0342c);
-        dessin.fillTriangle(xFleche - 7, yTampon + 12, xFleche + 7, yTampon + 12, xFleche, yTampon);
-        dessin.fillTriangle(xFleche - 7, Y_LIGNE - 12, xFleche + 7, Y_LIGNE - 12, xFleche, Y_LIGNE);
-      }
+      dessin.lineBetween(xFleche - 12, yTampon, xFleche + 12, yTampon);
+      dessin.lineBetween(xFleche - 12, this.yCible, xFleche + 12, this.yCible);
+      dessin.lineBetween(xFleche, yTampon, xFleche, this.yCible);
 
       // le score en cm à coté de la flèche
       this.add
-        .text(xFleche + (joueur.i == 0 ? -12 : 12), (yTampon + Y_LIGNE) / 2, joueur.cm + " cm", {
+        .text(xFleche + (joueur.i == 0 ? -12 : 12), (yTampon + this.yCible) / 2, joueur.cm + " cm", {
           fontFamily: POLICE,
           fontSize: "34px",
           color: "#d0342c",
@@ -486,7 +410,7 @@ fermerPanneau() {
   parfait(joueur) {
     jouerSon(this, "bravo");
     var texte = this.add
-      .text(joueur.x, Y_LIGNE - 150, "PARFAIT !", {
+      .text(joueur.x, this.yCible - 150, "PARFAIT !", {
         fontFamily: POLICE,
         fontSize: "44px",
         color: "#ffd23f",
@@ -498,11 +422,11 @@ fermerPanneau() {
     this.tweens.add({ targets: texte, scale: 1.2, duration: 300, yoyo: true, repeat: 3 });
 
     for (var k = 0; k < 14; k++) {
-      var etoile = this.add.image(joueur.x, Y_LIGNE - 40, "tx_etoile").setDepth(PROFONDEUR.texte);
+      var etoile = this.add.image(joueur.x, this.yCible - 40, "img_etoile").setDepth(PROFONDEUR.texte);
       this.tweens.add({
         targets: etoile,
         x: joueur.x + Phaser.Math.Between(-180, 180),
-        y: Y_LIGNE - Phaser.Math.Between(60, 260),
+        y: this.yCible - Phaser.Math.Between(60, 260),
         angle: 360,
         alpha: 0,
         duration: 1100,

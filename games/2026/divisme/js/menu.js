@@ -18,6 +18,7 @@ export default class menu extends Phaser.Scene {
     this.load.image("classement_button", "src/button/classement.png");
     // Audio
     this.load.audio('background', 'src/audio/gnossienne.mp3');
+    this.load.audio('selection', 'src/audio/selection.mp3');
     this.load.audio('son_rideau', 'src/audio/rideau.mp3');
   }
 
@@ -28,6 +29,8 @@ export default class menu extends Phaser.Scene {
       var musique_de_fond = this.sound.add('background', { loop: true, volume: 0.5 }); 
       musique_de_fond.play();  // lancement du son background
     }
+
+    var son_selection = this.sound.add('selection');  // lancement du son de hover quand on veut sélectionner un bouton
 
     this.add
       .image(0, 0, "menu_bg")
@@ -43,6 +46,7 @@ export default class menu extends Phaser.Scene {
     bouton_start.on("pointerover", () => {
       this.selection = 0;
       this.majSelection();
+      son_selection = this.sound.add('selection');
     });
 
     bouton_start.on("pointerup", () => {
@@ -61,6 +65,7 @@ export default class menu extends Phaser.Scene {
     bouton_credits.on("pointerover", () => {
       this.selection = 1;
       this.majSelection();
+      son_selection.play();
     });
 
     bouton_credits.on("pointerup", () => {
@@ -75,6 +80,7 @@ export default class menu extends Phaser.Scene {
     bouton_classement.on("pointerover", () => {
       this.selection = 2;
       this.majSelection();
+      son_selection.play();
     });
 
     bouton_classement.on("pointerup", () => {

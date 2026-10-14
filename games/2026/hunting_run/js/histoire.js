@@ -4,6 +4,7 @@ import { jouer } from "./sons.js";
 // Écran d'histoire : une ou plusieurs images racontent le début de l'aventure,
 // puis le jeu démarre. Les images se règlent dans maps.js (ECRANS.histoire).
 // Si aucune image n'est trouvée, on passe directement au jeu.
+
 export default class histoire extends Phaser.Scene {
   constructor() {
     super({ key: "histoire" });
@@ -36,7 +37,7 @@ export default class histoire extends Phaser.Scene {
     this.ajuster();
 
     this.add
-      .text(L / 2, H - 25, "Bouton A : continuer", { fontSize: "20px", color: "#cccccc" })
+      .text(L / 2, H - 25, "Bouton B : continuer", { fontSize: "20px", color: "#cccccc" })
       .setOrigin(0.5)
       .setShadow(2, 2, "#000000", 4)
       .setDepth(10);
@@ -46,7 +47,7 @@ export default class histoire extends Phaser.Scene {
 
     // clavier / borne
     const K = Phaser.Input.Keyboard.KeyCodes;
-    const valider = [K.ENTER, K.SPACE, K.I, K.R];
+    const valider = [K.ENTER, K.SPACE, K.O, K.G];
     this.input.keyboard.on("keydown", (e) => {
       if (!e.repeat && valider.includes(e.keyCode)) this.suivant();
     });

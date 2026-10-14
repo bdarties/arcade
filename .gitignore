@@ -15,3 +15,9 @@ __pycache__/
 ._*
 Thumbs.db
 desktop.ini
+
+# Environnement virtuel cree a la racine
+bin/
+lib/
+include/
+pyvenv.cfg
