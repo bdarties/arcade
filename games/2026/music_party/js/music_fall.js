@@ -369,17 +369,7 @@ fermerPanneau() {
       this.tweens.add({ targets: this.rideau, y: -320, duration: 900, ease: "Quad.easeIn" });
       attente = 1000;
     }
-    this.time.delayedCall(attente, () => this.decoller());
-  }
-
-  // le perso et sa note remontent : il ne reste que le tampon
-  decoller() {
-    this.joueurs.forEach((joueur) => {
-      if (joueur.etat != "tamponne") return;
-      this.tweens.add({ targets: [joueur.sprite, joueur.note], y: "-=70", alpha: 0.4, duration: 350, ease: "Quad.easeOut" });
-    });
-    this.time.delayedCall(450, () => this.afficherMesures());
-  }
+  this.time.delayedCall(attente, () => this.afficherMesures());  }
 
   afficherMesures() {
     this.joueurs.forEach((joueur) => {
