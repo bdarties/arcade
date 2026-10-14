@@ -17,7 +17,7 @@ import { creerTextureHalo, creerTexturePixel, creerPolice, plaque, GLYPHES, LARG
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)
 
 const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "; // les 27 caractères qui défilent : l'alphabet et une case vide (le dernier)
-const COL_NET = 996, COL_BRUT = 1104, COL_MORTS = 1172; // la fin (côté droit) de chaque colonne du tableau
+const COL_NET = 984, COL_BRUT = 1086, COL_MORTS = 1140, COL_COUPS = 1186; // la fin (côté droit) de chaque colonne du tableau
 const NB_LETTRES = 6; // le nom fait 6 caractères au plus : on peut n'en remplir que quelques-uns, les autres restent vides
 const TOUCHES_VALIDER = ["KeyI", "Enter", "Space"]; // I = le bouton de saut de la borne
 const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de jeu, on ignore les appuis au début
@@ -35,10 +35,11 @@ function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes
     return deux(Math.floor(total / 6000)) + ":" + deux(Math.floor(total / 100) % 60) + "." + deux(total % 100);
 }
 // Le panthéon est une simple LISTE, sauvegardée d'un bloc : un objet par partie enregistrée.
-//   { nom: "ABC", net: temps net (ms), brut: temps total (ms), morts: nombre de morts, date: "2026-10-13" }
+//   { nom: "ABC", net: temps net (ms), brut: temps total (ms), morts: nombre de morts, coups: coups reçus, date: "2026-10-13" }
 // Elle est triée du temps net le plus COURT au plus long ; à égalité, le temps total le plus court, puis le moins de morts. Elle ne garde que les 10 meilleurs.
 const MAX_LIGNES = 10;
 const MORTS_MAX = 99;
+const COUPS_MAX = 99; // (deux chiffres à l'écran)
 const arrondi = (ms) => Math.round(ms / 10) * 10; // les temps sont gardés au centième de seconde, comme à l'affichage
 function comparer(a, b) {
     return a.net - b.net || a.brut - b.brut || a.morts - b.morts;
@@ -90,6 +91,7 @@ export default class classement extends Phaser.Scene {
         this.points = donnees.points ?? 0;
         this.tempsNetMs = donnees.tempsNetMs ?? this.tempsBrutMs;
         this.morts = donnees.morts ?? 0;
+        this.coups = donnees.coups ?? 0; // les coups reçus pendant la partie : chaque fois que le robot perd un PV
         this.consultation = donnees.consultation ?? false; // vrai quand on vient du bouton CLASSEMENT du menu : on regarde le panthéon, c'est tout
     }
 
@@ -166,7 +168,7 @@ export default class classement extends Phaser.Scene {
         this.traitEntete = this.add.rectangle(930, 228, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0);
         // les titres des colonnes : le temps net (celui qui classe), le temps total et le nombre de morts
         this.titresColonnes = [ecrire(this, COL_NET, 246, "NET", 2, { ancre: "droite", teinte: GRIS_VIOLET }), ecrire(this, COL_BRUT, 246, "TOTAL", 2, { ancre: "droite", teinte: GRIS_VIOLET }),
-            ecrire(this, COL_MORTS, 246, "MORTS", 2, { ancre: "droite", teinte: GRIS_VIOLET })];
+            ecrire(this, COL_MORTS, 246, "MORT", 2, { ancre: "droite", teinte: GRIS_VIOLET }), ecrire(this, COL_COUPS, 246, "HIT", 2, { ancre: "droite", teinte: GRIS_VIOLET })];
         this.titresColonnes.forEach((t) => t.setAlpha(0));
         this.groupeTableau = this.add.container(0, 0).setDepth(10);
         this.pied = ecrire(this, 640, 676, "", 2, { teinte: GRIS_VIOLET }); // l'aide des touches, en bas
@@ -224,7 +226,7 @@ export default class classement extends Phaser.Scene {
     // ---- l'API : le top 10 actuel ----
 
     monResultat() { // les chiffres de cette partie, tels qu'ils seront rangés dans le panthéon (sans le nom)
-        return { net: arrondi(this.tempsNetMs), brut: arrondi(this.tempsBrutMs), morts: Math.min(MORTS_MAX, this.morts) };
+        return { net: arrondi(this.tempsNetMs), brut: arrondi(this.tempsBrutMs), morts: Math.min(MORTS_MAX, this.morts), coups: Math.min(COUPS_MAX, this.coups) };
     }
 
     async charger() {
@@ -389,7 +391,7 @@ export default class classement extends Phaser.Scene {
             const i = reel.findIndex((l) => comparer(mien, l) < 0); // à égalité parfaite, le joueur passe derrière
             reel.splice(i === -1 ? reel.length : i, 0, { nom: this.nom.join(""), ...mien, moi: true });
         } else if (this.nomJoueur) {
-            const moi = reel.find((l) => l.nom === this.nomJoueur && l.net === mien.net && l.brut === mien.brut && l.morts === mien.morts);
+            const moi = reel.find((l) => l.nom === this.nomJoueur && l.net === mien.net && l.brut === mien.brut && l.morts === mien.morts && l.coups === mien.coups);
             if (moi) moi.moi = true;
         }
         return reel.slice(0, 10);
@@ -406,13 +408,14 @@ export default class classement extends Phaser.Scene {
             const l = lignes[i];
             const teinte = l ? (l.moi ? ROSE : i < 3 ? couleurRang[i] : LAVANDE) : 0x5f4f6e;
             const elements = [];
-            if (l && l.moi) elements.push(this.add.rectangle(925, y, 500, 32, 0x372b3e, 0.9)); // un fond derrière la ligne du joueur
+            if (l && l.moi) elements.push(this.add.rectangle(933, y, 516, 32, 0x372b3e, 0.9)); // un fond derrière la ligne du joueur
             const secondaire = l && l.moi ? ROSE : 0x8a779b; // le temps total et les morts sont plus discrets que le temps net
             elements.push(ecrire(this, 680, y, String(i + 1).padStart(2, "0"), 3, { ancre: "gauche", teinte }));
             elements.push(ecrire(this, 724, y, l ? l.nom.padEnd(NB_LETTRES, " ") : "---", 3, { ancre: "gauche", teinte }));
             elements.push(ecrire(this, COL_NET, y, l ? formaterTemps(l.net) : "--:--.--", 3, { ancre: "droite", teinte }));
             elements.push(ecrire(this, COL_BRUT, y, l ? formaterTemps(l.brut) : "--:--.--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
             elements.push(ecrire(this, COL_MORTS, y, l ? String(l.morts).padStart(2, "0") : "--", 2, { ancre: "droite", teinte: l ? secondaire : teinte }));
+            elements.push(ecrire(this, COL_COUPS, y, l && Number.isFinite(l.coups) ? String(l.coups).padStart(2, "0") : "--", 2, { ancre: "droite", teinte: l ? secondaire : teinte })); // « -- » pour une ligne enregistrée avant ce compteur
             this.groupeTableau.add(elements);
             if (l && l.moi) this.clignote.push(this.tweens.add({ targets: elements, alpha: 0.55, duration: 380, yoyo: true, repeat: -1 }));
         }

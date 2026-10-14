@@ -46,6 +46,7 @@ export function nouvellePartie(jeu) { // les mêmes valeurs de départ que menu.
     jeu.registry.set("chrono", 0);
     jeu.registry.set("score", 0);
     jeu.registry.set("morts", 0);
+    jeu.registry.set("coups", 0);
     jeu.registry.set("chronoActif", true);
     jeu.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     jeu.registry.set("guideVu", false); // le but et le rappel du dash s'affichent de nouveau (voir guide.js)
@@ -64,7 +65,7 @@ function teleporterRobot(jeu) { // F8 : chaque niveau indique où dans sa config
 
 function lancerVictoire(jeu) { // F4 : l'écran de victoire, avec un temps de test
     arreterToutesLesScenes(jeu); // (coupe aussi la musique)
-    jeu.scene.start("classement", { tempsBrutMs: 600000, points: 20000, tempsNetMs: 400000, morts: 3 });
+    jeu.scene.start("classement", { tempsBrutMs: 600000, points: 20000, tempsNetMs: 400000, morts: 3, coups: 7 });
 }
 
 export function activerRaccourcis(jeu) {

@@ -102,7 +102,6 @@ export default class menu extends Phaser.Scene {
     texture.refresh();
     texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.anims.create({ key: cle + "_survol", frames: this.anims.generateFrameNumbers(cle, { start: 1, end: 12 }), frameRate: 12, repeat: -1 }); // les flammes
-    this.anims.create({ key: cle + "_clic", frames: this.anims.generateFrameNumbers(cle, { start: 13, end: 14 }), frameRate: 12, repeat: 0 }); // la dalle qui s'enfonce
   }
 
   creerBoutonDeux(x, y) { // la même dalle animée que « JOUER », sans son texte, avec « 1V1 » écrit à la place (police pixel du jeu)
@@ -191,9 +190,8 @@ export default class menu extends Phaser.Scene {
     if (this.lance) return; // déjà lancé : on ne le fait pas deux fois
     this.lance = true;
     if (this.mode === 3) { // le classement : on regarde le panthéon, sans animation
-      this.boutonClassement.dalle.play("bouton_vide_large_clic"); // la dalle s'enfonce, comme « JOUER »
       jouerSon(this, "porte");
-      this.time.delayedCall(180, () => this.scene.start("classement", { consultation: true }));
+      this.scene.start("classement", { consultation: true }); // tout de suite : la dalle ne bouge pas au clic, comme « 1 V 1 »
       return;
     }
     if (this.mode === 2) { // 1 contre 1 : pas de chrono, on file dans l'arène
@@ -205,6 +203,7 @@ export default class menu extends Phaser.Scene {
     this.registry.set("chrono", 0); // nouvelle partie : le chrono repart de zéro
     this.registry.set("score", 0); // le score aussi
     this.registry.set("morts", 0); // et le nombre de morts
+    this.registry.set("coups", 0); // et le nombre de coups reçus
     this.registry.set("numeroPartie", (this.registry.get("numeroPartie") ?? 0) + 1); // une partie de plus (sert aux conseils qui ne s'affichent qu'une fois par partie)
     this.registry.set("phaseBoss", null); // le boss repart de sa phase 1
     this.registry.set("guideVu", false); // le guide (but et commandes) s'affichera au début de cette partie

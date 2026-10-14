@@ -53,7 +53,7 @@ function faussePremiereFin(scene, boss) { // la FAUSSE fin : même dissolution, 
             const tempsBrutMs = scene.registry.get("chrono");
             const points = scene.registry.get("score");
             scene.scene.launch("fauxPantheon", {
-                origine: scene.scene.key, tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0,
+                origine: scene.scene.key, tempsBrutMs, points, tempsNetMs: tempsNet(tempsBrutMs, points), morts: scene.registry.get("morts") ?? 0, coups: scene.registry.get("coups") ?? 0,
                 retour: () => devenirFormeFinale(scene, boss) // appelée quand l'écran s'est brisé et que le jeu reprend
             });
             scene.scene.pause(); // le jeu s'arrête derrière le faux écran
