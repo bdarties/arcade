@@ -18,18 +18,12 @@ export default class niveau3 extends Phaser.Scene {
 
   // preload : charge les images et la carte AVANT de créer la scène
   preload() {
-<<<<<<< HEAD
-    this.load.spritesheet("cantatrice", "assets/cantatrice.png", {
-      frameWidth: 64,
-      frameHeight: 64
-=======
     if (!this.textures.exists("ts_plateformes")) { // si l'image des tuiles n'est pas encore chargée
       this.load.image("ts_plateformes", "assets/plateformes-coulisses-grid-50.png"); // on la charge ici
     }
     this.load.spritesheet("cantatrice", "assets/cantatrice.png", { // la planche d'images de la Cantatrice
       frameWidth: 64, // une image fait 64 pixels de large
       frameHeight: 64 // et 64 pixels de haut
->>>>>>> c63ba9c91d6bf7ddb720c78ff89ff50698feaf5a
     });
     this.load.tilemapTiledJSON("carte", "assets/map3.json"); // la carte Tiled de ce niveau (fichier pas encore fait)
   };
@@ -65,19 +59,10 @@ export default class niveau3 extends Phaser.Scene {
       tileset,
     );
 
-<<<<<<< HEAD
-    this.player = this.physics.add.sprite(100, 450, "cantatrice");
-    this.player.setCollideWorldBounds(true);
-    this.clavier = this.input.keyboard.createCursorKeys();
-    this.physics.add.collider(this.player, this.groupe_plateformes);
-    
-    this.porte_retour = this.physics.add.staticSprite(100, 550, "img_porte3");
-=======
     this.player = this.physics.add.sprite(100, 450, "cantatrice"); // le personnage, posé au point (100, 450)
     this.player.setCollideWorldBounds(true); // il ne sort pas de l'écran
     this.clavier = this.input.keyboard.createCursorKeys(); // les flèches du clavier
     this.physics.add.collider(this.player, this.groupe_plateformes); // il marche sur les plateformes
->>>>>>> c63ba9c91d6bf7ddb720c78ff89ff50698feaf5a
 
     // La même petite porte dorée du tileset que dans le niveau 1 (72 × 76 px).
     const texturePorte = this.textures.get("ts_plateformes"); // l'image des tuiles
