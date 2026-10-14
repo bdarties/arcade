@@ -8,7 +8,8 @@ import { chargerJeu } from "../systemes/chargement.js"; // charge tous les asset
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
 import { jouerSon } from "../systemes/sons.js"; // bruitages
 import { VERSION } from "../../version.js"; // le numéro de version du jeu (voir outils/version.py)
-import { creerPolice, ecrire } from "./classement.js"; // la police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
+import { ecrire } from "./classement.js"; // l'écriture en police pixel du jeu (pour écrire « 1 V 1 » sur la dalle)
+import { creerPolice, creerTexturePixel } from "../systemes/dessins.js"; // la police pixel et les particules (dessinées en code)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
 const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"];
@@ -158,13 +159,7 @@ export default class menu extends Phaser.Scene {
     this.time.delayedCall(1500, glitcher);
 
     // 4. de la poussière flotte lentement vers le haut
-    if (!this.textures.exists("menu_poussiere")) {
-      const carre = this.make.graphics({ add: false });
-      carre.fillStyle(0xffffff);
-      carre.fillRect(0, 0, 4, 4);
-      carre.generateTexture("menu_poussiere", 4, 4);
-      carre.destroy();
-    }
+    creerTexturePixel(this, "menu_poussiere");
     this.add.particles(0, 0, "menu_poussiere", {
       x: { min: 0, max: 1280 }, y: { min: 380, max: 700 }, // elle naît dans la moitié basse de l'écran
       speedY: { min: -26, max: -10 }, speedX: { min: -6, max: 6 },

@@ -3,7 +3,8 @@
 // Les deux moitiés de l'écran s'écartent dans la lumière, et derrière, le boss revient en arrière-plan sous sa forme finale.
 // Il est posé par-dessus le niveau 3, qui est en pause : quand l'écran est tranché, le niveau reprend (voir fin_de_combat.js : retour).
 // Les sons sont synthétisés (synth.js) ; l'entaille est une courbe de Bézier dessinée en lame effilée, avec un halo, une onde de choc et des étincelles.
-import classement, { ecrire, plaque, OR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu ; plaque : la plaque d'armure du HUD)
+import classement, { ecrire, OR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu)
+import { plaque } from "../partie1/systemes/dessins.js"; // la plaque d'armure du HUD (dessinée en code)
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon, volumeEffets } from "../partie1/systemes/sons.js";
 import { fanfare, battements, montee, coupDEpee, impact, verre, cri, annonce } from "./synth.js";
@@ -59,7 +60,7 @@ export default class fauxPantheon extends classement {
 
     // La séquence de victoire est finie : on fête la victoire un long moment pour que le joueur y croie, puis la tension monte.
     decider() {
-        if (!this.sequenceFinie || !this.apiPrete || this.etape !== "intro") return;
+        if (!this.sequenceFinie || !this.donneesPretes || this.etape !== "intro") return;
         this.etape = "faux"; // plus aucune touche ne fait rien
         this.victoire();
         this.time.delayedCall(4600, () => this.tension());

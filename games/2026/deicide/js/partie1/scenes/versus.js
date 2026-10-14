@@ -10,7 +10,7 @@ import { jouerSon, musiqueDeScene, chargerMusiqueBoss, VOLUME_MUSIQUE_BOSS } fro
 import * as effets from "../systemes/effets.js";
 import { objetsDe } from "../systemes/chargement.js";
 import { preparerPause } from "./pause.js"; // le menu pause (Échap ou X), comme dans les niveaux
-import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
+import { creerTextureHalo } from "../systemes/dessins.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
 
 const PV_PAR_MANCHE = 3;
 const MANCHES_POUR_GAGNER = 2;

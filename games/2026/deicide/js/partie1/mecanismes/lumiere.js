@@ -7,17 +7,7 @@
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import * as effets from "../systemes/effets.js"; // tremblements, flashs, éclats et alertes
 import { reglages } from "../systemes/reglages.js"; // luminosité choisie dans le menu pause
-export function creerTextureHalo(scene) {
-    if (scene.textures.exists("halo")) return; // si le halo existe deja il est réutilisé ici
-    const tex = scene.textures.createCanvas("halo", 256, 256); // permet de créer la zone de dessin
-    const ctx = tex.getContext(); // ctx est une constante qui fait office de pinceau à chaque fois qu'on veut creer quelque chose
-    const degrade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128); // créer le dégradé pour le halo de lumière
-    degrade.addColorStop(0, "rgba(255,255,255,0.8)"); // haut du dégradé
-    degrade.addColorStop(1, "rgba(255,255,255,0)");// bas du dégradé
-    ctx.fillStyle = degrade; // dis au pinceau de pindre avec le dégradé qu'on a crée
-    ctx.fillRect(0, 0, 256, 256);
-    tex.refresh();
-}
+import { creerTextureHalo, creerTexturesLanterne } from "../systemes/dessins.js"; // les textures du halo et des lanternes (dessinées en code)
 export function creerZoneRonde(scene, x, y, rayon) {
     const halo = scene.add.image(x, y, "halo"); // affiche le halo sur les positions x,y
     halo.setScale(rayon / 128); // permet de creer la forme de rayon
@@ -76,43 +66,6 @@ export function eteindreLanterne(scene, tir, lanterne) {
     const halo = lanterne.zone.halo; // on range l'image du halo dans un variable halo
     scene.zonesLumiere.remove(lanterne.zone, true, true); // on retire alors du groupe des zones de dégats lumineuse la lanterne en question
     scene.tweens.add({ targets: halo, alpha: 0, duration: 300, onComplete: () => halo.destroy() });
-}
-// dessin de la lanterne en pixel art : chaque lettre est un pixel, "." = transparent
-export const MOTIF_LANTERNE = [ // (exporté : lanterne_vivante.js s'en sert pour dessiner la lanterne vivante)
-    "....##....", // anneau pour l'accrocher
-    "...#..#...",
-    "....##....",
-    "..######..", // chapeau en métal
-    ".########.",
-    ".#VVVVVV#.", // verre, entouré du cadre
-    ".#VVJJVV#.",
-    ".#VJBBJV#.", // flamme : B = coeur blanc, J = jaune autour
-    ".#VJBBJV#.",
-    ".#VVJJVV#.",
-    ".#VVVVVV#.",
-    ".########.", // socle
-    "..######..",
-    "...####...",
-];
-function dessinerLanterne(scene, cle, couleurs) { // dessine le motif dans une texture, avec les couleurs données
-    const tex = scene.textures.createCanvas(cle, 10, MOTIF_LANTERNE.length); // une zone de dessin de la taille du motif
-    const ctx = tex.getContext(); // le pinceau
-    MOTIF_LANTERNE.forEach((ligne, y) => { // pour chaque ligne du motif
-        [...ligne].forEach((lettre, x) => { // pour chaque lettre de la ligne
-            if (lettre === ".") return; // un point = pixel transparent, on ne peint rien
-            ctx.fillStyle = couleurs[lettre]; // prend la couleur qui correspond à la lettre
-            ctx.fillRect(x, y, 1, 1); // peint un seul pixel
-        });
-    });
-    tex.refresh(); // envoie le dessin à Phaser
-    tex.setFilter(Phaser.Textures.FilterMode.NEAREST); // garde les pixels nets quand on agrandit (sinon le dessin devient flou)
-}
-function creerTexturesLanterne(scene) { // crée la lanterne allumée et la lanterne éteinte, une seule fois
-    if (scene.textures.exists("lanterne_allumee")) return; // déjà dessinées : on les réutilise
-    // cadre en fer, verre doré lumineux, flamme
-    dessinerLanterne(scene, "lanterne_allumee", { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" });
-    // même cadre, verre sombre et flamme morte
-    dessinerLanterne(scene, "lanterne_eteinte", { "#": "#3b3634", V: "#4a4a52", J: "#3a3a40", B: "#2e2e33" });
 }
 export function creerLanterne(scene, x, y, rayon) { // fonction  qui permet de creer les lanternes
     creerTexturesLanterne(scene); // dessine les textures de la lanterne si elles n'existent pas encore

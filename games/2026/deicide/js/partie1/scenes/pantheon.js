@@ -3,7 +3,8 @@
 // OUI : la suite du jeu commence (le Dieu s'enrage, fuite du niveau 2). NON : la partie s'arrête là et on va au classement (voir boss.js, refuserPantheon).
 // Le décor reprend celui de l'écran de fin (classement.js) : la même police pixel et les mêmes plaques d'armure que le HUD.
 import { rattraperHorloge } from "./pause.js"; // pour que le niveau « ne sente pas » le temps passé à choisir
-import { creerPolice, ecrire, plaque, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // la police pixel et les plaques
+import { ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel et les couleurs
+import { creerPolice, plaque } from "../systemes/dessins.js"; // la police pixel et les plaques (dessinées en code)
 import { jouerSon } from "../systemes/sons.js"; // un petit bruit quand on change de choix
 
 const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // les mêmes que le menu pause (I = le bouton de saut de la borne)

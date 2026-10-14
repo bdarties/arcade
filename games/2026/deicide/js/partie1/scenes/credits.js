@@ -2,8 +2,8 @@
 // Le titre apparaît au centre avec ses lettres qui scintillent, puis les crédits défilent vers le haut (le nom des créateurs, les graphismes, les musiques, les bruitages, le moteur),
 // et le défilé se termine sur « FIN ». Le décor est celui de l'écran du panthéon : une lueur violette qui respire, des colonnes sur les bords, de la poussière qui monte.
 // N'importe quel bouton (après 1,5 s) saute les crédits ; sinon la fin du défilé mène toute seule au panthéon.
-import { creerPolice, ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // la police pixel et les couleurs du jeu
-import { creerTextureHalo } from "../mecanismes/lumiere.js"; // le halo doux, pour la lueur du fond
+import { ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel et les couleurs du jeu
+import { creerTextureHalo, creerTexturePixel, creerPolice } from "../systemes/dessins.js"; // les dessins faits en code (halo, particules, police pixel)
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js";
 
 const VOLUME_MUSIQUE_CREDITS = 1; // le volume de base de la musique des crédits : le maximum (0,38 puis 0,6 avant, trop faible face à la musique des boss : 0,42 et 0,18) ; 0,3 pour celle du niveau ; le réglage « musique » du menu pause s'y applique
@@ -69,10 +69,7 @@ export default class credits extends Phaser.Scene {
     // ---- le décor : une lueur qui respire, des colonnes sur les bords, de la poussière qui monte ----
     decor() {
         creerTextureHalo(this);
-        if (!this.textures.exists("pixel")) { // un carré blanc de 4 px pour la poussière et les étincelles (le jeu le fabrique au 1er niveau, mais cette scène peut arriver directement)
-            const carre = this.make.graphics({ add: false });
-            carre.fillStyle(0xffffff); carre.fillRect(0, 0, 4, 4); carre.generateTexture("pixel", 4, 4); carre.destroy();
-        }
+        creerTexturePixel(this); // un carré blanc de 4 px pour la poussière et les étincelles (cette scène peut arriver directement, sans passer par un niveau)
         const lueur = this.add.image(640, 150, "halo").setScale(9).setTint(GRIS_VIOLET).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.22).setDepth(0).setPipeline("SinglePipeline"); // la même lueur que l'écran du panthéon
         this.tweens.add({ targets: lueur, alpha: 0.4, scale: 10, duration: 2600, yoyo: true, repeat: -1, ease: "Sine.InOut" });
         [60, 1220].forEach((x) => { this.add.rectangle(x, 360, 56, 720, 0x15121a).setDepth(0); this.add.rectangle(x - 20, 360, 4, 720, 0x1d1824).setDepth(0); });

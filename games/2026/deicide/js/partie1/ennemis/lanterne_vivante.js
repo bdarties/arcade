@@ -4,7 +4,7 @@
 // Au contact du robot, elle lui retire 1 PV et se brise. Un tir l'abat : gerbe d'éclats dorés, et le robot gagne un niveau de boost (voir boost.js :
 // un peu plus de vitesse, une balle de plus à chaque tir, un reflet blanc). La visée auto la prend pour cible (voir personnage.js).
 // Utilisation : preparerLanternesVivantes(this) dans create() de niveau1, après la création du joueur et du groupe tirsJoueur.
-import { MOTIF_LANTERNE } from "../mecanismes/lumiere.js"; // le dessin de la lanterne (le même que les lanternes accrochées)
+import { creerTextureLanterneVivante } from "../systemes/dessins.js"; // le dessin de la lanterne ailée (en code, avec le même motif que les lanternes accrochées)
 import { VITESSE_JOUEUR } from "../personnage/personnage.js"; // la vitesse du robot
 import { lanterneVivanteMorte } from "../systemes/effets.js"; // éclats, éclair
 import { donnerBoost } from "../mecanismes/boost.js"; // le boost donné au robot
@@ -21,37 +21,11 @@ const ESSAIS = 40; // nombre de places essayées pour l'apparition
 
 // Les deux images des ailes (8 lignes, 9 colonnes ; la colonne 0 touche la lanterne). W = blanc, L = contour lavande
 // ailes levées : attachées en bas à gauche
-const AILE_HAUT = [".....LLL.", "...LLWWWL", "..LWWWWWL", ".LWWWWWL.", "LWWWWWL..", "LWWWWL...", ".LWWL....", "..LL....."];
 // ailes baissées : attachées en haut à gauche
-const AILE_BAS = ["..LL.....", ".LWWL....", "LWWWWL...", "LWWWWWL..", ".LWWWWWL.", "..LWWWWWL", "...LLWWWL", ".....LLL."];
-const COULEURS_LANTERNE = { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" }; // la lanterne allumée
-const COULEURS_AILE = { W: "#ffffff", L: "#8a779b" };
-const LARGEUR_IMAGE = 28; // une image de la lanterne ailée : 28 x 16 (la lanterne fait 10 x 14, les ailes dépassent de 9 de chaque côté)
-const HAUTEUR_IMAGE = 16;
 
-// dessine les deux images (ailes levées, ailes baissées) dans une seule texture, l'une sous l'autre
-function creerTexture(scene) {
-    if (scene.textures.exists("lanterne_vivante")) return;
-    const texture = scene.textures.createCanvas("lanterne_vivante", LARGEUR_IMAGE, HAUTEUR_IMAGE * 2);
-    const ctx = texture.getContext();
-    const pixel = (x, y, couleur) => { ctx.fillStyle = couleur; ctx.fillRect(x, y, 1, 1); };
-    [AILE_HAUT, AILE_BAS].forEach((aile, image) => {
-        const haut = image * HAUTEUR_IMAGE; // première ligne de cette image dans la texture
-        MOTIF_LANTERNE.forEach((ligne, y) => [...ligne].forEach((lettre, x) => { if (lettre !== ".") pixel(9 + x, haut + 2 + y, COULEURS_LANTERNE[lettre]); }));
-        const departAile = haut + (image === 0 ? 1 : 5); // où commence la première ligne de l'aile
-        aile.forEach((ligne, y) => [...ligne].forEach((lettre, x) => {
-            if (lettre === ".") return;
-            pixel(19 + x, departAile + y, COULEURS_AILE[lettre]); // aile droite
-            pixel(8 - x, departAile + y, COULEURS_AILE[lettre]); // aile gauche : la même, retournée
-        }));
-        texture.add(image, 0, 0, haut, LARGEUR_IMAGE, HAUTEUR_IMAGE); // image numéro 0 puis 1
-    });
-    texture.refresh();
-    texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // pixel art : pas de flou quand on agrandit
-}
 
 export function preparerLanternesVivantes(scene) {
-    creerTexture(scene);
+    creerTextureLanterneVivante(scene);
     if (!scene.anims.exists("lanterne_vivante_vol")) {
         // les ailes battent
         scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 });

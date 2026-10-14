@@ -62,3 +62,5 @@ Pour que le jeu s'arrête à la fin du 1er boss, il suffit de retirer de `index.
 la réponse OUI mène alors directement à l'écran de fin. Les fichiers de la partie 2 peuvent rester dans le dossier, ils ne sont plus chargés.
 
 Numéro de version : v1, v2... affiché en bas à droite du menu, augmenté de 1 à chaque pull request : `python3 outils/version.py` puis commiter `js/version.js` (voir devlog.md).
+
+Panthéon : sauvegardé avec lireDonneesJSON / ecrireDonneesJSON (js/donnees.js), dans la base de la borne ou, hors borne, dans le navigateur (voir devlog.md).

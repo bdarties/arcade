@@ -4,6 +4,7 @@
 //  2. Un mur de pierre ferme aussi le côté droit de l'arène (poserMurDroit) : le robot ne peut pas sortir pendant le combat.
 // (Si le joueur répond OUI au choix du panthéon, la partie 2 brise ce mur : voir partie2/fuite.js.)
 import { faireApparaitreBoss } from "../ennemis/boss.js";
+import { creerTextureMur } from "../systemes/dessins.js"; // la texture du mur (dessinée en code)
 
 const HAUT_DU_SOL = 25 * 32; // y du haut du sol de l'arène (ligne 25 de la map Tiled, tuiles de 32 px)
 
@@ -45,23 +46,6 @@ export function casesDuMur() {
     return cases;
 }
 
-// La texture du mur : de grosses briques de pierre claire, avec un liseré chaud sur le bord intérieur (côté arène) pour qu'il se voie dans le noir
-function creerTextureMur(scene) {
-    if (scene.textures.exists("mur_arene")) return;
-    const largeur = 64, hauteur = 800;
-    const texture = scene.textures.createCanvas("mur_arene", largeur, hauteur);
-    const ctx = texture.getContext();
-    ctx.fillStyle = "#3b3640"; ctx.fillRect(0, 0, largeur, hauteur); // le fond des joints
-    for (let y = 0, rang = 0; y < hauteur; y += 32, rang++) { // des briques de 64 x 32 : une rangée sur deux décalée de la moitié
-        for (let x = (rang % 2 ? -32 : 0); x < largeur; x += 64) {
-            ctx.fillStyle = (rang * 7 + x) % 3 === 0 ? "#6d6676" : "#5f5968";
-            ctx.fillRect(x + 2, y + 2, 60, 28);
-            ctx.fillStyle = "rgba(255,255,255,0.10)"; ctx.fillRect(x + 2, y + 2, 60, 4); // le haut de la brique est plus clair
-        }
-    }
-    ctx.fillStyle = "rgba(255,190,120,0.55)"; ctx.fillRect(0, 0, 5, hauteur); // le liseré chaud, à gauche
-    texture.refresh();
-}
 
 function poserMurDroit(scene) {
     creerTextureMur(scene);

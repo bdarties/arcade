@@ -1,5 +1,6 @@
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
 import { traineeDash } from "../systemes/effets.js"; // copies fantômes derrière le robot pendant le dash
+import { creerTextureBalle, creerTextureDash as creerTextureDashDessin } from "../systemes/dessins.js"; // la balle et la bande du dash (dessinées en code)
 
 // Personnage principal : le robot "Bot Wheel"
 //
@@ -74,8 +75,6 @@ const RECUL_BAS = 420; // vitesse vers le haut (px/s) donnée par un tir droit v
 const RECUL_BAS_DIAG = 300; // la même chose pour un tir en diagonale vers le bas, plus faible
 
 // Petite balle d'énergie (elle n'est pas dans les spritesheets) : 8 x 6 pixels aux couleurs du robot.
-const BALLE = ["..cccc..", ".cwwwwc.", "cwwwwwwc", "cwwwwwwc", ".cwwwwc.", "..cccc.."];
-const COULEURS_BALLE = { c: "#ac98b6", w: "#e7e0e9" };
 
 // Hitboxes (en pixels de la frame, avant agrandissement). Elles sont centrées sur le torse
 // et un peu plus étroites que le dessin (torse = 11 px, hitbox = 10 px) pour rester tolérantes.
@@ -154,48 +153,17 @@ export function creerAnimationsPersonnage(scene) {
             repeat: anim.repeat
         });
     }
-    creerTextureBalle(scene);
+    creerTextureBalle(scene, PREFIXE + "balle");
 }
 
-// Assemble la bande du dash : pour chaque image, la fumée d'origine (à gauche du robot) puis le robot
-// retourné sur place pour qu'il regarde à droite. Le robot est la dernière image de la bande "with FX",
-// la seule sans fumée. Il n'apparaît qu'à partir de la 2e image : la 1re n'est que de la fumée.
+// Assemble la bande du dash (voir creerTextureDash dans dessins.js) avec les chiffres propres au robot
 function creerTextureDash(scene) {
     const cle = PREFIXE + "dash";
     if (scene.textures.exists(cle)) return; // déjà créée
-    const robot = scene.textures.get(PREFIXE + "dash_robot").getSourceImage();
-    const fumee = scene.textures.get(PREFIXE + "dash_fumee").getSourceImage();
-    const texture = scene.textures.createCanvas(cle, LARGEUR, HAUTEUR * IMAGES_DASH);
-    const ctx = texture.getContext();
-    ctx.imageSmoothingEnabled = false; // on copie des pixels, sans les mélanger
-    for (let i = 0; i < IMAGES_DASH; i++) {
-        const y = i * HAUTEUR;
-        ctx.drawImage(fumee, 0, y, LARGEUR, HAUTEUR, -DECALAGE_DASH, y, LARGEUR, HAUTEUR);
-        if (i > 0) {
-            ctx.save();
-            ctx.setTransform(-1, 0, 0, 1, 2 * TORSE_DASH - DECALAGE_DASH, y); // miroir autour du centre du torse
-            ctx.drawImage(robot, 0, (IMAGES_DASH - 1) * HAUTEUR, LARGEUR, HAUTEUR, 0, 0, LARGEUR, HAUTEUR);
-            ctx.restore();
-        }
-        texture.add(i, 0, 0, y, LARGEUR, HAUTEUR); // image numéro i, comme pour les autres bandes
-    }
-    texture.refresh();
-}
-
-// dessine la balle pixel par pixel dans une texture
-function creerTextureBalle(scene) {
-    if (scene.textures.exists(PREFIXE + "balle")) return; // déjà créée
-    const texture = scene.textures.createCanvas(PREFIXE + "balle", 8, 6);
-    const ctx = texture.getContext();
-    BALLE.forEach((ligne, y) => {
-        [...ligne].forEach((lettre, x) => {
-            if (lettre === ".") return; // transparent
-            ctx.fillStyle = COULEURS_BALLE[lettre];
-            ctx.fillRect(x, y, 1, 1);
-        });
+    creerTextureDashDessin(scene, {
+        cle, robot: scene.textures.get(PREFIXE + "dash_robot").getSourceImage(), fumee: scene.textures.get(PREFIXE + "dash_fumee").getSourceImage(),
+        largeur: LARGEUR, hauteur: HAUTEUR, images: IMAGES_DASH, decalage: DECALAGE_DASH, torse: TORSE_DASH
     });
-    texture.refresh();
-    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 }
 
 // crée le joueur en (x, y). y correspond aux pieds du robot.
