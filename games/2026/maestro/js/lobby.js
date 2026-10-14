@@ -228,7 +228,7 @@ export default class lobby extends Phaser.Scene {
         return;
       }
     }
-    perso.body.setAllowGravity(false); // pas de gravité sur l'échelle
+    perso.body.setAllowGravity(false);
     perso.setVelocity(0, vitesseY); // pas de marche sur l'échelle, seulement monter ou descendre
     perso.x = echelle.centreX; // on reste bien au milieu de l'échelle
 
@@ -336,8 +336,8 @@ export default class lobby extends Phaser.Scene {
   //  Personnages : Cantatrice (J1) et Détective (J2)
   // --------------------------------------------------------------------------
   creerPersonnages() {
-    const j1 = creerPanneau(this, "j1"); // touches du joueur 1
-    const j2 = creerPanneau(this, "j2"); // touches du joueur 2
+    const j1 = creerPanneau(this, "j1");
+    const j2 = creerPanneau(this, "j2");
 
     // En duo chacun a ses touches. En solo, les deux joysticks fonctionnent pour le perso actif.
     this.cantatrice = this.creerPersonnage("cantatrice", SPAWN.x, this.mode == "duo" ? [j1] : [j1, j2]);
@@ -367,7 +367,7 @@ export default class lobby extends Phaser.Scene {
     perso.body.setMaxVelocity(600, 800); // vitesse maximale horizontale et verticale
     perso.play(nom + "_idle"); // il commence par son animation d'attente
 
-    perso.nom = nom; // "cantatrice" ou "detective"
+    perso.nom = nom;
     perso.touches = touches; // liste des claviers qui le contrôlent
     perso.enEchelle = false; // vrai quand le personnage est accroché à une échelle
     return perso;
@@ -377,7 +377,7 @@ export default class lobby extends Phaser.Scene {
   //  Caméra : la carte est en hauteur, la caméra suit les personnages vers le haut et le bas
   // --------------------------------------------------------------------------
   creerCamera() {
-    const camera = this.cameras.main; // la caméra principale du jeu
+    const camera = this.cameras.main;
     // La carte (1024 px de large) est plus étroite que l'écran (1280 px) : on la centre, avec 128 px de marge de chaque côté
     camera.setBounds(-128, 0, 1280, HAUTEUR_CARTE); // la caméra ne sort pas de cette zone
     camera.setScroll(-128, HAUTEUR_CARTE - 720); // on commence tout en bas, là où apparaissent les joueurs
@@ -411,7 +411,7 @@ export default class lobby extends Phaser.Scene {
     // En haut à droite : les fragments de partition trouvés, et le prochain objectif
     const fixe = (objet) => objet.setScrollFactor(0).setDepth(100); // petite aide : objet fixe à l'écran, au-dessus de tout
     const termines = niveauxTermines(this.registry).length; // combien de niveaux sont terminés
-    fixe(this.add.image(1228, 44, "img_partition")).setDisplaySize(46, 46); // l'icône du fragment
+    fixe(this.add.image(1228, 44, "img_partition")).setDisplaySize(46, 46);
     fixe(this.add.text(1196, 44, "Fragments : " + termines + " / " + NIVEAUX.length, { ...style, fontSize: "14pt", color: "#ffe9a8" }).setOrigin(1, 0.5));
     const suivant = prochainNiveau(this.registry); // le premier niveau pas encore terminé
     let objectif = "Tous les niveaux sont terminés !";
@@ -432,7 +432,7 @@ export default class lobby extends Phaser.Scene {
 
     this.persos.forEach((perso) => this.gererPersonnage(perso)); // chaque personnage marche, saute, etc.
     this.verifierPortes(temps); // on regarde si quelqu'un est devant une porte
-    this.mettreAJourCamera(); // la caméra suit les joueurs
+    this.mettreAJourCamera();
     if (this.mode == "solo") {
       // la petite flèche dorée suit le personnage actif, et oscille doucement de haut en bas
       this.fleche.setPosition(this.actif.x, this.actif.y - 46 + Math.sin(temps / 150) * 4);
@@ -481,7 +481,7 @@ export default class lobby extends Phaser.Scene {
     if (perso.enEchelle == true) {
       anim = perso.body.velocity.y != 0 ? "walk" : "idle"; // il "marche" en grimpant
     } else if (aTerre == false) {
-      anim = "jump"; // en l'air : animation de saut
+      anim = "jump";
     } else if (direction != 0) {
       anim = "walk"; // au sol et en mouvement : animation de marche
     }
@@ -533,11 +533,11 @@ export default class lobby extends Phaser.Scene {
   entrerDansLaPorte(scene) {
     this.enTransition = true; // on bloque les commandes pendant la transition
     this.persos.forEach((perso) => {
-      perso.setVelocityX(0); // on arrête les personnages
+      perso.setVelocityX(0);
       perso.anims.play(perso.nom + "_idle");
     });
     this.cameras.main.zoomTo(1.5, 800); // zoom sur 0,8 s
-    this.cameras.main.fadeOut(800, 0, 0, 0); // fondu au noir sur 0,8 s
+    this.cameras.main.fadeOut(800, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.scene.start(scene); // une fois noir, on lance le niveau choisi
     });

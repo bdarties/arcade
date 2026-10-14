@@ -25,8 +25,8 @@ import { enregistrerVictoire, NIVEAUX } from "./progression.js";
 import { jouerMusique, arreterMusique, jouerSonNote, jouerSonCreature } from "./musique.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
-const LARGEUR_MONDE = 2176; // largeur du monde, en pixels
-const HAUTEUR_MONDE = 736; // hauteur du monde, en pixels
+const LARGEUR_MONDE = 2176;
+const HAUTEUR_MONDE = 736;
 const COULEUR_FOND = 0x090d17; // couleur de fond de la carte (réglée dans Tiled)
 const OPACITE_FOND = 0.42; // opacité de l'image de fond (propriété fond_opacite de la carte)
 const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner plus que ça (pour rester à l'écran)
@@ -62,7 +62,7 @@ export default class niveau1 extends Phaser.Scene {
   // niveau2.js « hérite » de cette classe : il reprend toutes les mécaniques (héros, lampe, ondes, ennemis, vies)
   // et ne redéfinit que ce qui change (la carte, les objets à ramasser, les textes). On lui passe donc sa clé.
   constructor(cle = "niveau1") { // par défaut la clé est « niveau1 » ; niveau2 envoie « niveau2 »
-    super({ key: cle }); // on enregistre la scène sous cette clé
+    super({ key: cle });
   }
 
   // --------------------------------------------------------------------------
@@ -79,7 +79,7 @@ export default class niveau1 extends Phaser.Scene {
     // En duo, les deux joueurs restent séparés. (Le niveau 2 remet ce drapeau à false.)
     this.formeUnique = true; // vrai = un seul corps en solo (transformation avec K)
     this.musiqueNiveau = "musique_niveau1"; // la piste jouée pendant ce niveau (chargée dans chargement.js)
-    this.messageVictoire = "Niveau 1 terminé !"; // le texte affiché à la victoire
+    this.messageVictoire = "Niveau 1 terminé !";
     this.objectif = "OBJECTIF : récupère la partition lumineuse tout en haut,\npuis franchis la porte de sortie"; // l'objectif affiché au début
   }
 
@@ -87,14 +87,14 @@ export default class niveau1 extends Phaser.Scene {
   //  PRELOAD : la carte et ses images
   // ==========================================================================
   preload() {
-    this.load.setBaseURL(this.sys.game.config.baseURL); // les fichiers sont cherchés depuis le dossier du jeu
-    this.load.tilemapTiledJSON("carte_coulisse", "./assets/coulisse.json"); // la carte dessinée dans Tiled
+    this.load.setBaseURL(this.sys.game.config.baseURL);
+    this.load.tilemapTiledJSON("carte_coulisse", "./assets/coulisse.json");
     // Images de la carte. Si l'une manque, le niveau est quand même jouable :
     // il utilise alors un décor de secours (voir creerCarte).
     this.load.image("ts_plateformes", "./assets/plateformes-coulisses-grid-50.png"); // tuiles des plateformes
     this.load.image("ts_complements", "./assets/coulisses_complements.png"); // tuiles de la structure et des échelles
-    this.load.image("img_lanterne", "./assets/lanterne_chinoise.png"); // l'image de la lanterne
-    this.load.image("img_fond_coulisse", "./assets/coulisse.jpg"); // le fond du niveau
+    this.load.image("img_lanterne", "./assets/lanterne_chinoise.png");
+    this.load.image("img_fond_coulisse", "./assets/coulisse.jpg");
   }
 
   // ==========================================================================
@@ -102,7 +102,7 @@ export default class niveau1 extends Phaser.Scene {
   // ==========================================================================
   create() {
     // create() est rappelée à chaque (re)lancement : on remet tout à zéro
-    this.definirNiveau(); // d'abord les réglages propres au niveau
+    this.definirNiveau();
     this.mode = this.registry.get("mode") || "solo"; // "solo" ou "duo" (choisi dans choix_mode)
     this.fini = false; // vrai quand le niveau est gagné ou perdu
     this.debutNiveau = this.time.now; // pour mesurer le temps mis à finir le niveau
@@ -243,7 +243,7 @@ export default class niveau1 extends Phaser.Scene {
   creerPanneauCommandes() {
     const texte = this.add // le texte des commandes (généré depuis controles.js)
       .text(0, 0, this.texteCommandes(), { fontFamily: POLICE, fontSize: "11pt", color: "#e8ecff", align: "center", lineSpacing: 2, stroke: "#000000", strokeThickness: 3 })
-      .setOrigin(0.5, 0.5); // centré sur son point
+      .setOrigin(0.5, 0.5);
     const marge = 6; // un peu d'espace autour du texte
     const fond = this.add.rectangle(0, 0, texte.width + 24, texte.height + marge * 2, 0x05081a, 0.82).setStrokeStyle(2, 0xf5d97a, 0.8); // le fond sombre du cadre
     fond.setDepth(0); // le fond est derrière…
@@ -346,7 +346,7 @@ export default class niveau1 extends Phaser.Scene {
     this.departs = { j1: depart("depart_j1"), j2: depart("depart_j2") }; // où apparaît chaque personnage
     this.yChute = deType("danger")[0].y; // sous cette ligne : on tombe dans le vide
     this.rectSortie = deType("sortie")[0]; // la zone de la porte de sortie
-    this.objetPartition = deType("partition")[0]; // la position du parchemin
+    this.objetPartition = deType("partition")[0];
 
     // Lanternes décoratives
     deType("lampe").forEach((objet) => { // pour chaque lanterne posée dans Tiled
@@ -474,31 +474,31 @@ export default class niveau1 extends Phaser.Scene {
 
     this.cantatrice = this.creerPersonnage("cantatrice", this.departs.j1, touchesCantatrice); // la Cantatrice, au point de départ J1
     this.detective = this.creerPersonnage("detective", this.departs.j2, touchesDetective); // le Détective, au point de départ J2
-    this.persos = [this.cantatrice, this.detective]; // la liste des deux personnages
+    this.persos = [this.cantatrice, this.detective];
     this.actif = this.cantatrice; // en solo : le personnage qu'on contrôle en ce moment
     if (this.formeUnique == true && this.mode == "solo") {
       this.masquerCorps(this.detective); // un seul corps à la fois : le Détective attend sa transformation
     }
 
-    this.groupe_ondes = this.physics.add.group({ allowGravity: false }); // ondes de la Cantatrice (elles ne tombent pas)
+    this.groupe_ondes = this.physics.add.group({ allowGravity: false });
 
     // Lumière de la lampe (additive = elle éclaircit ce qu'elle recouvre) : un cône + 2 taches de lumière
-    this.faisceau = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD); // le cône de lumière (dessiné à chaque image)
-    this.halo = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false); // la tache au bout du faisceau
+    this.faisceau = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
+    this.halo = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false);
     this.halo.setScale((REGLAGES.lampe.rayon * 2) / 256); // taille de la tache, d'après le rayon réglé
     if (this.modeLeger == true) {
       this.faisceau.setBlendMode(Phaser.BlendModes.NORMAL); // mode économique : pas de mélange additif
       this.halo.setBlendMode(Phaser.BlendModes.NORMAL);
     }
-    this.haloProche = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false); // la petite lumière autour du Détective
+    this.haloProche = this.add.image(0, 0, "tex_lumiere").setBlendMode(Phaser.BlendModes.ADD).setDepth(15).setVisible(false);
     this.haloProche.setScale((REGLAGES.lampe.rayonProche * 2) / 256); // sa taille, d'après le réglage
   }
 
   // point = l'objet "depart" de Tiled (x, y = où les pieds se posent)
   creerPersonnage(nom, point, touches) {
     const perso = this.physics.add.sprite(point.x, point.y - 40, nom + "_idle"); // le personnage, posé au point de départ
-    perso.setDepth(10); // devant le décor
-    perso.setCollideWorldBounds(true); // il ne sort pas du monde
+    perso.setDepth(10);
+    perso.setCollideWorldBounds(true);
     // Hitbox plus petite que l'image de 64 x 64 : seulement le corps, pieds en bas de l'image
     perso.body.setSize(24, 54, false); // taille de la boîte de collision
     perso.body.setOffset(20, 9); // décalage de la boîte
@@ -508,9 +508,9 @@ export default class niveau1 extends Phaser.Scene {
 
     perso.nom = nom; // "cantatrice" ou "detective"
     perso.touches = touches; // liste des claviers qui le contrôlent
-    perso.regardeADroite = true; // il regarde vers la droite au départ
+    perso.regardeADroite = true;
     perso.enEchelle = false; // vrai quand le personnage est accroché à une échelle
-    perso.invincibleJusqua = 0; // pas de dégâts avant cet instant (ms)
+    perso.invincibleJusqua = 0;
     perso.sonneJusqua = 0; // choc : pas de contrôle avant cet instant (ms)
     perso.figeJusqua = 0; // après une réapparition : pas de contrôle avant cet instant (ms), sans animation de choc
     perso.tireJusqua = 0; // animation de tir / d'allumage en cours jusqu'à cet instant (ms)
@@ -523,7 +523,7 @@ export default class niveau1 extends Phaser.Scene {
   //  Ennemis : Tubas qui patrouillent et Cristaux (positions en haut du fichier)
   // --------------------------------------------------------------------------
   creerEnnemis() {
-    this.groupe_tubas = this.physics.add.group(); // le groupe des Tubas
+    this.groupe_tubas = this.physics.add.group();
     this.groupe_cristaux = this.physics.add.group({ allowGravity: false }); // les cristaux flottent
     this.groupe_ondes_ennemies = this.physics.add.group({ allowGravity: false }); // ondes du Tuba
 
@@ -534,7 +534,7 @@ export default class niveau1 extends Phaser.Scene {
   // Crée un Tuba : il patrouille entre xMin et xMax, et lance une onde de temps en temps
   creerTuba(x, solY, xMin, xMax) {
     const tuba = this.groupe_tubas.create(x, solY - 40, "tuba_walk"); // le Tuba, posé au-dessus du sol
-    tuba.setDepth(9); // devant le décor
+    tuba.setDepth(9);
     tuba.body.setSize(40, 50, false); // taille de sa boîte de collision
     tuba.body.setOffset(12, 14); // décalage de la boîte
     tuba.body.setMaxVelocity(300, 800); // vitesse maximale
@@ -550,8 +550,8 @@ export default class niveau1 extends Phaser.Scene {
   // Crée un cristal de la couleur d'une note : il ne se détruit qu'avec la même note
   creerCristal(x, y, note) {
     const cristal = this.groupe_cristaux.create(x, y, "cristal_idle"); // le cristal, à sa position
-    cristal.setDepth(9); // devant le décor
-    cristal.setCollideWorldBounds(true); // il ne sort pas du monde
+    cristal.setDepth(9);
+    cristal.setCollideWorldBounds(true);
     cristal.body.setCircle(20, 12, 16); // hitbox ronde
     cristal.play("cristal_idle"); // animation d'attente
     cristal.pv = REGLAGES.cristal.pv; // points de vie : 1 onde de la bonne note suffit
@@ -567,7 +567,7 @@ export default class niveau1 extends Phaser.Scene {
   // --------------------------------------------------------------------------
   creerObjets() {
     // Le parchemin : dans Tiled c'est un objet-image, son point (x, y) est en BAS à gauche
-    const p = this.objetPartition; // les infos du parchemin, lues dans Tiled
+    const p = this.objetPartition;
     this.partition = this.physics.add.image(p.x + p.width / 2, p.y - p.height / 2, "img_partition"); // on le place à son centre
     this.partition.setDisplaySize(p.width, p.height).setDepth(6); // à la taille de l'objet Tiled, devant le décor
     this.partition.body.setAllowGravity(false); // il ne tombe pas
@@ -668,9 +668,9 @@ export default class niveau1 extends Phaser.Scene {
   creerCamera() {
     this.cameras.main.setBounds(0, 0, this.largeurMonde, this.hauteurMonde); // la caméra ne sort pas du monde
     // Une "cible" invisible que la caméra suit ; on la déplace à chaque image
-    this.cible_camera = this.add.zone(this.cantatrice.x, this.hauteurMonde / 2, 10, 10); // le point suivi, au départ sur la Cantatrice
+    this.cible_camera = this.add.zone(this.cantatrice.x, this.hauteurMonde / 2, 10, 10);
     this.cameras.main.startFollow(this.cible_camera, true, 0.08, 0.08); // la caméra suit ce point en douceur
-    this.cameras.main.fadeIn(500, 0, 0, 0); // on part d'un noir qui s'éclaircit en 0,5 s
+    this.cameras.main.fadeIn(500, 0, 0, 0);
   }
 
   // --------------------------------------------------------------------------
@@ -685,15 +685,15 @@ export default class niveau1 extends Phaser.Scene {
     this.videBarre = fixe(this.add.rectangle(10 + 231, 8 + 35, 0, 8, 0x041e48).setOrigin(1, 0)); // le rectangle qui cache la partie perdue
 
     // Note choisie par la Cantatrice
-    this.texteNote = fixe( // le texte « Onde : DO » (la couleur change avec la note)
+    this.texteNote = fixe(
       this.add.text(18, 66, "", { fontFamily: POLICE, fontSize: "15pt", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 })
     );
 
     // Batterie de la lampe du Détective
-    this.texteLampe = fixe( // le libellé « LAMPE »
+    this.texteLampe = fixe(
       this.add.text(18, 94, "LAMPE", { fontFamily: POLICE, fontSize: "13pt", fontStyle: "bold", color: "#ffe9a8", stroke: "#000000", strokeThickness: 4 })
     );
-    this.barreBatterie = fixe(this.add.graphics()); // la barre de batterie (dessinée dans mettreAJourInterface)
+    this.barreBatterie = fixe(this.add.graphics());
     if (this.mode == "solo") {
       // en solo, pas de recharge de la lampe : on n'affiche pas la batterie
       this.texteLampe.setVisible(false);
@@ -702,10 +702,10 @@ export default class niveau1 extends Phaser.Scene {
 
     // Fragment de partition en haut à droite
     this.iconeFragment = fixe(this.add.image(1236, 44, "img_partition")).setDisplaySize(54, 54).setTint(0x444444); // l'icône, grise au départ
-    this.texteFragment = fixe( // le compteur « 0 / 1 »
+    this.texteFragment = fixe(
       this.add
         .text(1200, 44, "0 / 1", { fontFamily: POLICE, fontSize: "16pt", fontStyle: "bold", color: "#dfe6ff", stroke: "#000000", strokeThickness: 4 })
-        .setOrigin(1, 0.5) // aligné à droite
+        .setOrigin(1, 0.5)
     );
 
     // Message temporaire au centre en bas
@@ -720,11 +720,11 @@ export default class niveau1 extends Phaser.Scene {
           stroke: "#000000",
           strokeThickness: 5
         })
-        .setOrigin(0.5) // centré
+        .setOrigin(0.5)
     );
 
     // En solo : une petite flèche dorée au-dessus du personnage qu'on contrôle
-    this.fleche = this.add.image(0, 0, "tex_fleche").setDepth(20).setVisible(this.mode == "solo"); // visible seulement en solo
+    this.fleche = this.add.image(0, 0, "tex_fleche").setDepth(20).setVisible(this.mode == "solo");
 
     this.majCoeurs(); // on affiche le bon nombre de cœurs
     this.majNote(); // et la bonne note
@@ -745,7 +745,7 @@ export default class niveau1 extends Phaser.Scene {
 
     this.persos.forEach((perso) => { // pour chaque personnage
       if (perso.body.enable == true) {
-        this.gererPersonnage(perso, temps, delta); // un corps caché (solo, niveau 1) ne bouge pas
+        this.gererPersonnage(perso, temps, delta);
       }
     });
     this.mettreAJourLampe(temps, delta); // la batterie, le faisceau et la tache de lumière
@@ -933,7 +933,7 @@ export default class niveau1 extends Phaser.Scene {
         return;
       }
     }
-    perso.body.setAllowGravity(false); // pas de gravité sur l'échelle
+    perso.body.setAllowGravity(false);
     perso.setVelocity(0, vitesseY); // pas de marche sur l'échelle, seulement monter ou descendre
     perso.x = echelle.centreX; // on reste bien au milieu de l'échelle
 
@@ -976,8 +976,8 @@ export default class niveau1 extends Phaser.Scene {
   lancerOnde(perso) {
     const sens = perso.regardeADroite ? 1 : -1; // vers la droite (1) ou vers la gauche (-1)
     const onde = this.groupe_ondes.create(perso.x + sens * 30, perso.y - 14, "onde"); // l'onde, juste devant la bouche
-    onde.setDepth(8); // devant le décor
-    onde.setScale(1.5); // un peu plus grosse
+    onde.setDepth(8);
+    onde.setScale(1.5);
     onde.setFlipX(sens < 0); // retournée si elle va à gauche
     onde.note = NOTES[this.noteActuelle].nom; // pour savoir quel cristal elle peut détruire
     onde.play("onde_" + NOTES[this.noteActuelle].nom); // la couleur dépend de la note choisie
@@ -1100,7 +1100,7 @@ export default class niveau1 extends Phaser.Scene {
     const largeur = REGLAGES.lampe.rayon * 0.6; // la demi-largeur du cône, à l'arrivée
     this.faisceau.fillStyle(0xffe9a0, 0.2 * intensite); // couleur dorée, transparente
     this.faisceau.fillTriangle(f.ox, f.oy, f.cx + nx * largeur, f.cy + ny * largeur, f.cx - nx * largeur, f.cy - ny * largeur); // le cône
-    this.halo.setPosition(f.cx, f.cy).setAlpha(intensite); // la tache au bout du faisceau
+    this.halo.setPosition(f.cx, f.cy).setAlpha(intensite);
     this.haloProche.setPosition(this.detective.body.center.x, this.detective.body.center.y).setAlpha(0.7 * intensite); // le petit halo autour du Détective
   }
 
@@ -1259,8 +1259,8 @@ export default class niveau1 extends Phaser.Scene {
   lancerOndeTuba(tuba) {
     const sens = tuba.flipX ? -1 : 1; // le sens dans lequel le Tuba regarde
     const onde = this.groupe_ondes_ennemies.create(tuba.x + sens * 36, tuba.y - 6, "onde"); // l'onde, devant le Tuba
-    onde.setDepth(8); // devant le décor
-    onde.setScale(1.6); // un peu plus grosse
+    onde.setDepth(8);
+    onde.setScale(1.6);
     onde.setFlipX(sens < 0); // retournée si elle va à gauche
     onde.setTint(0xb066ff); // violette, pour ne pas la confondre avec celles de la Cantatrice
     onde.play("onde_mi"); // animation de l'onde
@@ -1534,7 +1534,7 @@ export default class niveau1 extends Phaser.Scene {
   // Le niveau est gagné : on enregistre la victoire (progression.js) et on montre le bilan
   terminerNiveau() {
     const premiereFois = enregistrerVictoire(this.registry, this.numeroNiveau); // vrai si c'est la première victoire de ce niveau
-    const niveau = NIVEAUX.find((n) => n.numero == this.numeroNiveau); // les infos du niveau (son nom)
+    const niveau = NIVEAUX.find((n) => n.numero == this.numeroNiveau);
     this.scene.start("niveau_termine", { // on lance l'écran de bilan avec les informations
       numero: this.numeroNiveau,
       nom: niveau.nom,
