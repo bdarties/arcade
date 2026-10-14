@@ -83,7 +83,7 @@ export default class fauxPantheon extends classement {
         this.sound.stopAll(); // la musique du niveau s'arrête net
         battements(this);
         this.time.delayedCall(950, () => battements(this));
-        montee(this, 1600);
+        montee(this, 1.6); // en SECONDES (et non en millisecondes : avec 1600, le son durait 26 minutes et montait de plus en plus fort)
         this.time.delayedCall(520, () => { cri(this, 1.05); this.cameras.main.shake(1060, 0.007); }); // le CRI du monstre, qui finit juste avant le coup ; l'écran tremble sous sa voix
         const voile = this.add.rectangle(LARGEUR / 2, HAUTEUR / 2, LARGEUR, HAUTEUR, 0x000000, 0).setDepth(80);
         this.tweens.add({ targets: voile, fillAlpha: 0.5, duration: 1500, ease: "Quad.In" });
