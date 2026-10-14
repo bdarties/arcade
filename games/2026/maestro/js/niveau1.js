@@ -497,7 +497,7 @@ export default class niveau1 extends Phaser.Scene {
   // point = l'objet "depart" de Tiled (x, y = où les pieds se posent)
   creerPersonnage(nom, point, touches) {
     const perso = this.physics.add.sprite(point.x, point.y - 40, nom + "_idle"); // le personnage, posé au point de départ
-    perso.setScale(REGLAGES.taillePerso); // on l'agrandit (la boîte de collision suit la taille)
+    perso.setScale(REGLAGES.taillePerso); // taille réglée dans reglages.js (1 = d'origine)
     perso.setDepth(10);
     perso.setCollideWorldBounds(true);
     // Hitbox plus petite que l'image de 64 x 64 : seulement le corps, pieds en bas de l'image
