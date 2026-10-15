@@ -14,7 +14,14 @@ import GestionnaireArmes from "./GestionnaireArmes.js";
 
 export default class VersusScene extends Phaser.Scene {
   constructor() {
-    super({ key: CLE_SCENE });
+    super({ key: CLE_SCENE,
+            physics: {
+              default: 'arcade',
+              arcade: {
+                gravity: {y:400}
+              }
+            }
+     });
   }
 
   // --------------------------------------------------------------------------
