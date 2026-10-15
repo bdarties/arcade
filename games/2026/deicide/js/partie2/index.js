@@ -12,6 +12,7 @@ import niveau3 from "./niveau3.js";
 import fauxPantheon from "./faux_pantheon.js"; // le faux écran de victoire qui se fissure (avant la forme finale du boss)
 import { installerBossFinal } from "./boss_final.js";
 import { installerMusique } from "./musique.js";
+import { installerModeNoHit } from "./mode_no_hit.js"; // le mode NO HIT : O + M maintenus 1 s, un seul coup et on recommence
 import { preparerFuite } from "./fuite.js";
 import { CHARGEMENTS_SUPPLEMENTAIRES } from "../partie1/systemes/chargement.js";
 import { EXTENSIONS_NIVEAU1 } from "../partie1/scenes/niveau1.js";
@@ -29,4 +30,5 @@ export function installerPartie2() { // à appeler une fois, avant la création 
     EXTENSIONS_NIVEAU1.push(preparerFuite); // la fuite après le 1er boss (le mur qui se brise, la sortie vers le niveau 2)
     installerBossFinal(); // le boss du dernier combat, ses attaques, et la suite du 1er boss (le Dieu qui s'enrage)
     installerMusique(); // la musique du dernier combat
+    installerModeNoHit(); // le raccourci O + M qui active ou désactive le mode NO HIT
 }
