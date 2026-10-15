@@ -47,6 +47,18 @@ export function creerHud(scene) {
   hud.niveau = fixer(scene.add.text(centre, xpY - 2, "", TITRE).setOrigin(0.5, 1));
   hud.texteNiveau = "";
 
+  const boss = scene.textures.get("boss_cadre").getSourceImage();
+  const bossX = centre - boss.width / 2;
+  const bossY = xpY - 30 - boss.height;
+  hud.bossRemplissage = fixer(
+    scene.add.image(bossX + BARRES.boss.x, bossY + BARRES.boss.y, "boss_remplissage").setOrigin(0)
+  );
+  hud.bossCadre = fixer(scene.add.image(bossX, bossY, "boss_cadre").setOrigin(0));
+  hud.bossNom = fixer(
+    scene.add.text(centre, bossY - 4, "ROI DE L'OMBRE", { ...TITRE, color: "#d8b4ff" }).setOrigin(0.5, 1)
+  );
+  afficherBarreBoss(hud, false);
+
   hud.fleche = fixer(scene.add.triangle(0, 0, 0, -14, 28, 0, 0, 14, 0xffa531)).setVisible(false);
 
   hud.annonce = fixer(
@@ -65,6 +77,12 @@ export function creerHud(scene) {
 function remplir(image, part, depuisDroite) {
   const largeur = image.width * Phaser.Math.Clamp(part, 0, 1);
   image.setCrop(depuisDroite ? image.width - largeur : 0, 0, largeur, image.height);
+}
+
+function afficherBarreBoss(hud, visible) {
+  hud.bossNom.setVisible(visible);
+  hud.bossCadre.setVisible(visible);
+  hud.bossRemplissage.setVisible(visible);
 }
 
 export function mettreAJourHud(scene) {
@@ -95,7 +113,11 @@ export function mettreAJourHud(scene) {
     remplir(panneau.remplissage, joueur.pv / joueur.stats.pvMax, !panneau.aGauche);
     let texte = "";
     if (joueur.estMort) {
-      texte = "Tombé";
+      if (temple.detruit) {
+        texte = "Tombé · en attente de l'aube";
+      } else {
+        texte = "Tombé · retour dans " + Math.max(0, Math.ceil((joueur.reanimationA - scene.tempsJeu) / 1000)) + " s";
+      }
     }
     if (texte !== panneau.texteEtat) {
       panneau.texteEtat = texte;
@@ -115,6 +137,13 @@ export function mettreAJourHud(scene) {
   if (texteInfos !== hud.texteInfos) {
     hud.texteInfos = texteInfos;
     hud.infos.setText(texteInfos);
+  }
+
+  const boss = scene.bossActif;
+  const bossVisible = boss !== null && boss.active;
+  afficherBarreBoss(hud, bossVisible);
+  if (bossVisible) {
+    remplir(hud.bossRemplissage, boss.pv / boss.pvMax, false);
   }
 
   placerFlecheTemple(scene);

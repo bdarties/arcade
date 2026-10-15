@@ -1,11 +1,11 @@
 import { MONDE, ISO, VAGUES } from "../reglages/config.js";
-import { BESTIAIRE } from "../reglages/bestiaire.js";
+import { BESTIAIRE, BOSS } from "../reglages/bestiaire.js";
 import { tiragePondere } from "../fonctions.js";
 import { creerEnnemi, placeDisponible } from "./ennemis.js";
 import { reconstruireTemple } from "./temple.js";
 import { estVisible } from "./carte.js";
 import { annoncer } from "./hud.js";
-import { flashLumineux } from "./effets.js";
+import { jouerEffet, flashLumineux } from "./effets.js";
 import { jouerSon } from "./sons.js";
 
 export function demarrerVagues(scene) {
@@ -13,12 +13,17 @@ export function demarrerVagues(scene) {
   scene.time.delayedCall(VAGUES.delaiPremiereVague, () => lancerVague(scene));
 }
 
-function composerVague(scene) {
-  let nombre = VAGUES.ennemisBase + VAGUES.ennemisParVague * (scene.vague.numero - 1);
-  if (scene.joueurs.length > 1) {
-    nombre = Math.round(nombre * VAGUES.multiplicateurDuo);
+export function composerVague(niveau, numeroVague, nbJoueurs) {
+  let nombre =
+    VAGUES.ennemisBase +
+    VAGUES.ennemisParNiveau * (niveau - 1) +
+    VAGUES.ennemisParVague * (numeroVague - 1);
+  if (nbJoueurs > 1) {
+    nombre *= VAGUES.multiplicateurDuo;
   }
-  const typesDisponibles = Object.keys(BESTIAIRE).filter((id) => BESTIAIRE[id].niveauMin <= scene.niveau);
+  nombre = Math.round(nombre);
+
+  const typesDisponibles = Object.keys(BESTIAIRE).filter((id) => BESTIAIRE[id].niveauMin <= niveau);
 
   const liste = [];
   for (let i = 0; i < nombre; i++) {
@@ -38,9 +43,15 @@ function lancerVague(scene) {
     reconstruireTemple(scene);
   }
 
-  vague.aFaireApparaitre = composerVague(scene);
-  annoncer(scene, "Vague " + vague.numero, "Les ombres s'élèvent…");
-  jouerSon("vague");
+  const vagueDeBoss = vague.numero % VAGUES.frequenceBoss === 0;
+  vague.aFaireApparaitre = composerVague(scene.niveau, vague.numero, scene.joueurs.length);
+  if (vagueDeBoss) {
+    vague.aFaireApparaitre = vague.aFaireApparaitre.slice(0, Math.ceil(vague.aFaireApparaitre.length * 0.6));
+    scene.time.delayedCall(1500, () => reveillerBoss(scene));
+  } else {
+    annoncer(scene, "Vague " + vague.numero, "Les ombres s'élèvent…");
+    jouerSon("vague");
+  }
 
   vague.timerApparition = scene.time.addEvent({
     delay: VAGUES.intervalleApparition,
@@ -63,10 +74,16 @@ function apparitionGroupe(scene) {
   const groupe = vague.aFaireApparaitre.splice(0, taille);
   const position = positionApparition(scene);
 
+  jouerEffet(scene, "anim_ombre_apparition", position.x, position.y, { origineY: 0.9 });
   flashLumineux(scene, position.x, position.y - 20, 0x9b4dff, 160);
-  groupe.forEach((idType, i) => {
-    const angle = (i / groupe.length) * Math.PI * 2;
-    creerEnnemi(scene, idType, position.x + Math.cos(angle) * 20, position.y + Math.sin(angle) * 20 * ISO.ratioY);
+  scene.time.delayedCall(450, () => {
+    if (scene.partieTerminee) {
+      return;
+    }
+    groupe.forEach((idType, i) => {
+      const angle = (i / groupe.length) * Math.PI * 2;
+      creerEnnemi(scene, idType, position.x + Math.cos(angle) * 20, position.y + Math.sin(angle) * 20 * ISO.ratioY);
+    });
   });
 }
 
@@ -78,7 +95,8 @@ function attendreFinVague(scene) {
     loop: true,
     callback: () => {
       const restantes = scene.groupeEnnemis.countActive(true);
-      if (restantes <= VAGUES.seuilVagueSuivante || scene.tempsJeu - debut > VAGUES.attenteMax) {
+      const bossEnVie = scene.bossActif !== null;
+      if ((restantes <= VAGUES.seuilVagueSuivante && !bossEnVie) || scene.tempsJeu - debut > VAGUES.attenteMax) {
         vague.timerFin.remove();
         scene.time.delayedCall(VAGUES.pauseEntreVagues, () => lancerVague(scene));
       }
@@ -99,4 +117,23 @@ function positionApparition(scene) {
     }
   }
   return { x: x, y: y };
+}
+
+function reveillerBoss(scene) {
+  if (scene.partieTerminee) {
+    return;
+  }
+  scene.nbBossApparus += 1;
+  const x = scene.trone.x;
+  const y = scene.trone.y + 52;
+  jouerEffet(scene, "anim_ombre_apparition", x, y, { origineY: 0.9, echelle: 3 });
+  flashLumineux(scene, x, y - 60, 0x7a3dff, 500);
+  scene.cameras.main.shake(700, 0.008);
+  jouerSon("boss");
+  annoncer(scene, BOSS.nom.toUpperCase(), "Le roi déchu s'éveille sur son trône…");
+  scene.time.delayedCall(600, () => {
+    if (!scene.partieTerminee) {
+      scene.bossActif = creerEnnemi(scene, "boss", x, y);
+    }
+  });
 }

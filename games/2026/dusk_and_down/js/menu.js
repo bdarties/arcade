@@ -32,7 +32,7 @@ export default class menu extends Phaser.Scene {
       .text(cx, 618, "Joystick : choisir  ·  Bouton A : commencer", { fontFamily: POLICE_TEXTE, fontSize: "15px", color: "#e8dcc0" })
       .setOrigin(0.5);
     this.add
-      .text(cx, ECRAN.hauteur - 12, "Assets : Undead Tileset (CraftPix) · Chevalier (Szadi art) · Tiny RPG · Pixel Art Top Down (Cainos) · Catacombs · VFX packs", {
+      .text(cx, ECRAN.hauteur - 12, "Assets : Undead Tileset (CraftPix) · Chevalier (Szadi art) · Mage (GandalfHardcore) · Tiny RPG · Pixel Art Top Down (Cainos) · Catacombs · VFX packs", {
         fontFamily: POLICE_TEXTE, fontSize: "12px", color: "#8a8272"
       })
       .setOrigin(0.5);
@@ -57,7 +57,7 @@ export default class menu extends Phaser.Scene {
     if (boutonPresse(this.controlesJ1, this.controlesJ2, "A")) {
       initialiserSons(this);
       jouerSon("choix");
-      this.scene.start("jeu", { nbJoueurs: this.options[this.selection].nbJoueurs });
+      this.scene.start("selection", { nbJoueurs: this.options[this.selection].nbJoueurs });
     }
   }
 

@@ -8,8 +8,9 @@ const derniersSons = {};
 const INTERVALLES = { touche: 0.05, temple: 0.25, mort_ombre: 0.05, epee: 0.05, gemme: 0.04 };
 
 const FICHIERS = {
-  gemme: { cles: ["xp_1", "xp_2"], volume: 0.3 },
-  niveau: { cles: ["niveau"], volume: 0.6 },
+  gemme: { cles: ["xp_1", "xp_2"], volume: 0.5 },
+  niveau: { cles: ["niveau"], volume: 0.8 },
+  mage: { cles: ["mage"], volume: 0.15 },
   epee: { cles: ["epee"], volume: 0.5 }
 };
 const sonsFichiers = {};
@@ -111,6 +112,14 @@ export function jouerSon(nom) {
     case "vague":
       note("sine", 110, 104, 1.6, 0.25);
       note("sine", 165, 160, 1.4, 0.12);
+      break;
+    case "salve":
+      note("sawtooth", 180, 60, 0.4, 0.1);
+      break;
+    case "boss":
+      note("sawtooth", 55, 40, 2.2, 0.25);
+      note("sine", 82, 70, 2.2, 0.2);
+      souffle("lowpass", 400, 60, 1.8, 0.2);
       break;
     case "temple_detruit":
       souffle("lowpass", 1200, 50, 2, 0.4);

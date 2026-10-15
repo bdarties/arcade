@@ -1,5 +1,5 @@
 import { VAGUES, ISO, PROFONDEUR } from "../reglages/config.js";
-import { BESTIAIRE } from "../reglages/bestiaire.js";
+import { BESTIAIRE, BOSS } from "../reglages/bestiaire.js";
 import { distanceSol, directionSol, deplacerAuSol, plusProche, trierProfondeur } from "../fonctions.js";
 import { blesserTemple } from "./temple.js";
 import { blesserJoueur } from "./joueurs.js";
@@ -7,8 +7,16 @@ import { lacherEclatDeLumiere } from "./butin.js";
 import { jouerEffet, afficherChiffre } from "./effets.js";
 import { jouerSon } from "./sons.js";
 
+export function bonusNiveau(niveau) {
+  return {
+    pv: 1 + VAGUES.bonusPvParNiveau * (niveau - 1),
+    degats: 1 + VAGUES.bonusDegatsParNiveau * (niveau - 1)
+  };
+}
+
 export function creerEnnemi(scene, idType, x, y) {
-  const type = BESTIAIRE[idType];
+  const type = idType === "boss" ? BOSS : BESTIAIRE[idType];
+  const bonus = bonusNiveau(scene.niveau);
   const ennemi = scene.groupeEnnemis.create(x, y, type.texture, 0);
   ennemi.setOrigin(0.5, 0.92);
   const r = type.rayonCorps;
@@ -19,10 +27,22 @@ export function creerEnnemi(scene, idType, x, y) {
   }
 
   ennemi.type = type;
-  ennemi.pv = type.pv;
+  ennemi.estBoss = idType === "boss";
+  ennemi.pvMax = Math.round(type.pv * bonus.pv);
+  ennemi.vitesse = type.vitesse;
+  ennemi.degats = type.degats * bonus.degats;
+  ennemi.degatsTemple = type.degatsTemple * bonus.degats;
+  ennemi.xp = type.xp;
+  ennemi.points = type.points;
   ennemi.prochaineAttaque = 0;
+  ennemi.prochaineSalve = scene.tempsJeu + 2000;
   ennemi.finRecul = 0;
   ennemi.finFlash = 0;
+
+  if (ennemi.estBoss) {
+    ennemi.pvMax = Math.round(BOSS.pv * bonus.pv * (1 + 0.25 * (scene.nbBossApparus - 1)));
+  }
+  ennemi.pv = ennemi.pvMax;
 
   if (type.texture === "spectre") {
     ennemi.play("spectre_apparition");
@@ -31,6 +51,7 @@ export function creerEnnemi(scene, idType, x, y) {
     ennemi.play(type.texture + "_marche");
     ennemi.anims.setProgress(Math.random());
   }
+  mettreAJourTeinte(scene, ennemi);
   trierProfondeur(ennemi);
   ennemi.setAlpha(0);
   scene.tweens.add({ targets: ennemi, alpha: 1, duration: 300 });
@@ -44,6 +65,9 @@ export function mettreAJourEnnemis(scene) {
     }
     trierProfondeur(ennemi);
     mettreAJourTeinte(scene, ennemi);
+    if (ennemi.estBoss) {
+      salveDuBoss(scene, ennemi);
+    }
     if (scene.tempsJeu < ennemi.finRecul) {
       continue;
     }
@@ -78,7 +102,7 @@ function deplacerEnnemi(scene, ennemi) {
   }
   const distance = distanceSol(ennemi.x, ennemi.y, cible.x, cible.y);
   let direction = directionSol(ennemi.x, ennemi.y, cible.x, cible.y);
-  let vitesse = ennemi.type.vitesse;
+  let vitesse = ennemi.vitesse;
 
   if (ennemi.type.comportement === "tireur") {
     if (distance < ennemi.type.portee * 0.7) {
@@ -88,7 +112,7 @@ function deplacerEnnemi(scene, ennemi) {
     }
     if (distance < ennemi.type.portee * 1.15 && scene.tempsJeu >= ennemi.prochaineAttaque) {
       ennemi.prochaineAttaque = scene.tempsJeu + ennemi.type.cadenceAttaque;
-      tirerCrane(scene, ennemi, cible.x, cible.y);
+      tirerCrane(scene, ennemi, cible.x, cible.y, ennemi.type.vitesseProjectile, ennemi.degatsTemple);
     }
   }
 
@@ -130,20 +154,30 @@ export function blesserEnnemi(scene, ennemi, degats, sourceX, sourceY, recul, cr
 }
 
 function tuerEnnemi(scene, ennemi) {
-  scene.score += ennemi.type.points;
+  scene.score += ennemi.points;
   scene.ennemisVaincus += 1;
-  lacherEclatDeLumiere(scene, ennemi.x, ennemi.y - 6, ennemi.type.xp);
+  lacherEclatDeLumiere(scene, ennemi.x, ennemi.y - 6, ennemi.xp);
   jouerSon("mort_ombre");
 
   scene.groupeEnnemis.remove(ennemi);
   ennemi.body.enable = false;
   ennemi.clearTint();
   ennemi.setTint(0x6a5a8a);
+  const animMort = ennemi.type.texture + "_mort";
   ennemi.anims.chain();
-  ennemi.play(ennemi.type.texture + "_mort");
+  ennemi.play(animMort);
   ennemi.once("animationcomplete", () => {
     scene.tweens.add({ targets: ennemi, alpha: 0, duration: 300, onComplete: () => ennemi.destroy() });
   });
+
+  if (ennemi.estBoss) {
+    bossVaincu(scene);
+  }
+}
+
+function bossVaincu(scene) {
+  scene.bossActif = null;
+  scene.bossVaincus += 1;
 }
 
 export function ombreAttaqueTemple(scene, ennemi) {
@@ -152,7 +186,7 @@ export function ombreAttaqueTemple(scene, ennemi) {
   }
   ennemi.prochaineAttaque = scene.tempsJeu + ennemi.type.cadenceAttaque;
   jouerAttaque(ennemi);
-  blesserTemple(scene, ennemi.type.degatsTemple);
+  blesserTemple(scene, ennemi.degatsTemple);
 }
 
 export function ombreToucheJoueur(scene, joueur, ennemi) {
@@ -160,7 +194,7 @@ export function ombreToucheJoueur(scene, joueur, ennemi) {
     return;
   }
   jouerAttaque(ennemi);
-  blesserJoueur(scene, joueur, ennemi.type.degats);
+  blesserJoueur(scene, joueur, ennemi.degats);
 }
 
 function jouerAttaque(ennemi) {
@@ -171,16 +205,35 @@ function jouerAttaque(ennemi) {
   }
 }
 
-function tirerCrane(scene, ennemi, cibleX, cibleY) {
+export function tirerCrane(scene, ennemi, cibleX, cibleY, vitesse, degats) {
   const direction = directionSol(ennemi.x, ennemi.y, cibleX, cibleY);
-  const crane = scene.groupeCranes.create(ennemi.x, ennemi.y - 14, "crane_ombre", 0);
+  lancerCrane(scene, ennemi.x, ennemi.y - 14, Math.atan2(direction.y, direction.x), vitesse, degats);
+}
+
+function lancerCrane(scene, x, y, angleSol, vitesse, degats) {
+  const crane = scene.groupeCranes.create(x, y, "crane_ombre", 0);
   crane.play("anim_crane_ombre");
   crane.body.setCircle(10, crane.width / 2 - 10, crane.height / 2 - 10 + 14);
   crane.setDepth(PROFONDEUR.lumieres);
-  deplacerAuSol(crane, direction.x, direction.y, ennemi.type.vitesseProjectile);
-  crane.setRotation(Math.atan2(direction.y * ISO.ratioY, direction.x));
-  crane.degats = ennemi.type.degatsTemple;
+  const vx = Math.cos(angleSol);
+  const vy = Math.sin(angleSol);
+  deplacerAuSol(crane, vx, vy, vitesse);
+  crane.setRotation(Math.atan2(vy * ISO.ratioY, vx));
+  crane.degats = degats;
   crane.finVie = scene.tempsJeu + 3500;
+}
+
+function salveDuBoss(scene, boss) {
+  if (scene.tempsJeu < boss.prochaineSalve) {
+    return;
+  }
+  boss.prochaineSalve = scene.tempsJeu + BOSS.cadenceSalve;
+  jouerAttaque(boss);
+  for (let i = 0; i < BOSS.nbCranesSalve; i++) {
+    const angle = (i / BOSS.nbCranesSalve) * Math.PI * 2 + scene.tempsJeu / 1000;
+    lancerCrane(scene, boss.x, boss.y - 40, angle, BOSS.vitesseProjectile, boss.degats * BOSS.degatsCrane);
+  }
+  jouerSon("salve");
 }
 
 export function craneToucheJoueur(scene, crane, joueur) {

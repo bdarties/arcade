@@ -68,3 +68,23 @@ export const BESTIAIRE = {
     poids: 2
   }
 };
+
+export const BOSS = {
+  nom: "Roi de l'Ombre",
+  texture: "boss",
+  echelle: 2.8,
+  rayonCorps: 10,
+  pv: 450,
+  vitesse: 40,
+  degats: 20,
+  degatsTemple: 14,
+  cadenceAttaque: 1500,
+  cadenceSalve: 5500,
+  nbCranesSalve: 6,
+  degatsCrane: 0.4,
+  vitesseProjectile: 150,
+  xp: 30,
+  points: 1000,
+  sensibiliteRecul: 0,
+  comportement: "temple"
+};
