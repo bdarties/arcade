@@ -1382,51 +1382,47 @@ function attaque_faucheuse() {
   });
 }
 
-// 5) Mort d'un joueur. Quand tous sont morts, on passe à l'écran de score.
-function tuer_joueur(joueur) {
-  joueur.points_vies = 0; //la barre de vie se vide toute seule dans update
-  joueur.body.enable = false; //il n'interagit plus avec rien
+// Mort d'un joueur : redirection directe vers l'écran de Game Over avec transmission des scores
+function tuer_joueur(joueur, raison = "vie_J1") {
+  joueur.points_vies = 0;
+  joueur.body.enable = false;
   this.tweens.add({ targets: joueur, alpha: 0, duration: 400, onComplete: () => joueur.setVisible(false) });
-  if (mode_deux_joueurs) { //compétitif : le joueur tombé perd, l'autre gagne
+
+  if (mode_deux_joueurs) {
     terminer_match.call(this, joueur === player ? "vie_J1" : "vie_J2");
     return;
   }
+
   if (joueurs_vivants().length === 0) {
     fin_de_partie = true;
     this.time.delayedCall(1500, () => {
       musique_niveau1.stop();
-      this.scene.start(this.cfg.scene_mort, {
+      this.scene.start("Game_over", {
+        raison: raison,
+        niveau: this.scene.key,
         scoreJ1: player.score,
-        scoreJ2: mode_deux_joueurs ? player2.score : 0,
-        mort: true
+        deux_joueurs: false
       });
     });
   }
 }
 
-// ───── MODE COMPÉTITIF ─────
-function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le meilleur score gagne), "vie_J1" ou "vie_J2" (le joueur tombé perd)
+// Fin d'un match compétitif (temps écoulé ou mort d'un joueur) -> écran de Game Over avec scores comparés
+function terminer_match(raison) {
   if (fin_de_partie) {
     return;
   }
   fin_de_partie = true;
   this.physics.pause();
-  let gagnant; //1 = joueur 1, 2 = joueur 2, 0 = égalité
-  if (raison === "vie_J1") {
-    gagnant = 2;
-  } else if (raison === "vie_J2") {
-    gagnant = 1;
-  } else {
-    gagnant = player.score > player2.score ? 1 : (player2.score > player.score ? 2 : 0);
-  }
+  
   this.time.delayedCall(1000, () => {
     musique_niveau1.stop();
-    this.scene.start("Ecran_score", {
-      mode: 2,
-      raison,
-      gagnant,
+    this.scene.start("Game_over", {
+      raison: raison,
+      niveau: this.scene.key,
       scoreJ1: player.score,
-      scoreJ2: player2.score
+      scoreJ2: player2 ? player2.score : 0,
+      deux_joueurs: true
     });
   });
 }
