@@ -2,9 +2,23 @@
 // panneau de présentation avant le jeu, médaillon avec la tete du perso,
 // textes qui s'envolent, réactions des persos à la fin...
 
-  export const POLICE = "Jersey15";
-  const ENCRE = "#1b1030";
+import { jouerSon, arreterMusique } from "./sons.js";
+
+export const POLICE = "Jersey15";
+const ENCRE = "#1b1030";
 export const OR = "#ffd23f";
+
+// Le même MP3 et les quatre chiffres avant chacun des mini-jeux.
+export function compteRebours(scene, suite) {
+  arreterMusique(scene);
+  var duree = scene.cache.audio.get("timer").duration * 1000;
+  jouerSon(scene, "timer");
+  for (var k = 0; k < 4; k++) {
+    let chiffre = 4 - k;
+    scene.time.delayedCall(k * duree / 4, () => annonce(scene, String(chiffre), OR, duree / 8, 300));
+  }
+  scene.time.delayedCall(duree, suite);
+}
 
 // gros texte avec un contour sombre
 export function style(taille, couleur, contour) {
@@ -13,7 +27,7 @@ export function style(taille, couleur, contour) {
     fontSize: taille + "px",
     color: couleur || "#ffffff",
     stroke: ENCRE,
-    strokeThickness: contour === undefined ? Math.max(4, Math.round(taille / 6)) : contour,
+    strokeThickness: contour === undefined ? 1 : Math.min(contour, 2),
     align: "center"
   };
 }
@@ -21,9 +35,9 @@ export function style(taille, couleur, contour) {
 // texte courant (règles, descriptions)
 export function styleTexte(taille, couleur) {
   return {
-  fontFamily: POLICE,
+    fontFamily: POLICE,
     fontSize: taille + "px",
-    fontStyle: "bold",
+    fontStyle: "normal",
     color: couleur || "#ffffff",
     align: "center",
     lineSpacing: 6
@@ -37,37 +51,65 @@ export function fondAssombri(scene, cle, opacite) {
 }
 
 // rappel des commandes en bas de l'écran
-export function aideBas(scene, texte) {
-  return scene.add
-    .text(640, 690, texte, {
-      fontFamily: POLICE,
-      fontSize: "20px",
-      color: "#ffffff",
-      backgroundColor: ENCRE,
-      padding: { x: 16, y: 6 }
-    })
-    .setOrigin(0.5)
-    .setDepth(60);
+export function aideBas(scene, actions, y = 682) {
+  var elements = [];
+  actions.forEach((action, i) => {
+    var x = (i - (actions.length - 1) / 2) * 220;
+    if (action[0] == "horizontal" || action[0] == "vertical") {
+      // flèches ◄ ► (horizontal) ou ▲ ▼ (vertical : les mêmes flèches, tournées d'un quart de tour)
+      ["gauche", "droite"].forEach((sens, k) => {
+        var fleche = scene.add.image(x - 70 + k * 26, 0, "img_fleche_" + sens);
+        fleche.scaleX = 24 / fleche.width;
+        fleche.scaleY = fleche.scaleX;
+        if (action[0] == "vertical") fleche.angle = 90;
+        elements.push(fleche);
+      });
+    } else {
+      var bouton = scene.add.image(x - 58, 0, "ui_bouton");
+      bouton.scaleX = 34 / bouton.width;
+      bouton.scaleY = 34 / bouton.height;
+      elements.push(bouton, scene.add.text(x - 58, 0, action[0].toUpperCase(), style(26, ENCRE, 0)).setOrigin(0.5));
+    }
+    elements.push(scene.add.text(x - 28, 0, action[1], style(28, "#fff1dc")).setOrigin(0, 0.5));
+  });
+  return scene.add.container(640, y, elements).setDepth(60);
+}
+
+export function creerBandeau(scene, x, y, texte, largeur) {
+  var fond = scene.add.image(0, 0, "ui_bandeau");
+  fond.scaleX = largeur / fond.width;
+  fond.scaleY = 100 / fond.height;
+  // La partie rouge est au-dessus du centre du PNG, entre les plis dorés.
+  var label = scene.add.text(0, -8, texte, { ...styleTexte(22, "#fff1dc"), wordWrap: { width: largeur * 0.7 } }).setOrigin(0.5);
+  return scene.add.container(x, y, [fond, label]);
 }
 
 // ---------------------------------------------------------------------------
 // Panneau "descriptif + bouton lancer le jeu" affiché avant chaque partie
 // ---------------------------------------------------------------------------
-export function panneauPresentation(scene, titre, lignes) {
-  var hauteur = 190 + lignes.length * 33;
-  var fond = scene.add.rectangle(0, 0, 940, hauteur, 0x1b1030, 0.95).setStrokeStyle(4, 0xe0a818);
-  var texteTitre = scene.add.text(0, -hauteur / 2 + 45, titre, style(40, OR)).setOrigin(0.5);
-  var texte = scene.add
-    .text(0, -hauteur / 2 + 85, lignes.join("\n"), { ...styleTexte(23), lineSpacing: 9 })
-    .setOrigin(0.5, 0);
-  // le bouton "lancer le jeu" se valide avec A (pas de souris sur la borne)
-  var bouton = scene.add.rectangle(0, hauteur / 2 - 45, 420, 56, 0xffc83d).setStrokeStyle(4, 0xffffff);
-  var texteBouton = scene.add
-    .text(0, bouton.y, "▶  LANCER LE JEU  (A)", { fontFamily: POLICE, fontSize: "24px", color: "#2b1f5c" })
-    .setOrigin(0.5);
-
-  var panneau = scene.add.container(640, 360, [fond, texteTitre, texte, bouton, texteBouton]).setDepth(80);
-return panneau;
+export function panneauPresentation(scene, titre, lignes, avecBouton = true) {
+  var fond = scene.add.image(0, 0, "ui_regles");
+  fond.scaleX = 960 / fond.width;
+  fond.scaleY = 520 / fond.height;
+  var elements = [fond, scene.add.text(0, -158, titre, style(54, "#7b2830", 0)).setOrigin(0.5)];
+  lignes.forEach((ligne, i) => {
+    var y = -100 + i * 58;
+    var numero = scene.add.image(-380, y, "ui_bouton");
+    numero.scaleX = 34 / numero.width;
+    numero.scaleY = 34 / numero.height;
+    elements.push(numero, scene.add.text(-380, y, String(i + 1), style(24, ENCRE, 0)).setOrigin(0.5));
+    elements.push(scene.add.text(-345, y, ligne, { ...styleTexte(28, "#46282c"), align: "left", wordWrap: { width: 690 } }).setOrigin(0, 0.5));
+  });
+  if (avecBouton) {
+    elements.push(creerBandeau(scene, 0, 176, "Jouer", 360));
+    var bouton = scene.add.image(-95, 176, "ui_bouton");
+    bouton.scaleX = 34 / bouton.width;
+    bouton.scaleY = 34 / bouton.height;
+    elements.push(bouton, scene.add.text(-95, 176, "A", style(26, ENCRE, 0)).setOrigin(0.5));
+  } else {
+    elements.push(scene.add.text(0, 176, "Prépare-toi", styleTexte(28, "#7b2830")).setOrigin(0.5));
+  }
+  return scene.add.container(640, 350, elements).setDepth(80);
 }
 
 export function fermerPanneau(scene, panneau, suite) {

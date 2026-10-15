@@ -14,19 +14,21 @@ export default class credits extends Phaser.Scene {
     this.touches = creerTouches(this);
     this.depart = false;
 
-    fondAssombri(this, "img_fond_accueil", 0.8);
-    this.add.text(640, 90, "CRÉDITS", style(60, OR, 10)).setOrigin(0.5);
-    this.add.text(640, 150, "Music Party", styleTexte(26)).setOrigin(0.5);
+    fondAssombri(this, "img_fond_accueil", 0.6);
+    this.add.text(640, 62, "CRÉDITS", style(64, OR)).setOrigin(0.5);
 
+    // la feuille de programme, comme pour les règles : titre rouge, texte sombre
+    var feuille = this.add.image(640, 372, "ui_regles");
+    feuille.scaleX = 860 / feuille.width;
+    feuille.scaleY = 520 / feuille.height;
+    this.add.text(640, 240, "Music Party", style(48, "#7b2830", 0)).setOrigin(0.5);
+    this.add.text(640, 292, "Réalisé par", styleTexte(26, "#7b2830")).setOrigin(0.5);
+    this.add.text(640, 388, EQUIPE.join("\n"), { ...styleTexte(28, "#46282c"), lineSpacing: 8 }).setOrigin(0.5);
     this.add
-      .text(640, 300, "Réalisé par\n\n" + EQUIPE.join("\n"), { ...styleTexte(26), lineSpacing: 10 })
-      .setOrigin(0.5, 0.5);
-
-    this.add
-      .text(640, 500, "Musique : airs du domaine public (Beethoven, Rossini, Offenbach)\nMoteur de jeu : Phaser 3", { ...styleTexte(18, "#ffe9a8"), lineSpacing: 8 })
+      .text(640, 516, "Musique : airs du domaine public (Beethoven, Rossini, Offenbach)\nMoteur de jeu : Phaser 3", { ...styleTexte(22, "#46282c"), lineSpacing: 8 })
       .setOrigin(0.5);
 
-    aideBas(this, "B : retour à l'écran titre");
+    aideBas(this, [["b", "Retour"]]);
     lancerMusique(this);
     this.cameras.main.fadeIn(300);
   }

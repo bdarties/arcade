@@ -1,4 +1,5 @@
-// Music Party : 4 mini-jeux musicaux pour la borne d'arcade, en solo ou à deux.
+import "./js/donnees.js";
+// Music Party : 3 mini-jeux musicaux pour la borne d'arcade, en solo ou à deux.
 // Point de départ du jeu (comme dans le template) : on importe les scènes
 // et on lance le jeu.
 

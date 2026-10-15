@@ -4,14 +4,45 @@
 //   couleur : couleur de son texte     teinte : couleur de ses effets
 //   marche : sa spritesheet de marche (Piano Time, quand il change de touche)
 
-// Les 4 persos du document "Idées" (des archétypes d'opéra), pour piano_time_time Time,
-// Memory Song et Note Catcher. "motif" = son petit air quand on le choisit.
+// Les 4 persos d'opéra, communs aux trois mini-jeux et à l'écran de sélection.
+// "motif" = son petit air quand on le choisit.
 export const PERSOS = [
   {
+    cle: "carmen",
+    nom: "Carmen",
+    titre: "La Rebelle",
+    description:
+      "Carmen est une femme libre et rebelle qui refuse de se laisser dicter les règles. Son grand besoin de liberté " +
+      "et ses amours passionnées la conduisent vers un destin tragique. Aujourd'hui, elle débarque sur le plateau " +
+      "avec la ferme intention de faire la fête et de gagner !",
+    texture: "img_carmen",
+    tete: "img_tete_carmen",
+    marche: "img_marche_carmen",           // spritesheet quand il marche (6 images)
+    tailleMarche: [48, 64],              // largeur et hauteur d'une image
+    animMarche: "anim_marche_carmen",
+    echelle: 1.1,
+    fin: {
+      texture: "img_fin_carmen",
+      fichier: "carmen.png",
+      taille: [184, 252],
+      images: 6,
+      echelle: 1.1,
+      anim: "anim_fin_carmen",
+      vitesse: 5
+    },
+    couleur: "#ff8080",
+    teinte: 0xd8324a,
+    motif: [74, 73, 72, 71, 70, 69],
+  },
+  {
     cle: "diva",
-    nom: "La Reine de la Nuit",
+    nom: "Reine de la Nuit",
     titre: "La Diva dramatique",
-    description: "Reine de la Nuit. \nSa voix brise les verres...",
+    description:
+      "La majestueuse Reine de la nuit règne sur les étoiles et l'obscurité. Issue d'un grand conte magique rempli " +
+      "d'épreuves mystérieuses où elle utilise sa voix puissante pour manipuler un jeune prince, elle descend " +
+      "aujourd'hui de son royaume céleste. Elle débarque sur le plateau comptant bien éblouir tous ses adversaires " +
+      "lors des mini-jeux !",
     texture: "img_diva",
     tete: "img_tete_reine",
     marche: "img_marche_diva",           // spritesheet quand il marche (6 images)
@@ -36,7 +67,10 @@ export const PERSOS = [
     cle: "figaro",
     nom: "Figaro",
     titre: "Le Barbier hyperactif",
-    description: "Figaro ci, Figaro là...\ntoujours pressé,\njamais fatigué !",
+    description:
+      "Figaro est le barbier le plus malin et le plus bavard de toute la ville. Toujours au cœur des secrets, ce " +
+      "petit futé court dans tous les sens pour régler les problèmes des autres à toute vitesse. Avec son énergie " +
+      "débordante et sa bonne humeur, ce grand farceur est prêt à bondir sur le plateau pour s'amuser !",
     texture: "img_figaro",
     tete: "img_tete_figaro",
     marche: "img_marche_figaro",           // spritesheet quand il marche (6 images)
@@ -57,34 +91,14 @@ export const PERSOS = [
     motif: [67, 67, 67, 72, 67, 72, 76],
   },
   {
-    cle: "carmen",
-    nom: "Carmen",
-    titre: "La Rebelle",
-    description: "Libre comme l'oiseau...\net très mauvaise\nperdante !",
-    texture: "img_carmen",
-    tete: "img_tete_carmen",
-    marche: "img_marche_carmen",           // spritesheet quand il marche (6 images)
-    tailleMarche: [48, 64],              // largeur et hauteur d'une image
-    animMarche: "anim_marche_carmen",
-    echelle: 1.1,
-    fin: {
-      texture: "img_fin_carmen",
-      fichier: "carmen.png",
-      taille: [184, 252],
-      images: 6,
-      echelle: 1.1,
-      anim: "anim_fin_carmen",
-      vitesse: 5
-    },
-    couleur: "#ff8080",
-    teinte: 0xd8324a,
-    motif: [74, 73, 72, 71, 70, 69],
-  },
-  {
     cle: "maestro",
-    nom: "Le Maestro",
+    nom: "Don Giovanni",
     titre: "Le Maestro mystérieux",
-    description: "Il dirige l'orchestre\ndepuis les coulisses...\nsans jamais se montrer.",
+    description:
+      "Ce noble arrogant et grand charmeur passe son temps à tromper son monde, jusqu'au jour où ses mauvaises " +
+      "actions finissent par être punies. Malgré son histoire tragique, cet aventurier très fier et toujours " +
+      "élégant n'a absolument peur de rien. Très sûr de lui, il entre dans la partie comme un vrai défi, prêt à " +
+      "prouver à tout le monde qu'il est le meilleur !",
     texture: "img_maestro",
     tete: "img_tete_maestro",
     marche: "img_marche_maestro",           // spritesheet quand il marche (6 images)
@@ -105,7 +119,6 @@ export const PERSOS = [
     motif: [81, 79, 81, 79, 77, 76, 74, 73, 74],
   }
 ];
-
 
 function trouverPerso(cle) {
   return PERSOS.find((p) => p.cle == cle) || PERSOS[0];

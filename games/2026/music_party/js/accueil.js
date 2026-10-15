@@ -1,6 +1,6 @@
 import { creerTouches, unJoueurAppuie } from "./controles.js";
 import { jouerSon, lancerMusique } from "./sons.js";
-import { style, styleTexte, OR } from "./interface.js";
+import { aideBas } from "./interface.js";
 
 // écran titre de Music Party : on attend qu'un joueur appuie sur A
 export default class accueil extends Phaser.Scene {
@@ -14,8 +14,7 @@ export default class accueil extends Phaser.Scene {
 
     this.add.image(0, 0, "img_fond_accueil").setOrigin(0);
 
-    this.add.text(640, 655, "Appuie sur A pour commencer", style(34, OR, 8)).setOrigin(0.5);
-      this.add.text(640, 700, "Crédits : appuie sur B", styleTexte(16, "#ffffff")).setOrigin(0.5);
+    aideBas(this, [["a", "Commencer"], ["b", "Crédits"]], 655);
     lancerMusique(this);
     this.cameras.main.fadeIn(400);
   }
@@ -29,7 +28,7 @@ export default class accueil extends Phaser.Scene {
       this.time.delayedCall(300, () => this.scene.start("selection"));
     } else if (unJoueurAppuie(this.touches, "b")) {
       this.depart = true;
-      jouerSon(this, "menu");
+      jouerSon(this, "valider");
       this.cameras.main.fadeOut(300);
       this.time.delayedCall(300, () => this.scene.start("credits"));
     }

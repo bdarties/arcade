@@ -1,8 +1,12 @@
-import { POLICE } from "./interface.js";
+// la fiche du jeu (règles) et les éléments d'interface communs (police, panneau, aide en bas)
+import { infosJeu } from "./jeux.js";
+import { POLICE, panneauPresentation, aideBas, compteRebours } from "./interface.js";
+
+const JEU = infosJeu("music_fall"); // titre, règles... (dans jeux.js)
 // importe les fonctions des touches (créer les touches, détecter un appui de J1 ou J2)
 import { creerTouches, vientDAppuyer, unJoueurAppuie } from "./controles.js";
 // importe les fonctions des sons (bruitages, tampon, sifflet de chute, musique et son volume)
-import { jouerSon, jouerTampon, sifflet, lancerMusique, volumeMusique } from "./sons.js";
+import { jouerSon, jouerTampon, sifflet, arreterMusique } from "./sons.js";
 // importe la liste des joueurs de la partie (J1 seul en solo, J1 et J2 en duo)
 import { participants } from "./persos.js";
 
@@ -46,6 +50,7 @@ export default class music_fall extends Phaser.Scene {
   }
 
   create(donnees) {                     // donnees = ce qu'on envoie avec scene.start / scene.restart (n° d'essai et scores)
+    arreterMusique(this);
     this.numEssai = donnees.numEssai || 0;
     this.scores = donnees.scores || [[], []];
     this.essai = ESSAIS[this.numEssai];
@@ -62,7 +67,6 @@ export default class music_fall extends Phaser.Scene {
     }
     this.creerScores();
 
-    lancerMusique(this);
     this.cameras.main.fadeIn(300);
     this.afficherPanneau();
   }
@@ -75,7 +79,7 @@ export default class music_fall extends Phaser.Scene {
     }
     // fin d'un essai : A pour passer au suivant
     if (this.etape == "fin_essai") {
-      if (unJoueurAppuie(this.clavier, "a")) this.essaiSuivant();
+      if (unJoueurAppuie(this.clavier, "a")) this.essaiSuivant(true);
       return;
     }
     if (this.etape != "chute") return;
@@ -166,7 +170,7 @@ export default class music_fall extends Phaser.Scene {
   // SCORES EN HAUT DE L'ECRAN
   // ===========================================================================
   creerScores() {
-    var style = { fontFamily: POLICE, fontSize: "22px", color: "#ffffff", stroke: "#2b1f5c", strokeThickness: 6 };
+    var style = { fontFamily: POLICE, fontSize: "22px", color: "#ffffff", stroke: "#2b1f5c", strokeThickness: 2 };
 
     var titre = "MUSIC FALL   ·   Essai " + (this.numEssai + 1) + " / " + ESSAIS.length + "   ·   " + this.essai.titre;
     this.add.text(640, 24, titre, style).setOrigin(0.5).setDepth(PROFONDEUR.texte);
@@ -191,7 +195,7 @@ export default class music_fall extends Phaser.Scene {
 
     // gros texte au milieu (Prêt ?, TOP !, gagnant de l'essai...)
     this.texteCentre = this.add
-      .text(640, 400, "", { ...style, fontSize: "56px", color: "#ffd23f", strokeThickness: 10, align: "center" })
+      .text(640, 400, "", { ...style, fontSize: "56px", color: "#ffd23f", strokeThickness: 2, align: "center" })
       .setOrigin(0.5)
       .setDepth(PROFONDEUR.texte);
   }
@@ -212,47 +216,10 @@ export default class music_fall extends Phaser.Scene {
   // ===========================================================================
   afficherPanneau() {
     var premierEssai = this.numEssai == 0;
-    var lignes;
-    var hauteur;
-    if (premierEssai) {
-      lignes = [
-        "MUSIC FALL",
-        "",
-        "Ton perso saute dans le vide avec sa note.",
-        "Appuie sur A pour tamponner ta note sur la partition,",
-        "le plus près possible de sa cible (0 cm = parfait).",
-        "Pas de tampon avant le sol = raté (" + CM_RATE + " cm).",
-        "3 essais : le plus petit total gagne !"
-      ];
-      hauteur = 380;
-    } else {
-      lignes = ["ESSAI " + (this.numEssai + 1) + " : " + this.essai.titre.toUpperCase(), this.essai.consigne];
-      hauteur = 170;
-    }
-
-    var fond = this.add.rectangle(0, 0, 860, hauteur, 0x2b1f5c, 0.94).setStrokeStyle(4, 0xe0a818);
-    var texte = this.add
-      .text(0, premierEssai ? -40 : 0, lignes.join("\n"), {
-        fontFamily: POLICE,
-        fontSize: "25px",
-        fontStyle: "bold",
-        color: "#ffffff",
-        align: "center",
-        lineSpacing: 8
-      })
-      .setOrigin(0.5);
-    var elements = [fond, texte];
-
-    // 1er essai : bouton "lancer le jeu" (validé avec A, pas de souris sur la borne)
-    if (premierEssai) {
-      var bouton = this.add.rectangle(0, 140, 400, 60, 0xffc83d).setStrokeStyle(4, 0xffffff);
-      var texteBouton = this.add
-        .text(0, 140, "▶  LANCER LE JEU  (A)", { fontFamily: POLICE, fontSize: "24px", color: "#2b1f5c" })
-        .setOrigin(0.5);
-      elements.push(bouton, texteBouton);
-    }
-
-this.panneau = this.add.container(640, 390, elements).setDepth(PROFONDEUR.texte);
+    var titre = premierEssai ? JEU.titre : "Essai " + (this.numEssai + 1);
+    var lignes = premierEssai ? JEU.regles.split("\n") : [this.essai.titre, this.essai.consigne];
+    // le panneau avec le bouton A seulement au 1er essai
+    this.panneau = panneauPresentation(this, titre, lignes, premierEssai);
 
     if (premierEssai) {
       this.etape = "presentation"; // on attend A (voir update)
@@ -269,12 +236,8 @@ fermerPanneau() {
 
   pret() {
     this.etape = "pret";
-    this.texteCentre.setText("Prêt ?");
-    // 3 coups de métronome, un toutes les 500 ms
-    this.time.addEvent({ delay: 500, repeat: 2, callback: () => jouerSon(this, "tic") });
-    // puis une attente au hasard, pour qu'on ne puisse pas apprendre le rythme
-    var attente = Phaser.Math.Between(600, 1800);
-    this.time.delayedCall(1500 + attente, () => this.top());
+    this.texteCentre.setText("");
+    compteRebours(this, () => this.top());
   }
 
   top() {
@@ -282,7 +245,6 @@ fermerPanneau() {
     this.texteCentre.setText("TOP !");
     this.time.delayedCall(500, () => this.texteCentre.setText(""));
     jouerSon(this, "top");
-    volumeMusique(this, 0.08);
 
     // on oublie les appuis faits avant le TOP (sinon on tamponnerait tout de suite)
     this.clavier.forEach((touches) => vientDAppuyer(touches.a));
@@ -339,7 +301,7 @@ fermerPanneau() {
         fontSize: "34px",
         color: "#e0463c",
         stroke: "#ffffff",
-        strokeThickness: 6
+        strokeThickness: 2
       })
       .setOrigin(0.5)
       .setDepth(PROFONDEUR.texte)
@@ -353,7 +315,6 @@ fermerPanneau() {
   finDeChute() {
     this.etape = "mesure";
     this.sonChute.stop();
-    volumeMusique(this, 0.3);
     var attente = 400;
     // essai 3 : le rideau se lève
     if (this.rideau) {
@@ -394,7 +355,7 @@ fermerPanneau() {
           fontSize: "34px",
           color: "#d0342c",
           stroke: "#ffffff",
-          strokeThickness: 6
+          strokeThickness: 2
         })
         .setOrigin(joueur.i == 0 ? 1 : 0, 0.5)
         .setDepth(PROFONDEUR.texte);
@@ -414,7 +375,7 @@ fermerPanneau() {
         fontSize: "44px",
         color: "#ffd23f",
         stroke: "#2b1f5c",
-        strokeThickness: 8
+        strokeThickness: 2
       })
       .setOrigin(0.5)
       .setDepth(PROFONDEUR.texte);
@@ -455,16 +416,7 @@ fermerPanneau() {
     this.texteCentre.setFontSize(40).setY(300).setText(message);
 
     var dernierEssai = this.numEssai == ESSAIS.length - 1;
-    this.add
-      .text(640, 690, dernierEssai ? "A : voir les résultats" : "A : essai suivant", {
-        fontFamily: POLICE,
-        fontSize: "22px",
-        color: "#ffffff",
-        backgroundColor: "#2b1f5c",
-        padding: { x: 16, y: 6 }
-      })
-      .setOrigin(0.5)
-      .setDepth(PROFONDEUR.texte);
+    aideBas(this, [["a", dernierEssai ? "Résultats" : "Essai suivant"]]);
 
     // on oublie les appuis faits pendant la chute (sinon ça passerait direct à la suite)
     this.clavier.forEach((touches) => vientDAppuyer(touches.a));
@@ -473,16 +425,17 @@ fermerPanneau() {
     this.time.delayedCall(6000, () => this.essaiSuivant());
   }
 
-  essaiSuivant() {
+  essaiSuivant(avecAppui = false) {
     if (this.dejaPasse) return;
     this.dejaPasse = true;
-    jouerSon(this, "valider");
+    if (avecAppui) jouerSon(this, "valider");
     this.cameras.main.fadeOut(300);
     this.time.delayedCall(300, () => {
       if (this.numEssai + 1 < ESSAIS.length) {
         this.scene.restart({ numEssai: this.numEssai + 1, scores: this.scores });
       } else {
         // écran des résultats : le total de chacun + le détail des essais
+        jouerSon(this, "final");
         this.scene.start("resultats", {
           scores: this.joueurs.map((joueur) => this.total(joueur.i)),
           stats: ESSAIS.map((essai, k) => ({

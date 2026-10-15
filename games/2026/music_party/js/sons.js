@@ -1,212 +1,65 @@
-// Les bruitages et les instruments sont fabriqués directement avec la
-// Web Audio API (des oscillateurs, comme un petit synthé) : aucun fichier son
-// à charger, et chaque note peut avoir la hauteur qu'on veut.
-// On passe par le contexte audio de Phaser. Seule la musique de fond est un
-// fichier (assets/sons/musique.ogg).
+// Tous les sons sont des fichiers MP3 chargés dans chargement.js.
 
-function contexte(scene) {
-  var ctx = scene.sound.context; // n'existe que si Phaser utilise la Web Audio
-  if (!ctx || scene.sound.mute) return null;
-  return ctx;
+export function jouerPiano(scene, note, options = {}) {
+  scene.sound.play("piano_" + note, { pan: options.pan || 0, volume: options.volume || 1 });
 }
 
-// fréquence d'une note à partir de son numéro MIDI (69 = La 440 Hz, 60 = Do)
-function midi(n) {
-  return 440 * Math.pow(2, (n - 69) / 12);
-}
-
-// sortie avec panoramique : -1 = haut-parleur gauche, 1 = droite.
-// En duo, chaque joueur entend ses notes de son coté de la borne.
-function sortie(ctx, pan) {
-  if (!pan || !ctx.createStereoPanner) return ctx.destination;
-  var p = ctx.createStereoPanner();
-  p.pan.value = pan;
-  p.connect(ctx.destination);
-  return p;
-}
-
-// une note simple : fréquence en Hz, début et durée en secondes
-function bip(ctx, freq, debut, duree, forme, volume, dest) {
-  var osc = ctx.createOscillator();
-  var gain = ctx.createGain();
-  osc.type = forme;
-  osc.frequency.setValueAtTime(freq, debut);
-  // petite enveloppe pour éviter les "clics"
-  gain.gain.setValueAtTime(0.0001, debut);
-  gain.gain.exponentialRampToValueAtTime(volume, debut + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
-  osc.connect(gain);
-  gain.connect(dest || ctx.destination);
-  osc.start(debut);
-  osc.stop(debut + duree + 0.05);
-  return osc;
-}
-
-// ---------------------------------------------------------------------------
-// INSTRUMENTS (options : pan, retard en secondes, duree, volume)
-// ---------------------------------------------------------------------------
-
-// Piano Time : une note de piano (fondamentale + harmoniques qui s'éteignent plus vite)
-export function jouerPiano(scene, n, options) {
-  var ctx = contexte(scene);
-  if (!ctx) return;
-  var o = options || {};
-  var t = ctx.currentTime + (o.retard || 0);
-  var v = o.volume || 1;
-  var dest = sortie(ctx, o.pan);
-  var f = midi(n);
-  bip(ctx, f, t, 1.1, "triangle", 0.24 * v, dest);
-  bip(ctx, f * 2, t, 0.45, "sine", 0.07 * v, dest);
-  bip(ctx, f * 3, t, 0.2, "sine", 0.035 * v, dest);
-}
-
-// clochette aiguë et courte (la Diva)
-export function jouerCelesta(scene, n, options) {
-  var ctx = contexte(scene);
-  if (!ctx) return;
-  var o = options || {};
-  var t = ctx.currentTime + (o.retard || 0);
-  var v = o.volume || 1;
-  var dest = sortie(ctx, o.pan);
-  var f = midi(n);
-  bip(ctx, f, t, 0.8, "sine", 0.22 * v, dest);
-  bip(ctx, f * 2, t, 0.3, "triangle", 0.05 * v, dest);
-  bip(ctx, f * 4, t, 0.08, "sine", 0.04 * v, dest);
-}
-
-// orgue (le Maestro) : plusieurs octaves en même temps
-function jouerOrgue(scene, n, options) {
-  var ctx = contexte(scene);
-  if (!ctx) return;
-  var t = ctx.currentTime + options.retard;
-  bip(ctx, midi(n), t, options.duree, "square", 0.05);
-  bip(ctx, midi(n) / 2, t, options.duree, "sine", 0.12);
-  bip(ctx, midi(n) * 2, t, options.duree, "sine", 0.04);
-}
-
-// petit air joué quand on choisit un perso (chaque perso a le sien)
 export function jouerMotif(scene, perso) {
-  var instrument = perso.cle == "maestro" ? jouerOrgue : perso.cle == "diva" ? jouerCelesta : jouerPiano;
-  perso.motif.forEach((n, i) => instrument(scene, n, { retard: i * 0.11, duree: 0.13, volume: 0.9 }));
+  scene.sound.play("motif_" + perso.cle);
 }
 
-// Memory Song : le saxophone joue une note. Chaque note est un fichier saxo_<numero>.wav
-// (chargé dans chargement.js). On joue le fichier avec le panoramique (pan) et on le
-// coupe après "duree" secondes, avec un petit fondu pour éviter les "clics".
-export function jouerSaxo(scene, note, options) {
-  var ctx = contexte(scene);
-  var fichier = scene.cache.audio.get("saxo_" + note);
-  if (!ctx || !fichier) return;
-  var o = options || {};
-  var duree = o.duree || 0.5;
-  var t = ctx.currentTime;
-  var gain = ctx.createGain();
-  gain.gain.setValueAtTime(1, t + duree - 0.06);
-  gain.gain.linearRampToValueAtTime(0, t + duree);
-  gain.connect(sortie(ctx, o.pan));
-  var source = ctx.createBufferSource();
-  source.buffer = fichier;
-  source.connect(gain);
-  source.start(t);
-  source.stop(t + duree);
+export function jouerSaxo(scene, note, options = {}) {
+  var voie = options.pan < 0 ? 1 : options.pan > 0 ? 2 : 0;
+  var son = scene.sonsSaxo[note][voie];
+  if (scene.arretsSaxo[note][voie]) scene.arretsSaxo[note][voie].remove();
+  scene.tweens.killTweensOf(son);
+  son.stop();
+  son.play({ pan: options.pan || 0, volume: 1 });
+  var duree = (options.duree || 0.5) * 1000;
+  scene.tweens.add({ targets: son, volume: 0, delay: Math.max(0, duree - 60), duration: 60 });
+  scene.arretsSaxo[note][voie] = scene.time.delayedCall(duree, () => son.stop());
 }
 
-// ---------------------------------------------------------------------------
-// BRUITAGES
-// ---------------------------------------------------------------------------
 export function jouerSon(scene, nom, pan) {
-  var ctx = contexte(scene);
-  if (!ctx) return;
-  var t = ctx.currentTime;
-  var dest = sortie(ctx, pan);
+  if (nom == "menu") return;
+  if (nom == "valider" || nom == "retour") nom = "selection";
+  if (nom == "fanfare") nom = "final";
+  if (nom == "selection") scene.sound.stopByKey(nom);
+  scene.sound.play(nom, { pan: pan || 0, volume: 0.6 });
+}
 
-  if (nom == "menu") {
-    bip(ctx, 880, t, 0.06, "triangle", 0.12, dest);
-  } else if (nom == "valider") {
-    bip(ctx, midi(72), t, 0.08, "triangle", 0.15, dest);
-    bip(ctx, midi(79), t + 0.07, 0.12, "triangle", 0.15, dest);
-  } else if (nom == "retour") {
-    bip(ctx, midi(76), t, 0.08, "triangle", 0.13, dest);
-    bip(ctx, midi(69), t + 0.07, 0.12, "triangle", 0.13, dest);
-  } else if (nom == "tic") {
-    // métronome
-    bip(ctx, 1320, t, 0.05, "square", 0.06, dest);
-  } else if (nom == "top") {
-    bip(ctx, 1760, t, 0.14, "square", 0.08, dest);
-  } else if (nom == "compteur") {
-    bip(ctx, 1000, t, 0.02, "square", 0.03, dest);
-  } else if (nom == "couac") {
-    // la fausse note : un "pouêt" qui dégringole
-    var o = bip(ctx, 260, t, 0.35, "sawtooth", 0.1, dest);
-    o.frequency.exponentialRampToValueAtTime(120, t + 0.35);
-    bip(ctx, 180, t, 0.25, "square", 0.05, dest);
-  } else if (nom == "trop_tot") {
-    bip(ctx, 520, t, 0.07, "square", 0.04, dest);
-  } else if (nom == "combo") {
-    [72, 76, 79, 84].forEach((n, i) => bip(ctx, midi(n), t + i * 0.05, 0.12, "square", 0.05, dest));
-  } else if (nom == "elimine") {
-    // "wah wah wah waaah" du trombone triste
-    [67, 66, 65].forEach((n, i) => bip(ctx, midi(n - 12), t + i * 0.3, 0.28, "sawtooth", 0.07, dest));
-    var dernier = bip(ctx, midi(52), t + 0.9, 0.9, "sawtooth", 0.07, dest);
-    dernier.frequency.linearRampToValueAtTime(midi(50), t + 1.8);
-  } else if (nom == "fanfare" || nom == "bravo") {
-    // arpège do - mi - sol - do
-    [72, 76, 79, 84].forEach((n, i) => bip(ctx, midi(n), t + i * 0.09, 0.25, "square", 0.07, dest));
-    if (nom == "fanfare") bip(ctx, midi(88), t + 0.4, 0.6, "square", 0.07, dest);
+export function arreterMusique(scene) {
+  var musique = scene.sound.get("musique");
+  if (musique) {
+    scene.tweens.killTweensOf(musique);
+    musique.stop();
   }
 }
 
-// Music Fall : "boum" grave du tampon + une note d'autant plus aiguë qu'on est précis
 export function jouerTampon(scene, cm) {
-  var ctx = contexte(scene);
-  if (!ctx) return;
-  var t = ctx.currentTime;
-  var osc = bip(ctx, 160, t, 0.18, "sine", 0.5);
-  osc.frequency.exponentialRampToValueAtTime(55, t + 0.18);
   var hauteur = cm <= 0 ? 84 : Math.max(60, 81 - cm);
-  bip(ctx, midi(hauteur), t + 0.05, 0.35, "triangle", 0.18);
+  scene.sound.play("tampon_" + hauteur);
 }
 
-// Music Fall : sifflement qui descend pendant la chute (comme dans les dessins
-// animés). Il faut pouvoir l'arrêter au moment du tampon, donc on renvoie un objet.
 export function sifflet(scene, duree) {
-  var ctx = contexte(scene);
-  if (!ctx) return { stop: () => {} };
-  var t = ctx.currentTime;
-  var osc = ctx.createOscillator();
-  var gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(1400, t);
-  osc.frequency.exponentialRampToValueAtTime(300, t + duree);
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.05, t + 0.05);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + duree + 0.5);
-  return {
-    stop: () => {
-      var maintenant = ctx.currentTime;
-      gain.gain.cancelScheduledValues(maintenant);
-      gain.gain.setTargetAtTime(0, maintenant, 0.02); // descend vite vers 0
-      try {
-        osc.stop(maintenant + 0.2);
-      } catch (e) {} // certains navigateurs n'aiment pas un 2e stop()
-    }
-  };
+  var son = scene.sound.add("sifflet", { rate: 2.5 / duree });
+  son.once("complete", () => son.destroy());
+  son.once("stop", () => son.destroy());
+  son.play();
+  return son;
 }
 
-// musique de fond (pack SunnyLand Music), en boucle sur tout le jeu
 export function lancerMusique(scene) {
   var musique = scene.sound.get("musique");
-  if (musique == null) musique = scene.sound.add("musique", { loop: true, volume: 0.3 });
+  if (!musique) musique = scene.sound.add("musique", { loop: true, volume: 0.3 });
   if (!musique.isPlaying) musique.play();
-  // si on l'avait baissée pendant un jeu, on la remet au volume normal
   volumeMusique(scene, 0.3);
 }
 
-// on baisse (ou on coupe) la musique pendant les jeux pour bien entendre les notes
 export function volumeMusique(scene, volume) {
   var musique = scene.sound.get("musique");
-  if (musique) scene.tweens.add({ targets: musique, volume: volume, duration: 400 });
+  if (musique) {
+    scene.tweens.killTweensOf(musique);
+    scene.tweens.add({ targets: musique, volume: volume, duration: 400 });
+  }
 }

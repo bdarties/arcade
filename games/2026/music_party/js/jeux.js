@@ -1,21 +1,22 @@
-// Les mini-jeux de Music Party. Les scènes communes (sélection, menu,
+// Les 3 mini-jeux de Music Party. Les scènes communes (sélection, menu,
 // choix des persos, résultats) lisent ces infos pour s'adapter au jeu choisi.
 //   scene       : la scène du jeu         fond : image de fond du menu
 //   niveaux     : true = le menu propose les niveaux 1, 2 et 3 (Piano Time)
+//   apercu      : vignette du jeu sur l'écran de sélection
+//   slogan      : une phrase courte (sous la vignette, et en haut du menu)
+//   regles      : 3 lignes, affichées dans le menu et dans le panneau avant le jeu
 //   croissant   : true = le plus PETIT score est le meilleur (Music Fall, en cm)
-
 
 export const JEUX = [
   {
     cle: "music_fall",
     apercu: "apercu_music_fall",
     titre: "MUSIC FALL",
-    slogan: "Tamponne ta note au plus près de la ligne dorée !",
+    slogan: "Tamponne ta note sur la cible.",
     regles:
-      "Au top départ, ton perso tombe de sa feuille avec sa note.\n" +
-      "Appuie sur A pour tamponner ta note sur la partition, au plus près\n" +
-      "de la ligne dorée : 0 cm = parfait ! Si tu la dépasses : raté (60 cm).\n" +
-      "3 essais : le plus petit total gagne.",
+      "Appuie sur A pour tamponner ta note sur sa cible.\n" +
+      "0 cm = parfait. Pas de tampon avant le sol : raté (10 cm).\n" +
+      "Trois essais. Le plus petit total gagne.",
     scene: "music_fall",
     fond: "img_fond_scene",
     unite: "cm",
@@ -25,12 +26,11 @@ export const JEUX = [
     cle: "piano_time",
     apercu: "apercu_piano_time",
     titre: "PIANO TIME",
-    slogan: "Joue la mélodie sur le PIANO TIME géant !",
+    slogan: "Appuie quand la note arrive.",
     regles:
-      "Les notes descendent vers la zone dorée de ton PIANO TIME.\n" +
-      "Appuie sur A, B ou C quand une note est dans la zone :\n" +
-      "chaque réussite accélère le tempo, le combo multiplie tes points.\n" +
-      "3 notes ratées ou fausses notes : c'est fini !",
+      "Appuie sur la touche de la note dans la zone dorée.\n" +
+      "Les réussites d'affilée multiplient tes points.\n" +
+      "5 erreurs d'affilée ou 1 min 30 : terminé.",
     scene: "piano_time",
     niveaux: true,
     fond: "img_fond_scene",
