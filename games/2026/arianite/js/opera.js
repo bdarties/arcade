@@ -47,6 +47,11 @@ export default class opera extends Phaser.Scene {
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
+    this.load.audio("musique_opera", "./assets/musique/music_opera.mp3");
+    this.load.spritesheet('foule', 'assets/spritesheet/foule.png', {
+            frameWidth: 612,
+            frameHeight: 126
+        });
     fct.chargerPerso(this);
 
     /*************************************
@@ -90,6 +95,31 @@ export default class opera extends Phaser.Scene {
         : ts
     );
 
+    this.sound.stopByKey("musique_grenier");
+    this.sound.stopByKey("musique_menu");
+
+    if (this.cache.audio.exists("musique_opera")) {
+      const musique = this.sound.add("musique_opera", { loop: true, volume: 0.5 });
+      musique.play();
+      this.events.once("shutdown", () => musique.stop());
+    } else {
+      console.warn("Musique introuvable : vérifie le chemin ./assets/music_opera.mp3");
+    }
+
+    this.anims.create({
+            key: 'anim_foule',
+            frames: this.anims.generateFrameNumbers('foule', { start: 0, end: 5 }),
+            frameRate: 6, // Vitesse de l'animation (images par seconde)
+            repeat: -1     // -1 pour une boucle infinie
+        });
+
+    const fouleSprite = this.add.sprite(640, 720, 'foule');
+    fouleSprite.setOrigin(0.5, 0.5);
+    fouleSprite.play('anim_foule');
+    fouleSprite.setScrollFactor(0);
+    fouleSprite.setDepth(9999);
+    fouleSprite.setScale(2.4);
+
     const map = this.make.tilemap({ key: "map_opera" });
     const tileset = map.addTilesetImage(NOM_TUILESET, "img_tuiles_opera");
 
@@ -100,6 +130,13 @@ export default class opera extends Phaser.Scene {
     this.calque_corde = map.createLayer("corde", tileset, 0, 0).setDepth(-3);
     this.calque_sol = map.createLayer("Calque de Tuiles 1", tileset, 0, 0);
     this.calque_sol.setCollisionByExclusion([-1, 0]);
+
+    // Rend TOUTES les tuiles solides du calque traversables par le dessous (one-way platforms)
+    this.calque_sol.forEachTile((t) => {
+      if (t.index !== -1 && t.index !== 0) {
+        t.setCollision(false, false, true, false);
+      }
+    });
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
