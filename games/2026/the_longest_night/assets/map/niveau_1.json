@@ -279,6 +279,19 @@
                  "width":0,
                  "x":2604,
                  "y":700
+                }, 
+                {
+                 "height":0,
+                 "id":21,
+                 "name":"porte",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":628,
+                 "y":406
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -287,10 +300,10 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":21,
+ "nextobjectid":22,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.12.0",
+ "tiledversion":"1.12.2",
  "tileheight":32,
  "tilesets":[
         {
