@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="16">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="19">
  <editorsettings>
   <export target="monde_5.json" format="json"/>
  </editorsettings>
@@ -65,7 +65,7 @@
   <object id="1" name="spawn" type="spawn" x="621.685" y="374.19">
    <point/>
   </object>
-  <object id="2" name="hub" type="mirror" x="736.485" y="255.649" width="32" height="64">
+  <object id="2" name="hub" type="mirror" x="608" y="224" width="32" height="64">
    <properties>
     <property name="type" value=""/>
    </properties>
@@ -73,25 +73,23 @@
   <object id="6" name="star" type="star" x="578.702" y="134.012">
    <point/>
   </object>
-  <object id="9" type="bubble" x="409.602" y="291.484">
+  <object id="16" type="bubble" x="496" y="240">
+   <properties>
+    <property name="size" value="large"/>
+   </properties>
    <point/>
   </object>
-  <object id="10" type="bubble" x="316.251" y="512.479">
+  <object id="17" type="bubble" x="368" y="464">
+   <properties>
+    <property name="size" value="large"/>
+   </properties>
    <point/>
   </object>
-  <object id="11" type="bubble" x="652.505" y="525.814">
-   <point/>
-  </object>
-  <object id="12" type="bubble" x="787.769" y="491.522">
-   <point/>
-  </object>
-  <object id="13" type="bubble" x="835.397" y="240.046">
-   <point/>
-  </object>
-  <object id="14" type="bubble" x="462.945" y="223.852">
-   <point/>
-  </object>
-  <object id="15" type="bubble" x="151.457" y="357.211">
+  <object id="18" type="bubble" x="784" y="432">
+   <properties>
+    <property name="size" value="large"/>
+    <property name="splitCount" type="int" value="3"/>
+   </properties>
    <point/>
   </object>
  </objectgroup>

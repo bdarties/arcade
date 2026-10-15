@@ -28,8 +28,7 @@
 //     if (this.input1.justPressed('shoot')) { ... }    // tirer
 //   }
 //
-// TODO(équipe): ajouter les actions courir, lampe, pause
-// TODO(équipe): brancher les cinq autres boutons de la borne quand les actions existeront
+// Pas encore branchés : les actions courir, lampe et pause, et les cinq autres boutons de la borne (voir « Pistes d'amélioration » dans le GDD).
 // =====================================================================================
 
 import { getControlMode } from './ControlMode.js';
@@ -41,12 +40,14 @@ import { CONTROL_MODES } from '../utils/constants.js';
 // À vérifier sur la borne : si c'est autre chose, ne changer que les lignes « arcade ».
 // ? La touche I (interagir) est la première des six boutons. Les cinq autres (O P pour la rangée du haut,
 // K L M pour celle du bas) ne servent pas encore, sauf O : le tir, et P : le dash.
-// ? Les touches du joueur 2 sont provisoires, et identiques dans les deux modes : à définir avec la borne.
+// ? Arcade, joueur 2 : le 2e joystick envoie Z Q S D, et ses six boutons sont R T Y (rangée du haut) et F G H (rangée du bas),
+// dans le même ordre que ceux du joueur 1. R : interagir, T : tirer, Y : dash. F G H ne servent pas encore.
+// ? Mode pc : le joueur 2 ne bouge pas (un seul joueur au clavier), ses touches pc ne servent donc pas encore.
 // ? La touche E (interagir, mode pc) n'est PAS définitive. La touche A (tirer, mode pc) et Shift (dash, mode pc) non plus.
-const BINDINGS = {
+export const BINDINGS = {
   [CONTROL_MODES.ARCADE]: {
     1: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'I', shoot: 'O', dash: 'P' },
-    2: { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', interact: 'ENTER', shoot: 'SPACE', dash: 'SHIFT' },
+    2: { up: 'Z', down: 'S', left: 'Q', right: 'D', interact: 'R', shoot: 'T', dash: 'Y' },
   },
   [CONTROL_MODES.PC]: {
     1: { up: 'Z', down: 'S', left: 'Q', right: 'D', interact: 'E', shoot: 'A', dash: 'SHIFT' },

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="8">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="52">
  <editorsettings>
   <export target="monde_2.json" format="json"/>
  </editorsettings>
@@ -65,12 +65,144 @@
   <object id="1" name="spawn" type="spawn" x="621.685" y="374.19">
    <point/>
   </object>
-  <object id="2" name="hub" type="mirror" x="448.485" y="255.649" width="32" height="64">
+  <object id="2" name="hub" type="mirror" x="160" y="320" width="32" height="64">
    <properties>
     <property name="type" value=""/>
    </properties>
   </object>
   <object id="6" name="star" type="star" x="578.702" y="134.012">
+   <point/>
+  </object>
+  <object id="8" name="capuche" type="enemy" x="656" y="96">
+   <point/>
+  </object>
+  <object id="9" name="faucheur" type="enemy" x="1040" y="300">
+   <point/>
+  </object>
+  <object id="10" name="capuche" type="enemy" x="140" y="210">
+   <point/>
+  </object>
+  <object id="11" name="faucheur" type="enemy" x="270" y="490">
+   <point/>
+  </object>
+  <object id="12" name="cristal_rose" type="deco" x="742" y="560">
+   <point/>
+  </object>
+  <object id="13" name="cristal_violet" type="deco" x="783" y="595">
+   <point/>
+  </object>
+  <object id="14" name="cristal_rose" type="deco" x="759" y="577">
+   <point/>
+  </object>
+  <object id="15" name="cristal_violet" type="deco" x="340" y="226">
+   <point/>
+  </object>
+  <object id="16" name="cristal_rose" type="deco" x="342" y="255">
+   <point/>
+  </object>
+  <object id="17" name="cristal_violet" type="deco" x="373" y="230">
+   <point/>
+  </object>
+  <object id="18" name="fleur_4" type="deco" x="59" y="336">
+   <point/>
+  </object>
+  <object id="19" name="fleur_4" type="deco" x="35" y="343">
+   <point/>
+  </object>
+  <object id="20" name="fleur_4" type="deco" x="21" y="289">
+   <point/>
+  </object>
+  <object id="21" name="fleur_4" type="deco" x="28" y="321">
+   <point/>
+  </object>
+  <object id="22" name="fleur_4" type="deco" x="873" y="308">
+   <point/>
+  </object>
+  <object id="23" name="fleur_4" type="deco" x="826" y="327">
+   <point/>
+  </object>
+  <object id="24" name="fleur_4" type="deco" x="786" y="301">
+   <point/>
+  </object>
+  <object id="25" name="fleur_4" type="deco" x="900" y="312">
+   <point/>
+  </object>
+  <object id="26" name="fleur_4" type="deco" x="341" y="539">
+   <point/>
+  </object>
+  <object id="27" name="fleur_4" type="deco" x="375" y="508">
+   <point/>
+  </object>
+  <object id="28" name="fleur_5" type="deco" x="364" y="533">
+   <point/>
+  </object>
+  <object id="29" name="fleur_4" type="deco" x="341" y="513">
+   <point/>
+  </object>
+  <object id="30" name="champignon_3" type="deco" x="86" y="26">
+   <point/>
+  </object>
+  <object id="31" name="champignon_2" type="deco" x="126" y="22">
+   <point/>
+  </object>
+  <object id="32" name="champignon_2" type="deco" x="36" y="80">
+   <point/>
+  </object>
+  <object id="33" name="champignon_3" type="deco" x="62" y="20">
+   <point/>
+  </object>
+  <object id="34" name="champignon_3" type="deco" x="506" y="339">
+   <point/>
+  </object>
+  <object id="35" name="champignon_3" type="deco" x="483" y="332">
+   <point/>
+  </object>
+  <object id="36" name="champignon_2" type="deco" x="518" y="310">
+   <point/>
+  </object>
+  <object id="37" name="champignon_2" type="deco" x="477" y="367">
+   <point/>
+  </object>
+  <object id="38" name="champignon_2" type="deco" x="824" y="177">
+   <point/>
+  </object>
+  <object id="39" name="champignon_2" type="deco" x="881" y="172">
+   <point/>
+  </object>
+  <object id="40" name="champignon_2" type="deco" x="847" y="192">
+   <point/>
+  </object>
+  <object id="41" name="champignon_2" type="deco" x="815" y="151">
+   <point/>
+  </object>
+  <object id="42" name="bougie_2" type="deco" x="995" y="436">
+   <point/>
+  </object>
+  <object id="43" name="bougie_2" type="deco" x="1021" y="444">
+   <point/>
+  </object>
+  <object id="44" name="bougie_2" type="deco" x="957" y="459">
+   <point/>
+  </object>
+  <object id="45" name="bougie_2" type="deco" x="1036" y="206">
+   <point/>
+  </object>
+  <object id="46" name="bougie_2" type="deco" x="1053" y="223">
+   <point/>
+  </object>
+  <object id="47" name="bougie_2" type="deco" x="1044" y="182">
+   <point/>
+  </object>
+  <object id="48" name="lanterne_rose" type="deco" x="272" y="382">
+   <point/>
+  </object>
+  <object id="49" name="lanterne_rose" type="deco" x="912" y="574">
+   <point/>
+  </object>
+  <object id="50" name="lanterne_rose" type="deco" x="1264" y="478">
+   <point/>
+  </object>
+  <object id="51" name="lanterne_rose" type="deco" x="1232" y="318">
    <point/>
   </object>
  </objectgroup>

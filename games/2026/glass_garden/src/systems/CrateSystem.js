@@ -13,6 +13,11 @@
 //   2. Lui donner la classe « crate » (CRATE.TILED_CLASS).
 //   3. Facultatif : une propriété personnalisée « hitPoints » (entier) = nombre de tirs pour la casser.
 //      Sans elle, CRATE.DEFAULT_HIT_POINTS (1).
+//   4. Facultatif : une propriété personnalisée « hasStar » (booléen) cochée sur la caisse qui CACHE l'étoile du monde.
+//      L'étoile reste invisible jusque-là ; quand cette caisse casse, elle appelle scene.onStarCrateBroken(caisse)
+//      (WorldScene la fait sauter de la caisse).
+//   5. Facultatif : une propriété personnalisée « hasBomb » (booléen) cochée sur une caisse qui CACHE une bombe : à la casse,
+//      elle appelle scene.onBombCrateBroken(caisse) (voir BombSystem.js).
 //
 // * COMMENT L'UTILISER (dans une scène de monde qui a un joueur et un groupe de balles)
 //   import { preloadCrate, createCrates } from '../systems/CrateSystem.js';
@@ -29,7 +34,7 @@
 // facultative onHit de chaque caisse, appelée par hitTarget (voir fonctionTir.js).
 // =====================================================================================
 
-import { CRATE } from '../utils/constants.js';
+import { CRATE, BOMB } from '../utils/constants.js';
 import { addTargetCollision } from './fonctionTir.js';
 
 /**
@@ -38,6 +43,7 @@ import { addTargetCollision } from './fonctionTir.js';
  */
 export function preloadCrate(scene) {
   scene.load.image(CRATE.KEY, CRATE.PATH);
+  scene.load.image(BOMB.KEY, BOMB.PATH); // la bombe cachée dans certaines caisses (voir BombSystem.js)
 }
 
 /**
@@ -68,6 +74,15 @@ function ensureDebrisTexture(scene) {
 }
 
 /**
+ * Multiplie deux couleurs (0xRRGGBB), comme le fait une teinte Phaser. Sans teinte (undefined), la couleur reste telle quelle.
+ */
+function multiplyColors(color, tint) {
+  if (tint === undefined) return color;
+  const channel = (shift) => Math.round((((color >> shift) & 0xff) * ((tint >> shift) & 0xff)) / 255);
+  return (channel(16) << 16) | (channel(8) << 8) | channel(0);
+}
+
+/**
  * L'effet d'un coup reçu par une caisse : un éclat blanc, ou la casse si c'était le dernier coup.
  * Appelé par hitTarget AVANT que la caisse ne soit détruite : elle a encore sa position et ses points de vie à jour.
  * @param {Phaser.Scene} scene
@@ -79,7 +94,11 @@ function playHitEffect(scene, crate) {
   if (crate.hitPoints > 0) {
     // * Elle tient encore : un éclat blanc très court
     crate.setTintFill(0xffffff);
-    scene.time.delayedCall(VFX.HIT_FLASH_MS, () => crate.active && crate.clearTint());
+    scene.time.delayedCall(VFX.HIT_FLASH_MS, () => {
+      if (!crate.active) return;
+      crate.clearTint();
+      if (crate.worldTint !== undefined) crate.setTint(crate.worldTint); // elle reprend la teinte de son monde
+    });
     return;
   }
 
@@ -89,7 +108,7 @@ function playHitEffect(scene, crate) {
     angle: { min: 0, max: 360 },
     lifespan: { min: VFX.DEBRIS_LIFETIME_MS.MIN, max: VFX.DEBRIS_LIFETIME_MS.MAX },
     scale: { start: 1, end: 0 },
-    tint: VFX.DEBRIS_COLORS,
+    tint: VFX.DEBRIS_COLORS.map((color) => multiplyColors(color, crate.worldTint)),
     emitting: false,
   });
   debris.setDepth(VFX.DEBRIS_DEPTH);
@@ -99,6 +118,20 @@ function playHitEffect(scene, crate) {
   scene.time.delayedCall(VFX.DEBRIS_LIFETIME_MS.MAX + 100, () => debris.destroy());
 
   scene.cameras.main.shake(VFX.SHAKE.DURATION_MS, VFX.SHAKE.INTENSITY);
+
+  // * C'était la caisse qui cache l'étoile : la scène la fait apparaître
+  if (crate.hasStar) scene.onStarCrateBroken?.(crate);
+
+  // * Elle cachait une bombe : la scène la fait jaillir (voir BombSystem.js)
+  if (crate.hasBomb) scene.onBombCrateBroken?.(crate);
+}
+
+/** Casse cette caisse d'un coup, comme un tir fatal (l'effet est joué avant la destruction). Sert aux explosions. */
+export function breakCrate(crate) {
+  if (!crate.active) return;
+  crate.hitPoints = 0;
+  crate.onHit?.(crate);
+  crate.destroy();
 }
 
 /**
@@ -124,7 +157,13 @@ export function createCrates(scene, map, player, bullets) {
 
       const crate = crates.create(x, y, CRATE.KEY);
       crate.hitPoints = getTiledProperty(object, 'hitPoints', CRATE.DEFAULT_HIT_POINTS);
+      crate.hasStar = getTiledProperty(object, 'hasStar', false);
+      crate.hasBomb = getTiledProperty(object, BOMB.TILED_PROPERTY, false);
       crate.onHit = () => playHitEffect(scene, crate);
+
+      // * La teinte de ce monde, s'il en a une (voir CRATE.WORLD_TINTS)
+      crate.worldTint = CRATE.WORLD_TINTS[scene.getWorldName()];
+      if (crate.worldTint !== undefined) crate.setTint(crate.worldTint);
     });
 
   scene.physics.add.collider(player, crates);
