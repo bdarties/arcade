@@ -30,7 +30,6 @@ export default class credits extends Phaser.Scene {
       .setTint(0xff9999);
 
     // Espace ou Échap = retour à l'accueil
-    this.input.keyboard.once("keydown-SPACE", () => this.scene.start("accueil"));
-    this.input.keyboard.once("keydown-ESC", () => this.scene.start("accueil"));
+    this.input.keyboard.once("keydown-I", () => this.scene.start("accueil"));
   }
 }

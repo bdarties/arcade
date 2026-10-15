@@ -246,6 +246,11 @@ export default class toit extends Phaser.Scene {
   }
 
   update() {
+    // chute dans le vide (bas de l'écran = bas de la map) : mort
+    if (this.player.body.bottom >= this.cameras.main.height - 1) {
+      fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
+    }
+
     this.mettreAJourEnnemis();
 
     const auSol = this.player.body.touching.down || this.player.body.blocked.down;
@@ -259,12 +264,7 @@ export default class toit extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("exterieur", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        if (this.scene.manager.keys["backstage"]) {
-          this.scene.start("backstage", { depuis: "precedent" });
-        } else {
-          this.texte_info.setText("Niveau suivant pas encore disponible").setVisible(true);
-          this.time.delayedCall(1500, () => this.texte_info.setVisible(false));
-        }
+        this.scene.start("opera", { depuis: "precedent" });
       }
     }
   }

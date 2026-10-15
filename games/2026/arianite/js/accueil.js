@@ -73,14 +73,12 @@ export default class accueil extends Phaser.Scene {
       this.boutons[this.indexSelection].action();
     };
 
-    // Contrôles borne d'arcade : Sticks J1 (UP/DOWN) et J2 (Z/S) pour naviguer
+    // Contrôles borne d'arcade : Sticks J1 (UP/DOWN)
     this.input.keyboard.on("keydown-DOWN", descendre);
-    this.input.keyboard.on("keydown-S", descendre);
     this.input.keyboard.on("keydown-UP", monter);
-    this.input.keyboard.on("keydown-Z", monter);
 
-    // Boutons A, B, D (J1 : I, O, K | J2 : R, T, F) + SPACE/ENTER pour valider
-    ["I", "O", "K", "R", "T", "F", "SPACE", "ENTER"].forEach((touche) => {
+    // Boutons A, B, D (J1 : I, O, K)
+    ["I", "O", "K"].forEach((touche) => {
       this.input.keyboard.on(`keydown-${touche}`, valider);
     });
 

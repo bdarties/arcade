@@ -57,8 +57,7 @@ export default class controls extends Phaser.Scene {
     });
 
     // Espace ou Échap = retour à l'accueil
-    this.input.keyboard.once("keydown-SPACE", () => this.scene.start("accueil"));
-    this.input.keyboard.once("keydown-ESC", () => this.scene.start("accueil"));
+    this.input.keyboard.once("keydown-I", () => this.scene.start("accueil"));
   }
 
   // Crée le petit panneau indicateur en bas à droite

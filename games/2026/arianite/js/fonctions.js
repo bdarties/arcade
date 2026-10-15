@@ -301,3 +301,18 @@ function afficherArcCoup(joueur) {
   arc.strokePath();
   joueur.scene.tweens.add({ targets: arc, alpha: 0, duration: 180, onComplete: () => arc.destroy() });
 }
+
+/***********************************************************************/
+/** MORT PAR CHUTE (eau, vide...) : partagée par tous les niveaux
+/***********************************************************************/
+
+// à appeler dans update() dès que le joueur est tombé : fondu au noir, vies remises au max,
+// puis le niveau appelle "relancer" (en général scene.restart). Peut être appelée à chaque frame sans danger.
+export function mortParChute(scene, relancer) {
+  if (scene.enMort) return;
+  scene.enMort = true;
+  scene.events.once("shutdown", () => (scene.enMort = false));
+  scene.registry.set("vies", VIES_MAX);
+  scene.cameras.main.once("camerafadeoutcomplete", relancer);
+  scene.cameras.main.fadeOut(500, 0, 0, 0);
+}

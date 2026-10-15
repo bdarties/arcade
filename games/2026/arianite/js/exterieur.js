@@ -445,6 +445,11 @@ export default class exterieur extends Phaser.Scene {
 /***********************************************************************/
 
   update() {
+    // chute dans l'eau : le fond de la map (dernière ligne de tuiles) est de l'eau -> mort
+    if (player.body.bottom >= this.physics.world.bounds.bottom - 32 - 1) {
+      fct.mortParChute(this, () => this.scene.restart({}));
+    }
+
     const scrollX = this.cameras.main.scrollX;
     this.fond_ciel.tilePositionX = (scrollX * PARALLAXE_CIEL) / this.echelle_fond;
     this.couches.forEach((c) => {
