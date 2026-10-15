@@ -3,9 +3,7 @@ import niveau1 from "./js/niveau1.js";
 import niveau2 from "./js/niveau2.js";
 import Ecran_score from "./js/Ecran_score.js";
 import Game_over from "./js/Game_over.js";
-import controles from "./js/controles.js";
 import Menu from "./js/menu.js";
-
 
 // configuration générale du jeu
 var config = {

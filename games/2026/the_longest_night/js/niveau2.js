@@ -39,6 +39,13 @@ export default class niveau2 extends niveau1 {
         degats: 1,
         score: 150
       }],
+
+      // la faucheuse du niveau 2 : mêmes réglages que le niveau 1 (vitesse, portée...), seules les images changent
+      faucheuse: {
+        ...cfg.faucheuse,
+        marche:  { fichier: "./assets/enemies/faucheuse_map2.png",         largeur: 96, hauteur: 80, images: 4,  pieds: { x: 16, y: 73 } }, // PNG de 353 px : la dernière case est rognée, c'est géré
+        attaque: { fichier: "./assets/enemies/faucheuse_attaque_map2.png", largeur: 96, hauteur: 96, images: 13, pieds: { x: 31, y: 89 } }
+      },
       niveau_suivant: "Ecran_score"
     };
   }
@@ -46,10 +53,6 @@ export default class niveau2 extends niveau1 {
   preload() {
     super.preload(); // charge tout ce que charge le niveau 1 (la carte 2 grâce à parametres_niveau)
     this.load.image("Phaser_tuileReverse", "./assets/map/tileset_reverse.png");
-    this.load.spritesheet("renard_statique", "./assets/enemies/renard.png", {
-      frameWidth: 48,
-      frameHeight: 70
-    });
     this.load.spritesheet("renard", "./assets/enemies/renard.png", {
       frameWidth: 48,
       frameHeight: 70
@@ -61,15 +64,6 @@ export default class niveau2 extends niveau1 {
   }
 
   create() {
-    if (!this.anims.exists("animation_renard_standing")) {
-      this.anims.create({
-        key: "animation_renard_standing",
-        frames: this.anims.generateFrameNumbers("renard_statique", { start: 0, end: 3 }),
-        frameRate: 6,
-        repeat: -1
-
-      });
-    }
     if (!this.anims.exists("animation_renard_marche")) {
       this.anims.create({
         key: "animation_renard_marche",
