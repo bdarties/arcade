@@ -1,53 +1,53 @@
 export default class Game_over extends Phaser.Scene {
-  // constructeur de la classe
   constructor() {
     super({
-      key: "Game_over" //  ici on précise le nom de la classe en tant qu'identifiant
+      key: "Game_over"
     });
   }
-  preload() {}
+
+  init(data) {
+    this.donnees = data || {}; // { raison, niveau, scoreJ1, scoreJ2, deux_joueurs }
+  }
 
   create() {
-    this.add.image(400, 300, "img_ciel");
-    this.groupe_plateformes = this.physics.add.staticGroup();
-    this.groupe_plateformes.create(200, 584, "img_plateforme");
-    this.groupe_plateformes.create(600, 584, "img_plateforme");
-    // ajout d'un texte distintcif  du niveau
-    this.add.text(400, 100, "Vous êtes dans le niveau 2", {
-      fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
-      fontSize: "22pt"
+    const { raison, niveau, scoreJ1, scoreJ2, deux_joueurs } = this.donnees;
+
+    let message = "Vous êtes tombé au combat...";
+    if (raison === "temps") {
+      message = "Le temps est écoulé !";
+    } else if (raison === "vie_J1") {
+      message = deux_joueurs ? "Le joueur 1 est tombé au combat..." : message;
+    } else if (raison === "vie_J2") {
+      message = "Le joueur 2 est tombé au combat...";
+    }
+
+    const style = (taille, couleur = "#ffffff") => ({
+      fontFamily: "Arial, sans-serif",
+      fontSize: taille + "px",
+      color: couleur,
+      align: "center"
     });
 
-    this.porte_retour = this.physics.add.staticSprite(100, 550, "img_porte2");
+    this.cameras.main.setBackgroundColor("#1a0a0a");
+    this.add.text(640, 190, "GAME OVER", style(72, "#c04545")).setOrigin(0.5);
+    this.add.text(640, 290, message, style(30)).setOrigin(0.5);
 
-    this.player = this.physics.add.sprite(100, 450, "img_perso");
-    this.player.refreshBody();
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
-    this.clavier = this.input.keyboard.createCursorKeys();
-    this.physics.add.collider(this.player, this.groupe_plateformes);
-  }
+    const texte_score = deux_joueurs
+      ? `Score J1 : ${scoreJ1 ?? 0}   -   Score J2 : ${scoreJ2 ?? 0}`
+      : `Score : ${scoreJ1 ?? 0}`;
+    this.add.text(640, 370, texte_score, style(26)).setOrigin(0.5);
 
-  update() {
-    if (this.clavier.left.isDown) {
-      this.player.setVelocityX(-160);
-      this.player.anims.play("anim_tourne_gauche", true);
-    } else if (this.clavier.right.isDown) {
-      this.player.setVelocityX(160);
-      this.player.anims.play("anim_tourne_droite", true);
-    } else {
-      this.player.setVelocityX(0);
-      this.player.anims.play("anim_face");
-    }
-    if (this.clavier.up.isDown && this.player.body.touching.down) {
-      this.player.setVelocityY(-330);
-    }
+    const rejouer = this.add.text(640, 490, "Entrée : rejouer le niveau", style(26, "#f1c489"))
+      .setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const menu = this.add.text(640, 550, "Échap : retour au menu", style(26, "#f1c489"))
+      .setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.space) == true) {
-      if (this.physics.overlap(this.player, this.porte_retour)) {
-        console.log("niveau 3 : retour vers selection");
-        this.scene.switch("selection");
-      }
-    }
+    const relancer = () => this.scene.start(niveau || "niveau1", { mode: deux_joueurs ? 2 : 1 });
+    const retour_menu = () => this.scene.start("Menu");
+
+    rejouer.on("pointerdown", relancer);
+    menu.on("pointerdown", retour_menu);
+    this.input.keyboard.once("keydown-ENTER", relancer);
+    this.input.keyboard.once("keydown-ESC", retour_menu);
   }
 }

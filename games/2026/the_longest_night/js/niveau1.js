@@ -58,6 +58,7 @@ var cibleCamera; // point invisible au milieu des deux joueurs sur laquelle la c
 var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points. Est éfféctivement initulisée pour l'instant.
 var sortie_ouverte = false; //définit si toutes les clés ont été trouvées, et donc, si la porte du niveau du jeu est ouverte pour s'échapper.
 var gameOver = false; //fonction pouvant etre utilisée pour définir si la partie se termine ou non. N'a pas d'utilité pour l'instant.
+var spawns_complets = []; //copie de TOUS les points de spawn de la carte (tableau_spawn, lui, se vide à mesure que les objets apparaissent). Sert au mode compétitif pour faire réapparaître clés, ennemis, soins et recharges.
 // définition de la classe "selection"
 export default class niveau1 extends Phaser.Scene {
   constructor(cle = "niveau1") {
@@ -66,6 +67,7 @@ export default class niveau1 extends Phaser.Scene {
 
   init(data) {
     this.donnees = data || {}; // scores transmis par le niveau précédent (vide pour le niveau 1)
+    mode_deux_joueurs = this.donnees.mode === 2; //mode 1 = histoire (1 joueur, porte de sortie), mode 2 = compétitif (2 joueurs, pas de porte)
   }
 
   /** Tous les réglages qui changent d'un niveau à l'autre sont ici.
@@ -94,7 +96,13 @@ export default class niveau1 extends Phaser.Scene {
         degats: 1,
         score: 100
       }],
-      niveau_suivant: "niveau2"
+      niveau_suivant: "niveau2",
+      competitif: { //réglages du mode 2 joueurs. Ils remplacent temps / nombre_cles / nombre_ennemis du niveau.
+        temps: 90,                  // durée du match en secondes
+        cles_simultanees: 3,        // nombre de clés présentes en même temps sur la carte (une nouvelle réapparaît dès qu'on en ramasse une)
+        nombre_ennemis: 5,          // ennemis présents en même temps (ils réapparaissent quand on les tue)
+        delai_reapparition: 4000    // ms entre deux vérifications de réapparition
+      }
     };
   }
 
@@ -300,7 +308,13 @@ export default class niveau1 extends Phaser.Scene {
       //definition des paramètres du premier niveau
       const cfg = this.parametres_niveau();
       this.cfg = cfg;
+      if (mode_deux_joueurs) { //mode compétitif : on remplace les réglages de l'histoire par ceux du bloc "competitif"
+        cfg.temps = cfg.competitif.temps;
+        cfg.nombre_cles = cfg.competitif.cles_simultanees;
+        cfg.nombre_ennemis = cfg.competitif.nombre_ennemis;
+      }
       temps_restant = cfg.temps;
+      this.game_over_en_cours = false; //passe à true quand le game over est déclenché (évite de le lancer plusieurs fois)
       nombre_cles = cfg.nombre_cles;
       cles_restantes = nombre_cles;
       cles_creees = 0; //remis à zéro à chaque (re)lancement de niveau
@@ -384,7 +398,8 @@ export default class niveau1 extends Phaser.Scene {
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  porte = this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee");
+  spawns_complets = tableau_spawn.map((p) => ({ x: p.x, y: p.y })); //on garde tous les points avant que tableau_spawn ne se vide
+  porte = mode_deux_joueurs ? null : this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee"); //pas de porte en mode compétitif
   groupe_cle = this.physics.add.group();
   groupe_araignee = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
@@ -396,7 +411,23 @@ export default class niveau1 extends Phaser.Scene {
       callback: () => {
         temps_restant -= 1;
         temps_restant_affiche.setText(String(temps_restant));
+        if (temps_restant <= 0) { //le temps est écoulé
+          declencher_game_over.call(this, "temps");
+        }
       }});
+      if (mode_deux_joueurs) { //mode compétitif : on remet régulièrement clés, ennemis, soins et recharges sur des points libres
+        this.time.addEvent({
+          delay: cfg.competitif.delai_reapparition,
+          loop: true,
+          callback: () => {
+            if (this.game_over_en_cours) {
+              return;
+            }
+            tableau_spawn = points_spawn_libres();
+            apparition_elements();
+          }
+        });
+      }
       
     
     /****************************
@@ -957,6 +988,11 @@ export default class niveau1 extends Phaser.Scene {
       panneauTimer, panneauCles,
       temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon
     ];
+    if (mode_deux_joueurs) { //en compétitif il n'y a pas de "clés restantes" à afficher : seuls les scores comptent
+      panneauCles.setVisible(false);
+      nombreCleIcon.setVisible(false);
+      cles_restantes_affiche.setVisible(false);
+    }
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
     camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
@@ -972,11 +1008,22 @@ export default class niveau1 extends Phaser.Scene {
 /***********************************************************************/
 
   update() {
+    if (this.game_over_en_cours) { //game over en cours : on fige le jeu en attendant le changement de scène
+      return;
+    }
     //gestion indépendante des points de vie (au cas ou on voudrait ajouter une option pour soigner)
     player.barreVie.setFrame(player.points_vies); //défini le numero de frame par rapport au nombre de point de vie restant. Très pratique pour une gestion indépendante.
     if (mode_deux_joueurs) {
       player2.barreVie.setFrame(player2.points_vies);
       gerer_cameras();
+    }
+    if (player.points_vies <= 0) { //la barre de vie d'un des deux joueurs est vide : game over
+      declencher_game_over.call(this, "vie_J1");
+      return;
+    }
+    if (mode_deux_joueurs && player2.points_vies <= 0) {
+      declencher_game_over.call(this, "vie_J2");
+      return;
     }
     deplacement_areignee.call(this);
     //commandes joueur1
@@ -1372,8 +1419,12 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
         const scoreText = player === player2 ? score_J2_affiche : score_J1_affiche;
         scoreText.setText(String(player.score));
         son_cle.play();
-        cles_restantes -= 1;
         cle.destroy();
+        if (mode_deux_joueurs) { //compétitif : pas de porte ni de compteur, la clé ne fait que rapporter des points puis réapparaît ailleurs
+          cles_creees -= 1; //libère une place pour que apparition_elements() en recrée une
+          return;
+        }
+        cles_restantes -= 1;
         cles_restantes_affiche.setText(String(cles_restantes));
         if (cles_creees >= nombre_cles && groupe_cle.countActive(true) == 0){
         porte.anims.play("animation_porte_ouverte");
@@ -1395,7 +1446,8 @@ function aller_niveau_suivant() { //arrête la musique puis lance le niveau déf
   this.scene.start(this.cfg.niveau_suivant, {
     scoreJ1: player.score,
     scoreJ2: mode_deux_joueurs ? player2.score : 0,
-    temps_restant
+    temps_restant,
+    mode: mode_deux_joueurs ? 2 : 1
   });
 }
 
@@ -1463,4 +1515,51 @@ function attaque_rodeur(ennemi, cible, joueurs) {
       }
     });
   });
+}
+
+function declencher_game_over(raison) { //raison : "temps", "vie_J1" ou "vie_J2". Fige le jeu une seconde (pour voir la barre de vie à 0) puis affiche l'écran Game_over
+  if (this.game_over_en_cours) {
+    return;
+  }
+  this.game_over_en_cours = true;
+  musique_niveau1.stop();
+  this.physics.pause();
+  this.time.delayedCall(1000, () => {
+    if (mode_deux_joueurs) { //mode compétitif : pas de game over, on désigne un gagnant
+      let gagnant_match; //1 = joueur 1, 2 = joueur 2, 0 = égalité
+      if (raison === "vie_J1") {
+        gagnant_match = 2; //J1 est tombé : J2 gagne
+      } else if (raison === "vie_J2") {
+        gagnant_match = 1;
+      } else { //temps écoulé : le plus gros score gagne
+        gagnant_match = player.score > player2.score ? 1 : (player2.score > player.score ? 2 : 0);
+      }
+      this.scene.start("Ecran_score", {
+        mode: 2,
+        raison,
+        gagnant: gagnant_match,
+        scoreJ1: player.score,
+        scoreJ2: player2.score
+      });
+      return;
+    }
+    this.scene.start("Game_over", {
+      raison,
+      niveau: this.scene.key, //permet de relancer le même niveau depuis l'écran de game over
+      scoreJ1: player.score,
+      scoreJ2: mode_deux_joueurs ? player2.score : 0,
+      deux_joueurs: mode_deux_joueurs
+    });
+  });
+}
+
+function points_spawn_libres() { //mode compétitif : renvoie les points de spawn qui ne sont ni occupés par un objet/ennemi, ni trop près d'un joueur
+  const occupants = [groupe_cle, groupe_recharges, groupe_soin, groupe_araignee]
+    .flatMap((groupe) => groupe.getChildren())
+    .filter((objet) => objet.active);
+  const joueurs = [player, player2];
+  return spawns_complets.filter((point) =>
+    occupants.every((o) => Phaser.Math.Distance.Between(o.x, o.y, point.x, point.y) > 24) &&
+    joueurs.every((j) => Phaser.Math.Distance.Between(j.x, j.y, point.x, point.y) > 120)
+  ).map((p) => ({ x: p.x, y: p.y }));
 }
