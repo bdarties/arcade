@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="21">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="23">
  <editorsettings>
   <export target="niveau_1.json" format="json"/>
  </editorsettings>
@@ -238,32 +238,38 @@
 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
 </data>
  </layer>
- <objectgroup id="4" name="calque_spawn" visible="0">
-  <object id="1" name="Spawn_joueur1" x="93.3333" y="672">
+ <objectgroup id="4" name="calque_spawn">
+  <object id="1" name="Spawn_joueur1" x="1235.76" y="875.03">
    <point/>
   </object>
-  <object id="3" name="Spawn_joueur2" x="243.333" y="673.333">
+  <object id="3" name="Spawn_joueur2" x="1544.24" y="878.333">
    <point/>
   </object>
-  <object id="9" name="Autre_spawn" x="72" y="1008">
+  <object id="9" name="Autre_spawn" x="96.2424" y="1508">
    <point/>
   </object>
-  <object id="14" name="Autre_spawn" x="1688" y="1140">
+  <object id="14" name="Autre_spawn" x="2536.48" y="1536.97">
    <point/>
   </object>
-  <object id="15" name="Autre_spawn" x="272" y="1196">
+  <object id="15" name="Autre_spawn" x="1654" y="1198">
    <point/>
   </object>
-  <object id="16" name="Autre_spawn" x="524" y="466">
+  <object id="21" name="Autre_spawn" x="902.667" y="1180">
    <point/>
   </object>
-  <object id="17" name="Autre_spawn" x="1512" y="408">
+  <object id="16" name="Autre_spawn" x="517.939" y="617.515">
    <point/>
   </object>
-  <object id="18" name="Autre_spawn" x="1900" y="192">
+  <object id="22" name="Autre_spawn" x="520.97" y="169.03">
    <point/>
   </object>
-  <object id="19" name="Autre_spawn" x="2604" y="700">
+  <object id="17" name="Autre_spawn" x="2199.88" y="329.212">
+   <point/>
+  </object>
+  <object id="18" name="Autre_spawn" x="1387.88" y="295.03">
+   <point/>
+  </object>
+  <object id="19" name="Autre_spawn" x="2891.88" y="581.818">
    <point/>
   </object>
  </objectgroup>
