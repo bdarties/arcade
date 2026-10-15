@@ -4,8 +4,11 @@ import { JEUX } from "./jeux.js";
 import { style, styleTexte, fondAssombri, aideBas, OR } from "./interface.js";
 
 // Les trois jeux occupent les cases 0, 1 et 2 de la grille.
-const X_COLONNES = [410, 870];
-const Y_LIGNES = [262, 512];
+const POSITIONS = [
+  { x: 410, y: 262 }, // jeu 0 : en haut à gauche
+  { x: 870, y: 262 }, // jeu 1 : en haut à droite
+  { x: 640, y: 540 }  // jeu 2 : en bas, au centre
+];
 // taille d'une vignette = taille du trou du cadre doré (on ne déforme pas le cadre)
 const LARGEUR = 420;
 const HAUTEUR = 202;
@@ -39,8 +42,8 @@ export default class selection extends Phaser.Scene {
 
   // une vignette = une capture du jeu, son nom et une banderole qui le décrit
   creerVignette(jeu, i) {
-    var x = X_COLONNES[i % 2];
-    var y = Y_LIGNES[Math.floor(i / 2)];
+    var x = POSITIONS[i].x;
+    var y = POSITIONS[i].y;
     var gauche = x - LARGEUR / 2;
     var haut = y - HAUTEUR / 2;
     var bas = haut + HAUTEUR;
@@ -66,11 +69,12 @@ export default class selection extends Phaser.Scene {
     var bas = unJoueurAppuie(this.touches, "bas");
     if (gauche || droite || haut || bas) {
       // gauche / droite : on change de colonne, haut / bas : on change de ligne
-      if (gauche || droite) {
-        var voisin = this.index + (this.index % 2 == 0 ? 1 : -1);
-        if (voisin < JEUX.length) this.index = voisin;
-      }
-      if (haut || bas) this.index = this.index < 2 ? Math.min(this.index + 2, JEUX.length - 1) : this.index - 2;
+      // gauche / droite : entre les 2 vignettes du haut
+      if (droite && this.index == 0) this.index = 1;
+      else if (gauche && this.index == 1) this.index = 0;
+      // haut / bas : entre les 2 vignettes du haut et la vignette centrée en bas
+      if (bas && this.index < 2) this.index = 2;
+      else if (haut && this.index == 2) this.index = 0;
       jouerSon(this, "menu");
       this.majCadre();
     }
