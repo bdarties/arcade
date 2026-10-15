@@ -69,7 +69,6 @@ var son_joueur_blesse;
 var son_areignne_blesse;
 var son_soin;
 var son_cle;
-var son_cle
 var cles_restantes_affiche;
 var temps_restant;
 var temps_restant_affiche;
