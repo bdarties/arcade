@@ -59,6 +59,7 @@ var gameOver = false; //fonction pouvant etre utilisée pour définir si la part
 var murs; //le calque des murs (sert aux collisions de la faucheuse)
 var faucheuse = null; //la faucheuse du niveau. Reste null tant que le timer n'est pas arrivé à 0
 var fin_de_partie = false; //passe à true quand tous les joueurs sont morts
+var spawns_complets = []; //copie de TOUS les points de spawn (tableau_spawn se vide au fur et à mesure). Sert au mode compétitif pour faire réapparaître les objets.
 // définition de la classe "selection"
 export default class niveau1 extends Phaser.Scene {
   constructor(cle = "niveau1") {
@@ -67,6 +68,7 @@ export default class niveau1 extends Phaser.Scene {
 
   init(data) {
     this.donnees = data || {}; // scores transmis par le niveau précédent (vide pour le niveau 1)
+    mode_deux_joueurs = this.donnees.mode === 2; //mode 1 = histoire (1 joueur, porte de sortie), mode 2 = compétitif (2 joueurs, pas de porte)
   }
 
   /** Tous les réglages qui changent d'un niveau à l'autre sont ici.
@@ -112,7 +114,13 @@ export default class niveau1 extends Phaser.Scene {
         pause_apres_attaque: 400   // ms de repos avant le coup suivant
       },
       scene_mort: "Ecran_score",   // scène lancée quand tous les joueurs sont morts
-      niveau_suivant: "niveau2"
+      niveau_suivant: "niveau2",
+      competitif: { //réglages du mode 2 joueurs. Ils remplacent temps / nombre_cles / nombre_ennemis du niveau (et la faucheuse est désactivée).
+        temps: 90,                  // durée du match en secondes
+        cles_simultanees: 3,        // nombre de clés présentes en même temps (une nouvelle réapparaît dès qu'on en ramasse une)
+        nombre_ennemis: 5,          // ennemis présents en même temps (ils réapparaissent quand on les tue)
+        delai_reapparition: 4000    // ms entre deux vérifications de réapparition
+      }
     };
   }
 
@@ -319,6 +327,12 @@ export default class niveau1 extends Phaser.Scene {
       //definition des paramètres du premier niveau
       const cfg = this.parametres_niveau();
       this.cfg = cfg;
+      if (mode_deux_joueurs) { //mode compétitif : on remplace les réglages de l'histoire par ceux du bloc "competitif"
+        cfg.temps = cfg.competitif.temps;
+        cfg.nombre_cles = cfg.competitif.cles_simultanees;
+        cfg.nombre_ennemis = cfg.competitif.nombre_ennemis;
+        cfg.faucheuse = null; //pas de faucheuse : à la fin du chrono, le meilleur score gagne
+      }
       temps_restant = cfg.temps;
       nombre_cles = cfg.nombre_cles;
       cles_restantes = nombre_cles;
@@ -403,7 +417,8 @@ export default class niveau1 extends Phaser.Scene {
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  porte = this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee");
+  spawns_complets = tableau_spawn.map((p) => ({ x: p.x, y: p.y })); //on garde tous les points avant que tableau_spawn ne se vide
+  porte = mode_deux_joueurs ? null : this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee"); //pas de porte en mode compétitif
   groupe_cle = this.physics.add.group();
   groupe_araignee = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
@@ -415,10 +430,25 @@ export default class niveau1 extends Phaser.Scene {
       callback: () => {
         temps_restant -= 1;
         temps_restant_affiche.setText(String(temps_restant));
-        if (temps_restant <= 0 && this.cfg.faucheuse) { //le temps est écoulé : la faucheuse arrive
+        if (temps_restant <= 0 && mode_deux_joueurs) { //compétitif : le temps est écoulé, on compte les points
+          terminer_match.call(this, "temps");
+        } else if (temps_restant <= 0 && this.cfg.faucheuse) { //le temps est écoulé : la faucheuse arrive
           apparition_faucheuse.call(this);
         }
       }});
+      if (mode_deux_joueurs) { //mode compétitif : on remet régulièrement clés, ennemis, soins et recharges sur des points libres
+        this.time.addEvent({
+          delay: cfg.competitif.delai_reapparition,
+          loop: true,
+          callback: () => {
+            if (fin_de_partie) {
+              return;
+            }
+            tableau_spawn = points_spawn_libres();
+            apparition_elements();
+          }
+        });
+      }
       
     
     /****************************
@@ -973,6 +1003,11 @@ export default class niveau1 extends Phaser.Scene {
       panneauTimer, panneauCles,
       temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon
     ];
+    if (mode_deux_joueurs) { //en compétitif il n'y a pas de "clés restantes" à afficher : seuls les scores comptent
+      panneauCles.setVisible(false);
+      nombreCleIcon.setVisible(false);
+      cles_restantes_affiche.setVisible(false);
+    }
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
     camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
@@ -1246,6 +1281,10 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
     return;
   }
   player.points_vies = Math.max(0, player.points_vies - ennemi.degats);
+  if (player.points_vies <= 0) { //plus de vie : le joueur meurt (en compétitif cela termine le match)
+    tuer_joueur.call(this, player);
+    return;
+  }
   player.prochaineDegat = this.time.now + 1000;
   player.colliderEnnemis.active = false; //on desactive la colision du joueur avec l'ennemi pour le rendre invincible.
   this.tweens.add({ //fait clignoter le joueur pour indiquer qu'il est invincible
@@ -1389,8 +1428,12 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
         const scoreText = player === player2 ? score_J2_affiche : score_J1_affiche;
         scoreText.setText(String(player.score));
         son_cle.play();
-        cles_restantes -= 1;
         cle.destroy();
+        if (mode_deux_joueurs) { //compétitif : pas de porte ni de compteur, la clé ne fait que rapporter des points puis réapparaît ailleurs
+          cles_creees -= 1; //libère une place pour que apparition_elements() en recrée une
+          return;
+        }
+        cles_restantes -= 1;
         cles_restantes_affiche.setText(String(cles_restantes));
         if (cles_creees >= nombre_cles && groupe_cle.countActive(true) == 0){
         porte.anims.play("animation_porte_ouverte");
@@ -1412,7 +1455,8 @@ function aller_niveau_suivant() { //arrête la musique puis lance le niveau déf
   this.scene.start(this.cfg.niveau_suivant, {
     scoreJ1: player.score,
     scoreJ2: mode_deux_joueurs ? player2.score : 0,
-    temps_restant
+    temps_restant,
+    mode: mode_deux_joueurs ? 2 : 1
   });
 }
 
@@ -1685,6 +1729,10 @@ function tuer_joueur(joueur) {
   joueur.points_vies = 0; //la barre de vie se vide toute seule dans update
   joueur.body.enable = false; //il n'interagit plus avec rien
   this.tweens.add({ targets: joueur, alpha: 0, duration: 400, onComplete: () => joueur.setVisible(false) });
+  if (mode_deux_joueurs) { //compétitif : le joueur tombé perd, l'autre gagne
+    terminer_match.call(this, joueur === player ? "vie_J1" : "vie_J2");
+    return;
+  }
   if (joueurs_vivants().length === 0) {
     fin_de_partie = true;
     this.time.delayedCall(1500, () => {
@@ -1696,4 +1744,42 @@ function tuer_joueur(joueur) {
       });
     });
   }
+}
+
+// ───── MODE COMPÉTITIF ─────
+function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le meilleur score gagne), "vie_J1" ou "vie_J2" (le joueur tombé perd)
+  if (fin_de_partie) {
+    return;
+  }
+  fin_de_partie = true;
+  this.physics.pause();
+  let gagnant; //1 = joueur 1, 2 = joueur 2, 0 = égalité
+  if (raison === "vie_J1") {
+    gagnant = 2;
+  } else if (raison === "vie_J2") {
+    gagnant = 1;
+  } else {
+    gagnant = player.score > player2.score ? 1 : (player2.score > player.score ? 2 : 0);
+  }
+  this.time.delayedCall(1000, () => {
+    musique_niveau1.stop();
+    this.scene.start("Ecran_score", {
+      mode: 2,
+      raison,
+      gagnant,
+      scoreJ1: player.score,
+      scoreJ2: player2.score
+    });
+  });
+}
+
+function points_spawn_libres() { //renvoie les points de spawn ni occupés par un objet/ennemi, ni trop près d'un joueur
+  const occupants = [groupe_cle, groupe_recharges, groupe_soin, groupe_araignee]
+    .flatMap((groupe) => groupe.getChildren())
+    .filter((objet) => objet.active);
+  const joueurs = [player, player2];
+  return spawns_complets.filter((point) =>
+    occupants.every((o) => Phaser.Math.Distance.Between(o.x, o.y, point.x, point.y) > 24) &&
+    joueurs.every((j) => Phaser.Math.Distance.Between(j.x, j.y, point.x, point.y) > 120)
+  ).map((p) => ({ x: p.x, y: p.y }));
 }
