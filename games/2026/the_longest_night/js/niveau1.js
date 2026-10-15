@@ -80,6 +80,7 @@ export default class niveau1 extends Phaser.Scene {
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
+      spawn_depuis_tiled: true, //les spawns du niveau 1 sont aussi lus dans calque_spawn (player_spawn / tableau_spawn ci-dessous sont vides)
       player_spawn: {},
       player2_spawn: {},
       tableau_spawn: [],
@@ -361,7 +362,7 @@ export default class niveau1 extends Phaser.Scene {
   tableau_spawn = cfg.tableau_spawn;;
 
   if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
-    const point_porte = liste_spawn.objects.find((point) => cfg.porte_pattern.test((point.name || "").toLowerCase()));
+    const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
     if (point_porte) {
       cfg.porte = { x: point_porte.x, y: point_porte.y };
     }
