@@ -23,11 +23,7 @@
 // ! Le localStorage peut être indisponible (navigation privée, réglages du navigateur) :
 // chaque fonction est protégée, et le jeu continue simplement sans sauvegarde.
 //
-// TODO(équipe): classement avec pseudos. Remplacer le record unique par une liste triée
-// de résultats { pseudo, temps }, avec un top 10 par mode, rangée en JSON dans le localStorage.
-// (Le localStorage suffit pour une seule borne : le classement reste sur cette machine.)
-// TODO(équipe): session. Le joueur saisit son pseudo au début de la partie et le chrono est lié
-// à ce pseudo. Sur la borne, pas de clavier : écran de saisie de lettres au joystick, façon arcade.
+// Pour l'instant : un seul record par mode, sans pseudo ni classement (voir « Pistes d'amélioration » dans le GDD).
 // =====================================================================================
 
 import { GAME_MODES, STORAGE_KEYS } from '../utils/constants.js';

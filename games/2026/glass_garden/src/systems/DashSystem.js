@@ -20,6 +20,7 @@
 // =====================================================================================
 
 import { DASH } from '../utils/constants.js';
+import { ABILITIES, isUnlocked, notifyLocked } from './ProgressSystem.js';
 
 const { DUST } = DASH;
 
@@ -70,6 +71,11 @@ export default class Dash {
     const now = this.scene.time.now;
 
     if (now >= this.endsAt && now >= this.readyAt && input.justPressed('dash')) {
+      // * Le dash est verrouillé tant que le joueur ne l'a pas gagné : l'interface affiche un message, rien ne se passe
+      if (!isUnlocked(ABILITIES.DASH)) {
+        notifyLocked(this.scene, ABILITIES.DASH);
+        return false;
+      }
       // * Direction du dash : celle du déplacement, sinon celle qu'on regarde
       this.direction = move.x !== 0 || move.y !== 0 ? [move.x, move.y] : FACING_VECTORS[facing];
       this.startedAt = now;

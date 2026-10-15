@@ -3,9 +3,8 @@ import { SCENES, WORLD_MAPS } from '../utils/constants.js';
 
 /**
  * * Monde 2 : le rêve.
- * Pour l'instant, il affiche seulement sa carte de test grâce à WorldScene
- * (sa carte est décrite dans WORLD_MAPS, dans constants.js).
- * TODO(équipe): ajouter la mécanique propre au monde 2 (ennemis, tir)
+ * Des ennemis (le faucheur et la capuche) poursuivent le joueur : il faut les éviter ou les tuer au tir.
+ * Tout vient des objets posés dans sa carte (voir WORLD_MAPS dans constants.js), gérés par WorldScene : ce fichier ne fait que nommer le monde.
  */
 export default class World2Scene extends WorldScene {
   constructor() {

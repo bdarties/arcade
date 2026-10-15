@@ -1,10 +1,12 @@
 import InputManager from '../systems/InputManager.js';
 import timer from '../systems/TimerSystem.js';
-import { RecolteEtoiles } from '../systems/RecolteEtoiles.js';
+import { dropBomb } from '../systems/BombSystem.js';
+import { RecolteEtoiles, recolterEtoile } from '../systems/RecolteEtoiles.js';
 import { areAllStarsCollected } from '../systems/StarSystem.js';
 import { createBulletAnimations, explodeBullet, shoot } from '../systems/fonctionTir.js';
 import { preloadCrate, createCrates } from '../systems/CrateSystem.js';
-import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear } from '../systems/MirrorSystem.js';
+import { preloadDeco, createDeco } from '../systems/DecoSystem.js';
+import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear, getMirrorFacing, preloadMirrorLocks, createMirrorLocks } from '../systems/MirrorSystem.js';
 import { applyTint } from '../systems/TintSystem.js';
 import { irisClose, irisOpen } from '../systems/TransitionSystem.js';
 import { preloadNpcs, createNpcs } from '../systems/NpcSystem.js';
@@ -12,8 +14,12 @@ import DialogueBox, { isRiddleSolved } from '../systems/DialogueSystem.js';
 import { bounceStar } from '../systems/StarBounce.js';
 import Dash from '../systems/DashSystem.js';
 import { preloadBubbles, createBubbles } from '../systems/BubbleSystem.js';
+import { preloadEnemies, createEnemies, updateEnemies, resetEnemies, isEnemiesCleared, markEnemiesCleared, startEnemyCounter } from '../systems/EnemySystem.js';
 import { DIALOGUES } from '../data/dialogues.js';
 import { pickVariant } from '../utils/helpers.js';
+import { loadSecondPlayer, createSecondPlayer, updateSecondPlayer } from '../systems/SecondPlayer.js';
+import { getControlMode } from '../systems/ControlMode.js';
+import { ABILITIES, isUnlocked, notifyLocked, isMirrorLocked, getMirrorUnlocker } from '../systems/ProgressSystem.js';
 import {
   GAME_WIDTH,
   SCENES,
@@ -38,8 +44,11 @@ import {
   SMOKE,
   WORLD_ART,
   DIALOGUE,
+  PROGRESS,
+  CONTROL_MODES,
   STAR_BOUNCE,
   BUBBLES,
+  ENEMY_AI,
 } from '../utils/constants.js';
 
 /**
@@ -86,6 +95,8 @@ export default class WorldScene extends Phaser.Scene {
     }
     this.load.image('etoile', 'assets/images/sprites/Etoile.png');
     preloadCrate(this);
+    preloadDeco(this);
+    preloadMirrorLocks(this);
     this.load.image(ASSETS.TILESET_DECO, 'assets/images/tilesets/tileset_deco.png');
 
     // * Les balles : balle.png est une bande de 33 images de 16 x 16 pixels, chargée comme un spritesheet
@@ -100,6 +111,9 @@ export default class WorldScene extends Phaser.Scene {
     // * L'image des bulles du monde magique (voir BUBBLES dans constants.js)
     preloadBubbles(this);
 
+    // * Les images des ennemis (voir ENEMIES dans constants.js)
+    preloadEnemies(this);
+
     // * Le spritesheet du miroir, découpé en images de 32 x 32 pixels.
     // Un sprite créé sans préciser l'image affiche la première (le miroir entier).
     this.load.spritesheet(ASSETS.MIRROR, 'assets/images/sprites/mirror_spritesheet.png', {
@@ -112,6 +126,7 @@ export default class WorldScene extends Phaser.Scene {
       frameWidth: TILE_SIZE,
       frameHeight: TILE_SIZE,
     });
+    loadSecondPlayer(this);
   }
 
   /**
@@ -209,6 +224,8 @@ export default class WorldScene extends Phaser.Scene {
     // * Une même scène est réutilisée à chaque visite : on remet l'état à zéro
     // ! Sinon un message encore affiché au moment de partir bloquerait le texte d'aide au retour
     this.messageActive = false;
+    this.vanishingMirror = null;
+    this.dialogueInput = null;
     this.gameWon = false;
     this.transitioning = false; // vrai pendant la FERMETURE de l'iris, quand on prend un miroir : le joueur est figé (voir update)
     this.waterSprites = []; // les sprites de l'eau animée de CETTE visite (remplis par createAnimatedTiles)
@@ -262,6 +279,7 @@ export default class WorldScene extends Phaser.Scene {
 
     // * Où faire apparaître le joueur ? (voir getSpawnPosition)
     const spawn = this.getSpawnPosition(map);
+    this.spawnPoint = spawn; // pour y renvoyer le joueur quand un ennemi le touche (voir respawnPlayer)
 
     // * Le joueur est un sprite « physique » : c'est ce qui permet de le faire entrer en collision
     // Il commence de face (vers le bas), sur le point de départ
@@ -313,6 +331,9 @@ export default class WorldScene extends Phaser.Scene {
           ASSETS.MIRROR,
         );
         mirror.world = object.name; // le monde de destination
+        // * De quel côté il regarde : à gauche, l'image est inversée (le joueur arrive alors à sa gauche, voir getSpawnPosition)
+        mirror.facing = getMirrorFacing(object, map.widthInPixels);
+        if (mirror.facing === 'left') mirror.setFlipX(true);
 
         // * Le miroir bloque le joueur comme un mur
         const collider = this.physics.add.collider(this.player, mirror);
@@ -320,7 +341,8 @@ export default class WorldScene extends Phaser.Scene {
         if (vanishing) {
           // * Il va jouer son animation de disparition. Il n'est PAS ajouté à this.mirrors : on ne peut plus l'utiliser.
           // Quand l'animation est finie, on détruit le miroir et sa collision pour de bon.
-          // L'animation démarre quand l'iris est entièrement ouvert (voir la fin de create), pour qu'on la voie.
+          mirror.play(MIRROR_VANISH.KEY);
+          this.vanishingMirror = mirror; // le joueur 2 doit aussi être bloqué par lui pendant l'animation
           mirror.once('animationcomplete', () => {
             collider.destroy();
             mirror.destroy();
@@ -331,6 +353,9 @@ export default class WorldScene extends Phaser.Scene {
 
         this.mirrors.push(mirror);
       });
+    // * Un cadenas sur chaque miroir encore verrouillé du jardin (et son animation d'ouverture pour ceux qui viennent de s'ouvrir)
+    if (this.isNormalWorld()) createMirrorLocks(this, this.mirrors);
+
 
     // * Texte d'aide, affiché en haut de l'écran quand on est près d'un miroir
     this.hint = this.add
@@ -362,6 +387,12 @@ export default class WorldScene extends Phaser.Scene {
 
     // * Les caisses de ce monde, posées dans Tiled (le joueur et le groupe de balles existent déjà)
     this.crates = createCrates(this, map, this.player, this.bullets);
+    // * Le décor : les images sont triées en profondeur avec les personnages (voir sortByDepth) ; une partie est solide (voir DECO.SOLID)
+    const { images, blockers } = createDeco(this, map);
+    this.deco = images;
+    this.decoBlockers = blockers;
+    this.physics.add.collider(this.player, blockers);
+    this.physics.add.collider(this.bullets, blockers, (bullet) => explodeBullet(bullet));
 
     // * La fumée des cheminées, posée dans Tiled
     this.createSmokes(map);
@@ -374,17 +405,57 @@ export default class WorldScene extends Phaser.Scene {
       this.stars.forEach((star) => star.disableBody(true, true));
     }
 
+    // * Une étoile cachée dans une caisse (propriété « hasStar ») n'apparaît qu'à la casse de cette caisse
+    if (this.crates.getChildren().some((crate) => crate.hasStar)) {
+      this.stars.forEach((star) => star.disableBody(true, true));
+    }
+
     // * Les bulles à éclater, posées dans Tiled (le joueur existe déjà). L'étoile du monde est cachée tant qu'il en reste ;
     // quand elles sont toutes éclatées, elle apparaît au centre de la carte.
     this.bubbles = createBubbles(this, map, this.player, () => this.revealStarAtCenter(true));
     if (this.bubbles.total > 0) this.stars.forEach((star) => star.disableBody(true, true));
     if (this.bubbles.done) this.revealStarAtCenter(false); // bulles déjà éclatées lors d'une visite précédente
 
+    // * Les ennemis, posés dans Tiled
+    this.enemies = createEnemies(this, map, this.bullets);
+    // * Un monde avec des ennemis cache son étoile : elle apparaît (en sautant de l'endroit où meurt le dernier ennemi) quand ils sont tous morts
+    if (isEnemiesCleared(this.mapKey)) this.enemies.clear(true, true); // déjà tous tués lors d'une visite précédente : ils ne reviennent pas
+    this.enemiesTotal = this.enemies.getChildren().length;
+    startEnemyCounter(this.enemiesTotal); // « Ennemis : x / total » dans l'interface
+    this.enemiesCleared = false;
+    this.lastEnemyDeath = null;
+    if (this.enemiesTotal > 0) this.stars.forEach((star) => star.disableBody(true, true));
+    // * Les ennemis sont bloqués par les murs, l'eau, les caisses, les personnages, les miroirs et entre eux
+    this.enemyObstacles = [this.waterBlockers, this.crates, this.decoBlockers, ...this.npcs, ...this.mirrors].filter(Boolean); // aussi lus par EnemySystem pour contourner
+    [this.walls, ...this.enemyObstacles].forEach((obstacle) => {
+      this.physics.add.collider(this.enemies, obstacle);
+    });
+    this.physics.add.collider(this.enemies, this.enemies);
+    // * Un ennemi qui touche le joueur le renvoie au départ (il ne le bloque pas : ils se traversent)
+    this.physics.add.overlap(this.player, this.enemies, () => this.onEnemyTouch(this.player));
+
     // * La boîte de dialogue des personnages (cachée tant qu'on ne parle à personne)
     this.dialogue = new DialogueBox(this);
 
     // * La teinte du monde, posée en dernier : tous les calques et les sprites d'eau existent. Le jardin n'en a pas.
     applyTint(map, this.waterSprites, WORLD_TINTS[this.getWorldName()]);
+    this.player2 = createSecondPlayer(this, this.player, walls);
+    this.player2Spawn = { x: this.player2.x, y: this.player2.y }; // où il revient quand un ennemi le touche
+    this.player.invulnerableUntil = 0;
+    this.player2.invulnerableUntil = 0;
+    this.physics.add.overlap(this.player2, this.enemies, () => this.onEnemyTouch(this.player2));
+    // * Le joueur 2 éclate aussi les bulles
+    this.bubbles.addPlayer?.(this.player2);
+    // * Le joueur 2 ramasse aussi les étoiles (le joueur 1 est branché dans RecolteEtoiles)
+    this.stars.forEach((star) => this.physics.add.overlap(this.player2, star, () => recolterEtoile(this, star)));
+    // * Le joueur 2 est bloqué comme le joueur 1 : murs, eau, caisses, miroirs
+    [walls, waterBlockers, this.crates, this.decoBlockers, ...this.mirrors].filter(Boolean).forEach((obstacle) => {
+      this.physics.add.collider(this.player2, obstacle);
+    });
+    if (this.vanishingMirror?.active) {
+      const collider = this.physics.add.collider(this.player2, this.vanishingMirror);
+      this.vanishingMirror.once('destroy', () => collider.destroy());
+    }
 
     // * Arrivée par un miroir : le cercle s'ouvre depuis le miroir d'arrivée (ou depuis celui qui disparaît).
     // Le joueur n'est pas figé pendant l'ouverture : il peut déjà bouger. Sans miroir d'origine (premier lancement),
@@ -447,7 +518,93 @@ export default class WorldScene extends Phaser.Scene {
     const star = this.stars.find((s) => !s.active);
     if (!star) return;
     const from = { x: npc.x, y: npc.y, headHeight: npc.height * STAR_BOUNCE.HEAD_HEIGHT_RATIO };
-    bounceStar(this, star, from, (x, y) => this.isFreeGround(x, y, npc));
+    bounceStar(this, star, from, (x, y) => this.isFreeGround(x, y));
+  }
+
+  /** Un ennemi touche le joueur : sauf s'il vient déjà d'être renvoyé (invincible), ou en plein dialogue ou transition. */
+  /** Les joueurs que les ennemis voient et peuvent toucher : le joueur 2 n'existe pas pour eux en mode pc (il ne bouge pas), ni en solo. */
+  getEnemyTargets() {
+    return getControlMode() === CONTROL_MODES.PC || !this.player2.active ? [this.player] : [this.player, this.player2];
+  }
+
+  onEnemyTouch(player) {
+    if (!this.getEnemyTargets().includes(player)) return;
+    const dash = player === this.player ? this.dash : this.player2.dash;
+    if (this.time.now < player.invulnerableUntil || this.time.now < dash.endsAt || this.dialogue.isOpen || this.transitioning) return;
+    this.respawnPlayer(player);
+  }
+
+  /** Un joueur est pris dans une explosion : le niveau recommence (sauf s'il est invincible, en plein dash, ou si le jeu est figé). */
+  onBombHit(player) {
+    const dash = player === this.player ? this.dash : this.player2.dash;
+    if (this.time.now < player.invulnerableUntil || this.time.now < dash.endsAt || this.dialogue.isOpen || this.transitioning) return;
+    this.restartLevel();
+  }
+
+  /** Recommence ce monde à zéro (caisses, ennemis, bombes), comme si on y arrivait par le même miroir. */
+  restartLevel() {
+    const { FLASH } = ENEMY_AI.CONTACT;
+    this.transitioning = true; // tout est figé pendant l'éclair
+    this.cameras.main.flash(FLASH.DURATION_MS, FLASH.RED, FLASH.GREEN, FLASH.BLUE);
+    this.time.delayedCall(FLASH.DURATION_MS + 250, () => this.scene.restart({ from: this.fromWorld }));
+  }
+
+  /** Renvoie ce joueur au départ (le joueur 2 à côté du joueur 1), les ennemis reprennent leur place. */
+  respawnPlayer(player) {
+    const { INVULNERABLE_MS, BLINK_MS, BLINK_ALPHA, FLASH } = ENEMY_AI.CONTACT;
+
+    const spawn = player === this.player ? this.spawnPoint : this.player2Spawn;
+    player.setPosition(spawn.x, spawn.y);
+    player.setVelocity(0, 0);
+    resetEnemies(this.enemies);
+    this.cameras.main.flash(FLASH.DURATION_MS, FLASH.RED, FLASH.GREEN, FLASH.BLUE);
+
+    // * Invincible un court instant : le joueur clignote, puis redevient normal
+    player.invulnerableUntil = this.time.now + INVULNERABLE_MS;
+    this.tweens.killTweensOf(player);
+    this.tweens.add({ targets: player, alpha: BLINK_ALPHA, duration: BLINK_MS, yoyo: true, repeat: -1 });
+    this.time.delayedCall(INVULNERABLE_MS, () => {
+      this.tweens.killTweensOf(player);
+      player.setAlpha(1);
+    });
+  }
+
+  /** La caisse qui cachait l'étoile vient de casser : l'étoile en saute et rebondit, puis le joueur la ramasse. */
+  onStarCrateBroken(crate) {
+    const star = this.stars.find((s) => !s.active);
+    if (!star) return;
+    // Elle part du centre de la caisse (la caisse fait 32 pixels : le sol est 16 sous son centre, l'étoile à 20 au-dessus)
+    const from = { x: crate.x, y: crate.y + 16, headHeight: 20 + 16 };
+    bounceStar(this, star, from, (x, y) => this.isFreeGround(x, y));
+  }
+
+  /**
+   * Trie l'affichage selon la profondeur du terrain : plus les pieds d'un objet sont bas, plus il passe devant.
+   * Sans ça, l'ordre dépend de la création (les caisses, créées après le joueur, le recouvraient toujours).
+   */
+  sortByDepth() {
+    const { SORTED_MIN, SORTED_MAX } = DEPTH;
+    const height = this.map.heightInPixels;
+    [this.player, this.player2, ...this.enemies.getChildren(), ...this.crates.getChildren(), ...this.npcs, ...this.mirrors, ...this.deco].forEach((sprite) => {
+      if (!sprite?.active) return;
+      // * Les pieds : le bas du corps physique, ou le point où l'image est posée (le décor n'a pas de corps)
+      const feet = sprite.body ? sprite.body.bottom : sprite.y;
+      sprite.setDepth(SORTED_MIN + (SORTED_MAX - SORTED_MIN) * Phaser.Math.Clamp(feet / height, 0, 1));
+    });
+  }
+
+  /** Le dernier ennemi vient de mourir : l'étoile du monde saute de l'endroit où il est mort, puis le joueur la ramasse. */
+  onAllEnemiesKilled() {
+    const star = this.stars.find((s) => !s.active);
+    if (!star) return;
+    const spot = this.lastEnemyDeath ?? { x: this.map.widthInPixels / 2, y: this.map.heightInPixels / 2 };
+    // * Elle part de l'endroit où l'ennemi avait les pieds, à la hauteur de sa tête (une image de 32 px)
+    bounceStar(this, star, { x: spot.x, y: spot.y, headHeight: 30 }, (x, y) => this.isFreeGround(x, y));
+  }
+
+  /** Une caisse qui cachait une bombe vient de casser : la bombe saute, se pose et explose (voir BombSystem.js). */
+  onBombCrateBroken(crate) {
+    dropBomb(this, crate);
   }
 
   /** L'étoile du monde apparaît au centre de la carte (récompense des bulles), avec un petit effet de rebond si animated. */
@@ -460,13 +617,15 @@ export default class WorldScene extends Phaser.Scene {
     this.tweens.add({ targets: star, scale: 1, duration: BUBBLES.STAR_POP.DURATION_MS, ease: BUBBLES.STAR_POP.EASE });
   }
 
-  /** L'étoile peut-elle se poser en ce point du sol ? (ni mur, ni eau, ni miroir, ni personnage, ni hors de la carte) */
-  isFreeGround(x, y, npc) {
+  /** L'étoile peut-elle se poser en ce point du sol ? (ni mur, ni eau, ni miroir, ni caisse, ni personnage, ni hors de la carte) */
+  isFreeGround(x, y) {
     const margin = 20;
     if (x < margin || y < margin || x > GAME_WIDTH - margin || y > this.map.heightInPixels - margin) return false;
     if (this.walls.hasTileAtWorldXY(x, y)) return false;
     if (this.waterBlockers?.getChildren().some((zone) => Math.abs(zone.x - x) <= 20 && Math.abs(zone.y - y) <= 20)) return false;
     if (this.mirrors.some((mirror) => Phaser.Math.Distance.Between(x, y, mirror.x, mirror.y) < 40)) return false;
+    if (this.crates.getChildren().some((crate) => crate.active && crate.hitPoints > 0 && Math.abs(crate.x - x) < 22 && Math.abs(crate.y - y) < 22)) return false;
+    if (this.decoBlockers.getChildren().some((zone) => Math.abs(zone.x - x) < zone.width / 2 + 12 && Math.abs(zone.y - y) < zone.height / 2 + 12)) return false;
     return !this.npcs.some((other) => Math.abs(other.x - x) < 34 && y > other.y - 24 && y < other.y + 12);
   }
 
@@ -521,8 +680,10 @@ export default class WorldScene extends Phaser.Scene {
       );
 
       if (mirror) {
+        // * Le joueur arrive du côté où le miroir regarde : à sa droite, ou à sa gauche s'il est tourné vers la gauche
+        const toLeft = getMirrorFacing(mirror, map.widthInPixels) === 'left';
         return {
-          x: mirror.x + mirror.width + MIRROR_SPAWN_OFFSET.X,
+          x: toLeft ? mirror.x - MIRROR_SPAWN_OFFSET.X : mirror.x + mirror.width + MIRROR_SPAWN_OFFSET.X,
           y: mirror.y + mirror.height / 2 + MIRROR_SPAWN_OFFSET.Y,
         };
       }
@@ -533,8 +694,7 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * * Fin de la partie : on arrête le chronomètre, on fige le joueur et la physique, et l'interface affiche le message.
-   * TODO(équipe): écran de fin (temps final, record via saveBestTime, rejouer), à la place du simple message
+   * * Fin de la partie : on arrête le chronomètre, on fige le joueur et la physique, et l'interface affiche l'écran de victoire.
    */
   winGame() {
     this.gameWon = true;
@@ -546,6 +706,8 @@ export default class WorldScene extends Phaser.Scene {
 
   // update() est appelée à chaque image (environ 60 fois par seconde)
   update() {
+    this.sortByDepth();
+
     // * Partie gagnée : tout est figé, on ne lit plus les touches
     if (this.gameWon) return;
 
@@ -555,16 +717,26 @@ export default class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // * Les ennemis vivent à chaque image, sauf pendant un dialogue ou une transition (ils s'arrêtent)
+    updateEnemies(this, this.enemies, this.getEnemyTargets(), this.dialogue.isOpen || this.transitioning);
+    if (this.enemiesTotal > 0 && !this.enemiesCleared && this.enemies.countActive(true) === 0) {
+      this.enemiesCleared = true;
+      markEnemiesCleared(this.mapKey); // retenu pour les prochaines visites
+      this.onAllEnemiesKilled();
+    }
+
     // * Pendant la fermeture de l'iris (on a pris un miroir) : le joueur est figé, on ne lit ni les déplacements, ni le tir, ni l'interaction
     if (this.transitioning) {
       this.player.setVelocity(0, 0);
+      this.player2.setVelocity(0, 0);
       return;
     }
 
     // * Pendant un dialogue : le joueur est figé, les touches servent au dialogue (avancer, choisir une réponse)
     if (this.dialogue.isOpen) {
       this.player.setVelocity(0, 0);
-      this.dialogue.update(this.input1);
+      this.player2.setVelocity(0, 0);
+      this.dialogue.update(this.dialogueInput || this.input1); // les touches du joueur qui a lancé le dialogue
       return;
     }
 
@@ -590,7 +762,8 @@ export default class WorldScene extends Phaser.Scene {
 
     // * Tir : une balle par appui, dans la direction regardée
     if (this.input1.justPressed('shoot')) {
-      shoot(this, this.bullets, this.player, this.facing);
+      if (isUnlocked(ABILITIES.SHOOT)) shoot(this, this.bullets, this.player, this.facing);
+      else notifyLocked(this, ABILITIES.SHOOT); // verrouillé : un message bref, pas de tir
     }
 
     // * On donne une vitesse (en pixels par seconde) : c'est la physique Phaser qui déplace
@@ -600,43 +773,63 @@ export default class WorldScene extends Phaser.Scene {
       this.player.setVelocity(x * PLAYER.SPEED, y * PLAYER.SPEED);
     }
 
+    // * Le joueur 2 : déplacement, tir et dash (voir SecondPlayer.js)
+    updateSecondPlayer(this, this.player2);
+
+    // * Chaque joueur peut interagir (miroir, personnage). Le joueur 1 est lu en premier. Le joueur 2 ne le peut pas en mode pc.
+    if (this.interact(this.player, this.input1, true)) return;
+    if (this.player2.active && getControlMode() !== CONTROL_MODES.PC) this.interact(this.player2, this.player2.input2, false);
+  }
+
+  /**
+   * Un joueur appuie (ou non) sur sa touche d'interaction : parler à un personnage proche, ou prendre un miroir proche.
+   * @param {Phaser.Physics.Arcade.Sprite} player  Le joueur qui interagit
+   * @param {InputManager} input  Ses touches
+   * @param {boolean} showHint  Vrai pour le joueur 1 : c'est lui qui voit l'aide à l'écran
+   * @returns {boolean} vrai si un dialogue ou un changement de monde vient de commencer
+   */
+  interact(player, input, showHint) {
     // * Y a-t-il un miroir assez proche pour interagir ?
     const nearMirror = this.mirrors.find(
       (mirror) =>
-        Phaser.Math.Distance.Between(this.player.x, this.player.y, mirror.x, mirror.y) <
+        Phaser.Math.Distance.Between(player.x, player.y, mirror.x, mirror.y) <
         INTERACT_DISTANCE,
     );
 
     // * Y a-t-il un personnage assez proche pour lui parler ?
     const nearNpc = this.npcs.find(
       (npc) =>
-        Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.body.center.x, npc.body.center.y) <
+        Phaser.Math.Distance.Between(player.x, player.y, npc.body.center.x, npc.body.center.y) <
         DIALOGUE.INTERACT_DISTANCE,
     );
 
+    // * Un miroir du jardin verrouillé (voir ProgressSystem.js) ne s'utilise pas : on dit pourquoi, à la place de l'aide habituelle
+    const mirrorLocked = Boolean(nearMirror) && this.isNormalWorld() && isMirrorLocked(nearMirror.world);
+    const lockedText = mirrorLocked ? PROGRESS.LOCKED_MIRROR_HINT + (PROGRESS.WORLD_LABELS[getMirrorUnlocker(nearMirror.world)] ?? 'le monde précédent') : '';
+
     // On ne réécrit pas le texte pendant l'affichage du message d'interaction
     // ? Les touches sont provisoires : à changer avec les boutons de la borne (voir BINDINGS dans InputManager)
-    // TODO(équipe): changer le message d'interaction (utiliser une icône de touche au-dessus des miroirs)
-    if (!this.messageActive) {
+    if (showHint && !this.messageActive) {
       // * La touche affichée suit le mode de contrôle (I en arcade, E en pc) : l'aide ne ment jamais
-      const key = this.input1.getKeyLabel('interact');
-      this.hint.setText(nearMirror ? `${key} : entrer dans le miroir` : nearNpc ? `${key} : parler` : '');
+      const key = input.getKeyLabel('interact');
+      this.hint.setText(mirrorLocked ? lockedText : nearMirror ? `${key} : entrer dans le miroir` : nearNpc ? `${key} : parler` : '');
     }
 
     // * Parler à un personnage proche (un miroir proche passe avant)
-    if (nearNpc && !nearMirror && this.input1.justPressed('interact')) {
+    if (nearNpc && !nearMirror && input.justPressed('interact')) {
       this.hint.setText('');
+      this.dialogueInput = input; // c'est ce joueur qui fait avancer le dialogue
       this.dialogue.open(nearNpc.npcName, DIALOGUES[nearNpc.npcName], () => this.revealWorldStar(nearNpc));
-      return;
+      return true;
     }
 
-    if (nearMirror && this.input1.justPressed('interact')) {
+    if (mirrorLocked) return this.transitioning; // verrouillé : le message est affiché, rien d'autre
+
+    if (nearMirror && input.justPressed('interact')) {
       // * Le nom du miroir dans Tiled donne le monde visé, la table WORLDS donne sa scène
       const targetScene = WORLDS[nearMirror.world];
 
       if (targetScene) {
-        // TODO(équipe): SFX du passage par le miroir, à ajouter au plus vite
-        // TODO(équipe): timer global et score, à ajouter au plus vite (ils doivent survivre au changement de scène)
         // * On quitte cette scène et on lance celle du monde visé, en lui disant d'où l'on vient.
         // Le nom de ce monde est la clé de WORLDS dont la valeur est notre scène.
         const currentWorld = this.getWorldName();
@@ -655,5 +848,6 @@ export default class WorldScene extends Phaser.Scene {
         });
       }
     }
+    return this.transitioning;
   }
 }

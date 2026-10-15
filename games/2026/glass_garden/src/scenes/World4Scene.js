@@ -3,9 +3,8 @@ import { SCENES, WORLD_MAPS } from '../utils/constants.js';
 
 /**
  * * Monde 4 : l'apocalypse.
- * Pour l'instant, il affiche seulement sa carte de test grâce à WorldScene
- * (sa carte est décrite dans WORLD_MAPS, dans constants.js).
- * TODO(équipe): ajouter la mécanique propre au monde 4 (cibles, caisses, tir)
+ * Des caisses à casser au tir : l'étoile est cachée dans l'une d'elles, et certaines cachent une bombe.
+ * Tout vient des objets posés dans sa carte (voir WORLD_MAPS dans constants.js), gérés par WorldScene : ce fichier ne fait que nommer le monde.
  */
 export default class World4Scene extends WorldScene {
   constructor() {
