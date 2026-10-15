@@ -1,9 +1,12 @@
+import logging
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .config import Config
+
+logger = logging.getLogger(__name__)
 
 
 def get_db_path() -> Path:
@@ -42,7 +45,37 @@ def init_db():
         ON high_scores(game_id, score DESC)
         ''')
 
+        # Espace de stockage JSON libre, un par jeu (nom du répertoire du jeu)
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS game_data (
+            game_id VARCHAR(100) PRIMARY KEY,
+            data TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
+
         conn.commit()
+
+def get_game_data(game_id: str) -> Optional[str]:
+    """Retourne le JSON (texte) stocké pour un jeu, ou None s'il n'y en a pas."""
+    with _get_connection() as conn:
+        row = conn.execute(
+            'SELECT data FROM game_data WHERE game_id = ?', (game_id,)
+        ).fetchone()
+        return row[0] if row else None
+
+
+def set_game_data(game_id: str, data: str) -> None:
+    """Crée ou remplace le JSON (texte) d'un jeu."""
+    with _get_connection() as conn:
+        conn.execute('''
+        INSERT INTO game_data (game_id, data, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(game_id) DO UPDATE SET
+            data = excluded.data, updated_at = CURRENT_TIMESTAMP
+        ''', (game_id, data))
+        conn.commit()
+
 
 def add_score(game_id: str, player_name: str, score: int) -> bool:
     """
@@ -68,22 +101,44 @@ def add_score(game_id: str, player_name: str, score: int) -> bool:
                 VALUES (?, ?, ?)
                 ''', (game_id, player_name, score))
 
-                # Si plus de 10 scores, supprimer le plus bas
+                # Si plus de 10 scores, supprimer le plus bas.
+                #
+                # On cible une ligne par son id plutot que par "WHERE score =
+                # MIN(...) LIMIT 1" : SQLite n'accepte LIMIT sur un DELETE que
+                # s'il a ete compile avec SQLITE_ENABLE_UPDATE_DELETE_LIMIT, ce
+                # que le module sqlite3 de Python ne fait pas. L'ancienne requete
+                # levait donc une OperationalError, avalee par le except
+                # ci-dessous : des qu'un jeu atteignait 10 scores, l'INSERT
+                # repartait en rollback et PLUS AUCUN score ne pouvait etre
+                # enregistre, pas meme un record. Le sous-SELECT, lui, a le droit
+                # d'utiliser LIMIT.
+                #
+                # Le tri secondaire sur id departage deux scores egaux : sans lui
+                # la ligne supprimee serait choisie arbitrairement. A egalite, on
+                # retire la plus ancienne.
                 if count >= 10:
                     cursor.execute('''
-                    DELETE FROM high_scores 
-                    WHERE game_id = ? 
-                    AND score = (
-                        SELECT MIN(score) 
-                        FROM high_scores 
+                    DELETE FROM high_scores
+                    WHERE id = (
+                        SELECT id
+                        FROM high_scores
                         WHERE game_id = ?
+                        ORDER BY score ASC, id ASC
+                        LIMIT 1
                     )
-                    LIMIT 1
-                    ''', (game_id, game_id))
+                    ''', (game_id,))
 
                 conn.commit()
                 return True
         except sqlite3.Error:
+            # Sans cette trace, une erreur SQL etait indiscernable d'un score
+            # simplement trop faible pour entrer au classement : les deux cas
+            # renvoyaient False en silence. C'est ce qui a rendu le bug ci-dessus
+            # invisible pendant des semaines.
+            logger.exception(
+                "Echec de l'enregistrement du score (game_id=%s, player_name=%s, score=%s)",
+                game_id, player_name, score,
+            )
             return False
 
     return False

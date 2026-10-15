@@ -155,6 +155,7 @@ def game_page(promo: str, game_id: str):
     )
     return render_template("game_fullscreen.html",
                          game=game_meta,
+                         game_dir=game_id,
                          entry_js_url=entry_js_url,
                          score_module_url=score_module_url)
 

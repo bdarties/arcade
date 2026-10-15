@@ -23,6 +23,17 @@ Le serveur lit sa configuration depuis un fichier `.env` (non versionné, voir `
 - `INIT_DB_TOKEN` : jeton requis (header `X-Init-Token`) pour appeler `POST /init-db`
 - `USE_FAKE_SCORES` : utilise `static/js/score_fake.js` (scores simulés) au lieu de `static/js/score.js`
 
+## Stockage de données JSON par jeu
+
+Chaque jeu dispose d'un espace libre (un JSON de taille arbitraire, 10 Mo max) stocké en base sous le nom du répertoire du jeu. Aucune intégration n'est nécessaire sur la borne : `donnees.js` est chargé automatiquement et expose deux fonctions globales :
+
+```js
+const donnees = await lireDonneesJSON();   // null si rien n'a été écrit
+await ecrireDonneesJSON({ niveaux: [1, 2], classement: [] });
+```
+
+Si la base est injoignable (jeu développé en local), `localStorage` est utilisé à la place. Pour développer hors borne (où `/static/js/` n'existe pas), copier `app/static/js/donnees.js` dans le jeu (ex. `js/donnees.js`) et ajouter en tête de `index.js` : `import "./js/donnees.js";`. Sur la borne, cet import est sans effet (la première version chargée est conservée), il peut donc rester dans le jeu livré. API : `GET/PUT /api/donnees/<nom_du_repertoire>`.
+
 ## Interface
 
 ### Routes disponibles

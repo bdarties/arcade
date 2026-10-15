@@ -1,0 +1,47 @@
+// sauvegarde des scores : définit lireDonneesJSON / ecrireDonneesJSON (doit rester le premier import)
+import "./js/donnees.js";
+// chargement des librairies
+import selection from "./js/selection.js";
+import menu from "./js/menu.js";
+import infos from "./js/infos.js";
+import gameover from "./js/gameover.js";
+import niveau1 from "./js/niveau1.js";
+import niveau2 from "./js/niveau2.js";
+import niveau3 from "./js/niveau3.js";
+import pause from "./js/pause.js";
+import synopsis from "./js/synopsis.js";
+import choix_mode from "./js/choix_mode.js";
+import scores from "./js/scores.js";
+
+// configuration générale du jeu
+var config = {
+  width: 1280, // largeur en pixels
+  height: 720, // hauteur en pixels
+   type: Phaser.AUTO,
+  pixelArt: true, // pas de flou quand on agrandit les sprites
+  maxLights: 6, // lumières Light2D affichées en même temps (10 par défaut) : le shader fait toujours maxLights tours de boucle par pixel, même avec moins de lumières, donc chaque unité coûte cher sur la borne (cf. lumiere.js)
+  scale: {
+    mode: Phaser.Scale.FIT,
+    parent: 'game-container',
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  
+  },
+  physics: {
+    // définition des parametres physiques
+    default: "arcade", // mode arcade : le plus simple : des rectangles pour gérer les collisions. Pas de pentes
+    arcade: {
+      // parametres du mode arcade
+      gravity: {
+        y: 0 // jeu vu de dessus : pas de gravité
+      },
+      debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
+    }
+  },
+  scene: [selection, menu, infos, gameover, niveau1, niveau2, niveau3, pause, synopsis, choix_mode, scores],
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
+};
+
+
+// création et lancement du jeu
+export var game = new Phaser.Game(config);
+game.scene.start("selection");

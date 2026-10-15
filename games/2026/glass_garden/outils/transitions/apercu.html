@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transitions entre les mondes</title>
+  <style>
+    :root {
+      --fond: #1b1b22;
+      --panneau: #26262f;
+      --bord: #3a3a48;
+      --texte: #ececf2;
+      --doux: #9a9ab0;
+      --accent: #f2c14e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--fond);
+      color: var(--texte);
+      font: 15px/1.4 system-ui, sans-serif;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #liste {
+      width: 290px;
+      flex: none;
+      background: var(--panneau);
+      border-right: 1px solid var(--bord);
+      padding: 16px;
+      overflow: auto;
+    }
+
+    #liste h1 {
+      font-size: 17px;
+      margin: 0 0 4px;
+    }
+
+    #liste p {
+      color: var(--doux);
+      margin: 0 0 14px;
+      font-size: 13px;
+    }
+
+    .t {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      color: var(--texte);
+      border: 1px solid var(--bord);
+      border-radius: 8px;
+      padding: 9px 11px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .t:hover {
+      border-color: var(--doux);
+    }
+
+    .t.actif {
+      border-color: var(--accent);
+      background: #32303a;
+    }
+
+    .t small {
+      display: block;
+      color: var(--doux);
+      font-size: 12px;
+    }
+
+    #scene {
+      flex: 1;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 1100px;
+      aspect-ratio: 16/9;
+      background: #000;
+      border: 1px solid var(--bord);
+      border-radius: 8px;
+      image-rendering: pixelated;
+    }
+
+    .barre {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+    }
+
+    label {
+      color: var(--doux);
+      font-size: 13px;
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    select,
+    button.act,
+    input[type=range] {
+      font: inherit;
+    }
+
+    select {
+      background: var(--panneau);
+      color: var(--texte);
+      border: 1px solid var(--bord);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+
+    button.act {
+      background: var(--accent);
+      color: #222;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.sec {
+      background: var(--panneau);
+      color: var(--texte);
+      border: 1px solid var(--bord);
+    }
+
+    #nom {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    #desc {
+      color: var(--doux);
+      margin-top: -6px;
+    }
+
+    @media (max-width:760px) {
+      body {
+        flex-direction: column;
+      }
+
+      #liste {
+        width: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--bord);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside id="liste">
+    <h1>Transitions entre les mondes</h1>
+    <p>Clique sur une transition pour la jouer. Elle va de l'écran A vers l'écran B.</p>
+    <div id="boutons"></div>
+  </aside>
+  <main id="scene">
+    <div id="nom"></div>
+    <div id="desc"></div>
+    <canvas id="c" width="1280" height="720"></canvas>
+    <div class="barre">
+      <label>De (A) <select id="de"></select></label>
+      <label>Vers (B) <select id="vers"></select></label>
+      <label>Durée <input id="duree" type="range" min="0.3" max="3" step="0.1" value="1.2"> <span id="dureeV">1,2
+          s</span></label>
+      <label><input id="boucle" type="checkbox"> Boucle</label>
+      <button class="act" id="jouer">Jouer</button>
+      <button class="act sec" id="inverser">Inverser A / B</button>
+    </div>
+  </main>
+  <script>
+    const MONDES = { jardin: 'Jardin', nuit: 'Monde 1 · Nuit', reve: 'Monde 2 · Rêve', automne: 'Monde 3 · Automne', apocalypse: 'Monde 4 · Apocalypse', magie: 'Monde 5 · Magie' };
+    const W = 1280, H = 720;
+    const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+    const img = {};
+    let charge = 0;
+    for (const k in MONDES) { const i = new Image(); i.onload = () => { if (++charge === 6) demarrer(); }; i.src = 'ecran_' + k + '.png'; img[k] = i; }
+
+    const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+    const lisse = x => x * x * (3 - 2 * x);
+    const alea = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+    // Chaque transition reçoit (A, B, t) avec t de 0 à 1 et dessine l'image dans ctx.
+    const T = [
+      {
+        nom: 'Fondu enchaîné au noir', desc: 'L\'écran s\'assombrit, le nouveau monde apparaît, puis l\'écran s\'éclaircit.',
+        f(A, B, t) { const p = t < .5; ctx.drawImage(p ? A : B, 0, 0); ctx.fillStyle = '#000'; ctx.globalAlpha = p ? t * 2 : (1 - t) * 2; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+      },
+      {
+        nom: 'Flash blanc', desc: 'Un éclair blanc : on traverse le miroir en pleine lumière.',
+        f(A, B, t) { const p = t < .5; ctx.drawImage(p ? A : B, 0, 0); ctx.fillStyle = '#fff'; ctx.globalAlpha = p ? lisse(t * 2) : lisse((1 - t) * 2); ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+      },
+      {
+        nom: 'Fondu croisé', desc: 'Les deux mondes se mélangent, sans noir.',
+        f(A, B, t) { ctx.drawImage(A, 0, 0); ctx.globalAlpha = t; ctx.drawImage(B, 0, 0); ctx.globalAlpha = 1; }
+      },
+      {
+        nom: 'Iris', desc: 'Un cercle se referme sur le centre, puis s\'ouvre sur le nouveau monde (comme dans les dessins animés).',
+        f(A, B, t) {
+          const p = t < .5, R = Math.hypot(W, H) / 2, r = R * (p ? 1 - t * 2 : (t - .5) * 2);
+          ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.save(); ctx.beginPath(); ctx.arc(W / 2, H / 2, Math.max(r, 0), 0, 7); ctx.clip(); ctx.drawImage(p ? A : B, 0, 0); ctx.restore();
+        }
+      },
+      {
+        nom: 'Volet', desc: 'Le nouveau monde glisse de la gauche vers la droite.',
+        f(A, B, t) { const x = lisse(t) * W; ctx.drawImage(A, 0, 0); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, x, H); ctx.clip(); ctx.drawImage(B, 0, 0); ctx.restore(); ctx.fillStyle = '#fff'; ctx.fillRect(x - 3, 0, 3, H); }
+      },
+      {
+        nom: 'Rideau', desc: 'Deux volets noirs se ferment par les côtés, puis s\'ouvrent sur le nouveau monde.',
+        f(A, B, t) { const p = t < .5, k = lisse(p ? t * 2 : (1 - t) * 2); ctx.drawImage(p ? A : B, 0, 0); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W / 2 * k, H); ctx.fillRect(W - W / 2 * k, 0, W / 2 * k, H); }
+      },
+      {
+        nom: 'Pixellisation', desc: 'L\'image se pixellise de plus en plus, puis se reprécise sur le nouveau monde (effet rétro).',
+        f(A, B, t) {
+          const s = 1 + Math.sin(Math.PI * t) * 70, w = Math.ceil(W / s), h = Math.ceil(H / s); const o = tmp(w, h); o.getContext('2d').drawImage(t < .5 ? A : B, 0, 0, w, h);
+          ctx.imageSmoothingEnabled = false; ctx.drawImage(o, 0, 0, w, h, 0, 0, w * s, h * s); ctx.imageSmoothingEnabled = true;
+        }
+      },
+      {
+        nom: 'Ondulation', desc: 'L\'image ondule comme un reflet dans l\'eau ou dans un miroir, puis se stabilise.',
+        f(A, B, t) {
+          const a = Math.sin(Math.PI * t) * 60, S = t < .5 ? A : B; for (let y = 0; y < H; y += 4) ctx.drawImage(S, 0, y, W, 4, Math.sin(y / 14 + t * 18) * a, y, W, 4);
+          ctx.fillStyle = '#fff'; ctx.globalAlpha = Math.sin(Math.PI * t) * .25; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        }
+      },
+      {
+        nom: 'Glitch', desc: 'Des bandes se décalent et les couleurs se séparent : effet « bug » numérique.',
+        f(A, B, t, n) {
+          const S = t < .5 + (alea(Math.floor(t * 30)) - .5) * .2 ? A : B, g = Math.sin(Math.PI * t); ctx.drawImage(S, 0, 0);
+          for (let i = 0; i < 14 * g; i++) { const y = alea(n + i * 3) * H, h = 8 + alea(n + i) * 60, dx = (alea(n + i * 7) - .5) * 260 * g; ctx.drawImage(S, 0, y, W, h, dx, y, W, h); }
+          ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = .35 * g; ctx.fillStyle = '#f0f'; ctx.fillRect(6 * g, 0, W, H); ctx.fillStyle = '#0ff'; ctx.fillRect(-6 * g, 0, W, H); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+        }
+      },
+      {
+        nom: 'Tourbillon', desc: 'L\'écran tournoie vers le centre, puis se défait sur le nouveau monde.',
+        f(A, B, t) { tourbillon(A, B, t); }
+      },
+      {
+        nom: 'Éclats de miroir', desc: 'L\'ancien monde se brise en morceaux qui tombent, et laissent voir le nouveau.',
+        f(A, B, t) {
+          ctx.drawImage(B, 0, 0); const c = 16, r = 9, w = W / c, h = H / r;
+          for (let j = 0; j < r; j++) for (let i = 0; i < c; i++) {
+            const id = j * c + i, d = (i / c * .35 + alea(id) * .3), p = clamp((t - d) / .45); if (p >= 1) continue;
+            ctx.save(); ctx.globalAlpha = 1 - p * p; ctx.translate(i * w + w / 2, j * h + h / 2 + p * p * 520); ctx.rotate((alea(id + 9) - .5) * 2.4 * p); ctx.drawImage(A, i * w, j * h, w, h, -w / 2, -h / 2, w, h); ctx.restore();
+          }
+        }
+      },
+      {
+        nom: 'Zoom dans le miroir', desc: 'On s\'enfonce dans l\'image (zoom avant) puis on ressort sur le nouveau monde.',
+        f(A, B, t) {
+          const p = t < .5, k = p ? 1 + lisse(t * 2) * .9 : 1.9 - lisse((t - .5) * 2) * .9; ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(k, k); ctx.drawImage(p ? A : B, -W / 2, -H / 2); ctx.restore();
+          ctx.fillStyle = '#fff'; ctx.globalAlpha = Math.sin(Math.PI * t) ** 3 * .9; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        }
+      },
+    ];
+
+    const tmpC = document.createElement('canvas');
+    function tmp(w, h) { tmpC.width = w; tmpC.height = h; return tmpC; }
+
+    // Tourbillon : calcul pixel par pixel sur une petite image (320 x 180) agrandie ensuite.
+    const SW = 320, SH = 180, petit = {};
+    function donnees(k) { if (!petit[k]) { const c = document.createElement('canvas'); c.width = SW; c.height = SH; const x = c.getContext('2d'); x.drawImage(img[k], 0, 0, SW, SH); petit[k] = x.getImageData(0, 0, SW, SH); } return petit[k]; }
+    const sortie = document.createElement('canvas'); sortie.width = SW; sortie.height = SH;
+    function tourbillon(A, B, t) {
+      const src = (t < .5 ? donnees(A.k) : donnees(B.k)).data, g = sortie.getContext('2d'), out = g.createImageData(SW, SH), force = Math.sin(Math.PI * t) * 9, R = SH * .75;
+      for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+        const dx = x - SW / 2, dy = y - SH / 2, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx) + force * Math.max(0, 1 - r / R) ** 2;
+        const sx = Math.round(SW / 2 + Math.cos(a) * r), sy = Math.round(SH / 2 + Math.sin(a) * r), o = (y * SW + x) * 4;
+        if (sx < 0 || sy < 0 || sx >= SW || sy >= SH) { out.data[o + 3] = 255; continue; }
+        const s = (sy * SW + sx) * 4; out.data[o] = src[s]; out.data[o + 1] = src[s + 1]; out.data[o + 2] = src[s + 2]; out.data[o + 3] = 255;
+      }
+      g.putImageData(out, 0, 0); ctx.imageSmoothingEnabled = false; ctx.drawImage(sortie, 0, 0, W, H); ctx.imageSmoothingEnabled = true;
+    }
+
+    // --- interface ---
+    const $ = id => document.getElementById(id);
+    let cur = 0, debut = 0, duree = 1200, enCours = false, inverse = false, graine = 0;
+    function montrer(k) { ctx.drawImage(img[k], 0, 0); }
+    function choisir(i, jouer = true) {
+      cur = i; document.querySelectorAll('.t').forEach((b, j) => b.classList.toggle('actif', j === i));
+      $('nom').textContent = (i + 1) + '. ' + T[i].nom; $('desc').textContent = T[i].desc; if (jouer) lancer();
+    }
+    function lancer() { duree = $('duree').value * 1000; debut = performance.now(); enCours = true; graine = Math.floor(Math.random() * 1000); requestAnimationFrame(boucle); }
+    function boucle(now) {
+      if (!enCours) return;
+      const A = img[$(inverse ? 'vers' : 'de').value], B = img[$(inverse ? 'de' : 'vers').value];
+      A.k = $(inverse ? 'vers' : 'de').value; B.k = $(inverse ? 'de' : 'vers').value;
+      const t = clamp((now - debut) / duree);
+      T[cur].f(A, B, t, graine + Math.floor(t * 20));
+      if (t < 1) requestAnimationFrame(boucle);
+      else { enCours = false; if ($('boucle').checked) setTimeout(lancer, 500); }
+    }
+    function demarrer() {
+      for (const k in MONDES) for (const s of ['de', 'vers']) { const o = document.createElement('option'); o.value = k; o.textContent = MONDES[k]; $(s).appendChild(o); }
+      $('de').value = 'jardin'; $('vers').value = 'reve';
+      T.forEach((t, i) => { const b = document.createElement('button'); b.className = 't'; b.innerHTML = (i + 1) + '. ' + t.nom; b.onclick = () => choisir(i); $('boutons').appendChild(b); });
+      $('jouer').onclick = lancer;
+      $('inverser').onclick = () => { const a = $('de').value; $('de').value = $('vers').value; $('vers').value = a; lancer(); };
+      $('duree').oninput = () => { $('dureeV').textContent = $('duree').value.replace('.', ',') + ' s'; };
+      $('de').onchange = $('vers').onchange = () => { if (!enCours) montrer($('de').value); };
+      choisir(0, false); montrer('jardin');
+    }
+  </script>
+</body>
+
+</html>
