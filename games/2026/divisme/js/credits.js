@@ -22,7 +22,7 @@ export default class credits extends Phaser.Scene {
       .setDepth(0);
 
     // Bouton Crédits
-    var bouton_play = this.add.image(640, 500, "retour_button").setDepth(1); // TODO : Replacer le bouton en fonction du visuel qu'on va créer
+    var bouton_play = this.add.image(640, 625, "retour_button").setDepth(1);
 
     bouton_play.setInteractive();
 
