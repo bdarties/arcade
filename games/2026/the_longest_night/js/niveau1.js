@@ -1,4 +1,5 @@
 import * as fct from "./fonctions.js";
+import * as cont from "./controles.js";
 
 /***********************************************************************/
 /** VARIABLES GLOBALES 
@@ -6,9 +7,6 @@ import * as fct from "./fonctions.js";
 var mode_fantome = false;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions restes actives.
 var player; // désigne le sprite du joueur
 var player2;
-var clavier; // pour la gestion du clavier. Semble initulisé mais en fait, si, elle l'est.
-var J1Haut, J1Bas, J1Gauche, J1Droite, J1boutonFeu,J1Interaction; //variables des touches du joueur 1
-var J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu,J2Interaction; //variables des touches du joueur 2
 var player_spawn; //définit l'endroit d'apparition du joueur1
 var player2_spawn; //définit l'endroit d'apparition du joueur2
 var tableau_spawn //tableau qui sert a reunir tous les points de spawn. Ces points de spawn sont définit dans le fichier Tiled, cependant, ils ne servent que de référence pour inscrire les coordonées manuelllement. Une amélioration de ce systeme serait possible.
@@ -79,7 +77,7 @@ export default class niveau1 extends Phaser.Scene {
       tileset_nom: "tileset_good",
       tileset_image: "Phaser_tuileGood",
       temps: 120,
-      nombre_cles: 1,
+      nombre_cles: 2,
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
@@ -918,25 +916,7 @@ export default class niveau1 extends Phaser.Scene {
     son_areignne_blesse = this.sound.add('areignee_blesse')
     son_cle = this.sound.add('cle_collecte')
 
-    /***********************
-     *  CREATION DU CLAVIER ET TOUCHES *
-     ************************/
-    clavier = this.input.keyboard.createCursorKeys(); //on importe les touches curseurs, le reste étant installé après cette ligne.
-
-    //touches Joueur 1
-      J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.addKey.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
-      J1Bas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
-      J1Gauche = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
-      J1Droite = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
-      J1Interaction = this.input.keyboard.addKey('I');
-      J1boutonFeu = this.input.keyboard.addKey('O');
-    //touches Joueur 2
-      J2Haut = this.input.keyboard.addKey('Z');
-      J2Bas = this.input.keyboard.addKey('S');
-      J2Gauche = this.input.keyboard.addKey('Q');
-      J2Droite = this.input.keyboard.addKey('D');
-      J2Interaction = this.input.keyboard.addKey('R');
-      J2boutonFeu = this.input.keyboard.addKey('T');
+   
     /*************************************************
      * AJOUT DES ENNEMIS                             *
      ************************************************/
@@ -1028,25 +1008,25 @@ export default class niveau1 extends Phaser.Scene {
     deplacement_areignee.call(this);
     //commandes joueur1
     player.setVelocity(0);
-    if (J1Gauche.isDown){
+    if (cont.J1Gauche.isDown){
           player.direction = "left";
           player.setVelocityX(-160);
           if (!player.tirEnCours){
             player.anims.playReverse("anim_course_gauche_J1", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
         }}
-        else if (J1Droite.isDown) {
+        else if (cont.J1Droite.isDown) {
           player.direction = "right";
           player.setVelocityX(160);
           if (!player.tirEnCours){
             player.anims.play("anim_course_droite_J1", true);
         }}
-        else if (J1Haut.isDown) {
+        else if (cont.J1Haut.isDown) {
           player.direction = "up";
           player.setVelocityY(-160);
           if (!player.tirEnCours){
           player.anims.play("anim_course_haut_J1", true);
         }}
-        else if (J1Bas.isDown) {
+        else if (cont.J1Bas.isDown) {
           player.direction = "down";
           player.setVelocityY(160);
           if (!player.tirEnCours){
@@ -1072,34 +1052,34 @@ export default class niveau1 extends Phaser.Scene {
             player.anims.play("anim_attente_droite_J1",true);
         }}
       }
-        if (Phaser.Input.Keyboard.JustDown(J1boutonFeu)){
+        if (Phaser.Input.Keyboard.JustDown(cont.J1boutonFeu)){
           tirer.call(this, player);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, porte)) {
+    if (Phaser.Input.Keyboard.JustDown(cont.J1Interaction) && sortie_ouverte && this.physics.overlap(player, porte)) {
       aller_niveau_suivant.call(this);
     }
   //commandes joueur2
   if (mode_deux_joueurs){
-        if (J2Gauche.isDown) {
+        if (cont.J2Gauche.isDown) {
           player2.direction = "left";
           player2.setVelocityX(-160);
             if (!player.tirEnCours){
           player2.anims.playReverse("anim_course_gauche_J2", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
         }}
-        else if (J2Droite.isDown) {
+        else if (cont.J2Droite.isDown) {
           player2.direction = "right";
           player2.setVelocityX(160);
           if (!player.tirEnCours){
             player2.anims.play("anim_course_droite_J2", true);
           }}
-        else if (J2Haut.isDown) {
+        else if (cont.J2Haut.isDown) {
           player2.direction = "up";
           player2.setVelocityY(-160);
           if (!player.tirEnCours){
           player2.anims.play("anim_course_haut_J2", true);
         }}
-        else if (J2Bas.isDown) {
+        else if (cont.J2Bas.isDown) {
           player2.direction = "down";
           player2.setVelocityY(160);
           if (!player.tirEnCours){
