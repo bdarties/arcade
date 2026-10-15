@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<<<<<<< HEAD
 <map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="25">
-=======
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="23">
->>>>>>> 6b4a9d8aa043c32ae8539513448ee591fb92c429
  <editorsettings>
   <export target="niveau_2.json" format="json"/>
  </editorsettings>
@@ -243,7 +239,6 @@
 </data>
  </layer>
  <objectgroup id="4" name="calque_spawn">
-<<<<<<< HEAD
   <object id="1" name="Spawn_joueur1" x="1355.33" y="830.5">
    <point/>
   </object>
@@ -281,39 +276,6 @@
    <point/>
   </object>
   <object id="19" name="Autre_spawn" x="2884" y="585">
-=======
-  <object id="1" name="Spawn_joueur1" x="1235.76" y="875.03">
-   <point/>
-  </object>
-  <object id="3" name="Spawn_joueur2" x="1544.24" y="878.333">
-   <point/>
-  </object>
-  <object id="9" name="Autre_spawn" x="96.2424" y="1508">
-   <point/>
-  </object>
-  <object id="14" name="Autre_spawn" x="2536.48" y="1536.97">
-   <point/>
-  </object>
-  <object id="15" name="Autre_spawn" x="1654" y="1198">
-   <point/>
-  </object>
-  <object id="21" name="Autre_spawn" x="902.667" y="1180">
-   <point/>
-  </object>
-  <object id="16" name="Autre_spawn" x="517.939" y="617.515">
-   <point/>
-  </object>
-  <object id="22" name="Autre_spawn" x="520.97" y="169.03">
-   <point/>
-  </object>
-  <object id="17" name="Autre_spawn" x="2199.88" y="329.212">
-   <point/>
-  </object>
-  <object id="18" name="Autre_spawn" x="1387.88" y="295.03">
-   <point/>
-  </object>
-  <object id="19" name="Autre_spawn" x="2891.88" y="581.818">
->>>>>>> 6b4a9d8aa043c32ae8539513448ee591fb92c429
    <point/>
   </object>
  </objectgroup>

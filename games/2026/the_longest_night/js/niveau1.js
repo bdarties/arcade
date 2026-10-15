@@ -26,6 +26,7 @@ var groupe_araignee; //les groupe sont globalement explicatifs.
 var tableau_ennemis; //tableau qui serivira a choisir et répartir les ennemis dans les points d'apparitions définis danss tableau_spawn. Voir son utilisation dans apparition_element.
 var groupe_recharges; //en cas ou ce ne serait pas clair, c'est ce qui définira les recharges qui serviront a recharger les "balles" des joueurs
 var groupe_soin;
+var porte_spawn;
 var porte;
 var araignee;
 var vies;
@@ -83,7 +84,7 @@ export default class niveau1 extends Phaser.Scene {
       player_spawn: {},
       player2_spawn: {},
       tableau_spawn: [],
-      porte: { x: 600, y: 414 },
+      porte_spawn: { x: 600, y: 414 },
       ennemis: [{
         nom: "groupe_araignee",
         texture: "areignee_ennemie",
@@ -342,19 +343,6 @@ export default class niveau1 extends Phaser.Scene {
         );
         const liste_spawn = carteDuNiveau.getObjectLayer("calque_spawn"); //ce calque d'objet servira plus tard pour faire un systeme de coordonées plus pratique. En attendant, les coordonnées seront inscrite manuellement en fonction des coordonées des points de la map tiled.
         this.physics.world.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.heightInPixels);
-/* DEFINITON DES COORDONNES
-      liste_spawn.objects.forEach(point => {
-      if (point.name == "Spawn_joueur1") {
-        player_spawn = {point.x, point.y}
-      }
-      if (point.name == "Spawn_joueur2") {
-        player_spawn = {point.x, point.y}
-    }
-    if (point.name == "Autre_spawn") {
-        player_spawn = {point.x, point.y}
-    }
-  }); 
-  */
 
   player_spawn = cfg.player_spawn;
   player2_spawn = cfg.player2_spawn;
@@ -368,7 +356,7 @@ if (liste_spawn) { //ce systeme fonctionne aussi pour le niveau 22
     } else if (point.name == "Spawn_joueur2") {
       player2_spawn = { x: point.x, y: point.y };
     } else if (point.name == "Spawn_porte") {
-      player2_spawn = { x: point.x, y: point.y };
+      porte_spawn = { x: point.x, y: point.y };
     } else {
       tableau_spawn.push({ x: point.x, y: point.y }); //"push" permet d'ajouter des éléments directement a la fin du tableau.
     }
@@ -378,7 +366,7 @@ if (liste_spawn) { //ce systeme fonctionne aussi pour le niveau 22
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  porte = this.physics.add.staticSprite(cfg.porte.x, cfg.porte.y, "sortie_fermee");
+  porte = this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee");
   groupe_cle = this.physics.add.group();
   groupe_araignee = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
