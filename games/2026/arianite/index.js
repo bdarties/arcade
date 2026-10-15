@@ -5,7 +5,6 @@ import credits from "./js/credits.js";
 import histoire from "./js/histoire.js";
 import exterieur from "./js/exterieur.js";
 import toit from "./js/toit.js";
-import backstage from "./js/backstage.js";
 import opera from "./js/opera.js";
 import egouts from "./js/egouts.js";
 import VersusScene from "./js/versus/VersusScene.js"; // mode arcade 2 joueurs (isolé du mode narratif)
@@ -50,14 +49,27 @@ var config = {
     arcade: {
       // parametres du mode arcade
       gravity: {
-        y: 400 // gravité verticale : acceleration ddes corps en pixels par seconde
+        y: 600 // gravité verticale : acceleration ddes corps en pixels par seconde
       },
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [accueil, controls, credits, histoire, exterieur, toit, backstage, opera, egouts, VersusScene], // accueil en premier = lancée au démarrage
+  scene: [accueil, controls, credits, histoire, exterieur, toit, opera, egouts, VersusScene], // accueil en premier = lancée au démarrage
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-// création et lancement du jeu
+
+function demarrerJeu() {
+  game = new Phaser.Game(config);
+}
+
+// Attend le chargement de la police déclarée dans la page avant de créer les scènes.
+document.fonts.load('20px "Press Start 2P"', "ARIANITE").then(
+  demarrerJeu,
+  (erreur) => {
+    console.error("Impossible de charger la police Press Start 2P.", erreur);
+    demarrerJeu();
+  }
+);
+
 export var game = new Phaser.Game(config);
