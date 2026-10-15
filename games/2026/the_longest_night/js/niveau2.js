@@ -22,7 +22,7 @@ export default class niveau2 extends niveau1 {
       player_spawn: cfg.player_spawn,
       player2_spawn: cfg.player2_spawn,
       tableau_spawn: cfg.tableau_spawn,
-      porte: cfg.porte,
+      porte_spawn: cfg.porte_spawn, //remplacé par le point "porte" du calque_spawn s'il existe
 
       ennemis: [{
         nom: "renard",

@@ -352,7 +352,7 @@ export default class niveau1 extends Phaser.Scene {
   if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
     const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
     if (point_porte) {
-      cfg.porte = { x: point_porte.x, y: point_porte.y };
+      cfg.porte_spawn = { x: point_porte.x, y: point_porte.y };
     }
   }
 
@@ -368,7 +368,7 @@ export default class niveau1 extends Phaser.Scene {
         } else if (/(joueur|player|j)_?2/.test(nom)) {
           player2_spawn = { x: point.x, y: point.y };
         } else if (/porte|sortie/.test(nom)) {
-          cfg.porte = { x: point.x, y: point.y };
+          cfg.porte_spawn = { x: point.x, y: point.y };
         } else {
           autres_spawns.push({ x: point.x, y: point.y }); //tous les autres points servent à faire apparaître clés, soins, recharges et ennemis
         }
@@ -376,7 +376,7 @@ export default class niveau1 extends Phaser.Scene {
       if (autres_spawns.length > 0) {
         tableau_spawn = autres_spawns;
       }
-      console.log("Spawns lus dans Tiled :", { player_spawn, player2_spawn, porte: cfg.porte, autres: tableau_spawn.length });
+      console.log("Spawns lus dans Tiled :", { player_spawn, player2_spawn, porte: cfg.porte_spawn, autres: tableau_spawn.length });
     }
   }
 
