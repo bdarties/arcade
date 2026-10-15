@@ -23,7 +23,7 @@ export default class egouts extends Phaser.Scene {
     this.load.setBaseURL(baseURL);
 
     this.load.image("img_tuiles_egouts", FICHIER_TUILES);
-    this.load.tilemapTiledJSON("map_egouts", "./assets/map-sewer.json");
+    this.load.tilemapTiledJSON("map_egouts", "./assets/map_sewer.json");
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
