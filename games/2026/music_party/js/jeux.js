@@ -1,9 +1,7 @@
 // Les 4 mini-jeux de Music Party. Les scènes communes (sélection, menu,
 // choix des persos, résultats) lisent ces infos pour s'adapter au jeu choisi.
 //   scene       : la scène du jeu         fond : image de fond du menu
-//   choixPersos : false = pas d'écran de choix des persos (Music Fall : les Foxy)
-//   image       : image de la carte sur l'écran de sélection
-//   decor       : persos affichés sur les cotés du menu
+//   choixPersos : true = on passe par l'écran de choix des persos avant le jeu
 //   croissant   : true = le plus PETIT score est le meilleur (Music Fall, en cm)
 
 
@@ -12,13 +10,16 @@ export const JEUX = [
     cle: "music_fall",
     apercu: "apercu_music_fall",
     titre: "MUSIC FALL",
-    slogan: "Tamponne ta note au plus près de la ligne dorée !",
+    slogan: "Tamponne ta note au plus près de la note de musique !",
     regles:
       "Au top départ, ton perso tombe de sa feuille avec sa note.\n" +
       "Appuie sur A pour tamponner ta note sur la partition, au plus près\n" +
-      "de la ligne dorée : 0 cm = parfait ! Si tu la dépasses : raté (60 cm).\n" +
+      "de la note de musique : 0 cm = parfait ! Pas de tampon : raté (10 cm).\n" +
       "3 essais : le plus petit total gagne.",
+
     scene: "music_fall",
+
+    choixPersos: true,
     fond: "img_fond_scene",
     unite: "cm",
     croissant: true
@@ -33,7 +34,10 @@ export const JEUX = [
       "Appuie sur A, B ou C quand une note est dans la zone :\n" +
       "chaque réussite accélère le tempo, le combo multiplie tes points.\n" +
       "3 notes ratées ou fausses notes : c'est fini !",
+
     scene: "piano_time",
+
+    choixPersos: true,
     fond: "img_fond_scene",
     unite: "pts",
     croissant: false
@@ -47,7 +51,10 @@ export const JEUX = [
       "Regarde et écoute la suite de notes.\n" +
       "Rejoue-la avec A, B, C, D, E et F.\n" +
       "Trois chances. Une erreur ou trop de temps en enlève une.",
+
     scene: "memoire",
+
+    choixPersos: true,
     fond: "img_fond_opera",
     unite: "pts",
     croissant: false

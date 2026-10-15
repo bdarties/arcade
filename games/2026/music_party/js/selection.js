@@ -1,7 +1,7 @@
 import { creerTouches, unJoueurAppuie } from "./controles.js";
 import { jouerSon, lancerMusique } from "./sons.js";
 import { JEUX } from "./jeux.js";
-import { style, styleTexte, fondAssombri, aideBas, OR } from "./interface.js";
+import { styleTexte, fondAssombri, aideBas } from "./interface.js";
 
 // Les trois jeux occupent les cases 0, 1 et 2 de la grille.
 const POSITIONS = [
@@ -44,7 +44,6 @@ export default class selection extends Phaser.Scene {
   creerVignette(jeu, i) {
     var x = POSITIONS[i].x;
     var y = POSITIONS[i].y;
-    var gauche = x - LARGEUR / 2;
     var haut = y - HAUTEUR / 2;
     var bas = haut + HAUTEUR;
 

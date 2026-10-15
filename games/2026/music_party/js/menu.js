@@ -17,7 +17,7 @@ export default class menu extends Phaser.Scene {
     this.lancement = false;
 
     fondAssombri(this, this.jeu.fond, 0.55);
-    var titre = this.add.text(640, 105, this.jeu.titre, style(80, OR, 12)).setOrigin(0.5);
+    this.add.text(640, 105, this.jeu.titre, style(80, OR, 12)).setOrigin(0.5);
     this.add
       .text(640, 178, this.jeu.slogan, { fontFamily: "Georgia, serif", fontSize: "28px", fontStyle: "italic", color: "#ffffff" })
       .setOrigin(0.5);
@@ -52,7 +52,7 @@ export default class menu extends Phaser.Scene {
     }
     if (unJoueurAppuie(this.touches, "a")) {
       this.registry.set("mode", this.choix == 0 ? "solo" : "duo");
-      // Music Fall se joue avec les Foxy : pas d'écran de choix des persos
+      // écran de choix des persos (ou directement le jeu si choixPersos n'est pas à true)
       this.partir(this.jeu.choixPersos ? "choix" : this.jeu.scene, "valider");
     } else if (unJoueurAppuie(this.touches, "b")) {
       this.partir("selection", "retour");
@@ -63,7 +63,8 @@ export default class menu extends Phaser.Scene {
     this.lancement = true;
     jouerSon(this, son);
     this.cameras.main.fadeOut(300);
-    this.time.delayedCall(300, () => this.scene.start(scene));
+    // {} = on repart de zéro (sinon Phaser redonne au jeu les données de la partie d'avant)
+    this.time.delayedCall(300, () => this.scene.start(scene, {}));
   }
 
   majMenu() {

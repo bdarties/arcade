@@ -1,3 +1,4 @@
+import { POLICE } from "./interface.js";
 // importe les fonctions des touches (créer les touches, détecter un appui de J1 ou J2)
 import { creerTouches, vientDAppuyer, unJoueurAppuie } from "./controles.js";
 // importe les fonctions des sons (bruitages, tampon, sifflet de chute, musique et son volume)
@@ -8,7 +9,7 @@ import { participants } from "./persos.js";
 // ===========================================================================
 // MUSIC FALL
 // Le perso tombe avec sa note. On appuie sur A pour tamponner la note
-// le plus près possible de la ligne dorée. 3 essais : le plus petit total gagne.
+// le plus près possible de sa cible. 3 essais : le plus petit total gagne.
 // ===========================================================================
 
 // ----- Réglages -----
@@ -16,12 +17,10 @@ const PX_PAR_CM = 8;                 // 8 pixels à l'écran = 1 cm
 const Y_DEPART = 215;                // hauteur des pattes au départ
 const Y_LIGNE = 610;                 // hauteur de la ligne dorée à viser
 const Y_SOL = 700;                   // si la note arrive ici sans tampon : raté
-const ECART_LIGNES = 14;             // écart entre les lignes de la portée
-const CM_RATE = 60;                  // score si on dépasse la ligne
+const CM_RATE = 10;                  // score si on dépasse la ligne
 const X_DUO = [440, 840];            // position du perso de J1 et de J2 en duo
 const X_SOLO = 640;                  // position du perso en solo
-const ECHELLE_PERSO = 2;             // le perso fait 32 px, on le grossit x3
-const POLICE = '"Arial Black", Arial';
+const ECHELLE_PERSO = 2;             // le perso fait 32 px, on le grossit x2
 
 // les 3 essais, de plus en plus durs
 const ESSAIS = [
@@ -174,7 +173,7 @@ export default class music_fall extends Phaser.Scene {
 
     // pour chaque joueur : la tete de son perso, J1/J2, et son total en cm
     this.textesScore = this.joueurs.map((joueur) => {
-      var tete = this.add
+      this.add
         .image(joueur.x - 60, 70, joueur.perso.tete) // la tete du perso choisi
         .setScale(0.7)
         .setDepth(PROFONDEUR.texte);
@@ -221,8 +220,8 @@ export default class music_fall extends Phaser.Scene {
         "",
         "Ton perso saute dans le vide avec sa note.",
         "Appuie sur A pour tamponner ta note sur la partition,",
-        "le plus près possible de la ligne dorée (0 cm = parfait).",
-        "Dépasser la ligne = raté (" + CM_RATE + " cm).",
+        "le plus près possible de sa cible (0 cm = parfait).",
+        "Pas de tampon avant le sol = raté (" + CM_RATE + " cm).",
         "3 essais : le plus petit total gagne !"
       ];
       hauteur = 380;
@@ -234,7 +233,7 @@ export default class music_fall extends Phaser.Scene {
     var fond = this.add.rectangle(0, 0, 860, hauteur, 0x2b1f5c, 0.94).setStrokeStyle(4, 0xe0a818);
     var texte = this.add
       .text(0, premierEssai ? -40 : 0, lignes.join("\n"), {
-        fontFamily: "Arial",
+        fontFamily: POLICE,
         fontSize: "25px",
         fontStyle: "bold",
         color: "#ffffff",

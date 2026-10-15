@@ -67,7 +67,6 @@ export default class memoire extends Phaser.Scene {
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
     this.manche = 0;
-    this.erreurManche = false;
     if (!this.sonsSaxo) this.sonsSaxo = {};
     this.arretsSaxo = {};
     NOTES.forEach((note) => {
