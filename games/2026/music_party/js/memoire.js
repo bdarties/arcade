@@ -67,15 +67,6 @@ export default class memoire extends Phaser.Scene {
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
     this.manche = 0;
-    if (!this.sonsSaxo) this.sonsSaxo = {};
-    this.arretsSaxo = {};
-    NOTES.forEach((note) => {
-      this.arretsSaxo[note] = [];
-      if (!this.sonsSaxo[note]) {
-        this.sonsSaxo[note] = [];
-        for (var voie = 0; voie < 3; voie++) this.sonsSaxo[note].push(this.sound.add("saxo_" + note));
-      }
-    });
     // la mélodie : une liste de touches (0 = A ... 5 = F). La 1re manche en
     // ajoute une, donc on part avec LONGUEUR_DEPART - 1 notes.
     this.sequence = [];

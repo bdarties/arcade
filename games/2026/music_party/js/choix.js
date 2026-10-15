@@ -1,4 +1,3 @@
- 
 import { creerTouches, vientDAppuyer, oublierAppuis } from "./controles.js";
 import { jouerSon, jouerMotif, lancerMusique } from "./sons.js";
 import { PERSOS } from "./persos.js";
@@ -117,8 +116,7 @@ export default class choix extends Phaser.Scene {
     this.pris.push(this.index);
     this.attente = true;
     jouerMotif(this, PERSOS[this.index]);
-    // le perso saute de joie et sa case grossit un instant
-    this.tweens.add({ targets: this.sprite, y: Y_PIEDS - 40, duration: 160, yoyo: true, ease: "Linear" });
+    // sa case grossit un instant
     this.tweens.add({ targets: [c.portrait, c.cadre], scaleX: 1.15, scaleY: 1.15, duration: 150, yoyo: true, ease: "Linear" });
 
     if (this.duo && this.joueur == 0) {

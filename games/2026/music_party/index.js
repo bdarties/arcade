@@ -9,7 +9,7 @@ import selection from "./js/selection.js"; // choix du mini-jeu
 import menu from "./js/menu.js"; // solo ou duo
 import choix from "./js/choix.js"; // choix des persos
 import music_fall from "./js/music_fall.js"; // mini-jeu Music Fall
-import piano_time from "./js/piano_time.js"; // mini-jeu piano_time Time
+import piano_time from "./js/piano_time.js"; // mini-jeu Piano Time
 import memoire from "./js/memoire.js"; // mini-jeu Memory Song
 import resultats from "./js/resultats.js"; // scores et gagnant 
 
@@ -23,7 +23,7 @@ var config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  // pas de moteur physique : les music_falls et les rebonds des notes sont
+  // pas de moteur physique : les chutes et les rebonds des notes sont
   // calculés à la main (voir music_fall.js)
   scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")

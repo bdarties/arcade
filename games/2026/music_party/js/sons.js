@@ -210,5 +210,3 @@ export function volumeMusique(scene, volume) {
   var musique = scene.sound.get("musique");
   if (musique) scene.tweens.add({ targets: musique, volume: volume, duration: 400 });
 }
-
-// A supprimer
