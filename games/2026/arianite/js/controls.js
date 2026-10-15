@@ -76,7 +76,7 @@ export default class controls extends Phaser.Scene {
     // Titre d'instruction avec les flèches
     this.add
       .text(boxX, boxY - 40, "◄  PAGES (←/→)  ►", {
-        fontFamily: "Arial, sans-serif",
+        fontFamily: 'Press Start 2P',
         fontSize: "15px",
         fontStyle: "bold",
         color: "#ffffff"
