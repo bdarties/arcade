@@ -20,7 +20,12 @@ const ACTIONS = [
 ];
 const JOYSTICKS = ["Flèches", "Z Q S D"]; // joystick du joueur 1, du joueur 2
 
-//Les ressources : à compléter / corriger ici
+// l'équipe et les ressources : à compléter / corriger ici
+const EQUIPE = [
+  ["Lino Volle", "Employer avec des sourires"],
+  ["Inas Ouarich", "Employer avec enocre plus de sourires"],
+  ["Liku Soane Liku o Hihifo Iloai", "chef de projet, ping pong ? (mais il souris beaucoup)"]
+];
 const RESSOURCES = [
   "Graphismes : CraftPix.net (Pixel Dungeon, Ruined Temple)",
   "Polices : Origin Tech, Ethnocentric, Kallisto",

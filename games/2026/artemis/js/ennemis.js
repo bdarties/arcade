@@ -16,12 +16,12 @@ const NIVEAUX_PAR_BONUS_PV = 10; // tous les 10 niveaux, les ennemis ont 1 PV de
 // cristal (images de 48x48, une couleur par biome) : par_biome : sprite choisi selon le biome ; echelle : remplace ECHELLE_ENNEMI ;
 // traverse : passe à travers les murs, les cailloux et les cristaux ; rayon : tire un rayon (cf. majCristal) ; brille : éclaire le noir autour de lui
 const TYPES = {
-  slime: { sprite: "sprite_slime", anim: "anim_slime", pv: 3, vitesse: 70, degats: 15, poids: () => 100, corps: [22, 14, 5, 18] },
+  slime: { sprite: "sprite_slime", anim: "anim_slime", pv: 3, vitesse: 70, degats: 15, poids: () => 100, corps: [26, 20, 3, 12] },
   alien_vert: {
     sprite: "sprite_alien_vert", anim: "anim_alien_vert", anim_tir: "anim_alien_vert_tir", pv: 3, vitesse: 55, degats: 10,
-    poids: (niveau) => (niveau >= 2 ? 40 : 0), corps: [20, 14, 6, 18], tireur: true
+    poids: (niveau) => (niveau >= 2 ? 40 : 0), corps: [20, 22, 6, 10], tireur: true
   },
-  alien_rouge: { sprite: "sprite_alien_rouge", anim: "anim_alien_rouge", pv: 5, vitesse: 95, degats: 20, poids: (niveau) => (niveau >= 3 ? 35 : 0), corps: [20, 14, 6, 18] },
+  alien_rouge: { sprite: "sprite_alien_rouge", anim: "anim_alien_rouge", pv: 5, vitesse: 95, degats: 20, poids: (niveau) => (niveau >= 3 ? 35 : 0), corps: [20, 22, 6, 10] },
   cristal: {
     par_biome: true, pv: 3, vitesse: 40, degats: 25, poids: (niveau) => (niveau >= 4 ? 30 : 0), corps: [22, 28, 13, 10],
     echelle: 1, traverse: true, rayon: true, brille: true

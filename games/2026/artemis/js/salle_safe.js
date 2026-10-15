@@ -19,15 +19,14 @@ export const safeForcee = () => new URLSearchParams(window.location.search).has(
 export const MONTEE = { x: 12 * 32 + 16, y: 12 * 32 + 16 };
 export const TROU = { x: 30 * 32 + 16, y: 12 * 32 + 16 };
 
-// la statue (cf. offrande.js) : rectangle solide [x, y, largeur, hauteur] ; sa tête dépasse en haut, vers y = 165
-export const STATUE = { rect: [617, 194, 76, 94], centre_x: 655, tete_y: 130 };
+// la statue (cf. offrande.js) : rectangle solide [x, y, largeur, hauteur] ; sa tête dépasse en haut, vers y = 199
+export const STATUE = { rect: [617, 258, 76, 94], centre_x: 655, tete_y: 199 };
 
 // objets de décor solides, en pixels de la map : [x, y, largeur, hauteur]
-// (les tuiles du calque "assets" ne sont pas solides : on pose ici des rectangles invisibles sous la statue, le coffre, etc.)
+// (les tuiles du calque "assets" ne sont pas solides : on pose ici des rectangles invisibles sous la statue, les vases, etc.)
 // la statue descend jusqu'au mur : on ne peut pas passer derrière
 const OBSTACLES = [
   STATUE.rect, // statue
-  [632, 378, 48, 32], // coffre
   [497, 164, 30, 22], // vase gauche
   [785, 164, 30, 22], // vase droit
   [964, 158, 24, 34], // colonne en haut à droite
