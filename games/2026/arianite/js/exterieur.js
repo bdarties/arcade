@@ -136,7 +136,7 @@ export default class exterieur extends Phaser.Scene {
 
     this.texte_verrou = this.add
       .text(640, 60, "", {
-        fontFamily: 'Press Start 2P',
+        fontFamily: '"Press Start 2P", monospace',
         fontSize: "24px",
         color: "#ffffff",
         backgroundColor: "#000000"

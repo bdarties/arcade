@@ -21,7 +21,6 @@ export default class histoire extends Phaser.Scene {
 
   // Charge les fonds et portraits nécessaires à la séquence reçue.
   preload() {
-    document.fonts.load('10px "Press Start 2P"');
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.slides.forEach((s) => {
       if (s.fond && !this.textures.exists(s.fond)) this.load.image(s.fond, s.fond);
@@ -82,17 +81,15 @@ export default class histoire extends Phaser.Scene {
     this.input.keyboard.on("keydown-I", () => this.avancer());
     this.input.keyboard.once("keydown-M", () => this.terminer());
 
-    document.fonts.ready.then(() => {
-      this.add
-        .text(this.game.config.width - 20, 20, "Bouton F : passer", {
-          fontFamily: "Press Start 2P",
-          fontSize: "20px",
-          color: "#ffffff"
-        })
-        .setOrigin(1, 0)
-        .setAlpha(0.7)
-        .setDepth(30);
-    });
+    this.add
+      .text(this.game.config.width - 20, 20, "Bouton F : passer", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "20px",
+        color: "#ffffff"
+      })
+      .setOrigin(1, 0)
+      .setAlpha(0.7)
+      .setDepth(30);
 
     if (this.slides.length === 0) {
       this.terminer();
@@ -155,18 +152,16 @@ export default class histoire extends Phaser.Scene {
       .setDepth(3);
     this.elements.push(boite);
 
-    document.fonts.ready.then(() => {
-      this.texteObj = this.add
-        .text(w / 2 - 570, 540, "", {
-          fontFamily: "Press Start 2P",
-          fontSize: "580px",
-          color: "#ffffff",
-          wordWrap: { width: 1140 },
-          lineSpacing: 8
-        })
-        .setDepth(4);
-        this.elements.push(this.texteObj);
-    });
+    this.texteObj = this.add
+      .text(w / 2 - 570, 540, "", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "20px",
+        color: "#ffffff",
+        wordWrap: { width: 1140 },
+        lineSpacing: 8
+      })
+      .setDepth(4);
+    this.elements.push(this.texteObj);
     this.texteComplet = s.texte || "";
     this.ecrit = 0;
     this.fini = false;

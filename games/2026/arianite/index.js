@@ -58,5 +58,18 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-// création et lancement du jeu
+
+function demarrerJeu() {
+  game = new Phaser.Game(config);
+}
+
+// Attend le chargement de la police déclarée dans la page avant de créer les scènes.
+document.fonts.load('20px "Press Start 2P"', "ARIANITE").then(
+  demarrerJeu,
+  (erreur) => {
+    console.error("Impossible de charger la police Press Start 2P.", erreur);
+    demarrerJeu();
+  }
+);
+
 export var game = new Phaser.Game(config);

@@ -70,7 +70,7 @@ export default class controls extends Phaser.Scene {
 
     this.add
       .text(boxX, boxY - 40, "◄  PAGES (←/→)  ►", {
-        fontFamily: 'Press Start 2P',
+        fontFamily: '"Press Start 2P", monospace',
         fontSize: "15px",
         fontStyle: "bold",
         color: "#ffffff"
