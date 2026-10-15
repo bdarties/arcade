@@ -1,9 +1,8 @@
-
-export default class niveau3 extends Phaser.Scene {
+export default class Game_over extends Phaser.Scene {
   // constructeur de la classe
   constructor() {
     super({
-      key: "niveau3" //  ici on précise le nom de la classe en tant qu'identifiant
+      key: "Game_over" //  ici on précise le nom de la classe en tant qu'identifiant
     });
   }
   preload() {}
@@ -14,12 +13,12 @@ export default class niveau3 extends Phaser.Scene {
     this.groupe_plateformes.create(200, 584, "img_plateforme");
     this.groupe_plateformes.create(600, 584, "img_plateforme");
     // ajout d'un texte distintcif  du niveau
-    this.add.text(400, 100, "Vous êtes dans le niveau 3", {
+    this.add.text(400, 100, "Vous êtes dans le niveau 2", {
       fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
       fontSize: "22pt"
     });
 
-    this.porte_retour = this.physics.add.staticSprite(100, 550, "img_porte3");
+    this.porte_retour = this.physics.add.staticSprite(100, 550, "img_porte2");
 
     this.player = this.physics.add.sprite(100, 450, "img_perso");
     this.player.refreshBody();
