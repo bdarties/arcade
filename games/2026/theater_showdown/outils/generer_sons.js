@@ -301,4 +301,7 @@ function musiques() {
 
 bruitages();
 speciales();
-musiques();
+// Les musiques en boucle ne sont plus générées : elles sont remplacées par les vraies musiques de
+// l'équipe (assets/sons/musique_*.mp3). Décommenter cette ligne écraserait musique_menu, musique_opera
+// et musique_piano par les anciennes boucles de test.
+// musiques();

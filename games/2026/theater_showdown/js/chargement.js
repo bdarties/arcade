@@ -1,5 +1,6 @@
 import * as fct from "./fonctions.js";
-import { PERSONNAGES } from "./donnees.js";
+import { PERSONNAGES, ENNEMIS_SOLO } from "./reglages.js";
+import { creerAnimationsBoss, ANIMATIONS_BOSS, LARGEUR_FRAME_BOSS, HAUTEUR_FRAME_BOSS } from "./chef_orchestre.js";
 
 /***********************************************************************/
 /** SCÈNE DE CHARGEMENT
@@ -38,22 +39,28 @@ const IMAGES = [
   "texte_joueur_1.png", "texte_joueur_2.png", "texte_round_1.png", "texte_round_2.png", "texte_round_3.png", "texte_ko.png",
   // effets et objets
   "note_projectile.png", "note_hud.png", "etincelle.png",
-  "objet_rose.png", "objet_partition.png", "objet_metronome.png", "objet_baguette.png"
+  "objet_rose.png", "objet_partition.png", "objet_metronome.png", "objet_baguette.png",
+  // mode solo
+  "tileset_theatre.png", "touche_piano.png", "fond_boss.jpg", "barre_boss_vide.png", "barre_boss_pleine.png"
 ];
 
 // textures en pixel art : filtre "plus proche voisin" pour garder des pixels nets
 const PIXEL_ART = [
   "objet_rose", "objet_partition", "objet_metronome", "objet_baguette",
-  "note_ult", "note_ult_vide", "texte_ko", "cle_de_fa", "cle_de_sol"
+  "note_ult", "note_ult_vide", "texte_ko", "cle_de_fa", "cle_de_sol", "tileset_theatre"
 ];
+
+// cartes Tiled du mode solo (format JSON, tileset intégré) : le niveau 1 et l'arène du boss
+const CARTES = ["map_solo1", "map_solo2"];
 
 // projectiles animés : 8 frames de 64x64 (0-2 en vol, 3-7 dissipation)
 const PROJECTILES = ["cle_de_fa", "cle_de_sol"];
 
+// Les musiques (musique_*.mp3) ne sont pas dans cette liste : elles sont trop longues pour être
+// chargées en mémoire, on les lit en flux (voir jouerMusique dans fonctions.js).
 const SONS = [
   "coup_leger", "coup_lourd", "garde", "tir", "saut", "esquive", "bonus", "ko", "gong",
-  "qte_ok", "qte_rate", "menu_deplacer", "menu_valider", "note_piano", "jauge_pleine", "applaudissements",
-  "musique_menu", "musique_opera", "musique_piano"
+  "qte_ok", "qte_rate", "menu_deplacer", "menu_valider", "note_piano", "jauge_pleine", "applaudissements"
 ];
 
 export default class chargement extends Phaser.Scene {
@@ -84,6 +91,22 @@ export default class chargement extends Phaser.Scene {
     }
     for (const cle of PROJECTILES) {
       this.load.spritesheet(cle, "./assets/images/" + cle + ".png", { frameWidth: 64, frameHeight: 64 });
+    }
+    for (const ennemi of ENNEMIS_SOLO) {
+      this.load.spritesheet(ennemi.id, "./assets/images/" + ennemi.id + ".png", {
+        frameWidth: ennemi.largeur,
+        frameHeight: ennemi.hauteur
+      });
+    }
+    // planches du boss : 5 frames chacune (outils/integrer_boss.py)
+    for (const animation of ANIMATIONS_BOSS) {
+      this.load.spritesheet(animation.nom, "./assets/images/" + animation.nom + ".png", {
+        frameWidth: LARGEUR_FRAME_BOSS,
+        frameHeight: HAUTEUR_FRAME_BOSS
+      });
+    }
+    for (const cle of CARTES) {
+      this.load.tilemapTiledJSON(cle, "./assets/maps/" + cle + ".tmj");
     }
     for (const cle of SONS) {
       this.load.audio(cle, "./assets/sons/" + cle + ".mp3");
@@ -120,6 +143,12 @@ export default class chargement extends Phaser.Scene {
       this.anims.create({ key: cle + "_vol", frames: this.anims.generateFrameNumbers(cle, { start: 0, end: 2 }), frameRate: 10, repeat: -1 });
       this.anims.create({ key: cle + "_impact", frames: this.anims.generateFrameNumbers(cle, { start: 3, end: 7 }), frameRate: 20 });
     }
+
+    // ennemis du mode solo : marche en boucle sur les 8 frames
+    for (const ennemi of ENNEMIS_SOLO) {
+      this.anims.create({ key: ennemi.id + "_marche", frames: this.anims.generateFrameNumbers(ennemi.id), frameRate: 10, repeat: -1 });
+    }
+    creerAnimationsBoss(this);
     this.scene.start("menu");
   }
 }

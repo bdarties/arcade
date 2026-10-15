@@ -1,5 +1,6 @@
 import * as fct from "./fonctions.js";
 import { creerTouchesDeuxJoueurs } from "./controles.js";
+import { enregistrerMatch } from "./comptes.js";
 
 /***********************************************************************/
 /** MENU PAUSE
@@ -31,7 +32,8 @@ export default class pause extends Phaser.Scene {
       { texte: "Menu principal", action: "menu" }
     ], 640, 285, 64, 34);
 
-    this.add.text(640, 655, "A : valider     B / Start : reprendre", fct.style(22, "#e8d8c0")).setOrigin(0.5);
+    this.add.text(640, 668, "A : valider     B / Start : reprendre", fct.style(22, "#e8d8c0")).setOrigin(0.5);
+    if (this.duelClasse()) this.add.text(640, 638, "Duel classé : quitter = défaite pour celui qui a mis en pause", fct.style(18, "#ff8a8a")).setOrigin(0.5);
 
     this.touches = creerTouchesDeuxJoueurs(this);
     this.toucheEchap = this.input.keyboard.addKey("ESC");
@@ -81,6 +83,25 @@ export default class pause extends Phaser.Scene {
     }
   }
 
+  // un duel est classé quand les deux joueurs sont connectés (voir connexion.js)
+  duelClasse() {
+    const joueurs = this.registry.get("joueurs") || [null, null];
+    return joueurs[0] !== null && joueurs[1] !== null;
+  }
+
+  // Quitter le duel depuis la pause (ou le recommencer) = abandon : le joueur qui a mis en pause
+  // perd le match classé. Sans cette règle, il suffirait de quitter pour éviter une défaite.
+  async abandonner() {
+    const pauseur = this.donnees.pauseur;
+    if (!this.duelClasse() || !pauseur) return; // invité, ou pause lancée avec Échap (clavier)
+    const joueurs = this.registry.get("joueurs");
+    const resultat = await enregistrerMatch(joueurs[0].pseudo, joueurs[1].pseudo, pauseur === 1 ? 2 : 1);
+    if (resultat) {
+      joueurs[0].elo = resultat.apres[0];
+      joueurs[1].elo = resultat.apres[1];
+    }
+  }
+
   reprendre() {
     this.sound.resumeAll();
     this.scene.resume("combat");
@@ -90,6 +111,7 @@ export default class pause extends Phaser.Scene {
   // arrête le combat (et ses sons) puis lance une autre scène :
   // rideau qui se ferme pour le menu principal, simple fondu sinon
   quitterCombat(cle, donnees) {
+    this.abandonner();
     const suite = () => {
       this.sound.stopAll();
       fct.arreterMusique(this);

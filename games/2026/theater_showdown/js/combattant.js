@@ -69,6 +69,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
     this.dernierCoupPorte = 0;
     this.bonusVitesse = 1;
     this.bonusForce = 1;
+    this.echelleTextes = 1; // les textes flottants (combo, "Esquivé !"...) suivent la taille du personnage
     this.plateforme = null; // plateforme sur laquelle il se tient (null au sol ou en l'air)
     this.traverseeJusqua = 0; // pendant la descente d'une plateforme, on la traverse
 
@@ -85,6 +86,17 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
 
   get auSol() {
     return this.body.blocked.down || this.body.touching.down;
+  }
+
+  // la jauge se remplit plus vite en combo
+  get bonusCombo() {
+    return 1 + 0.25 * Math.max(0, this.combo - 1);
+  }
+
+  // petit texte qui s'envole au-dessus du personnage (hauteur et taille suivent echelleTextes)
+  annoncer(texte, couleur, hauteur, taille = 26) {
+    const e = this.echelleTextes;
+    fct.texteFlottant(this.scene, this.x, this.y - hauteur * e, texte, couleur, Math.round(taille * e));
   }
 
   /*********************************************************************/
@@ -281,7 +293,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
   recevoirCoup(attaquant, coup, sens, imparable = false) {
     if (this.etat === "ko" || this.scene.mancheTerminee) return false;
     if (this.etat === "esquive") {
-      fct.texteFlottant(this.scene, this.x, this.y - 100, "Esquivé !", "#9fe8ff");
+      this.annoncer("Esquivé !", "#9fe8ff", 100);
       return false;
     }
 
@@ -318,8 +330,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
     this.pv = Math.max(0, this.pv - degats);
 
     // la jauge se remplit plus vite en combo ; on en gagne aussi un peu en encaissant
-    const bonusCombo = 1 + 0.25 * Math.max(0, attaquant.combo - 1);
-    attaquant.gagnerEnergie(enGarde ? coup.energie / 3 : coup.energie * bonusCombo);
+    attaquant.gagnerEnergie(enGarde ? coup.energie / 3 : coup.energie * attaquant.bonusCombo);
     this.gagnerEnergie(4);
 
     if (this.pv === 0) this.scene.finDeManche(attaquant);
@@ -331,7 +342,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
     this.combo = maintenant - this.dernierCoupPorte < DELAI_COMBO ? this.combo + 1 : 1;
     this.dernierCoupPorte = maintenant;
     if (this.combo >= 2) {
-      fct.texteFlottant(this.scene, this.x, this.y - 140, this.combo + " coups !", fct.couleurTexte(this.perso.couleur), 20 + this.combo * 4);
+      this.annoncer(this.combo + " coups !", fct.couleurTexte(this.perso.couleur), 140, 20 + this.combo * 4);
     }
   }
 
@@ -340,7 +351,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
     this.energie = Math.min(ENERGIE_MAX, this.energie + quantite);
     if (this.energie >= ENERGIE_MAX) {
       fct.jouerSon(this.scene, "jauge_pleine", 0.6);
-      fct.texteFlottant(this.scene, this.x, this.y - 130, "Spécial prêt ! (D)", "#ffd65a");
+      this.annoncer("Spécial prêt ! (D)", "#ffd65a", 130);
     }
   }
 
@@ -358,7 +369,7 @@ export default class Combattant extends Phaser.Physics.Arcade.Sprite {
         break;
     }
     fct.jouerSon(this.scene, "bonus", 0.6);
-    fct.texteFlottant(this.scene, this.x, this.y - 120, objet.texte, "#7dff9a");
+    this.annoncer(objet.texte, "#7dff9a", 120);
   }
 
   appliquerBonus(type, valeur, duree) {

@@ -1,6 +1,7 @@
 import * as fct from "./fonctions.js";
-import { trouverPerso, PERSONNAGES } from "./donnees.js";
+import { trouverPerso, PERSONNAGES } from "./reglages.js";
 import { creerTouchesDeuxJoueurs } from "./controles.js";
+import { enregistrerMatch, trouverRang } from "./comptes.js";
 
 /***********************************************************************/
 /** ÉCRAN DE VICTOIRE : salut final, applaudissements et pluie de notes
@@ -36,7 +37,8 @@ export default class victoire extends Phaser.Scene {
       this.couleurs = PERSONNAGES.map((p) => p.couleur);
     }
     const [v1, v2] = this.donnees.victoires;
-    this.add.text(640, 500, v1 + "  -  " + v2, fct.style(40)).setOrigin(0.5);
+    this.add.text(640, 475, v1 + "  -  " + v2, fct.style(40)).setOrigin(0.5);
+    this.afficherElo();
 
     // pluie de notes : un timer qui se répète (cf. tuto timers)
     this.time.addEvent({ delay: 120, loop: true, callback: this.faireTomberNote, callbackScope: this });
@@ -44,9 +46,42 @@ export default class victoire extends Phaser.Scene {
     this.menu = fct.creerMenu(this, [
       { texte: "Revanche", scene: "combat" },
       { texte: "Changer d'artistes", scene: "selection" },
+      { texte: "Classement", scene: "classement" },
       { texte: "Menu principal", scene: "menu" }
-    ], 640, 565, 52, 32);
+    ], 640, 540, 46, 30);
     this.touches = creerTouchesDeuxJoueurs(this);
+    // au retour du classement, on vide les appuis faits là-bas
+    const relacherTouches = () => this.input.keyboard.resetKeys();
+    this.events.on("resume", relacherTouches);
+    this.events.once("shutdown", () => this.events.off("resume", relacherTouches));
+  }
+
+  // Si les deux joueurs sont connectés, le duel est classé : on met à jour leur ELO
+  // dans la sauvegarde, puis on affiche le résultat de chaque côté de l'écran.
+  async afficherElo() {
+    const joueurs = this.registry.get("joueurs") || [null, null];
+    if (!joueurs[0] || !joueurs[1]) {
+      this.add.text(640, 508, "Duel non classé (invité)", fct.style(18, "#b8a8b0")).setOrigin(0.5);
+      return;
+    }
+    const resultat = await enregistrerMatch(joueurs[0].pseudo, joueurs[1].pseudo, this.donnees.gagnant);
+    if (!this.scene.isActive()) return;
+    if (!resultat) {
+      this.add.text(640, 508, "Sauvegarde de l'ELO impossible", fct.style(18, "#ff8a8a")).setOrigin(0.5);
+      return;
+    }
+
+    joueurs.forEach((joueur, i) => {
+      const x = i === 0 ? 215 : 1065;
+      const gain = resultat.apres[i] - resultat.avant[i];
+      const rang = trouverRang(resultat.apres[i]);
+      joueur.elo = resultat.apres[i]; // pour que la revanche parte du bon ELO
+      this.add.text(x, 300, joueur.pseudo, fct.style(34, i === 0 ? "#6cb8ff" : "#ff6c6c")).setOrigin(0.5);
+      this.add.text(x, 350, "ELO " + resultat.avant[i] + " → " + resultat.apres[i], fct.style(26)).setOrigin(0.5);
+      const texteGain = this.add.text(x, 400, (gain >= 0 ? "+" : "") + gain, fct.style(48, gain > 0 ? "#7dff9a" : gain < 0 ? "#ff8a8a" : "#e8d8c0")).setOrigin(0.5);
+      this.add.text(x, 445, rang.nom, fct.style(22, rang.couleur)).setOrigin(0.5);
+      this.tweens.add({ targets: texteGain, scale: { from: 0.2, to: 1 }, duration: 500, ease: "Back.easeOut" });
+    });
   }
 
   faireTomberNote() {
@@ -64,6 +99,13 @@ export default class victoire extends Phaser.Scene {
     const choix = fct.lireMenu(this, this.menu, this.touches);
     if (!choix || choix === "retour") return;
     fct.jouerSon(this, "menu_valider");
+    if (choix.scene === "classement") {
+      // le classement s'affiche au-dessus, cet écran attend en dessous (comme le menu pause)
+      this.scene.launch("classement", { retour: "victoire" });
+      this.scene.bringToTop("classement");
+      this.scene.pause();
+      return;
+    }
     if (choix.scene === "menu") {
       // retour au menu : le rideau se referme
       fct.transitionRideau(this, "rideau_fermeture", () => this.scene.start("menu"));

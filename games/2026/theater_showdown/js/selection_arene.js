@@ -1,5 +1,5 @@
 import * as fct from "./fonctions.js";
-import { ARENES } from "./donnees.js";
+import { ARENES } from "./reglages.js";
 import { creerTouchesDeuxJoueurs } from "./controles.js";
 
 /***********************************************************************/

@@ -55,20 +55,39 @@ export function jouerSon(scene, cle, volume = 0.6) {
   scene.sound.play(cle, { volume: volume });
 }
 
+// Les musiques durent plusieurs minutes : Phaser les décompresserait entièrement en mémoire
+// (plus de 100 Mo pour une seule piste), ce que le Raspberry Pi de la borne ne supporte pas.
+// On les lit donc "en flux" avec une balise audio HTML, qui ne charge que ce qu'elle joue.
 // La musique est partagée entre les scènes : on la garde dans le registre du jeu
 // pour ne pas la relancer à chaque changement de scène.
 export function jouerMusique(scene, cle, volume = 0.45) {
   const actuelle = scene.registry.get("musique");
-  if (actuelle && actuelle.key === cle && actuelle.isPlaying) return;
+  if (actuelle && actuelle.cle === cle && !actuelle.audio.paused) return;
   arreterMusique(scene);
-  const musique = scene.sound.add(cle, { loop: true, volume: volume });
-  musique.play();
-  scene.registry.set("musique", musique);
+
+  const audio = new Audio("./assets/sons/" + cle + ".mp3");
+  audio.loop = true;
+  audio.volume = volume;
+  scene.registry.set("musique", { cle: cle, audio: audio });
+
+  // Un navigateur refuse parfois de lancer un son avant le premier appui sur une touche :
+  // dans ce cas, on réessaie dès que le joueur appuie sur quelque chose.
+  audio.play().catch(() => {
+    const reessayer = () => {
+      window.removeEventListener("keydown", reessayer);
+      if (scene.registry.get("musique") && scene.registry.get("musique").audio === audio) audio.play().catch(() => {});
+    };
+    window.addEventListener("keydown", reessayer);
+  });
 }
 
 export function arreterMusique(scene) {
   const actuelle = scene.registry.get("musique");
-  if (actuelle) actuelle.destroy();
+  if (actuelle) {
+    actuelle.audio.pause();
+    actuelle.audio.removeAttribute("src"); // libère le fichier
+    actuelle.audio.load();
+  }
   scene.registry.set("musique", null);
 }
 
