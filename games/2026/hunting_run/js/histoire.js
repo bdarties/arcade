@@ -41,7 +41,7 @@ export default class histoire extends Phaser.Scene {
       .setShadow(2, 2, "#000000", 4)
       .setDepth(10);
 
-    // souris / écran tactile ( JUSTE POUR TESTER, POUR LA BORNE ON L ENLEVERA )
+    // souris / écran tactile pour passer à l'image suivante
     this.input.on("pointerdown", () => this.suivant());
 
     // clavier / borne
