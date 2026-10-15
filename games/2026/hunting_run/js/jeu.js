@@ -303,11 +303,12 @@ export default class jeu extends Phaser.Scene {
     }
     this.texteTimer = this.add
       .text(this.scale.width - 10, 10, "03:30", {
-        fontSize: "24px",
-        color: "#ffffff",
-        backgroundColor: "#000a",
-        padding: { x: 8, y: 4 }
-      })
+      fontFamily: "Georgia, serif",   // <-- AJOUTER
+      fontSize: "24px",
+      color: "#ffffff",
+      backgroundColor: "#000a",
+      padding: { x: 8, y: 4 }
+    })
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(1000);
@@ -334,6 +335,7 @@ export default class jeu extends Phaser.Scene {
       });
       const ko = this.add
         .text(ox + HUD.ko[0] * e, oy + HUD.ko[1] * e, "K.O.", {
+          fontFamily: "Georgia, serif",
           fontSize: "14px",
           color: "#ff5555",
           fontStyle: "bold"
@@ -884,13 +886,13 @@ export default class jeu extends Phaser.Scene {
     this.cameras.main.flash(250, 255, 0, 0);
 
     const police = { fontFamily: "Georgia, serif", fontStyle: "bold" };
-    const gros = fixe(this.add.text(L / 2, H / 2 - 95, "00:00", { ...police, fontSize: "150px", color: "#ff3333", stroke: "#000000", strokeThickness: 10 }).setOrigin(0.5), 1901);
-    const titre = fixe(this.add.text(L / 2, H / 2 + 40, "TEMPS ÉCOULÉ !", { ...police, fontSize: "80px", color: "#ffffff", stroke: "#990000", strokeThickness: 10 }).setOrigin(0.5), 1901);
-    const sous = fixe(this.add.text(L / 2, H / 2 + 115, "Le manoir t'a piégé pour toujours...", { fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "28px", color: "#dddddd" }).setOrigin(0.5), 1901);
-    objets.push(gros, titre, sous);
-    [gros, titre, sous].forEach((o, i) => {
-      o.setAlpha(0).setScale(1.6);
-      this.tweens.add({ targets: o, alpha: 1, scale: 1, duration: 450, delay: 150 + i * 250, ease: "Back.easeOut" });
+    const gros = fixe(this.add.text(L / 2, H / 2 - 40, "00:00", { ...police, fontSize: "150px", color: "#ff3333"}).setOrigin(0.5), 1901);
+    const sous = fixe(this.add.text(L / 2, H / 2 + 70, "Le manoir t'a piégé pour toujours...", { fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: "28px", color: "#dddddd" }).setOrigin(0.5), 1901);
+    objets.push(gros, sous);
+    // 00:00 clignote ; la phrase apparaît en fondu
+    this.tweens.add({ targets: gros, alpha: 0.1, duration: 280, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    sous.setAlpha(0);
+    this.tweens.add({ targets: sous, alpha: 1, duration: 600, delay: 500 
     });
 
     // après un petit moment : écran Game Over (Rejouer)
@@ -1004,7 +1006,7 @@ export default class jeu extends Phaser.Scene {
     this.cible.setPosition(x, y);
   }
 
-  // REJOUER : on passe par l'écran des scores (pour sauvegarder le score), puis nouvelle partie depuis la map1
+  // REJOUER : on passe par l'écran des scores, puis nouvelle partie depuis la map1
   rejouer() {
     if (this.partiEnCours) return;
     this.partiEnCours = true;
