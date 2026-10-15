@@ -8,6 +8,7 @@ import toit from "./js/toit.js";
 import backstage from "./js/backstage.js";
 import opera from "./js/opera.js";
 import egouts from "./js/egouts.js";
+import VersusScene from "./js/versus/VersusScene.js"; // mode arcade 2 joueurs (isolé du mode narratif)
 
 // conteneur du jeu (absent de index.html, on le crée ici)
 if (!document.getElementById("game-container")) {
@@ -54,7 +55,7 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [accueil, controls, credits, histoire, exterieur, toit, backstage, opera, egouts], // accueil en premier = lancée au démarrage
+  scene: [accueil, controls, credits, histoire, exterieur, toit, backstage, opera, egouts, VersusScene], // accueil en premier = lancée au démarrage
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 

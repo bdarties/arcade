@@ -5,7 +5,6 @@ export default class backstage extends Phaser.Scene {
     super({ key: "backstage" });
   }
 
-  // reçoit { depuis: "precedent" | "suivant" } pour savoir où placer le joueur
   init(data) {
     this.depuis = data.depuis;
   }
@@ -41,17 +40,18 @@ export default class backstage extends Phaser.Scene {
     this.player = this.physics.add.sprite(departX, 450, "img_perso");
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
-    this.clavier = this.input.keyboard.createCursorKeys();
+    this.clavier = fct.creerClavier(this);
     this.physics.add.collider(this.player, this.groupe_plateformes);
   }
 
   update() {
-    fct.deplacerPerso(this.player, this.clavier, this.player.body.touching.down);
-    if (this.clavier.up.isDown && this.player.body.touching.down) {
+    const auSol = this.player.body.touching.down || this.player.body.blocked.down;
+    fct.deplacerPerso(this.player, this.clavier, auSol);
+    if ((this.clavier.up.isDown || this.clavier.jump.isDown) && auSol) {
       this.player.setVelocityY(-330);
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.clavier.space)) {
+    if (fct.justDownInteragir(this.clavier)) {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("toit", { depuis: "suivant" });
       }

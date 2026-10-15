@@ -10,11 +10,73 @@ const VITESSE_ANIMS = {
   punch: 10 // coups de poing
 };
 
-// touche pour donner un coup de poing (une lettre du clavier)
-const TOUCHE_COUP = "F";
-
 // vitesse de déplacement de la marche (pixels par seconde)
 const VITESSE_MARCHE = 250;
+
+/***********************************************************************/
+/** CONTRÔLES BORNE D'ARCADE (MODE 1 JOUEUR)
+/***********************************************************************/
+
+// Crée un objet clavier compatible avec les sticks et boutons J1 et J2 de la borne :
+// - Stick J1 (UP, DOWN, LEFT, RIGHT) et Stick J2 (Z, S, Q, D)
+// - Bouton A (Sauter) : I (J1) / R (J2)
+// - Bouton B (Attaquer) : O (J1) / T (J2)
+// - Bouton D (Interagir) : K (J1) / F (J2) (+ SPACE par sécurité)
+export function creerClavier(scene) {
+  const k = scene.input.keyboard.addKeys({
+    upJ1: Phaser.Input.Keyboard.KeyCodes.UP,
+    downJ1: Phaser.Input.Keyboard.KeyCodes.DOWN,
+    leftJ1: Phaser.Input.Keyboard.KeyCodes.LEFT,
+    rightJ1: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+    upJ2: Phaser.Input.Keyboard.KeyCodes.Z,
+    downJ2: Phaser.Input.Keyboard.KeyCodes.S,
+    leftJ2: Phaser.Input.Keyboard.KeyCodes.Q,
+    rightJ2: Phaser.Input.Keyboard.KeyCodes.D,
+    jumpJ1: Phaser.Input.Keyboard.KeyCodes.I,     // Bouton A (J1) - Sauter
+    jumpJ2: Phaser.Input.Keyboard.KeyCodes.R,     // Bouton A (J2) - Sauter
+    attackJ1: Phaser.Input.Keyboard.KeyCodes.O,   // Bouton B (J1) - Attaquer
+    attackJ2: Phaser.Input.Keyboard.KeyCodes.T,   // Bouton B (J2) - Attaquer
+    interactJ1: Phaser.Input.Keyboard.KeyCodes.K, // Bouton D (J1) - Interagir
+    interactJ2: Phaser.Input.Keyboard.KeyCodes.F, // Bouton D (J2) - Interagir
+    space: Phaser.Input.Keyboard.KeyCodes.SPACE
+  });
+
+  return {
+    _keys: k,
+    left: { get isDown() { return k.leftJ1.isDown || k.leftJ2.isDown; } },
+    right: { get isDown() { return k.rightJ1.isDown || k.rightJ2.isDown; } },
+    up: { get isDown() { return k.upJ1.isDown || k.upJ2.isDown; } },
+    down: { get isDown() { return k.downJ1.isDown || k.downJ2.isDown; } },
+    jump: { get isDown() { return k.jumpJ1.isDown || k.jumpJ2.isDown; } },
+    attack: { get isDown() { return k.attackJ1.isDown || k.attackJ2.isDown; } },
+    space: k.space
+  };
+}
+
+// Renvoie true si le joueur vient d'appuyer sur le bouton Interagir (Bouton D : K ou F, ou Espace)
+export function justDownInteragir(clavier) {
+  if (!clavier || !clavier._keys) return false;
+  const k = clavier._keys;
+  return (
+    Phaser.Input.Keyboard.JustDown(k.interactJ1) ||
+    Phaser.Input.Keyboard.JustDown(k.interactJ2) ||
+    Phaser.Input.Keyboard.JustDown(k.space)
+  );
+}
+
+// Renvoie true si le joueur vient d'appuyer sur le bouton Attaquer (Bouton B : O ou T)
+export function justDownAttaquer(clavier) {
+  if (!clavier || !clavier._keys) return false;
+  const k = clavier._keys;
+  return (
+    Phaser.Input.Keyboard.JustDown(k.attackJ1) ||
+    Phaser.Input.Keyboard.JustDown(k.attackJ2)
+  );
+}
+
+/***********************************************************************/
+/** PERSONNAGE (ARIA) : CHARGEMENT, ANIMATIONS ET DÉPLACEMENT
+/***********************************************************************/
 
 // à appeler dans preload() de chaque niveau
 export function chargerPerso(scene) {
@@ -52,9 +114,9 @@ export function creerAnimsPerso(scene) {
 
 // à appeler dans update() : déplacement gauche/droite + choix de l'animation
 export function deplacerPerso(joueur, clavier, auSol, vitesse = VITESSE_MARCHE) {
-  // première fois : on crée la touche de coup et on repère la fin des animations de coup
-  if (!joueur.toucheCoup) {
-    joueur.toucheCoup = joueur.scene.input.keyboard.addKey(TOUCHE_COUP);
+  // première fois : on repère la fin des animations de coup
+  if (!joueur.initCoupListener) {
+    joueur.initCoupListener = true;
     joueur.enCoup = false;
     joueur.on("animationcomplete", (anim) => {
       if (anim.key.startsWith("aria_punch")) joueur.enCoup = false;
@@ -70,8 +132,8 @@ export function deplacerPerso(joueur, clavier, auSol, vitesse = VITESSE_MARCHE) 
     return;
   }
 
-  // nouveau coup de poing (au sol seulement) : droite ou gauche au hasard
-  if (auSol && Phaser.Input.Keyboard.JustDown(joueur.toucheCoup)) {
+  // nouveau coup de poing avec le Bouton B (O ou T) (au sol seulement) : droite ou gauche au hasard
+  if (auSol && justDownAttaquer(clavier)) {
     joueur.enCoup = true;
     joueur.setVelocityX(0);
     joueur.anims.play(Math.random() < 0.5 ? "aria_punch_right" : "aria_punch_left");
