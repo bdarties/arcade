@@ -1,5 +1,11 @@
 # DEICIDE
 
+> **À LIRE EN PREMIER : ce qui est évalué**
+> **La partie évaluée est la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
+> **La partie 2** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires) **n'est pas à prendre en compte dans l'évaluation.** Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin : rendre le jeu plus difficile et ajouter du contenu. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
+>
+> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon mène aux crédits puis au classement, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
+
 Plateformer « ombre et lumière » (Phaser 3.60) — SAÉ borne d'arcade. Le robot monte une tour dans l'ombre, la lumière le brûle ; il affronte le Dieu de la Lumière, fuit en dashant à travers un deuxième niveau, puis livre un dernier combat. Un mode 1 contre 1 se joue à deux sur la borne.
 
 ## Où est quoi
@@ -12,12 +18,12 @@ outils/                 scripts Python qui fabriquent des cartes (niveau 2 d'exe
 js/
   partie1/              le jeu JUSQU'À LA FIN DU 1er BOSS : un jeu complet, qui s'arrête à la défaite du Dieu de la Lumière
     scenes/             les écrans : menu, niveau1, versus, classement (le panthéon), pantheon (le choix), pause
-                        (niveau.js est la classe de base de tous les niveaux)
+                        (niveau_de_base.js est la classe de base de tous les niveaux)
     personnage/         le robot (déplacements, saut, dash, tir, visée automatique, « en boule ») et son interface (vie, dash, chrono)
     ennemis/            ce qui attaque : archers, mages, orcs, le boss du niveau 1 (le moteur des boss), les lanternes vivantes
     mecanismes/         les règles du niveau 1 : lumière, salles de combat, arène du boss, bonus, boost
     systemes/           les outils partagés : chargement, sons, réglages, effets, points, optimisations, raccourcis
-  partie2/              la SUITE, après la réponse OUI au choix du panthéon (facultative, voir « La partie 2 » plus bas)
+  partie2/              HORS ÉVALUATION : la SUITE ajoutée pour la borne, après la réponse OUI au choix du panthéon (voir « La partie 2 » plus bas)
     niveau2.js, niveau3.js, vide.js, faisceaux.js, poursuite.js   la fuite (niveau 2) et l'arène du dernier combat (niveau 3)
     fuite.js            le Dieu s'enrage, brise le mur de l'arène, le robot fuit vers le niveau 2
     boss_final.js, attaques.js   le boss du dernier combat et ses attaques en plus (lasers, geysers, spirale, piqué)
@@ -25,7 +31,7 @@ js/
     musique.js, astuce.js, tests_borne.js   la musique du dernier combat, un conseil, les touches de test F9 et F10
 ```
 
-Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour comprendre le jeu, lis dans cet ordre : `index.js`, `js/partie1/scenes/niveau.js` (comment un niveau se construit), `personnage/personnage.js`, puis les scènes une par une.
+Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour comprendre le jeu, lis dans cet ordre : `index.js`, `js/partie1/scenes/niveau_de_base.js` (comment un niveau se construit), `personnage/personnage.js`, puis les scènes une par une.
 
 ## Comment…
 
@@ -47,11 +53,7 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 Menu pause : Échap ou X (start). Recommencer la partie : maintenir C + F (les boutons C et F de la borne, P et ; au clavier, la touche M en AZERTY) pendant 0,5 s.
 Touches de test, à retirer avant la borne : F4 (l'écran de victoire), F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie), F5 (la fausse fin : la fissure de l'écran, puis la phase 4, la forme finale du boss ; F5 ne recharge donc plus la page).
 
-## Les explications des choix
-
-Le fichier `devlog.md` explique pourquoi chaque chose est faite ainsi.
-
-## La partie 2 (facultative)
+## La partie 2 (facultative, hors évaluation)
 
 Le jeu est coupé en deux dossiers. `js/partie1` est un jeu complet qui se termine quand le Dieu de la Lumière est vaincu : le joueur choisit alors d'enregistrer
 son temps dans le panthéon (le tableau des scores). `js/partie2` est la suite (la fuite, le dernier combat) : elle se branche sur la partie 1 sans la modifier,
@@ -61,6 +63,6 @@ par quelques tables que la partie 1 expose : `PROFILS` et `ATTAQUES` (les boss e
 Pour que le jeu s'arrête à la fin du 1er boss, il suffit de retirer de `index.js` les lignes qui parlent de la partie 2 (`installerPartie2`, `scenesPartie2`, `activerTestsPartie2`) :
 la réponse OUI mène alors directement à l'écran de fin. Les fichiers de la partie 2 peuvent rester dans le dossier, ils ne sont plus chargés.
 
-Numéro de version : v1, v2... affiché en bas à droite du menu, augmenté de 1 à chaque pull request : `python3 outils/version.py` puis commiter `js/version.js` (voir devlog.md).
+Numéro de version : v1, v2... affiché en bas à droite du menu, augmenté de 1 à chaque pull request : `python3 outils/version.py` puis commiter `js/version.js`.
 
-Panthéon : sauvegardé avec lireDonneesJSON / ecrireDonneesJSON (js/donnees.js), dans la base de la borne ou, hors borne, dans le navigateur (voir devlog.md).
+Panthéon : sauvegardé avec lireDonneesJSON / ecrireDonneesJSON (js/donnees.js), dans la base de la borne ou, hors borne, dans le navigateur.

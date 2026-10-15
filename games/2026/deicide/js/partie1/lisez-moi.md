@@ -1,5 +1,11 @@
 # Partie 1 : le code expliqué simplement
 
+> **À LIRE EN PREMIER : ce qui est évalué**
+> **La partie évaluée est la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
+> **La partie 2** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires) **n'est pas à prendre en compte dans l'évaluation.** Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin : rendre le jeu plus difficile et ajouter du contenu. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
+>
+> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon mène aux crédits puis au classement, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
+
 La partie 1 est le jeu complet jusqu'à la fin du premier boss (le Dieu de la Lumière) : menu, niveau 1, ennemis, lumière, boss, 1 contre 1, pause, panthéon, crédits. La partie 2 (`js/partie2`) ajoute la suite et se branche sur la partie 1 sans la modifier.
 
 ## L'idée du jeu en une phrase
@@ -13,14 +19,32 @@ Un robot monte une tour dans l'ombre. Seules les zones de lumière éclairent, m
 ## Le trajet d'une partie
 `index.js` (racine) → `menu` → `niveau1` → combat du boss → `pantheon` (le choix) → suite (partie 2) → `credits` → `classement` (le panthéon) → `menu`
 
+## Modifier le jeu : `parametres.js`
+Tous les chiffres de réglage sont dans **un seul fichier**, `js/partie1/parametres.js` : gravité, vitesse et saut du robot, dash, tir, PV et points des ennemis, lanternes vivantes, PV et attaques du boss, score. On change un chiffre, on recharge la page, c'est tout. Chaque ligne a un commentaire qui dit ce qu'elle fait et son unité.
+Exemples : le robot saute plus haut → `ROBOT.saut` ; le jeu tombe plus vite → `MONDE.gravite` ; l'orc est plus dur → `ENNEMIS.orc.pv`.
+
+## Où trouver quoi (arborescence)
+```
+index.js                    démarre Phaser, liste les scènes
+js/partie1/
+  parametres.js             TOUS les chiffres de réglage
+  scenes/                   les écrans (menu, niveaux, pause, fin)
+  personnage/               le robot et son interface (vie, jauges)
+  ennemis/                  archer, mage, orc, lanternes vivantes, boss
+  mecanismes/               lumière, salles, arène, bonus, boost
+  systemes/                 outils : sons, effets, points, chargement, touches
+js/partie2/                 la suite du jeu (fuite, dernier combat)
+assets/                     images, sons, cartes Tiled
+```
+
 ## Les dossiers
 
 ### `scenes/` : les écrans
 | Fichier | Rôle |
 |---|---|
 | `menu.js` | l'accueil, charge tout le jeu pendant la barre de chargement |
-| `niveau.js` | **la classe de base de tous les niveaux** : carte, robot, ennemis, lumière, HUD, dégâts, mort. À lire en premier |
-| `niveau1.js` | le niveau 1 : uniquement ce qui change par rapport à `niveau.js` (sa « config ») |
+| `niveau_de_base.js` | **la classe de base de tous les niveaux** : carte, robot, ennemis, lumière, HUD, dégâts, mort. À lire en premier |
+| `niveau1.js` | le niveau 1 : uniquement ce qui change par rapport à `niveau_de_base.js` (sa « config ») |
 | `versus.js` | le 1 contre 1 (2 robots, 3 manches) |
 | `pause.js` | le menu pause (réglages, crédits), posé par-dessus le niveau |
 | `pantheon.js` | le choix après le premier boss |
@@ -37,7 +61,7 @@ Un robot monte une tour dans l'ombre. Seules les zones de lumière éclairent, m
 ### `ennemis/`
 | Fichier | Rôle |
 |---|---|
-| `ennemis.js` | l'archer, le mage et l'orc (ils ne voient le robot qu'à 120 px, ou 400 px dans la lumière) |
+| `ennemis_normaux.js` | l'archer, le mage et l'orc (ils ne voient le robot qu'à 120 px, ou 400 px dans la lumière) |
 | `lanterne_vivante.js` | les lanternes ailées : toucher = -1 PV ; les abattre donne un boost |
 | `boss.js` | **le moteur de boss** : une table de profils (PV, phases, attaques) et une table d'attaques. Le boss final de la partie 2 s'y branche |
 
@@ -52,7 +76,7 @@ Un robot monte une tour dans l'ombre. Seules les zones de lumière éclairent, m
 | Fichier | Rôle |
 |---|---|
 | `chargement.js` | charge images, sons et cartes ; lit les points posés dans Tiled |
-| `sons.js`, `reglages.js` | musiques et bruitages ; les réglages du joueur (gardés dans le navigateur) |
+| `sons.js`, `preferences_joueur.js` | musiques et bruitages ; les réglages du joueur (gardés dans le navigateur) |
 | `effets.js` | tremblements, flashs, éclats |
 | `points.js` | les points, le temps net et la fin de partie |
 | `optimisation.js` | ce qui garde le jeu fluide sur le Raspberry Pi |
@@ -61,15 +85,7 @@ Un robot monte une tour dans l'ombre. Seules les zones de lumière éclairent, m
 
 ## Par où commencer à lire (dans cet ordre)
 1. `index.js` (racine) : la configuration de Phaser et la liste des scènes.
-2. `scenes/niveau.js` : comment un niveau est construit (les commentaires du haut expliquent la « config »).
+2. `scenes/niveau_de_base.js` : comment un niveau est construit (les commentaires du haut expliquent la « config »).
 3. `personnage/personnage.js` : le robot (l'en-tête explique tout).
 4. `mecanismes/lumiere.js` : la lumière.
 5. `ennemis/boss.js` : le moteur de boss.
-6. `devlog.md` : **le pourquoi des choix** et des bugs corrigés. C'est ce qu'on te demandera en soutenance.
-
-## Questions probables en soutenance (avec où trouver la réponse)
-- *Pourquoi un temps net ?* → `systemes/points.js` : la vitesse est le classement, les points retirent du temps.
-- *Comment marche la lumière ?* → `mecanismes/lumiere.js` : un voile noir dans lequel on « perce » des halos.
-- *Comment le jeu reste fluide sur le Pi ?* → `systemes/optimisation.js` et le haut de `index.js` (30 images/s, décor figé, ennemis lointains endormis).
-- *Pourquoi deux dossiers partie1 / partie2 ?* → `boss.js` est un moteur à tables ; la partie 2 y ajoute ses boss et ses attaques sans le modifier.
-- *Comment les cartes sont-elles faites ?* → Tiled, fichiers JSON dans `assets/maps/` (voir `lisez-moi.md` de ce dossier).

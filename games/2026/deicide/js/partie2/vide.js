@@ -1,3 +1,7 @@
+// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
+// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
+// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // vide.js : le vide du niveau 2 (les trous entre les plateformes)
 // Tomber dans un trou coûte 1 PV, puis le robot revient sur le dernier endroit sûr où il a posé les pieds. Sans ça il resterait coincé
 // en bas de la map (le bas du monde est un sol invisible) et le niveau ne pourrait pas se finir.

@@ -1,10 +1,14 @@
+// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
+// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
+// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // faux_pantheon.js : le FAUX écran de victoire du dernier combat. C'est l'écran du panthéon (partie1/scenes/classement.js) tel quel, avec son animation de victoire :
 // on y croit vraiment (fanfare, confettis, le temps final qui se décompte). Puis le silence, un battement de cœur... et un ÉNORME COUP D'ÉPÉE tranche l'écran en deux.
 // Les deux moitiés de l'écran s'écartent dans la lumière, et derrière, le boss revient en arrière-plan sous sa forme finale.
 // Il est posé par-dessus le niveau 3, qui est en pause : quand l'écran est tranché, le niveau reprend (voir fin_de_combat.js : retour).
 // Les sons sont synthétisés (synth.js) ; l'entaille est une courbe de Bézier dessinée en lame effilée, avec un halo, une onde de choc et des étincelles.
 import classement, { ecrire, OR } from "../partie1/scenes/classement.js"; // (ecrire : la police pixel du jeu)
-import { plaque } from "../partie1/systemes/dessins.js"; // la plaque d'armure du HUD (dessinée en code)
+import { plaque } from "../partie1/systemes/dessins_en_code.js"; // la plaque d'armure du HUD (dessinée en code)
 import { rattraperHorloge } from "../partie1/scenes/pause.js";
 import { jouerSon, volumeEffets } from "../partie1/systemes/sons.js";
 import { fanfare, battements, montee, coupDEpee, impact, verre, cri, annonce } from "./synth.js";
