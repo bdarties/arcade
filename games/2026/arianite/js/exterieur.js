@@ -337,13 +337,17 @@ export default class exterieur extends Phaser.Scene {
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("son_pluie")) {
-      const musique = this.sound.add("son_pluie", { loop: true, volume: 0.5 });
-      musique.play();
-      this.events.once("shutdown", () => musique.stop());
-    } else {
-      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
-    }
+  // Vérifie si la musique joue déjà pour éviter de la superposer à chaque restart
+    let musique = this.sound.get("son_pluie");
+  
+  if (!musique) {
+    musique = this.sound.add("son_pluie", { loop: true, volume: 0.5 });
+    musique.play();
   }
+} else {
+  console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
+  }
+}
 
   /***********************************************************************/
   /** FONCTIONS DU CROCODILE

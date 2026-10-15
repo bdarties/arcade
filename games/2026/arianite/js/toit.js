@@ -212,14 +212,17 @@ export default class toit extends Phaser.Scene {
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("musique_grenier")) {
-      const musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
-      musique.play();
-      this.events.once("shutdown", () => musique.stop());
-    } else {
-      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_grenier.mp3");
-    }
+  // Vérifie si la musique joue déjà pour éviter de la superposer à chaque restart
+    let musique = this.sound.get("musique_grenier");
+  
+  if (!musique) {
+    musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
+    musique.play();
   }
-
+} else {
+  console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
+  }
+}
   mettreAJourEnnemis() {
     this.ennemis.forEach((e) => {
       const b = e.body;

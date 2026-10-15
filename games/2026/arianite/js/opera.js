@@ -47,6 +47,7 @@ export default class opera extends Phaser.Scene {
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
+    this.load.image("img_lustre", "./assets/lustre.png")
     this.load.audio("musique_opera", "./assets/musique/music_opera.mp3");
     this.load.spritesheet('foule', 'assets/spritesheet/foule.png', {
             frameWidth: 612,
@@ -99,7 +100,7 @@ export default class opera extends Phaser.Scene {
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("musique_opera")) {
-      const musique = this.sound.add("musique_opera", { loop: true, volume: 0.5 });
+      const musique = this.sound.add("musique_opera", { loop: true, volume: 0.5, });
       musique.play();
       this.events.once("shutdown", () => musique.stop());
     } else {
@@ -119,6 +120,8 @@ export default class opera extends Phaser.Scene {
     fouleSprite.setScrollFactor(0);
     fouleSprite.setDepth(9999);
     fouleSprite.setScale(2.4);
+
+    this.add.image(950, 100, "img_lustre").setScale(0.5);
 
     const map = this.make.tilemap({ key: "map_opera" });
     const tileset = map.addTilesetImage(NOM_TUILESET, "img_tuiles_opera");
