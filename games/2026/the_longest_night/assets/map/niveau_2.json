@@ -200,8 +200,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":93.3333,
-                 "y":672
+                 "x":1235.75754242424,
+                 "y":875.030303030303
                 }, 
                 {
                  "height":0,
@@ -213,8 +213,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":243.333,
-                 "y":673.333
+                 "x":1544.24209090909,
+                 "y":878.333
                 }, 
                 {
                  "height":0,
@@ -226,8 +226,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":72,
-                 "y":1008
+                 "x":96.2424242424242,
+                 "y":1508
                 }, 
                 {
                  "height":0,
@@ -239,8 +239,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1688,
-                 "y":1140
+                 "x":2536.48484848485,
+                 "y":1536.9696969697
                 }, 
                 {
                  "height":0,
@@ -252,8 +252,21 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":272,
-                 "y":1196
+                 "x":1654,
+                 "y":1198
+                }, 
+                {
+                 "height":0,
+                 "id":21,
+                 "name":"Autre_spawn",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":902.666666666667,
+                 "y":1180
                 }, 
                 {
                  "height":0,
@@ -265,8 +278,21 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":524,
-                 "y":466
+                 "x":517.939393939394,
+                 "y":617.515151515152
+                }, 
+                {
+                 "height":0,
+                 "id":22,
+                 "name":"Autre_spawn",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":520.969696969697,
+                 "y":169.030303030303
                 }, 
                 {
                  "height":0,
@@ -278,8 +304,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1512,
-                 "y":408
+                 "x":2199.87878787879,
+                 "y":329.212121212121
                 }, 
                 {
                  "height":0,
@@ -291,8 +317,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1900,
-                 "y":192
+                 "x":1387.87878787879,
+                 "y":295.030303030303
                 }, 
                 {
                  "height":0,
@@ -304,20 +330,20 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":2604,
-                 "y":700
+                 "x":2891.87878787879,
+                 "y":581.818181818182
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }],
  "nextlayerid":8,
- "nextobjectid":21,
+ "nextobjectid":23,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.12.2",
+ "tiledversion":"1.12.0",
  "tileheight":32,
  "tilesets":[
         {
