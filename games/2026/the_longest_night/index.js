@@ -32,7 +32,6 @@ var config = {
     }
   },
   scene: [Menu, niveau1, niveau2, Ecran_score, Game_over],
-  baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
 
