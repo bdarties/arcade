@@ -9,7 +9,7 @@
 // La fausse fin qui précède la forme finale (le boss se dissout, le panthéon s'affiche, puis l'écran se fissure) est dans fin_de_combat.js et faux_pantheon.js.
 import { changerDePhase, elementsBarre, attaquePossible } from "../partie1/ennemis/boss.js";
 import { installerAttaquesUltimes } from "./attaques_ultimes.js";
-import { musiqueBoss } from "../partie1/systemes/sons.js";
+import { lancerMusiquePhase4 } from "./musique.js"; // la musique de la phase 4, plus forte que celle des phases 1 à 3
 
 export const PHASE_FINALE = 3; // l'indice de la forme finale (les phases 1, 2 et 3 sont 0, 1 et 2)
 const PV_FINALE = 180; // les PV de la forme finale (130 avant, 100 au début)
@@ -82,6 +82,6 @@ export function devenirFormeFinale(scene, boss) {
     elementsBarre(boss).forEach((element) => element.setAlpha(1));
     appliquerFormeFinale(scene, boss);
     if (boss.halo) boss.halo.setAlpha(0.35);
-    musiqueBoss(scene, boss.profil.musique); // le metal reprend
+    lancerMusiquePhase4(scene); // le metal reprend, plus fort
     changerDePhase(scene, boss, PHASE_FINALE); // intouchable 2 s, flash, tremblement, un PV à ramasser, « FORME FINALE »
 }

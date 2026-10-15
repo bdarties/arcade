@@ -10,6 +10,7 @@ import { PROFILS, ATTAQUES } from "../partie1/ennemis/boss.js";
 import { balayageApresColonnes, installerAttaques } from "./attaques.js";
 import { enrager } from "./fuite.js";
 import { finDeCombat } from "./fin_de_combat.js";
+import { lancerMusiquePhase4 } from "./musique.js"; // la musique de la phase 4, plus forte que celle des phases 1 à 3
 import { PV_PHASE_3, ATTAQUES_FORME_FINALE, PHASE_FINALE, installerFormeFinale, pvMinimum, choisirAttaque, pvDePhase, appliquerFormeFinale } from "./forme_finale.js";
 
 // Les réglages du boss final, une entrée par phase (voir BASE dans boss.js pour la signification de chaque valeur). Il est dur dès la phase 1.
@@ -59,7 +60,7 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
         // de la phase atteinte : en phase 3 avec ses 91 PV (pvApresMort), sinon avec tous ses PV (pvPleinsApresMort).
         pvApresMort: (phase) => (phase === 2 ? PV_PHASE_3 : undefined),
         etiquettePhase: (phase) => (phase === PHASE_FINALE ? "FORME FINALE" : "PHASE " + (phase + 1)),
-        apresApparition(scene, boss) { if (boss.phase === PHASE_FINALE) appliquerFormeFinale(scene, boss); }, // le robot est mort contre la forme finale : elle revient telle quelle
+        apresApparition(scene, boss) { if (boss.phase === PHASE_FINALE) { appliquerFormeFinale(scene, boss); lancerMusiquePhase4(scene); } }, // le robot est mort contre la forme finale : elle revient telle quelle, avec la musique de la phase 4
         finDeCombat // à 0 PV : fausse fin (phases 1 à 3) ou vraie fin (forme finale), voir fin_de_combat.js
     };
 }
