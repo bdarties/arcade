@@ -4,16 +4,19 @@
 //   perso : image du personnage (chemin), optionnel
 //   cote  : "gauche" ou "droite" (où se place le perso), optionnel
 //   texte : le texte qui s'écrit dans la zone en bas
-//
-// Pour l'instant : fond du ciel et textes bidons, à remplacer par tes images et ton histoire.
 
+//Initialisation des images : 
 const FOND = "./assets/sky.png";
 const ARIA = "./assets/spritesheet/aria_stand_right.png";
+const ARIA_PARLE = "./assets/spritesheet/aria_parle.png";
 // Image du méchant : planche de 2 images (118x126 chacune) qui s'animent en boucle.
 // Mets le fichier gros_mechant_stand_right.png à ce chemin (ou change le chemin ici).
 // Si le méchant regarde du mauvais côté, ajoute flip: true dans MECHANT.
 const MECHANT_IMG = "./assets/spritesheet/gros_mechant_stand_right.png";
+const MECHANT_PARLE = "./assets/spritesheet/gros_mechant_parle.png";
 
+
+//Initialisation des personnages :
 // hauteur = taille du perso à l'écran en px (450 par défaut) ; plus petit = plus petit à l'écran
 const ARIA_G = { id: "aria", img: ARIA, cote: "gauche", hauteur: 380 };
 // sheet = planche animée : w/h = taille d'UNE image, vitesse = images par seconde (2 par défaut)
