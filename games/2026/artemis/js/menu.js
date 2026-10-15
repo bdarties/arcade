@@ -10,14 +10,15 @@ const OPTIONS = [
   { image: "img_bouton_solo", nb_joueurs: 1 },
   { image: "img_bouton_duo", nb_joueurs: 2 },
   { image: "img_bouton_tuto", tuto: true },
+  { image: "img_pause_classement", scene: "scores" }, // image du menu pause (cf. selection.js) ; ouvre le classement de scores.js
   { image: "img_bouton_controles", page: "commandes" },
   { image: "img_bouton_credits", page: "credits" }
 ];
 const LARGEUR_BOUTON = 460; // px : largeur affichée des boutons (les images font 920 px : net sur un grand écran)
 const LARGEUR_LOGO = 450; // px
 const Y_LOGO = 125; // px
-const Y_PREMIER_BOUTON = 275; // px
-const ECART_BOUTONS = 85; // px : 5 boutons doivent tenir au-dessus de la consigne du bas
+const Y_PREMIER_BOUTON = 255; // px
+const ECART_BOUTONS = 76; // px : 6 boutons doivent tenir au-dessus de la consigne du bas
 const ECHELLE_SELECTION = 1.08; // le bouton choisi est un peu plus grand...
 const OPACITE_AUTRES = 0.55; // ... et les autres sont assombris
 const DUREE_FONDU = 300; // ms
@@ -85,6 +86,10 @@ export default class menu extends Phaser.Scene {
 
     if (option.page) {
       this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("infos", { page: option.page, choix: this.choix }));
+      return;
+    }
+    if (option.scene) {
+      this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start(option.scene, { choix: this.choix }));
       return;
     }
 
