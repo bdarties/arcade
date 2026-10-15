@@ -71,134 +71,65 @@ export function deplacement_areignee() { //comportement des ennemis (araignée =
   });
 }
 
-function prendre_spawn_libre(scene) {
-  const gameState = scene.gameState;
-  const occupants = [
-    gameState.groupe_cle,
-    gameState.groupe_recharges,
-    gameState.groupe_soin,
-    gameState.groupe_araignee
-  ].flatMap((groupe) => groupe.getChildren()).filter((objet) => objet.active);
-  const joueurs = [gameState.player, gameState.player2].filter((joueur) => joueur && joueur.active);
-  const pointsDisponibles = gameState.tableau_spawn.filter((point) =>
-    occupants.every((objet) => Phaser.Math.Distance.Between(objet.x, objet.y, point.x, point.y) > 24) &&
-    joueurs.every((joueur) => Phaser.Math.Distance.Between(joueur.x, joueur.y, point.x, point.y) > 120)
-  );
-  if (pointsDisponibles.length === 0) {
-    return null;
-  }
-
-  const position = Phaser.Utils.Array.GetRandom(pointsDisponibles);
-  const index = gameState.tableau_spawn.indexOf(position);
-  gameState.tableau_spawn.splice(index, 1);
-  return position;
-}
-
 export function apparition_elements() { //fait apparaître clés, soins, recharges et ennemis, chacun sur un point de spawn pris au hasard
-  const typesCles = [
+  if (this.gameState.cles_creees < this.gameState.nombre_cles && this.gameState.groupe_cle.countActive(true) < this.gameState.nombre_cles && this.gameState.tableau_spawn.length > 0) {
+    const typeCle = Phaser.Utils.Array.GetRandom([
       { texture: "cle_bronze", animation: "animation_cle_bronze", score: 500 },
       { texture: "cle_argent", animation: "animation_cle_argent", score: 500 },
       { texture: "cle_or", animation: "animation_cle_or", score: 800 }
-  ];
-  const typesClesDisponibles = this.gameState.mode_deux_joueurs
-    ? typesCles.filter((type) => !this.gameState.groupe_cle.getChildren().some((cle) =>
-      cle.active && cle.texture.key === type.texture
-    ))
-    : typesCles;
-  if (
-    typesClesDisponibles.length > 0 &&
-    (this.gameState.mode_deux_joueurs || (
-      this.gameState.cles_creees < this.gameState.nombre_cles &&
-      this.gameState.groupe_cle.countActive(true) < this.gameState.nombre_cles
-    )) &&
-    this.gameState.tableau_spawn.length > 0
-  ) {
-    const typeCle = Phaser.Utils.Array.GetRandom(typesClesDisponibles);
-    const position = this.gameState.mode_deux_joueurs
-      ? prendre_spawn_libre(this)
-      : Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
-    if (position) {
-      const nouvelleCle = this.gameState.groupe_cle.create(position.x, position.y, typeCle.texture);
-      nouvelleCle.score = typeCle.score;
-      this.gameState.cles_creees += 1;
-      nouvelleCle.anims.play(typeCle.animation, true);
-      this.gameState.camJ1UI.ignore(nouvelleCle);
-      this.gameState.camGlobalUI.ignore(nouvelleCle);
+    ]);
+    const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
+    this.gameState.cle = this.gameState.groupe_cle.create(position.x, position.y, typeCle.texture);
+    this.gameState.cle.score = typeCle.score;
+    this.gameState.cles_creees += 1;
+    this.gameState.cle.anims.play(typeCle.animation, true);
+    this.gameState.camJ1UI.ignore(this.gameState.cle);
+    this.gameState.camGlobalUI.ignore(this.gameState.cle);
+  }
+  if (this.gameState.groupe_soin.countActive(true) < this.gameState.nombre_soins_apparaissant && this.gameState.tableau_spawn.length > 0) {
+    const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
+    const medkit = this.gameState.groupe_soin.create(position.x, position.y, "soin");
+    medkit.anims.play("animation_soin", true);
+    this.gameState.camJ1UI.ignore(medkit);
+    this.gameState.camGlobalUI.ignore(medkit);
+    if (this.gameState.mode_deux_joueurs) {
+      this.gameState.camJ2UI.ignore(medkit);
     }
   }
-  if (
-    this.gameState.groupe_soin.countActive(true) < (this.gameState.mode_deux_joueurs ? 1 : this.gameState.nombre_soins_apparaissant) &&
-    this.gameState.tableau_spawn.length > 0
-  ) {
-    const position = this.gameState.mode_deux_joueurs
-      ? prendre_spawn_libre(this)
-      : Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
-    if (position) {
-      const medkit = this.gameState.groupe_soin.create(position.x, position.y, "soin");
-      medkit.anims.play("animation_soin", true);
-      this.gameState.camJ1UI.ignore(medkit);
-      this.gameState.camGlobalUI.ignore(medkit);
-      if (this.gameState.mode_deux_joueurs) {
-        this.gameState.camJ2UI.ignore(medkit);
-      }
+  if (this.gameState.groupe_recharges.countActive(true) < this.gameState.nombre_recharges_apparaissant && this.gameState.tableau_spawn.length > 0) {
+    const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
+    const recharge = this.gameState.groupe_recharges.create(position.x, position.y, "recharge");
+    recharge.anims.play("recharge", true);
+    this.gameState.camJ1UI.ignore(recharge);
+    this.gameState.camGlobalUI.ignore(recharge);
+    if (this.gameState.mode_deux_joueurs) {
+      this.gameState.camJ2UI.ignore(recharge);
     }
   }
-  if (
-    this.gameState.groupe_recharges.countActive(true) < (this.gameState.mode_deux_joueurs ? 1 : this.gameState.nombre_recharges_apparaissant) &&
-    this.gameState.tableau_spawn.length > 0
-  ) {
-    const position = this.gameState.mode_deux_joueurs
-      ? prendre_spawn_libre(this)
-      : Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
-    if (position) {
-      const recharge = this.gameState.groupe_recharges.create(position.x, position.y, "recharge");
-      recharge.anims.play("recharge", true);
-      this.gameState.camJ1UI.ignore(recharge);
-      this.gameState.camGlobalUI.ignore(recharge);
-      if (this.gameState.mode_deux_joueurs) {
-        this.gameState.camJ2UI.ignore(recharge);
-      }
-    }
-  }
-  const definitionsEnnemisDisponibles = this.gameState.mode_deux_joueurs
-    ? this.gameState.tableau_ennemis.filter((definition) => !this.gameState.groupe_araignee.getChildren().some((ennemi) =>
-      ennemi.active && ennemi.texture_marche === definition.texture
-    ))
-    : this.gameState.tableau_ennemis;
-  if (
-    definitionsEnnemisDisponibles.length > 0 &&
-    (this.gameState.mode_deux_joueurs ||
-      this.gameState.groupe_araignee.countActive(true) < this.gameState.nombre_ennemis_apparaissant
-    ) &&
-    this.gameState.tableau_spawn.length > 0
-  ) {
-    const definition = Phaser.Utils.Array.GetRandom(definitionsEnnemisDisponibles);
-    const position = this.gameState.mode_deux_joueurs
-      ? prendre_spawn_libre(this)
-      : Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
-    if (position) {
-      const ennemi = this.gameState.groupe_araignee.create(position.x, position.y, definition.texture);
-      ennemi.points_vies = definition.points_vies;
-      ennemi.degats = definition.degats;
-      ennemi.score = definition.score;
-      ennemi.comportement = definition.comportement || "poursuite"; //"poursuite" (araignée) ou "rodeur" (renard)
-      ennemi.degats_au_contact = definition.degats_au_contact !== false; //false : ne blesse que par son attaque
-      ennemi.animation_marche = definition.animation;
-      ennemi.animation_attaque = definition.animation_attaque;
-      ennemi.rayon = definition.rayon_detection;
-      ennemi.vitesse = definition.vitesse || 45;
-      ennemi.delai_impact = definition.delai_impact || 500;
-      ennemi.duree_attaque = definition.duree_attaque || 900;
-      ennemi.texture_marche = definition.texture;
-      ennemi.etat = "balade";
-      ennemi.prochaine_attaque = 0;
-      ennemi.prochain_changement = 0;
-      ennemi.anims.play(definition.animation, true);
-      this.gameState.camJ1UI.ignore(ennemi);
-      this.gameState.camGlobalUI.ignore(ennemi);
-      if (this.gameState.mode_deux_joueurs) {
-        this.gameState.camJ2UI.ignore(ennemi);
-      }
+  if (this.gameState.groupe_araignee.countActive(true) < this.gameState.nombre_ennemis_apparaissant && this.gameState.tableau_spawn.length > 0) {
+    const definition = Phaser.Utils.Array.GetRandom(this.gameState.tableau_ennemis);
+    const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
+    const ennemi = this.gameState.groupe_araignee.create(position.x, position.y, definition.texture);
+    ennemi.points_vies = definition.points_vies;
+    ennemi.degats = definition.degats;
+    ennemi.score = definition.score;
+    ennemi.comportement = definition.comportement || "poursuite"; //"poursuite" (araignée) ou "rodeur" (renard)
+    ennemi.degats_au_contact = definition.degats_au_contact !== false; //false : ne blesse que par son attaque
+    ennemi.animation_marche = definition.animation;
+    ennemi.animation_attaque = definition.animation_attaque;
+    ennemi.rayon = definition.rayon_detection;
+    ennemi.vitesse = definition.vitesse || 45;
+    ennemi.delai_impact = definition.delai_impact || 500;
+    ennemi.duree_attaque = definition.duree_attaque || 900;
+    ennemi.texture_marche = definition.texture;
+    ennemi.etat = "balade";
+    ennemi.prochaine_attaque = 0;
+    ennemi.prochain_changement = 0;
+    ennemi.anims.play(definition.animation, true);
+    this.gameState.camJ1UI.ignore(ennemi);
+    this.gameState.camGlobalUI.ignore(ennemi);
+    if (this.gameState.mode_deux_joueurs) {
+      this.gameState.camJ2UI.ignore(ennemi);
     }
   }
 }
@@ -295,6 +226,7 @@ export function tirer(player) {
       player.anims.play("anim_attaque_bas_" + suffixe, true);
       bullet = this.gameState.groupeBullets.create(player.x, player.y + (25 * coefDir), 'animation_balle_bas');
     }
+    this.physics.add.collider(bullet, this.gameState.calque_mur,detruire,null,this);
     bullet.anims.play(bullet.texture.key);
     bullet.tireur = player;
     this.gameState.camJ1UI.ignore(bullet); //les balles sont créées en cours de jeu : on doit les faire ignorer à ce moment-là
@@ -503,7 +435,7 @@ export function place_libre_autour(joueur, min, max) {
     const distance = Phaser.Math.Between(min, max);
     const x = joueur.x + Math.cos(angle) * distance;
     const y = joueur.y + Math.sin(angle) * distance;
-    const tuile = this.gameState.murs.getTileAtWorldXY(x, y);
+    const tuile = this.gameState.calque_mur.getTileAtWorldXY(x, y);
     if (this.physics.world.bounds.contains(x, y) && !(tuile && tuile.collides)) {
       return { x: x, y: y };
     }
@@ -545,7 +477,7 @@ export function apparition_faucheuse() {
   this.gameState.faucheuse.setAlpha(0);
   this.gameState.faucheuse.body.setSize(cfg.hitbox, cfg.hitbox);
   poser_faucheuse.call(this, "marche", false);
-  this.physics.add.collider(this.gameState.faucheuse, this.gameState.murs); //elle ne traverse pas les murs
+  this.physics.add.collider(this.gameState.faucheuse, this.gameState.calque_mur); //elle ne traverse pas les murs
   this.gameState.faucheuse.etat = "attente"; //"attente" -> "chasse" <-> "attaque"
   this.gameState.faucheuse.prochaine_attaque = 0;
   this.gameState.faucheuse.verif_coincee = 0;
@@ -713,3 +645,8 @@ export function points_spawn_libres() { //renvoie les points de spawn ni occupé
     joueurs.every((j) => Phaser.Math.Distance.Between(j.x, j.y, point.x, point.y) > 120)
   ).map((p) => ({ x: p.x, y: p.y }));
 }
+
+export function detruire(objet,mur) {{
+    // Détruit instantanément la bombe et la retire du jeu
+    objet.destroy(); 
+  }};
