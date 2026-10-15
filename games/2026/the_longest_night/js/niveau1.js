@@ -399,7 +399,6 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     //joueur 1
     player = this.physics.add.sprite(player_spawn.x, player_spawn.y, "player1");
-
     player.peutTirer = true;
     player.tirEnCours = false;
     player.enRechargement = false;
