@@ -17,38 +17,31 @@ const VITESSE_MARCHE = 250;
 /** CONTRÔLES BORNE D'ARCADE (MODE 1 JOUEUR)
 /***********************************************************************/
 
-// Crée un objet clavier compatible avec les sticks et boutons J1 et J2 de la borne :
-// - Stick J1 (UP, DOWN, LEFT, RIGHT) et Stick J2 (Z, S, Q, D)
-// - Bouton A (Sauter) : I (J1) / R (J2)
-// - Bouton B (Attaquer) : O (J1) / T (J2)
-// - Bouton D (Interagir) : K (J1) / F (J2) (+ SPACE par sécurité)
+// Crée un objet clavier compatible avec les sticks et boutons J1 de la borne :
+// - Stick J1 (UP, DOWN, LEFT, RIGHT)
+// - Bouton A (Sauter) : I (J1) /
+// - Bouton B (Attaquer) : O (J1) /
+// - Bouton D (Interagir) : K (J1) / (+ SPACE par sécurité)
 export function creerClavier(scene) {
   const k = scene.input.keyboard.addKeys({
     upJ1: Phaser.Input.Keyboard.KeyCodes.UP,
     downJ1: Phaser.Input.Keyboard.KeyCodes.DOWN,
     leftJ1: Phaser.Input.Keyboard.KeyCodes.LEFT,
     rightJ1: Phaser.Input.Keyboard.KeyCodes.RIGHT,
-    upJ2: Phaser.Input.Keyboard.KeyCodes.Z,
-    downJ2: Phaser.Input.Keyboard.KeyCodes.S,
-    leftJ2: Phaser.Input.Keyboard.KeyCodes.Q,
-    rightJ2: Phaser.Input.Keyboard.KeyCodes.D,
     jumpJ1: Phaser.Input.Keyboard.KeyCodes.I,     // Bouton A (J1) - Sauter
-    jumpJ2: Phaser.Input.Keyboard.KeyCodes.R,     // Bouton A (J2) - Sauter
     attackJ1: Phaser.Input.Keyboard.KeyCodes.O,   // Bouton B (J1) - Attaquer
-    attackJ2: Phaser.Input.Keyboard.KeyCodes.T,   // Bouton B (J2) - Attaquer
     interactJ1: Phaser.Input.Keyboard.KeyCodes.K, // Bouton D (J1) - Interagir
-    interactJ2: Phaser.Input.Keyboard.KeyCodes.F, // Bouton D (J2) - Interagir
     space: Phaser.Input.Keyboard.KeyCodes.SPACE
   });
 
   return {
     _keys: k,
-    left: { get isDown() { return k.leftJ1.isDown || k.leftJ2.isDown; } },
-    right: { get isDown() { return k.rightJ1.isDown || k.rightJ2.isDown; } },
-    up: { get isDown() { return k.upJ1.isDown || k.upJ2.isDown; } },
-    down: { get isDown() { return k.downJ1.isDown || k.downJ2.isDown; } },
-    jump: { get isDown() { return k.jumpJ1.isDown || k.jumpJ2.isDown; } },
-    attack: { get isDown() { return k.attackJ1.isDown || k.attackJ2.isDown; } },
+    left: { get isDown() { return k.leftJ1.isDown} },
+    right: { get isDown() { return k.rightJ1.isDown} },
+    up: { get isDown() { return k.upJ1.isDown} },
+    down: { get isDown() { return k.downJ1.isDown} },
+    jump: { get isDown() { return k.jumpJ1.isDown} },
+    attack: { get isDown() { return k.attackJ1.isDown} },
     space: k.space
   };
 }
@@ -59,7 +52,6 @@ export function justDownInteragir(clavier) {
   const k = clavier._keys;
   return (
     Phaser.Input.Keyboard.JustDown(k.interactJ1) ||
-    Phaser.Input.Keyboard.JustDown(k.interactJ2) ||
     Phaser.Input.Keyboard.JustDown(k.space)
   );
 }
@@ -69,8 +61,7 @@ export function justDownAttaquer(clavier) {
   if (!clavier || !clavier._keys) return false;
   const k = clavier._keys;
   return (
-    Phaser.Input.Keyboard.JustDown(k.attackJ1) ||
-    Phaser.Input.Keyboard.JustDown(k.attackJ2)
+    Phaser.Input.Keyboard.JustDown(k.attackJ1)
   );
 }
 

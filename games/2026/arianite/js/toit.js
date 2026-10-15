@@ -155,7 +155,6 @@ export default class toit extends Phaser.Scene {
 
     fct.creerAnimsPerso(this);
     this.player = this.physics.add.sprite(departX, departY, "img_perso");
-    this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.clavier = fct.creerClavier(this);
 

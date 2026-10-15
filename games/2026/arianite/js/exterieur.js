@@ -206,7 +206,6 @@ export default class exterieur extends Phaser.Scene {
     if (!pos) pos = { x: 100, y: 450 };
     player = this.physics.add.sprite(pos.x, pos.y, "img_perso");
 
-    player.setBounce(0.2);
     player.setCollideWorldBounds(true);
 
     this.cameras.main.startFollow(player, true, 0.1, 0.1);

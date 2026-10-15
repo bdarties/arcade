@@ -17,7 +17,7 @@ const MECHANT_IMG = "./assets/spritesheet/gros_mechant_stand_right.png";
 // hauteur = taille du perso à l'écran en px (450 par défaut) ; plus petit = plus petit à l'écran
 const ARIA_G = { id: "aria", img: ARIA, cote: "gauche", hauteur: 380 };
 // sheet = planche animée : w/h = taille d'UNE image, vitesse = images par seconde (2 par défaut)
-const MECHANT = { id: "mechant", img: MECHANT_IMG, cote: "droite", flip: true, sheet: { w: 118, h: 126, vitesse: 2 } };
+const MECHANT = { id: "mechant", img: MECHANT_IMG, cote: "droite", flip: true, sheet: { w: 236, h: 252, vitesse: 2 } };
 
 export const INTRO = [
   // 1) seul le méchant, à droite
