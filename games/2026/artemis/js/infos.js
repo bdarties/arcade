@@ -26,11 +26,45 @@ const EQUIPE = [
   ["Inas Ouarich", "Employer avec enocre plus de sourires"],
   ["Liku Soane Liku o Hihifo Iloai", "chef de projet, ping pong ? (mais il souris beaucoup)"]
 ];
-const RESSOURCES = [
-  "Graphismes : CraftPix.net (Pixel Dungeon, Ruined Temple)",
-  "Polices : Origin Tech, Ethnocentric, Kallisto",
-  "Moteur : Phaser 3"
+
+// sections du défilement des crédits : [titre, [[ligne principale, détail], ...]] ; le détail est facultatif
+// les musiques arriveront plus tard : ajouter une section "Musiques" ici
+const SECTIONS = [
+  ["Équipe", EQUIPE],
+  ["Personnages", [
+    ["Character Templates Pack", "erisesra · itch.io"],
+    ["Inspirations", "Stardew Valley · Fields of Mistria · Ulysse 31"]
+  ]],
+  ["Décors", [
+    ["Free 2D Top-Down Pixel Dungeon Asset Pack", "CraftPix.net"],
+    ["Free Ruined Temple Top-Down Location Pixel Art", "CraftPix.net"]
+  ]],
+  ["Objets", [
+    ["Free Rocks and Stones Top-Down Pixel Art", "pierres · CraftPix.net"],
+    ["Free Guns Icon 32x32 Pixel Pack", "fusil · CraftPix.net"],
+    ["Pickaxes", "pioche · joosyjud · itch.io"],
+    ["Free Crystal Pack", "cristaux · flamezin · itch.io"],
+    ["Statue d'Artémis", "générée avec Pixellab"]
+  ]],
+  ["Typographies", [
+    ["Origin Tech Demo Regular", "logo"],
+    ["Ethnocentric Regular", "boutons"],
+    ["Kallisto Medium", "textes"]
+  ]],
+  ["Moteur", [["Phaser 3", "moteur de jeu"]]]
 ];
+
+// défilement "Star Wars" : le texte part du bas de l'écran et s'éloigne vers un point de fuite
+// profondeur z (px) : 0 en bas de l'écran, elle augmente avec le temps ; échelle = PROFONDEUR / (PROFONDEUR + z)
+const HORIZON_Y = 150; // px : point de fuite, où le texte se réduit à rien
+const BASE_Y = 640; // px : bas du défilement (échelle 1) ; la consigne de retour est dessous
+const PROFONDEUR = 260; // plus grand = perspective plus douce
+const VITESSE_DEFILEMENT = 62; // px/s en profondeur
+const ECHELLE_DISPARITION = 0.16; // en dessous, le texte est invisible
+const PAUSE_BOUCLE = 1500; // ms entre la fin du défilement et son redémarrage
+const COULEUR_TITRE = "#EC8697";
+const COULEUR_TEXTE = "#E8EBF0";
+const COULEUR_DETAIL = "#BFC3CC";
 
 export default class infos extends Phaser.Scene {
   constructor() {
@@ -87,23 +121,55 @@ export default class infos extends Phaser.Scene {
 
   dessinerCredits() {
     this.titre("CREDITS");
-    const centre = this.scale.width / 2;
-    let y = 170;
-    this.add.text(centre, y, "ARTEMIS · SAÉ 301", { fontFamily: fct.POLICES.bouton, fontSize: "22px", color: "#E8EBF0" }).setOrigin(0.5);
-    y += 70;
-    EQUIPE.forEach(([nom, role]) => {
-      this.add.text(centre, y, nom, { fontFamily: fct.POLICES.texte, fontSize: "30px", color: "#E8EBF0" }).setOrigin(0.5);
-      this.add.text(centre, y + 32, role, { fontFamily: fct.POLICES.texte, fontSize: "20px", color: "#EC8697" }).setOrigin(0.5);
-      y += 86;
+    this.lignes = []; // { texte, depart } : depart = profondeur au début (négative : la ligne attend sous l'écran)
+    let distance = 0; // profondeur cumulée entre la première ligne et la ligne en cours
+    const ajouter = (message, police, taille, couleur, ecart) => {
+      const texte = this.add.text(this.scale.width / 2, BASE_Y, message, { fontFamily: police, fontSize: taille + "px", color: couleur, stroke: "#080D1C", strokeThickness: 4 })
+        .setOrigin(0.5).setVisible(false);
+      texte.texture.setFilter(Phaser.Textures.FilterMode.LINEAR); // pixelArt est actif : sans cela le texte réduit scintille
+      this.lignes.push({ texte: texte, depart: -distance });
+      distance += ecart; // espace jusqu'à la ligne suivante
+    };
+
+    ajouter("ARTEMIS", fct.POLICES.logo, 72, COULEUR_TEXTE, 70);
+    ajouter("SAÉ 301", fct.POLICES.texte, 26, COULEUR_TITRE, 90);
+    SECTIONS.forEach(([titre, entrees]) => {
+      ajouter(titre.toUpperCase(), fct.POLICES.bouton, 30, COULEUR_TITRE, 60);
+      entrees.forEach(([principal, detail]) => {
+        ajouter(principal, fct.POLICES.texte, 26, COULEUR_TEXTE, detail ? 34 : 50);
+        if (detail) ajouter(detail, fct.POLICES.texte, 20, COULEUR_DETAIL, 56);
+      });
+      distance += 40; // respiration entre deux sections
     });
-    y += 10;
-    RESSOURCES.forEach((ligne) => {
-      this.add.text(centre, y, ligne, { fontFamily: fct.POLICES.texte, fontSize: "20px", color: "#BFC3CC" }).setOrigin(0.5);
-      y += 30;
+    ajouter("Merci d'avoir joué", fct.POLICES.bouton, 32, COULEUR_TEXTE, 0);
+
+    // le défilement redémarre quand la dernière ligne a disparu au loin
+    const profondeur_disparition = PROFONDEUR * (1 / ECHELLE_DISPARITION - 1);
+    this.duree_defilement = ((profondeur_disparition + distance) / VITESSE_DEFILEMENT) * 1000 + PAUSE_BOUCLE;
+    this.ecoule = 0;
+    this.majDefilement(0);
+  }
+
+  // place chaque ligne selon sa profondeur : plus elle est loin, plus elle est petite, haute à l'écran et transparente
+  majDefilement(delta) {
+    this.ecoule = (this.ecoule + delta) % this.duree_defilement;
+    const avance = (this.ecoule / 1000) * VITESSE_DEFILEMENT;
+    this.lignes.forEach(({ texte, depart }) => {
+      const z = depart + avance;
+      const echelle = PROFONDEUR / (PROFONDEUR + z);
+      if (z < 0 || echelle <= ECHELLE_DISPARITION) { // pas encore entrée, ou déjà perdue de vue
+        texte.setVisible(false);
+        return;
+      }
+      const y = HORIZON_Y + (BASE_Y - HORIZON_Y) * echelle;
+      // fondu à l'entrée (les 45 px au-dessus du bas) et à la sortie (au loin)
+      const alpha = Math.min(1, (BASE_Y - y) / 45, (echelle - ECHELLE_DISPARITION) / 0.3);
+      texte.setVisible(true).setY(y).setScale(echelle).setAlpha(alpha);
     });
   }
 
-  update() {
+  update(temps, delta) {
+    if (this.lignes) this.majDefilement(delta);
     if (this.retour) return;
     const appuye = (touche) => Phaser.Input.Keyboard.JustDown(touche);
     if (!this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) return;
