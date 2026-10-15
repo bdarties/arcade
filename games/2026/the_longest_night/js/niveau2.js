@@ -64,7 +64,7 @@ export default class niveau2 extends niveau1 {
       this.anims.create({
         key: "animation_renard_standing",
         frames: this.anims.generateFrameNumbers("renard_statique", { start: 0, end: 3 }),
-        frameRate: 6,
+        frameRate: 5,
         repeat: -1
 
       });
@@ -73,7 +73,7 @@ export default class niveau2 extends niveau1 {
       this.anims.create({
         key: "animation_renard_marche",
         frames: this.anims.generateFrameNumbers("renard", { start: 0, end: 3 }),
-        frameRate: 6,
+        frameRate: 5,
         repeat: -1
       });
     }
