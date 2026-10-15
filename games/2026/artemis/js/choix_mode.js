@@ -62,6 +62,7 @@ export default class choix_mode extends Phaser.Scene {
   valider() {
     const tuto = OPTIONS[this.choix].tuto;
     this.verrou = true;
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // appui sur un bouton
     this.cameras.main.fadeOut(DUREE_FONDU);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.sound.get("accueil")?.stop();
@@ -73,8 +74,10 @@ export default class choix_mode extends Phaser.Scene {
     if (this.verrou) return;
 
     const appuye = (touche) => Phaser.Input.Keyboard.JustDown(touche);
+    /* >>>>> AJOUT SON <<<<< */ const avant = this.choix;
     if (this.touches.some((t) => appuye(t.haut))) this.choix = (this.choix + OPTIONS.length - 1) % OPTIONS.length;
     if (this.touches.some((t) => appuye(t.bas))) this.choix = (this.choix + 1) % OPTIONS.length;
+    /* >>>>> AJOUT SON <<<<< */ if (this.choix !== avant) this.sound.play("son_touche_entrant"); // passage d'un bouton à un autre
     this.majSelection();
 
     if (this.touches.some((t) => BOUTONS_VALIDER.some((bouton) => appuye(t[bouton])))) this.valider();

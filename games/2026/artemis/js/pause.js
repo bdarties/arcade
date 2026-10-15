@@ -7,11 +7,11 @@ import { BOUTONS_VALIDER } from "./menu.js";
 /***********************************************************************/
 
 // les boutons, de haut en bas (images chargées dans selection.js)
-// action : nom de la méthode appelée à la validation (le classement n'est pas encore fait : pas d'action)
+// action : nom de la méthode appelée à la validation
 const OPTIONS = [
   { image: "img_pause_reprendre", action: "reprendre" },
   { image: "img_pause_controles", action: "commandes" },
-  { image: "img_pause_classement" },
+  { image: "img_pause_classement", action: "classement" },
   { image: "img_pause_retour_menu", action: "retourMenu" }
 ];
 const LARGEUR_BOUTON = 460; // px : largeur affichée des boutons
@@ -77,6 +77,14 @@ export default class pause extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // appui sur un bouton
     this.scene.launch("infos", { page: "commandes", depuis_pause: true });
     this.scene.bringToTop("infos");
+    this.scene.pause();
+  }
+
+  // le classement (cf. scores.js) par-dessus la pause, comme les commandes
+  classement() {
+    /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // appui sur un bouton
+    this.scene.launch("scores", { depuis_pause: true });
+    this.scene.bringToTop("scores");
     this.scene.pause();
   }
 

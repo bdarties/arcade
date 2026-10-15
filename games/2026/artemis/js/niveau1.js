@@ -19,10 +19,11 @@ const VITESSE_JOUEUR = 160; // px/s
 const VITESSE_SPRINT = 260; // px/s
 const PV_MAX = 100;
 const STAMINA_MAX = 100;
-// offrande à la statue : chaque pierre lunaire rend des PV (et la stamina revient d'un coup)
-// équilibrage : ~0,6 pierre par caillou cassé (cf. pierres.js), 14 cailloux par niveau, la salle safe est rare
-// -> quelques dizaines de pierres entre deux salles : à 5 PV par pierre, ça couvre un à deux barres de vie, pas plus
-const PV_PAR_PIERRE = 5;
+// offrande à la statue : PV_PAR_PALIER PV coûtent PIERRES_PALIER pierres au début, et le prix monte d'un palier tous les NIVEAUX_PAR_PALIER niveaux
+// (5 pierres pour 25 PV aux niveaux 1 à 9, 10 pierres à partir du niveau 10, 15 à partir du niveau 15...)
+const PIERRES_PALIER = 5;
+const PV_PAR_PALIER = 25;
+const NIVEAUX_PAR_PALIER = 5;
 const ECHELLE_STAMINA = 1.5; // taille de la barre de stamina à l'écran (la barre de vie reste à 2) : 96x16 -> 144x24
 const STAMINA_CONSO = 35; // stamina perdue par seconde de sprint
 const STAMINA_RECUP = 20; // stamina regagnée par seconde sans sprinter
@@ -594,17 +595,22 @@ export default class niveau1 extends Phaser.Scene {
     return this.joueurs.find((autre) => this.estMort(autre)) || j;
   }
 
+  // pierres demandées par la statue pour PV_PAR_PALIER PV, selon le niveau
+  coutOffrande() {
+    return PIERRES_PALIER * Math.max(1, Math.floor(this.niveau / NIVEAUX_PAR_PALIER));
+  }
+
   // offrande à la statue (cf. offrande.js) : nombre de pierres pour tout récupérer (0 si le joueur est au maximum)
   // une stamina à compléter seule coûte une pierre
   pierresPourSoigner(j) {
-    if (j.pv < PV_MAX) return Math.ceil((PV_MAX - j.pv) / PV_PAR_PIERRE);
+    if (j.pv < PV_MAX) return Math.ceil((PV_MAX - j.pv) * this.coutOffrande() / PV_PAR_PALIER - 1e-9); // 1e-9 : évite une pierre en trop due aux arrondis
     return j.stamina < STAMINA_MAX ? 1 : 0;
   }
 
   // la statue accepte `nombre` pierres : PV rendus (renvoyés) et stamina pleine
   recevoirOffrande(j, nombre) {
     const avant = j.pv;
-    j.pv = Math.min(j.pv + nombre * PV_PAR_PIERRE, PV_MAX);
+    j.pv = Math.min(j.pv + nombre * PV_PAR_PALIER / this.coutOffrande(), PV_MAX); // à 10 pierres pour 25 PV, une pierre rend 2,5 PV
     j.stamina = STAMINA_MAX;
     j.essouffle = false;
     if (avant <= 0 && j.pv > 0) { // relevé : il reparaît à côté de son coéquipier
@@ -613,6 +619,7 @@ export default class niveau1 extends Phaser.Scene {
       j.sprite.clearTint();
       j.torche_allumee = true;
     }
+    if (j.pv > PV_MAX - 1e-6) j.pv = PV_MAX; // évite 99,9999999 PV à cause des arrondis
     return j.pv - avant;
   }
 
@@ -903,7 +910,8 @@ export default class niveau1 extends Phaser.Scene {
     if (this.joueurs.some((j) => Phaser.Input.Keyboard.JustDown(j.touches.pause))) {
       /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause = this.sound.getAllPlaying(); // on retient ce qui jouait pour le relancer à la reprise
       /* >>>>> AJOUT SON <<<<< */ this.sons_en_pause.forEach((son) => son.pause());
-      /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // ouverture du menu pause (joué après le gel des sons : il n'est pas mis en pause)      this.scene.pause();
+      /* >>>>> AJOUT SON <<<<< */ this.sound.play("son_touche_entrant"); // ouverture du menu pause (joué après le gel des sons : il n'est pas mis en pause)      
+      this.scene.pause();
       this.scene.launch("pause");
       return;
     }

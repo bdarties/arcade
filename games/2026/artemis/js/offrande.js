@@ -7,7 +7,7 @@ import { STATUE } from "./salle_safe.js";
 /** une bulle au-dessus de la statue indique qu'on peut donner ; bouton "interagir" (O ou T)
 /***********************************************************************/
 
-const PIERRES_MAX = 5; // pierres données au maximum par appui (pour ne pas appuyer 20 fois) ; on n'en donne pas plus que nécessaire
+
 const PORTEE = 56; // px : distance max entre le joueur et la statue pour que la bulle apparaisse
 const BULLE_Y = STATUE.tete_y - 47; // px : position (monde) de la bulle, 47 px au-dessus de la tête de la statue
 const LARGEUR_BULLE = 104;
@@ -30,7 +30,7 @@ export function creerOffrande(scene) {
   fond.fillRect(-8, HAUTEUR_BULLE / 2 - 3, 16, 3);
 
   const icone = scene.add.image(-28, -8, "img_pierre_lunaire").setScale(2);
-  const cout = scene.add.text(-10, -8, "x" + PIERRES_MAX, { fontFamily: fct.POLICES.bouton, fontSize: "20px", color: "#E8EBF0" }).setOrigin(0, 0.5);
+  const cout = scene.add.text(-10, -8, "x" + scene.coutOffrande(), { fontFamily: fct.POLICES.bouton, fontSize: "20px", color: "#E8EBF0" }).setOrigin(0, 0.5);
   const touches = scene.add.text(0, 18, "", { fontFamily: fct.POLICES.bouton, fontSize: "12px", color: "#BFC3CC" }).setOrigin(0.5);
 
   const bulle = scene.add.container(STATUE.centre_x, BULLE_Y, [fond, icone, cout, touches])
@@ -50,6 +50,7 @@ function distanceStatue(x, y) {
 // chaque image : affiche ou cache la bulle, et traite le bouton "interagir" des joueurs proches
 export function majOffrande(scene) {
   const o = scene.offrande;
+  const maximum = scene.coutOffrande();
   const proches = scene.joueursEnJeu().filter((j) => distanceStatue(j.sprite.body.center.x, j.sprite.body.center.y) <= PORTEE);
 
   if ((proches.length > 0) !== o.affichee) {
@@ -64,7 +65,7 @@ export function majOffrande(scene) {
 
   // la bulle annonce le nombre de pierres qui partiraient (rouge : aucune pierre)
   const possedees = pierres.nombrePierres(scene);
-  const prevu = Math.max(1, Math.min(PIERRES_MAX, ...proches.map((j) => scene.pierresPourSoigner(scene.beneficiaireOffrande(j)))));
+  const prevu = Math.max(1, Math.min(maximum, possedees > 0 ? possedees : Infinity, ...proches.map((j) => scene.pierresPourSoigner(scene.beneficiaireOffrande(j)))));
   o.cout.setText("x" + prevu);
   o.cout.setColor(possedees > 0 ? "#E8EBF0" : "#FF6B6B");
   o.touches.setText("[" + fct.ETIQUETTES.interagir + "]");
@@ -74,7 +75,7 @@ export function majOffrande(scene) {
     // un coéquipier à terre est relevé en premier : l'offrande va à lui, la pierre part de celui qui donne
     const beneficiaire = scene.beneficiaireOffrande(j);
     const necessaires = scene.pierresPourSoigner(beneficiaire);
-    const nombre = Math.min(PIERRES_MAX, necessaires, possedees);
+    const nombre = Math.min(maximum, necessaires, possedees);
     if (necessaires === 0) refuser(scene, j, "Déjà en forme !");
     else if (nombre === 0) refuser(scene, j, "Pas de pierre lunaire");
     else {
@@ -106,8 +107,8 @@ function offrir(scene, j, beneficiaire, nombre) {
     onComplete: () => {
       pierre.destroy();
       anneau(scene, arrivee.x, arrivee.y);
-      const pv = scene.recevoirOffrande(beneficiaire, nombre);
-      texteFlottant(scene, beneficiaire, pv > 0 ? "+" + pv + " PV" : "Stamina !", "#8CE99A");
+      const gain = scene.recevoirOffrande(beneficiaire, nombre);
+      texteFlottant(scene, beneficiaire, gain > 0 ? "+" + Math.round(gain) + " PV" : "Stamina !", "#8CE99A");
       // le joueur s'illumine un instant
       beneficiaire.sprite.setTintFill(0xffd9df);
       scene.time.delayedCall(140, () => beneficiaire.sprite.active && beneficiaire.sprite.clearTint());
