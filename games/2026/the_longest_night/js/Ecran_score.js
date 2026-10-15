@@ -1,76 +1,150 @@
-export default class Ecran_score extends Phaser.Scene {
+import { TOUCHES, ecouter } from "./touches.js";
+
+export default class Menu extends Phaser.Scene {
   constructor() {
-    super({
-      key: "Ecran_score"
-    });
+    super("Menu");
   }
 
-  init(data) {
-    this.resultats = data || {}; // { mode, scoreJ1, scoreJ2, gagnant, raison }
+  preload() {
+    const path = "./assets/menu/";
+
+    // Fonds
+    this.load.image("screen_welcome", path + "screen_welcome.png");
+    this.load.image("screen_mode", path + "screen_mode.png");
+    this.load.image("story_screen", path + "story_screen.png");
+    this.load.image("screen_controles", path + "screen_controles.png");
+    this.load.image("screen_credits", path + "screen_credits.png");
+
+    // Boutons
+    this.load.image("button_jouer", path + "button_jouer.png");
+    this.load.image("button_controles", path + "button_controles.png");
+    this.load.image("button_credits", path + "button_credits.png");
+    this.load.image("button_1joueur", path + "1joueur.png");
+    this.load.image("button_2joueurs", path + "2joueurs.png");
+    this.load.image("button_retour", path + "button_retour.png");
   }
 
   create() {
-    const { mode, scoreJ1, scoreJ2, gagnant, raison } = this.resultats;
-    const valeurOuIndisponible = valeur => valeur ?? "Non renseigné";
-    const style = (taille, couleur = "#ffffff") => ({
-      fontFamily: "Arial, sans-serif",
-      fontSize: taille + "px",
-      color: couleur,
-      align: "center"
-    });
+    this.mode = 1;
+    this.currentScreen = null;
+    this.objects = [];
+    this.buttons = [];
+    this.index = 0;
 
-    this.cameras.main.setBackgroundColor("#101820");
-
-    if (mode === 2) {
-      // ----- Mode compétitif : on annonce le vainqueur -----
-      this.add.text(640, 130, "Fin du match", style(42)).setOrigin(0.5);
-
-      let annonce = "Égalité parfaite !";
-      let couleur = "#ffffff";
-      if (gagnant === 1) {
-        annonce = "Le joueur 1 remporte la partie !";
-        couleur = "#3bd5f0";
-      } else if (gagnant === 2) {
-        annonce = "Le joueur 2 remporte la partie !";
-        couleur = "#ff8c42";
-      }
-      this.add.text(640, 230, annonce, style(48, couleur)).setOrigin(0.5);
-
-      let detail = "Le temps est écoulé";
-      if (raison === "vie_J1") {
-        detail = "Le joueur 1 est tombé au combat...";
-      } else if (raison === "vie_J2") {
-        detail = "Le joueur 2 est tombé au combat...";
-      }
-      this.add.text(640, 300, detail, style(24, "#aaaaaa")).setOrigin(0.5);
-
-      this.add.text(640, 400, `Joueur 1 : ${valeurOuIndisponible(scoreJ1)}   -   Joueur 2 : ${valeurOuIndisponible(scoreJ2)}`, style(32)).setOrigin(0.5);
-    } else {
-      // ----- Mode histoire (1 joueur) -----
-      this.add.text(640, 190, "Bilan de la partie", style(42)).setOrigin(0.5);
-      this.add.text(640, 340, `Score : ${valeurOuIndisponible(scoreJ1)}`, style(30)).setOrigin(0.5);
-    }
-
-    // ----- Navigation -----
-    const libelle_rejouer = mode === 2 ? "Entrée : nouvelle partie (carte au hasard)" : "Entrée : rejouer l'histoire";
-    const rejouer = this.add.text(640, 520, libelle_rejouer, style(26, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const menu = this.add.text(640, 580, "Échap : retour au menu", style(26, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    const relancer = () => {
-      if (mode === 2) {
-        const carte = Phaser.Utils.Array.GetRandom(["niveau1", "niveau2"]);
-        this.scene.start(carte, { mode: 2 });
-      } else {
-        this.scene.start("niveau1", { mode: 1 });
+    this.screens = {
+      welcome: {
+        bg: "screen_welcome",
+        buttons: [
+          { key: "button_jouer",     x: 250, y: 450, action: () => this.showScreen("mode") },
+          { key: "button_controles", x: 250, y: 550, action: () => this.showScreen("controles") },
+          { key: "button_credits",   x: 250, y: 650, action: () => this.showScreen("credits") }
+        ]
+      },
+      mode: {
+        bg: "screen_mode",
+        buttons: [
+          { key: "button_1joueur",  x: 640, y: 380, action: () => this.chooseMode(1) },
+          { key: "button_2joueurs", x: 640, y: 470, action: () => this.chooseMode(2) },
+          { key: "button_retour",   x: 640, y: 560, action: () => this.showScreen("welcome") }
+        ]
+      },
+      story: {
+        bg: "story_screen",
+        buttons: [],
+        onConfirm: () => this.startGame()
+      },
+      controles: {
+        bg: "screen_controles",
+        buttons: [
+          { key: "button_retour", x: 640, y: 650, action: () => this.showScreen("welcome") }
+        ]
+      },
+      credits: {
+        bg: "screen_credits",
+        buttons: [
+          { key: "button_retour", x: 1000, y: 640, action: () => this.showScreen("welcome") }
+        ]
       }
     };
-    const retour_menu = () => this.scene.start("Menu");
 
-    rejouer.on("pointerdown", relancer);
-    menu.on("pointerdown", retour_menu);
-    this.input.keyboard.once("keydown-ENTER", relancer);
-    this.input.keyboard.once("keydown-ESC", retour_menu);
+    ecouter(this, TOUCHES.haut, () => this.moveFocus(-1));
+    ecouter(this, TOUCHES.bas, () => this.moveFocus(1));
+    ecouter(this, TOUCHES.valider, () => this.confirm());
+    ecouter(this, TOUCHES.retour, () => this.retour());
+
+    this.showScreen("welcome");
+  }
+
+  showScreen(name) {
+    this.objects.forEach(obj => obj.destroy());
+    this.objects = [];
+    this.buttons = [];
+    this.currentScreen = name;
+    this.index = 0;
+
+    const screen = this.screens[name];
+
+    const bg = this.add.image(0, 0, screen.bg).setOrigin(0);
+    this.objects.push(bg);
+
+    // Écran d'histoire : clic n'importe où pour continuer
+    if (screen.onConfirm) {
+      bg.setInteractive();
+      bg.on("pointerdown", () => screen.onConfirm());
+    }
+
+    screen.buttons.forEach((cfg, i) => {
+      const btn = this.add.image(cfg.x, cfg.y, cfg.key).setInteractive();
+      btn.on("pointerover", () => { this.index = i; this.updateFocus(); });
+      btn.on("pointerdown", () => cfg.action());
+      this.buttons.push(btn);
+      this.objects.push(btn);
+    });
+
+    this.updateFocus();
+  }
+
+  chooseMode(nbJoueurs) {
+    this.mode = nbJoueurs;
+    this.showScreen("story");
+  }
+
+  startGame() {
+    if (this.mode === 2) { //compétitif : une des deux cartes au hasard
+      const carte = Phaser.Utils.Array.GetRandom(["niveau1", "niveau2"]);
+      this.scene.start(carte, { mode: 2 });
+    } else { //histoire : niveau 1 puis niveau 2
+      this.scene.start("niveau1", { mode: 1 });
+    }
+  }
+
+  moveFocus(dir) {
+    const n = this.buttons.length;
+    if (n === 0) return;
+    this.index = (this.index + dir + n) % n;
+    this.updateFocus();
+  }
+
+  retour() { //bouton "retour" de la borne : remonte d'un écran
+    if (this.currentScreen === "story") {
+      this.showScreen("mode");
+    } else if (this.currentScreen !== "welcome") {
+      this.showScreen("welcome");
+    }
+  }
+
+  confirm() {
+    const screen = this.screens[this.currentScreen];
+    if (screen.onConfirm) {
+      screen.onConfirm();
+    } else if (this.buttons.length > 0) {
+      screen.buttons[this.index].action();
+    }
+  }
+
+  updateFocus() {
+    this.buttons.forEach((btn, i) => {
+      btn.setTint(i === this.index ? 0xffffff : 0x888888);
+    });
   }
 }
