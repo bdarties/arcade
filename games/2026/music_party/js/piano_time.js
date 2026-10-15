@@ -1,5 +1,9 @@
+// PIANO TIME : les notes d'un morceau descendent vers une zone dorée.
+// Il faut appuyer sur la touche du couloir quand la note est dans la zone.
+// Solo : 6 couloirs (I O P R T Y). Duo : 3 couloirs par joueur (J1 : I O P, J2 : R T Y).
+
 import { creerTouches, vientDAppuyer, unJoueurAppuie, oublierAppuis } from "./controles.js";
-import { jouerSon, jouerpiano_time, lancerMusique, volumeMusique } from "./sons.js";
+import { jouerSon, jouerPiano, lancerMusique, volumeMusique } from "./sons.js";
 import { participants } from "./persos.js";
 import { infosJeu } from "./jeux.js";
 import { choisirMorceau } from "./repertoire.js";
@@ -7,55 +11,48 @@ import { style, styleTexte, panneauPresentation, fermerPanneau, creerMedaillon, 
 
 ////////////////////////////////// Réglages du mini-jeu ///////////////////////////////////////////////
 
-const JEU = infosJeu("piano_time"); // Infos du mini-jeu récupérées dans jeux.js
+const JEU = infosJeu("piano_time");  // titre, fond, règles... (dans jeux.js)
 
-const X_PIANO_SOLO = [640];          // Mode SOLO : un piano au centre
-const X_PIANO_DUO  = [330, 950];     // Mode DUO : un piano de chaque côté
+const X_PIANO_SOLO = 640;            // solo : un seul piano au centre
+const X_PIANO_DUO = [330, 950];      // duo : un piano à gauche (J1), un à droite (J2)
+const X_PANNEAU_SOLO = 1115;         // solo : le titre et le morceau sont à droite du piano
 
-const LARGEUR_COULOIR = 100;         // 3 couloirs par piano
-const Y_HAUT          = 150;         // Les notes apparaissent en haut de chaque couloir
-const HAUTEUR_ZONE    = 64;          // Épaisseur d'une zone de sélection
+const LARGEUR_COULOIR = 100;         // largeur d'un couloir = d'une touche du piano
+const Y_HAUT = 150;                  // les notes apparaissent en haut des couloirs
+const Y_ZONE = 520;                  // centre de la zone dorée, là où il faut jouer
+const HAUTEUR_ZONE = 64;             // épaisseur de la zone dorée
+const COULEUR_ZONE = 0xffd23f;       // couleur de la zone (et des lumières quand on joue)
+const BORD_ZONE = 0xe0a818;
 
-const Y_CLAVIER = 580;               // Hauteur du haut des touches du piano
-const Y_PIEDS   = 694;               // Les persos sont sur les touches
+const Y_CLAVIER = 580;               // hauteur du haut des touches du piano
+const Y_PIEDS = 694;                 // les persos sont debout sur les touches
+const ECHELLE_PERSO = 2;             // taille des persos : x2 (pixel art de ~65 px de haut)
+const DUREE_PAS = 120;               // temps pour marcher d'une touche à la suivante (ms)
 
-const ECHELLE_PERSO = 2;             // Taille des persos : x2 (pixel art de ~65 px de haut)
-const DUREE_PAS     = 120;           // Temps pour marcher d'une touche à la suivante (ms)
+// Les touches de la borne : 3 boutons (A B C) par joueur, et la lettre écrite sur chaque couloir
+const BOUTONS = ["a", "b", "c"];
+const LETTRES = [["I", "O", "P"], ["R", "T", "Y"]]; // [J1, J2]
 
-// Les 2 zones de sélection, collées l'une à l'autre : chaque note tombe vers la zone de son type
-//   type 0 = note noire   -> zone du BAS (dorée)    -> J1 : K L M    J2 : F G H
-//   type 1 = note blanche -> zone du HAUT (blanche) -> J1 : I O P    J2 : R T Y  (elle rapporte 2 fois plus)
-// "boutons" = les touches définies dans controles.js, "lettres" = ce qu'on écrit sur la zone [J1, J2]
-const Y_ZONE = 520; // Centre de la zone du bas (la zone blanche est collée juste au-dessus)
-const ZONES = [
-  { y: Y_ZONE,                 couleur: 0xffd23f, bord: 0xe0a818, alpha: 0.35, boutons: ["d", "e", "f"], lettres: [["K", "L", "M"], ["F", "G", "H"]], points: 1 },
-  { y: Y_ZONE - HAUTEUR_ZONE,  couleur: 0xffffff, bord: 0x8a7f6a, alpha: 0.9,  boutons: ["a", "b", "c"], lettres: [["I", "O", "P"], ["R", "T", "Y"]], points: 2 }
-];
-
-// Images des tuiles : la tuile blanche n'a pas encore d'image.
-// Pour en ajouter une : mets touche_blanche.png dans assets/images et ajoute dans chargement.js
-//   this.load.image("img_touche_blanche", "./assets/images/touche_blanche.png");
-const IMAGES_TUILES = ["img_touche_note", "img_touche_blanche"]; // [noire, blanche]
-
-const PROBA_BLANCHE = 0.3;           // Chance qu'une note soit blanche (les 12 premières sont noires)
-const ERREURS_MAX   = 5;             // 5 erreurs D'AFFILÉE : le joueur est éliminé
-const DUREE_PARTIE  = 90;            // La partie dure 1 min 30 au maximum
+const IMAGE_TUILE = "img_touche_note";
+const PROBA_DEMI_TEMPS = 0.15;       // chance que la note suivante arrive un demi-temps plus tard
+const ERREURS_MAX = 5;               // 5 erreurs D'AFFILÉE : le joueur est éliminé
+const DUREE_PARTIE = 90;             // la partie dure 1 min 30 au maximum
 
 // Vitesse du jeu : le tempo dépend du temps écoulé, pas du score
 // Chaque palier = [seconde, tempo] : le tempo monte, reste stable, puis remonte
 const PALIERS = [
-  [0, 100],   // Départ : déjà dynamique, mais pas trop lent
-  [25, 125],  // Première montée
-  [45, 125],  // Palier stable (on respire)
-  [70, 155],  // Deuxième montée
-  [90, 155]   // Stable jusqu'à la fin
+  [0, 100],   // départ : déjà dynamique, mais pas trop lent
+  [25, 125],  // première montée
+  [45, 125],  // palier stable
+  [70, 155],  // deuxième montée
+  [90, 155]   // stable jusqu'à la fin
 ];
-const TEMPO_DEPART = PALIERS[0][1];  // Tempo du décompte
-const PX_PAR_TEMPS = 150;            // Écart vertical entre 2 temps de la partition
+const TEMPO_DEPART = PALIERS[0][1];  // tempo du décompte
+const PX_PAR_TEMPS = 150;            // écart vertical entre 2 temps de la partition
 
-const FENETRE_BIEN     = 46;         // Jusqu'à 46 px d'écart pour le "bien"
-const FENETRE_PARFAIT  = 15;         // Jusqu'à 15 px d'écart pour le "parfait"
-const FENETRE_TROP_TOT = 110;        // Appui trop tôt (c'est une erreur)
+const FENETRE_BIEN = 46;             // jusqu'à 46 px d'écart pour le "bien"
+const FENETRE_PARFAIT = 15;          // jusqu'à 15 px d'écart pour le "parfait"
+const FENETRE_TROP_TOT = 110;        // appui trop tôt (c'est une erreur)
 
 const STYLE_AUTEUR = { fontFamily: "Georgia, serif", fontSize: "18px", fontStyle: "italic", color: "#ffe9a8" };
 
@@ -72,23 +69,24 @@ export default class piano_time extends Phaser.Scene {
     this.touches = creerTouches(this);
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
-    this.tempsEcoule = 0;                 // Secondes de jeu (le décompte ne compte pas)
+    this.nbCouloirs = this.solo ? 6 : 3; // solo : 6 couloirs, duo : 3 par joueur
+    this.tempsEcoule = 0;                // secondes de jeu (le décompte ne compte pas)
     this.tempo = TEMPO_DEPART;
 
     // Duo : la partition est la même pour les 2 joueurs
     this.morceau = choisirMorceau();
     this.partition = [];
     this.fabrique = { phrase: 0, note: 0, temps: 2, couloir: 1, hauteur: null, demiTemps: false };
-    this.allongerPartition(64); // Génération des 64 premières notes
+    this.allongerPartition(64); // génération des 64 premières notes
 
     this.add.image(0, 0, JEU.fond).setOrigin(0);
     if (this.solo) this.creerCotesSolo();
     else this.creerCentre();
 
-    // Le chrono (temps restant), en haut à droite
+    // le chrono (temps restant), en haut à droite
     this.texteTemps = this.add.text(1240, 30, "1:30", style(34, OR, 6)).setOrigin(1, 0.5).setDepth(PROF.hud);
 
-    // On crée un joueur par personnage choisi (1 en solo, 2 en duo)
+    // on crée un joueur par personnage choisi (1 en solo, 2 en duo)
     this.joueurs = participants(this.registry).map((perso, i) => this.creerJoueur(perso, i));
 
     lancerMusique(this);
@@ -97,34 +95,32 @@ export default class piano_time extends Phaser.Scene {
 
   //////////////////////////////// PARTITION INFINIE //////////////////////////////////
 
-  // On ajoute des notes à la fin de la partition, au fur et à mesure.
+  // on ajoute des notes à la fin de la partition, au fur et à mesure
   allongerPartition(nombre) {
     var f = this.fabrique;
     for (var k = 0; k < nombre; k++) {
-      var phrase = this.morceau.phrases[f.phrase]; // La phrase musicale en cours
-      var hauteur = phrase[f.note];                // La note à placer
+      var phrase = this.morceau.phrases[f.phrase]; // la phrase musicale en cours
+      var hauteur = phrase[f.note];                // la note à placer
 
-      // Après un demi-temps, la note suivante est forcément dans un autre couloir
+      // le couloir suit le dessin de la mélodie
       var ecart = f.hauteur == null ? 0 : hauteur - f.hauteur;
       var couloir = this.choisirCouloir(f.couloir, ecart);
-      if (f.demiTemps && couloir == f.couloir) couloir = (couloir + Phaser.Math.Between(1, 2)) % 3;
+      // après un demi-temps, la note suivante est forcément dans un autre couloir
+      if (f.demiTemps && couloir == f.couloir) couloir = (couloir + Phaser.Math.Between(1, 2)) % this.nbCouloirs;
+      this.partition.push({ temps: f.temps, couloir: couloir, hauteur: hauteur });
 
-      // Type de la note : 0 = noire, 1 = blanche (jamais de blanche au début)
-      var type = this.partition.length > 12 && Math.random() < PROBA_BLANCHE ? 1 : 0;
-      this.partition.push({ temps: f.temps, couloir: couloir, hauteur: hauteur, type: type });
-
-      // On mémorise cette note pour calculer la suivante
+      // on mémorise cette note pour calculer la suivante
       f.couloir = couloir;
       f.hauteur = hauteur;
 
-      // La note suivante arrive 1 temps plus tard, ou parfois (15 % de chances) un demi-temps
-      f.demiTemps = this.partition.length > 12 && Math.random() < 0.15;
+      // la note suivante arrive 1 temps plus tard, ou parfois un demi-temps
+      f.demiTemps = this.partition.length > 12 && Math.random() < PROBA_DEMI_TEMPS;
       f.temps += f.demiTemps ? 0.5 : 1;
 
-      // On passe à la note suivante de la phrase
+      // on passe à la note suivante de la phrase
       f.note++;
       if (f.note >= phrase.length) {
-        // Fin de la phrase : on passe à la suivante (et on revient à la première après la dernière)
+        // fin de la phrase : la suivante (et on revient à la première après la dernière)
         f.note = 0;
         f.phrase = (f.phrase + 1) % this.morceau.phrases.length;
         f.temps += 1; // 1 temps de pause entre 2 phrases
@@ -132,20 +128,21 @@ export default class piano_time extends Phaser.Scene {
     }
   }
 
-  // Le couloir suit le dessin de la mélodie : plus aigu = à droite, plus grave = à gauche
+  // plus la note est aiguë, plus le couloir est à droite (et l'inverse)
   choisirCouloir(dernier, ecart) {
+    var n = this.nbCouloirs;
     var c;
-    if (ecart > 0) c = dernier + (ecart >= 5 ? 2 : 1);       // plus aigu : droite
-    else if (ecart < 0) c = dernier - (ecart <= -5 ? 2 : 1); // plus grave : gauche
-    else c = Phaser.Math.Between(0, 2);                      // même hauteur : couloir au hasard
+    if (ecart > 0) c = dernier + (ecart >= 5 ? 2 : 1);       // plus aigu : à droite
+    else if (ecart < 0) c = dernier - (ecart <= -5 ? 2 : 1); // plus grave : à gauche
+    else c = Phaser.Math.Between(0, n - 1);                  // même hauteur : couloir au hasard
 
-    // Si on sort du piano, on repart de l'autre côté
-    if (c > 2) c = Phaser.Math.Between(0, 1);
-    if (c < 0) c = Phaser.Math.Between(1, 2);
+    // si on sort du piano, on repart de l'autre côté
+    if (c > n - 1) c = Phaser.Math.Between(0, 1);
+    if (c < 0) c = Phaser.Math.Between(n - 2, n - 1);
     return c;
   }
 
-  // Le tempo à un moment de la partie : on cherche entre quels 2 paliers on se trouve
+  // le tempo à un moment de la partie : on cherche entre quels 2 paliers on se trouve
   // et on calcule la valeur intermédiaire (c'est ce qui rend la montée progressive)
   tempoA(secondes) {
     for (var i = 1; i < PALIERS.length; i++) {
@@ -155,85 +152,83 @@ export default class piano_time extends Phaser.Scene {
         return avant[1] + ((apres[1] - avant[1]) * (secondes - avant[0])) / (apres[0] - avant[0]);
       }
     }
-    return PALIERS[PALIERS.length - 1][1]; // Après le dernier palier : on garde le tempo final
+    return PALIERS[PALIERS.length - 1][1]; // après le dernier palier : on garde le tempo final
   }
 
   //////////////////////////////// FOND DU JEU AVEC INTERFACE ///////////////////////////
 
-  // En solo : le titre et le morceau à gauche du piano
+  // en solo : le titre et le morceau à droite du piano
   creerCotesSolo() {
-    this.add.rectangle(235, 250, 330, 220, 0x1b1030, 0.8).setStrokeStyle(2, 0xe0a818);
-    this.add.text(235, 180, JEU.titre, style(40, OR, 8)).setOrigin(0.5);
-    this.add.text(235, 240, "♪ " + this.morceau.titre, styleTexte(20)).setOrigin(0.5);
-    this.add.text(235, 268, this.morceau.auteur, STYLE_AUTEUR).setOrigin(0.5);
+    var x = X_PANNEAU_SOLO;
+    this.add.rectangle(x, 250, 300, 220, 0x1b1030, 0.8).setStrokeStyle(2, BORD_ZONE);
+    this.add.text(x, 180, JEU.titre, style(40, OR, 8)).setOrigin(0.5);
+    this.add.text(x, 240, "♪ " + this.morceau.titre, styleTexte(20)).setOrigin(0.5);
+    this.add.text(x, 268, this.morceau.auteur, STYLE_AUTEUR).setOrigin(0.5);
   }
 
-  // En duo : le titre et le morceau au milieu, entre les 2 pianos
+  // en duo : le titre et le morceau au milieu, entre les 2 pianos
   creerCentre() {
     this.add.text(640, 46, JEU.titre, style(40, OR, 8)).setOrigin(0.5).setDepth(PROF.hud);
     this.add.text(640, 96, "♪ " + this.morceau.titre, styleTexte(20)).setOrigin(0.5).setDepth(PROF.hud);
     this.add.text(640, 122, this.morceau.auteur, STYLE_AUTEUR).setOrigin(0.5).setDepth(PROF.hud);
   }
 
-  // Position X du centre d'un couloir : c vaut 0 (gauche), 1 (milieu) ou 2 (droite)
+  // position X du centre d'un couloir (c = 0 pour le couloir le plus à gauche)
   xCouloir(j, c) {
-    return j.x + (c - 1) * LARGEUR_COULOIR;
+    return j.gauche + (c + 0.5) * LARGEUR_COULOIR;
   }
 
-  // La piste = une feuille de papier à musique avec 3 couloirs et les 2 zones de sélection
+  // la piste = une feuille de papier à musique avec ses couloirs et la zone dorée
   dessinerPiste(j) {
-    var gauche = j.x - 1.5 * LARGEUR_COULOIR; // Bord gauche de la piste
-    var largeur = 3 * LARGEUR_COULOIR;
+    var gauche = j.gauche;
+    var largeur = j.largeur;
 
     // "graphics" = un objet sur lequel on dessine des formes (rectangles, lignes...)
     var g = this.add.graphics().setDepth(PROF.piste);
 
-    // Ombre (fond noir transparent) puis feuille de papier beige
+    // ombre (fond noir transparent) puis feuille de papier beige
     g.fillStyle(0x000000, 0.3);
     g.fillRoundedRect(gauche - 4, Y_HAUT - 22, largeur + 28, Y_CLAVIER - Y_HAUT + 40, 14);
     g.fillStyle(0xfbf5e6, 0.94);
     g.fillRoundedRect(gauche - 10, Y_HAUT - 30, largeur + 20, Y_CLAVIER - Y_HAUT + 40, 14);
 
-    // 2 lignes verticales qui séparent les 3 couloirs
+    // une ligne verticale entre 2 couloirs
     g.lineStyle(2, 0xd8ccb4);
-    for (var k = 1; k < 3; k++) {
+    for (var k = 1; k < j.couloirs.length; k++) {
       g.lineBetween(gauche + k * LARGEUR_COULOIR, Y_HAUT - 20, gauche + k * LARGEUR_COULOIR, Y_CLAVIER);
     }
 
-    // Les 2 zones de sélection : c'est là qu'il faut jouer les notes
-    j.lumieres = [];
-    ZONES.forEach((zone, type) => {
-      g.fillStyle(zone.couleur, zone.alpha);
-      g.fillRect(gauche, zone.y - HAUTEUR_ZONE / 2, largeur, HAUTEUR_ZONE);
-      g.lineStyle(3, zone.bord);
-      g.strokeRect(gauche, zone.y - HAUTEUR_ZONE / 2, largeur, HAUTEUR_ZONE);
+    // la zone dorée : c'est là qu'il faut jouer les notes
+    g.fillStyle(COULEUR_ZONE, 0.35);
+    g.fillRect(gauche, Y_ZONE - HAUTEUR_ZONE / 2, largeur, HAUTEUR_ZONE);
+    g.lineStyle(3, BORD_ZONE);
+    g.strokeRect(gauche, Y_ZONE - HAUTEUR_ZONE / 2, largeur, HAUTEUR_ZONE);
 
-      // Pour chaque couloir : la touche du joueur + une lumière (elle s'allume quand on appuie)
-      j.lumieres[type] = [0, 1, 2].map((c) => {
-        var x = this.xCouloir(j, c);
-        this.add.text(x, zone.y, zone.lettres[j.i][c], style(30, "#ffffff", 6)).setOrigin(0.5).setAlpha(0.6).setDepth(PROF.zone);
-        return this.add.rectangle(x, zone.y, LARGEUR_COULOIR - 6, HAUTEUR_ZONE - 6, zone.couleur).setAlpha(0).setDepth(PROF.zone);
-      });
+    // pour chaque couloir : la touche écrite dans la zone + une lumière (elle s'allume à l'appui)
+    j.lumieres = j.couloirs.map((couloir, c) => {
+      var x = this.xCouloir(j, c);
+      this.add.text(x, Y_ZONE, couloir.lettre, style(30, "#ffffff", 6)).setOrigin(0.5).setAlpha(0.6).setDepth(PROF.zone);
+      return this.add.rectangle(x, Y_ZONE, LARGEUR_COULOIR - 6, HAUTEUR_ZONE - 6, COULEUR_ZONE).setAlpha(0).setDepth(PROF.zone);
     });
 
-    // Texte en haut de la piste (tempo)
+    // texte en haut de la piste (tempo)
     j.texteTempo = this.add
       .text(j.x, Y_HAUT - 12, "", { ...styleTexte(16, "#ee009f"), fontStyle: "bold italic" })
       .setOrigin(0.5)
       .setDepth(PROF.zone);
   }
 
-  // Le piano géant sur lequel le perso se déplace
+  // le piano géant sur lequel le perso se déplace
   dessinerClavier(j) {
-    var gauche = j.x - 1.5 * LARGEUR_COULOIR;
+    var gauche = j.gauche;
     var g = this.add.graphics().setDepth(PROF.clavier);
 
-    // Boîtier sombre du piano
+    // boîtier sombre du piano
     g.fillStyle(0x1b1030);
-    g.fillRoundedRect(gauche - 10, Y_CLAVIER - 6, 3 * LARGEUR_COULOIR + 20, 150, 10);
+    g.fillRoundedRect(gauche - 10, Y_CLAVIER - 6, j.largeur + 20, 150, 10);
 
-    // 3 touches blanches (avec une bande grise en bas pour l'effet de relief)
-    for (var c = 0; c < 3; c++) {
+    // une touche blanche par couloir (avec une bande grise en bas pour l'effet de relief)
+    for (var c = 0; c < j.couloirs.length; c++) {
       var x = gauche + c * LARGEUR_COULOIR + 3;
       g.fillStyle(0xfdfaf2);
       g.fillRoundedRect(x, Y_CLAVIER, LARGEUR_COULOIR - 6, 124, { tl: 0, tr: 0, bl: 10, br: 10 });
@@ -241,16 +236,16 @@ export default class piano_time extends Phaser.Scene {
       g.fillRect(x, Y_CLAVIER + 108, LARGEUR_COULOIR - 6, 16);
     }
 
-    // 2 touches noires, entre les touches blanches
+    // une touche noire entre 2 touches blanches, sauf à la frontière entre J1 et J2 (en solo)
     g.fillStyle(0x16101f);
-    for (var k = 1; k < 3; k++) {
-      g.fillRoundedRect(gauche + k * LARGEUR_COULOIR - 18, Y_CLAVIER, 36, 62, { tl: 0, tr: 0, bl: 6, br: 6 });
+    for (var k = 1; k < j.couloirs.length; k++) {
+      if (k % 3 != 0) g.fillRoundedRect(gauche + k * LARGEUR_COULOIR - 18, Y_CLAVIER, 36, 62, { tl: 0, tr: 0, bl: 6, br: 6 });
     }
 
-    // Une lumière par touche (invisible, elle s'allume quand on appuie)
-    j.lumieresClavier = [0, 1, 2].map((c) =>
+    // une lumière par touche (invisible, elle s'allume quand on appuie)
+    j.lumieresClavier = j.couloirs.map((couloir, c) =>
       this.add
-        .rectangle(this.xCouloir(j, c), Y_CLAVIER + 62, LARGEUR_COULOIR - 6, 124, ZONES[0].couleur)
+        .rectangle(this.xCouloir(j, c), Y_CLAVIER + 62, LARGEUR_COULOIR - 6, 124, COULEUR_ZONE)
         .setAlpha(0)
         .setDepth(PROF.lumiere)
     );
@@ -258,40 +253,58 @@ export default class piano_time extends Phaser.Scene {
 
   /////////////////////////////// CRÉATION DES JOUEURS //////////////////////////////////
 
+  // les couloirs d'un joueur : chacun a une lettre affichée et la touche à presser
+  // solo : les 6 couloirs (J1 puis J2) ; duo : les 3 couloirs du joueur
+  couloirsDuJoueur(i) {
+    var joueurs = this.solo ? [0, 1] : [i];
+    var couloirs = [];
+    joueurs.forEach((p) => {
+      BOUTONS.forEach((bouton, k) => {
+        couloirs.push({ lettre: LETTRES[p][k], touches: this.touches[p][bouton] });
+      });
+    });
+    return couloirs;
+  }
+
   creerJoueur(perso, i) {
+    var x = this.solo ? X_PIANO_SOLO : X_PIANO_DUO[i];
+    var largeur = this.nbCouloirs * LARGEUR_COULOIR;
     var j = {
       perso: perso,
       i: i,
-      x: this.solo ? X_PIANO_SOLO[i] : X_PIANO_DUO[i],
-      touches: this.touches[i],                 // Les touches de ce joueur
-      pan: this.solo ? 0 : i == 0 ? -0.6 : 0.6, // Son : J1 à gauche, J2 à droite, solo au centre
-      temps: -4,                                // Position dans la partition, en battements (négatif = décompte)
-      prochaine: 0,                             // Numéro de la prochaine note à faire apparaître
-      tuiles: [],                               // Les tuiles actuellement visibles sur sa piste
+      x: x,
+      gauche: x - largeur / 2,                  // bord gauche du piano
+      largeur: largeur,
+      couloirs: this.couloirsDuJoueur(i),      // les touches de ce joueur
+      pan: this.solo ? 0 : i == 0 ? -0.6 : 0.6, // son : J1 à gauche, J2 à droite, solo au centre
+      temps: -4,                                // position dans la partition, en battements (négatif = décompte)
+      prochaine: 0,                             // numéro de la prochaine note à faire apparaître
+      tuiles: [],                               // les tuiles actuellement visibles sur sa piste
       score: 0,
-      combo: 0,                                 // Nombre de notes réussies d'affilée
+      combo: 0,                                 // notes réussies d'affilée
       meilleurCombo: 0,
       notesJouees: 0,
-      erreurs: 0,                               // Erreurs d'affilée (retombe à 0 dès qu'on réussit une note)
-      totalErreurs: 0,                          // Toutes les erreurs de la partie (pour les stats)
+      erreurs: 0,                               // erreurs d'affilée (retombe à 0 dès qu'on réussit une note)
+      totalErreurs: 0,                          // toutes les erreurs de la partie (pour les stats)
       elimine: false
     };
 
     this.dessinerPiste(j);
     this.dessinerClavier(j);
 
-    // Le perso est debout sur la touche du milieu (image 0 de sa marche)
+    // le perso est debout au milieu du piano (image 0 de sa marche)
+    var milieu = Math.floor((this.nbCouloirs - 1) / 2);
     j.sprite = this.add
-      .sprite(this.xCouloir(j, 1), Y_PIEDS, perso.marche, 0)
+      .sprite(this.xCouloir(j, milieu), Y_PIEDS, perso.marche, 0)
       .setOrigin(0.5, 1)
       .setScale(ECHELLE_PERSO)
       .setDepth(PROF.perso)
-      .setFlipX(i == 1); // Le joueur 2 regarde vers la gauche
+      .setFlipX(i == 1); // le joueur 2 regarde vers la gauche
     this.creerHUD(j);
     return j;
   }
 
-  // Le score à côté de la tête du perso, les erreurs d'affilée, le multiplicateur et le combo
+  // le score à côté de la tête du perso, les erreurs d'affilée, le multiplicateur et le combo
   creerHUD(j) {
     var xTete = j.x - 110;
     creerMedaillon(this, xTete, 56, j.perso, j.perso.etiquette);
@@ -303,12 +316,12 @@ export default class piano_time extends Phaser.Scene {
     this.majTempo(j);
   }
 
-  // Multiplicateur de score : x1 au départ, +1 tous les 10 combos, maximum x4
+  // multiplicateur de score : x1 au départ, +1 tous les 10 combos, maximum x4
   multiplicateur(j) {
     return Math.min(4, 1 + Math.floor(j.combo / 10));
   }
 
-  // Met à jour le score, les erreurs d'affilée, le multiplicateur et le combo
+  // met à jour le score, les erreurs d'affilée, le multiplicateur et le combo
   majHUD(j) {
     j.texteScore.setText(j.score);
     j.texteErreurs.setText(j.erreurs > 0 ? "Erreurs : " + j.erreurs + " / " + ERREURS_MAX : "");
@@ -324,24 +337,25 @@ export default class piano_time extends Phaser.Scene {
   /////////////////////////////// PANNEAU EXPLICATIF //////////////////////////////////////
 
   presenter() {
-    // Les touches de chaque zone : "K L M" en solo, "K L M  /  F G H" en duo
-    var touches = (zone) => zone.lettres.slice(0, this.joueurs.length).map((l) => l.join(" ")).join("   /   ");
+    // les touches affichées : "I O P R T Y" en solo, "J1 : I O P   J2 : R T Y" en duo
+    var touches = this.solo
+      ? LETTRES[0].concat(LETTRES[1]).join(" ")
+      : "J1 : " + LETTRES[0].join(" ") + "      J2 : " + LETTRES[1].join(" ");
 
     this.panneau = panneauPresentation(this, JEU.titre, [
-      "Les notes descendent vers les 2 zones de ton piano.",
-      "Zone du haut (notes blanches, points x2) : " + touches(ZONES[1]),
-      "Zone du bas (notes noires) : " + touches(ZONES[0]),
+      "Les notes descendent vers la zone dorée de ton piano.",
+      "Touches : " + touches,
       "Une erreur fait perdre ton combo. " + ERREURS_MAX + " erreurs d'affilée : c'est fini !",
       "La musique accélère pendant 1 min 30 : tiens bon !",
       "Au programme : " + this.morceau.titre + " (" + this.morceau.auteur + ")"
     ]);
   }
 
-  // Le chef d'orchestre compte les 4 temps avant de commencer
+  // le chef d'orchestre compte les 4 temps avant de commencer
   decompte() {
     this.etat = "decompte";
-    volumeMusique(this, 0); // La musique est faite par les joueurs
-    var dureeTemps = 60000 / TEMPO_DEPART; // Durée d'un temps en ms
+    volumeMusique(this, 0); // la musique est faite par les joueurs
+    var dureeTemps = 60000 / TEMPO_DEPART; // durée d'un temps en ms
 
     for (var k = 0; k < 4; k++) {
       let numero = k;
@@ -351,33 +365,33 @@ export default class piano_time extends Phaser.Scene {
       });
     }
 
-    // La partie commence après les 4 temps
+    // la partie commence après les 4 temps
     this.time.delayedCall(4 * dureeTemps, () => {
       this.etat = "jeu";
-      oublierAppuis(this.touches); // Ignore les appuis faits pendant le décompte
+      oublierAppuis(this.touches); // ignore les appuis faits pendant le décompte
       annonce(this, "Jouez !", "#ffffff", 500, 300);
     });
   }
 
   update(time, delta) {
     if (this.etat == "presentation") {
-      // Pendant la présentation, on attend que quelqu'un appuie sur A pour lancer
+      // pendant la présentation, on attend que quelqu'un appuie sur A pour lancer
       if (unJoueurAppuie(this.touches, "a")) {
-        this.etat = "lancement"; // Évite de relancer plusieurs fois
+        this.etat = "lancement"; // évite de relancer plusieurs fois
         jouerSon(this, "valider");
         fermerPanneau(this, this.panneau, () => this.decompte());
       }
       return;
     }
 
-    // On ne fait avancer le jeu que pendant le décompte et la partie
+    // on ne fait avancer le jeu que pendant le décompte et la partie
     if (this.etat != "decompte" && this.etat != "jeu") return;
 
     var dt = Math.min(delta, 50) / 1000;
-    this.tempo = this.tempoA(this.tempsEcoule); // Le tempo dépend du temps écoulé
+    this.tempo = this.tempoA(this.tempsEcoule); // le tempo dépend du temps écoulé
     this.joueurs.forEach((j) => this.avancer(j, dt));
 
-    // Le chrono ne tourne que pendant la partie : à 0, c'est la fin
+    // le chrono ne tourne que pendant la partie : à 0, c'est la fin
     if (this.etat == "jeu") {
       this.tempsEcoule += dt;
       var reste = Math.max(0, Math.ceil(DUREE_PARTIE - this.tempsEcoule));
@@ -388,73 +402,66 @@ export default class piano_time extends Phaser.Scene {
 
   avancer(j, dt) {
     if (j.elimine) return;
-    // On avance dans la partition au tempo du jeu
+    // on avance dans la partition au tempo du jeu
     // (tempo en battements par minute, donc / 60 pour avoir des battements par seconde)
     j.temps += (dt * this.tempo) / 60;
     this.majTempo(j);
 
-    // Les notes qui entrent dans la piste apparaissent en haut
-    // (on prend la zone du bas, la plus éloignée : les notes blanches restent cachées jusqu'à leur arrivée)
-    var tempsVisibles = (ZONES[0].y - Y_HAUT) / PX_PAR_TEMPS;
+    // les notes qui entrent dans la piste apparaissent en haut
+    var tempsVisibles = (Y_ZONE - Y_HAUT) / PX_PAR_TEMPS;
     while (this.partition[j.prochaine].temps - j.temps <= tempsVisibles) {
       this.creerTuile(j, this.partition[j.prochaine]);
       j.prochaine++;
 
-      // Il reste moins de 16 notes d'avance : on en génère 32 de plus
+      // il reste moins de 16 notes d'avance : on en génère 32 de plus
       if (j.prochaine > this.partition.length - 16) this.allongerPartition(32);
     }
 
-    // Place chaque tuile : plus sa note approche dans le temps, plus elle est proche de SA zone
+    // place chaque tuile : plus sa note approche dans le temps, plus elle est proche de la zone
     j.tuiles.slice().forEach((t) => {
-      if (j.elimine) return; // Éliminé par la tuile précédente
-      var zone = ZONES[t.note.type];
-      t.y = zone.y - (t.note.temps - j.temps) * PX_PAR_TEMPS;
+      if (j.elimine) return; // éliminé par la tuile précédente
+      t.y = Y_ZONE - (t.note.temps - j.temps) * PX_PAR_TEMPS;
       t.setVisible(t.y >= Y_HAUT);
-      if (t.y - zone.y > FENETRE_BIEN) this.rater(j, t); // Elle a dépassé sa zone
+      if (t.y - Y_ZONE > FENETRE_BIEN) this.rater(j, t); // elle a dépassé la zone
     });
 
-    // Les touches ne comptent que pendant la partie (pas pendant le décompte)
+    // les touches ne comptent que pendant la partie (pas pendant le décompte)
     if (this.etat == "jeu" && !j.elimine) this.lireTouches(j);
   }
 
-  // Chaque type de note a son image (même taille). Si l'image n'est pas chargée (cas de la
-  // tuile blanche pour le moment), on crée un rectangle sans couleur : il ne s'affiche pas
+  // une tuile = une note qui descend dans son couloir
   creerTuile(j, note) {
-    var x = this.xCouloir(j, note.couloir);
-    var cle = IMAGES_TUILES[note.type];
-    var tuile;
-    if (this.textures.exists(cle)) tuile = this.add.image(x, Y_HAUT, cle).setDisplaySize(90, 60);
-    else tuile = this.add.rectangle(x, Y_HAUT, 90, 60);
-    tuile.setDepth(PROF.tuile);
+    var tuile = this.add
+      .image(this.xCouloir(j, note.couloir), Y_HAUT, IMAGE_TUILE)
+      .setDisplaySize(90, 60)
+      .setDepth(PROF.tuile);
     tuile.note = note;
     j.tuiles.push(tuile);
   }
 
-  // Supprime une tuile : on la retire de la liste du joueur et on la détruit à l'écran
+  // supprime une tuile : on la retire de la liste du joueur et on la détruit à l'écran
   supprimerTuile(j, tuile) {
-    j.tuiles = j.tuiles.filter((t) => t != tuile); // filter = on garde toutes les tuiles sauf celle-ci
+    j.tuiles = j.tuiles.filter((t) => t != tuile);
     tuile.destroy();
   }
 
-  // Supprime toutes les tuiles d'un joueur
+  // supprime toutes les tuiles d'un joueur
   viderTuiles(j) {
     j.tuiles.forEach((t) => t.destroy());
     j.tuiles = [];
   }
 
-  // Regarde si le joueur vient d'appuyer sur une de ses 6 touches (3 par zone)
+  // regarde si le joueur vient d'appuyer sur la touche d'un de ses couloirs
   lireTouches(j) {
-    ZONES.forEach((zone, type) => {
-      zone.boutons.forEach((bouton, c) => {
-        if (vientDAppuyer(j.touches[bouton])) this.appuyer(j, c, type);
-      });
+    j.couloirs.forEach((couloir, c) => {
+      if (vientDAppuyer(couloir.touches)) this.appuyer(j, c);
     });
   }
 
-  // Le perso marche jusqu'au couloir c, puis s'arrête
+  // le perso marche jusqu'au couloir c, puis s'arrête
   marcherVers(j, c) {
     var xCible = this.xCouloir(j, c);
-    if (j.marche) j.marche.stop(); // S'il marchait déjà, on part de là où il est
+    if (j.marche) j.marche.stop(); // s'il marchait déjà, on part de là où il est
     if (xCible == j.sprite.x) {
       j.sprite.stop();
       j.sprite.setFrame(0);
@@ -462,7 +469,7 @@ export default class piano_time extends Phaser.Scene {
     }
 
     var distance = Math.abs(xCible - j.sprite.x);
-    j.sprite.setFlipX(xCible < j.sprite.x);  // Il regarde dans le sens où il marche
+    j.sprite.setFlipX(xCible < j.sprite.x); // il regarde dans le sens où il marche
     j.sprite.play(j.perso.animMarche, true); // true = on ne relance pas l'anim si elle tourne déjà
     j.marche = this.tweens.add({
       targets: j.sprite,
@@ -470,89 +477,86 @@ export default class piano_time extends Phaser.Scene {
       duration: DUREE_PAS * (distance / LARGEUR_COULOIR),
       onComplete: () => {
         j.sprite.stop();
-        j.sprite.setFrame(0); // Il s'arrête, debout
+        j.sprite.setFrame(0); // il s'arrête, debout
       }
     });
   }
 
-  // Le joueur appuie sur la touche du couloir c, pour la zone "type" (0 = bas / noire, 1 = haut / blanche)
-  appuyer(j, c, type) {
-    var zone = ZONES[type];
-    this.marcherVers(j, c); // Le perso marche jusqu'à la touche jouée
-    this.eclairer(j, c, type);
+  // le joueur appuie sur la touche du couloir c
+  appuyer(j, c) {
+    this.marcherVers(j, c); // le perso marche jusqu'à la touche jouée
+    this.eclairer(j, c);
 
-    // La tuile de ce couloir ET de ce type la plus proche de sa zone
+    // la tuile de ce couloir la plus proche de la zone
     var cible = null;
     j.tuiles.forEach((t) => {
-      if (t.note.couloir != c || t.note.type != type) return; // Pas le bon couloir ou pas la bonne couleur
-      if (cible == null || Math.abs(t.y - zone.y) < Math.abs(cible.y - zone.y)) cible = t;
+      if (t.note.couloir != c) return;
+      if (cible == null || Math.abs(t.y - Y_ZONE) < Math.abs(cible.y - Y_ZONE)) cible = t;
     });
 
-    // Distance entre cette tuile et le centre de la zone
-    var ecart = cible ? Math.abs(cible.y - zone.y) : Infinity;
+    // distance entre cette tuile et le centre de la zone
+    var ecart = cible ? Math.abs(cible.y - Y_ZONE) : Infinity;
 
     if (ecart <= FENETRE_BIEN) {
-      this.reussir(j, cible, ecart <= FENETRE_PARFAIT); // Dans la zone : réussi (parfait si très précis)
-    } else if (cible && cible.y < zone.y && ecart <= FENETRE_TROP_TOT) {
-      this.tropTot(j, c, zone); // Tuile au-dessus de la zone et pas trop loin : appui trop tôt
+      this.reussir(j, cible, ecart <= FENETRE_PARFAIT); // dans la zone : réussi (parfait si très précis)
+    } else if (cible && cible.y < Y_ZONE && ecart <= FENETRE_TROP_TOT) {
+      this.tropTot(j, c); // tuile au-dessus de la zone et pas trop loin : appui trop tôt
     } else {
-      this.fausseNote(j, c, zone); // Aucune tuile proche : fausse note
+      this.fausseNote(j, c); // aucune tuile proche : fausse note
     }
   }
 
-  // Allume brièvement la lumière de la zone et de la touche du piano (de la couleur de la zone)
-  eclairer(j, c, type) {
-    var zone = ZONES[type];
-    [j.lumieres[type][c], j.lumieresClavier[c]].forEach((lumiere) => {
-      lumiere.setFillStyle(zone.couleur);
-      lumiere.setAlpha(0.8); // On l'allume d'un coup
-      this.tweens.add({ targets: lumiere, alpha: 0, duration: 250 }); // Puis elle s'éteint en 250 ms
+  // allume brièvement la lumière de la zone et de la touche du piano
+  eclairer(j, c) {
+    [j.lumieres[c], j.lumieresClavier[c]].forEach((lumiere) => {
+      lumiere.setFillStyle(COULEUR_ZONE);
+      lumiere.setAlpha(0.8); // on l'allume d'un coup
+      this.tweens.add({ targets: lumiere, alpha: 0, duration: 250 }); // puis elle s'éteint en 250 ms
     });
   }
 
   reussir(j, tuile, parfait) {
-    var zone = ZONES[tuile.note.type];
-    var x = tuile.x; // On garde la position avant de détruire la tuile
-    jouerpiano_time(this, tuile.note.hauteur, { pan: j.pan }); // On joue la note de la mélodie
+    var x = tuile.x; // on garde la position avant de détruire la tuile
+    jouerPiano(this, tuile.note.hauteur, { pan: j.pan }); // on joue la note de la mélodie
     this.supprimerTuile(j, tuile);
 
     j.combo++;
-    j.meilleurCombo = Math.max(j.meilleurCombo, j.combo); // Math.max = garde le plus grand des deux
+    j.meilleurCombo = Math.max(j.meilleurCombo, j.combo);
     j.notesJouees++;
-    j.erreurs = 0; // Une note réussie remet le compteur d'erreurs d'affilée à 0
-    j.score += (parfait ? 100 : 50) * zone.points * this.multiplicateur(j);
+    j.erreurs = 0; // une note réussie remet le compteur d'erreurs d'affilée à 0
+    j.score += (parfait ? 100 : 50) * this.multiplicateur(j);
 
-    texteFlottant(this, x, zone.y - 48, parfait ? "PARFAIT" : "BIEN", parfait ? OR : "#ffffff", 22);
+    texteFlottant(this, x, Y_ZONE - 48, parfait ? "PARFAIT" : "BIEN", parfait ? OR : "#ffffff", 22);
 
-    // À 10, 20 et 30 combos : on annonce le nouveau multiplicateur
+    // à 10, 20 et 30 combos : on annonce le nouveau multiplicateur
     if (j.combo % 10 == 0 && j.combo <= 30) {
       texteFlottant(this, j.x, 330, "COMBO x" + this.multiplicateur(j) + " !", OR, 36);
       jouerSon(this, "combo", j.pan);
     }
 
     this.majHUD(j);
-    this.verifierFin(); // En duo, le gagnant est peut-être déjà connu
+    this.verifierFin(); // en duo, le gagnant est peut-être déjà connu
   }
 
-  // Les 3 sortes d'erreurs : appui trop tôt, fausse note, note qui passe sans être jouée
-  tropTot(j, c, zone) {
-    texteFlottant(this, this.xCouloir(j, c), zone.y - 48, "Trop tôt !", "#ffa23a", 20);
+  // les 3 sortes d'erreurs : appui trop tôt, fausse note, note qui passe sans être jouée
+  tropTot(j, c) {
+    texteFlottant(this, this.xCouloir(j, c), Y_ZONE - 48, "Trop tôt !", "#ffa23a", 20);
     this.erreur(j, "trop_tot");
   }
 
-  fausseNote(j, c, zone) {
-    texteFlottant(this, this.xCouloir(j, c), zone.y - 48, "Fausse note !", "#ff4d5e", 20);
+  fausseNote(j, c) {
+    texteFlottant(this, this.xCouloir(j, c), Y_ZONE - 48, "Fausse note !", "#ff4d5e", 20);
     this.erreur(j);
   }
 
-  // La tuile a dépassé sa zone sans être jouée
+  // la tuile a dépassé la zone sans être jouée
   rater(j, tuile) {
-    texteFlottant(this, tuile.x, ZONES[tuile.note.type].y - 48, "Raté !", "#ff4d5e", 22);
+    texteFlottant(this, tuile.x, Y_ZONE - 48, "Raté !", "#ff4d5e", 22);
     this.supprimerTuile(j, tuile);
     this.erreur(j);
   }
 
-  // Une erreur coupe le combo et s'ajoute aux erreurs d'affilée : à 5, le joueur est éliminé
+  // une erreur coupe le combo et s'ajoute aux erreurs d'affilée : à 5, le joueur est éliminé
   erreur(j, son) {
     if (j.elimine) return;
     j.combo = 0;
@@ -569,16 +573,16 @@ export default class piano_time extends Phaser.Scene {
     j.elimine = true;
     this.viderTuiles(j);
 
-    // Voile sombre sur son piano
+    // voile sombre sur son piano
     this.add
-      .rectangle(j.x, (Y_HAUT - 30 + 720) / 2, 3 * LARGEUR_COULOIR + 24, 720 - Y_HAUT + 30, 0x0b0618, 0.55)
+      .rectangle(j.x, (Y_HAUT - 30 + 720) / 2, j.largeur + 24, 720 - Y_HAUT + 30, 0x0b0618, 0.55)
       .setDepth(PROF.voile);
 
     jouerSon(this, "elimine", j.pan);
     this.verifierFin();
   }
 
-  // La partie s'arrête quand tous les joueurs sont éliminés (ou quand le gagnant est connu en duo)
+  // la partie s'arrête quand tous les joueurs sont éliminés (ou quand le gagnant est connu en duo)
   verifierFin() {
     if (this.etat == "jeu" && partieTerminee(this.joueurs)) this.fin();
   }
@@ -589,12 +593,12 @@ export default class piano_time extends Phaser.Scene {
     annonce(this, "FIN DU RÉCITAL !", OR, 1700, 300);
     jouerSon(this, "bravo");
 
-    // Après 2,3 s : fondu au noir (0,3 s), puis on lance la scène des résultats avec les stats
+    // après 2,3 s : fondu au noir (0,3 s), puis on lance la scène des résultats avec les stats
     this.time.delayedCall(2300, () => {
       this.cameras.main.fadeOut(300);
       this.time.delayedCall(300, () =>
         this.scene.start("resultats", {
-          scores: this.joueurs.map((j) => j.score), // .map = on construit une liste avec une valeur par joueur
+          scores: this.joueurs.map((j) => j.score), // une valeur par joueur
           stats: [
             { titre: "Meilleur combo", valeurs: this.joueurs.map((j) => j.meilleurCombo) },
             { titre: "Notes jouées", valeurs: this.joueurs.map((j) => j.notesJouees) },

@@ -46,8 +46,8 @@ function bip(ctx, freq, debut, duree, forme, volume, dest) {
 // INSTRUMENTS (options : pan, retard en secondes, duree, volume)
 // ---------------------------------------------------------------------------
 
-// piano_time (piano_time) : une fondamentale + des harmoniques qui s'éteignent plus vite
-export function jouerpiano_time(scene, n, options) {
+// Piano Time : une note de piano (fondamentale + harmoniques qui s'éteignent plus vite)
+export function jouerPiano(scene, n, options) {
   var ctx = contexte(scene);
   if (!ctx) return;
   var o = options || {};
@@ -60,7 +60,7 @@ export function jouerpiano_time(scene, n, options) {
   bip(ctx, f * 3, t, 0.2, "sine", 0.035 * v, dest);
 }
 
-// boite à musique (Note Catcher) : son de clochette aigu et court
+// clochette aiguë et courte (la Diva)
 export function jouerCelesta(scene, n, options) {
   var ctx = contexte(scene);
   if (!ctx) return;
@@ -74,7 +74,7 @@ export function jouerCelesta(scene, n, options) {
   bip(ctx, f * 4, t, 0.08, "sine", 0.04 * v, dest);
 }
 
-// orgue (pour le Maestro) : plusieurs octaves en même temps
+// orgue (le Maestro) : plusieurs octaves en même temps
 function jouerOrgue(scene, n, options) {
   var ctx = contexte(scene);
   if (!ctx) return;
@@ -86,8 +86,29 @@ function jouerOrgue(scene, n, options) {
 
 // petit air joué quand on choisit un perso (chaque perso a le sien)
 export function jouerMotif(scene, perso) {
-  var instrument = perso.cle == "maestro" ? jouerOrgue : perso.cle == "diva" ? jouerCelesta : jouerpiano_time;
+  var instrument = perso.cle == "maestro" ? jouerOrgue : perso.cle == "diva" ? jouerCelesta : jouerPiano;
   perso.motif.forEach((n, i) => instrument(scene, n, { retard: i * 0.11, duree: 0.13, volume: 0.9 }));
+}
+
+// Memory Song : le saxophone joue une note. Chaque note est un fichier saxo_<numero>.wav
+// (chargé dans chargement.js). On joue le fichier avec le panoramique (pan) et on le
+// coupe après "duree" secondes, avec un petit fondu pour éviter les "clics".
+export function jouerSaxo(scene, note, options) {
+  var ctx = contexte(scene);
+  var fichier = scene.cache.audio.get("saxo_" + note);
+  if (!ctx || !fichier) return;
+  var o = options || {};
+  var duree = o.duree || 0.5;
+  var t = ctx.currentTime;
+  var gain = ctx.createGain();
+  gain.gain.setValueAtTime(1, t + duree - 0.06);
+  gain.gain.linearRampToValueAtTime(0, t + duree);
+  gain.connect(sortie(ctx, o.pan));
+  var source = ctx.createBufferSource();
+  source.buffer = fichier;
+  source.connect(gain);
+  source.start(t);
+  source.stop(t + duree);
 }
 
 // ---------------------------------------------------------------------------
@@ -107,8 +128,6 @@ export function jouerSon(scene, nom, pan) {
   } else if (nom == "retour") {
     bip(ctx, midi(76), t, 0.08, "triangle", 0.13, dest);
     bip(ctx, midi(69), t + 0.07, 0.12, "triangle", 0.13, dest);
-  } else if (nom == "erreur") {
-    bip(ctx, 140, t, 0.18, "square", 0.08, dest);
   } else if (nom == "tic") {
     // métronome
     bip(ctx, 1320, t, 0.05, "square", 0.06, dest);
@@ -148,7 +167,7 @@ export function jouerTampon(scene, cm) {
   bip(ctx, midi(hauteur), t + 0.05, 0.35, "triangle", 0.18);
 }
 
-// Music Fall : sifflement qui descend pendant la music_fall (comme dans les dessins
+// Music Fall : sifflement qui descend pendant la chute (comme dans les dessins
 // animés). Il faut pouvoir l'arrêter au moment du tampon, donc on renvoie un objet.
 export function sifflet(scene, duree) {
   var ctx = contexte(scene);

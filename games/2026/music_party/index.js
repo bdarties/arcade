@@ -10,6 +10,7 @@ import menu from "./js/menu.js"; // solo ou duo
 import choix from "./js/choix.js"; // choix des persos
 import music_fall from "./js/music_fall.js"; // mini-jeu Music Fall
 import piano_time from "./js/piano_time.js"; // mini-jeu piano_time Time
+import memoire from "./js/memoire.js"; // mini-jeu Memory Song
 import resultats from "./js/resultats.js"; // scores et gagnant 
 
 // configuration générale du jeu
@@ -24,7 +25,7 @@ var config = {
   },
   // pas de moteur physique : les music_falls et les rebonds des notes sont
   // calculés à la main (voir music_fall.js)
-  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, resultats],
+  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats],
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };
 

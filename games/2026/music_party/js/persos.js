@@ -106,38 +106,6 @@ export const PERSOS = [
   }
 ];
 
-// Music Fall se joue avec Foxy (J1) et Foxy bleu (J2), du pack Sunny Land.
-// Leurs images sont des spritesheets : "anim" = leur animation au repos,
-// "imagemusic_fall" = l'image quand ils tombent, "pied" = hauteur des pattes dans
-// l'image (0 = en haut, 1 = en bas) pour qu'elles tombent pile sur la ligne.
-const RENARDS = [
-  {
-    cle: "renard",
-    nom: "Foxy",
-    texture: "img_renard",
-    tete: "img_tete_renard",
-    echelle: 4.5,
-    anim: "anim_renard_repos",
-    imagemusic_fall: 11,
-    piedRepos: 32 / 32,
-    piedmusic_fall: 29 / 32, // 3 lignes vides sous l'image de music_fall
-    couleur: "#ff9a3c",
-    teinte: 0xd9622b, // c'est aussi la couleur du tampon de sa note
-  },
-  {
-    cle: "renard2",
-    nom: "Foxy bleu",
-    texture: "img_renard2",
-    tete: "img_tete_renard2",
-    echelle: 4.5,
-    anim: "anim_renard2_repos",
-    imagemusic_fall: 11,
-    piedRepos: 32 / 32,
-    piedmusic_fall: 29 / 32,
-    couleur: "#5fc8ff",
-    teinte: 0x2b7fd9,
-  }
-];
 
 function trouverPerso(cle) {
   return PERSOS.find((p) => p.cle == cle) || PERSOS[0];
