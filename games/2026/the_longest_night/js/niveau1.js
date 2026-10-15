@@ -80,9 +80,9 @@ export default class niveau1 extends Phaser.Scene {
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
-      player_spawn: { x: 93.3333, y: 672.0 },
-      player2_spawn: { x: 243.333, y: 673.333 },
-      tableau_spawn: [{x:72.0,y:1008.0},{x:272.0,y:1196.0},{x:548.0,y:304.0},{x:1512.0,y:408.0},{x:1688.0,y:1140.0},{x:1900.0,y:192.0},{x:2604.0,y:700.0}],
+      player_spawn: {},
+      player2_spawn: {},
+      tableau_spawn: [],
       porte: { x: 600, y: 414 },
       ennemis: [{
         nom: "groupe_araignee",
@@ -358,8 +358,9 @@ export default class niveau1 extends Phaser.Scene {
 
   player_spawn = cfg.player_spawn;
   player2_spawn = cfg.player2_spawn;
-  tableau_spawn = cfg.tableau_spawn; //défini dans parametres_niveau()
+  tableau_spawn = cfg.tableau_spawn;;
 
+<<<<<<< HEAD
   if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
     const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
     if (point_porte) {
@@ -391,13 +392,29 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
+=======
+  /*Définition des points d'aparitions.*/
+if (liste_spawn) { //ce systeme fonctionne aussi pour le niveau 22
+  liste_spawn.objects.forEach((point) => {
+    if (point.name == "Spawn_joueur1") {
+      player_spawn = {x: point.x, y: point.y};
+    } else if (point.name == "Spawn_joueur2") {
+      player2_spawn = { x: point.x, y: point.y };
+    } else if (point.name == "Spawn_porte") {
+      player2_spawn = { x: point.x, y: point.y };
+    } else {
+      tableau_spawn.push({ x: point.x, y: point.y }); //"push" permet d'ajouter des éléments directement a la fin du tableau.
+    }
+  });
+}
+>>>>>>> ac301f78d6847ca78bab7795561f2524ac85af41
   /**************************
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
   porte = this.physics.add.staticSprite(cfg.porte.x, cfg.porte.y, "sortie_fermee");
   groupe_cle = this.physics.add.group();
-  groupe_araignee = this.physics.add.group
+  groupe_araignee = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
   groupe_soin = this.physics.add.group();
   //le timer du jeu est crée ci-dessous :
@@ -1363,9 +1380,12 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
         bullet.destroy();
         ennemi.points_vies -= 1;
         son_areignne_blesse.play();
-        this.time.delayedCall(500), () => {
-          ennemi.setColor('0xFF0000')
-        }
+        ennemi.setTintFill(0xff0000);
+        this.time.delayedCall(150, () => {
+          if (ennemi.active) {
+            ennemi.clearTint();
+          }
+        });
         if (ennemi.points_vies <= 0){
           ennemi.destroy();
           if (tireur){ //défini simplement qui est le tireur

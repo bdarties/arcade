@@ -304,8 +304,21 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":500,
-                 "y":1158
+                 "x":1654,
+                 "y":1198
+                }, 
+                {
+                 "height":0,
+                 "id":21,
+                 "name":"Autre_spawn",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":902.666666666667,
+                 "y":1180
                 }, 
                 {
                  "height":0,
@@ -382,7 +395,7 @@
  "nextobjectid":26,
  "orientation":"orthogonal",
  "renderorder":"right-down",
- "tiledversion":"1.12.2",
+ "tiledversion":"1.12.0",
  "tileheight":32,
  "tilesets":[
         {

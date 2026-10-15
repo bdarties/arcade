@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<<<<<<< HEAD
 <map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="101" height="41" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="22">
+=======
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="101" height="41" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="22">
+>>>>>>> ac301f78d6847ca78bab7795561f2524ac85af41
  <editorsettings>
   <export target="niveau_1.json" format="json"/>
  </editorsettings>
