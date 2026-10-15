@@ -32,6 +32,9 @@ export function creerCarte(scene) {
       element = scene.add.image(objet.x, objet.y, objet.name);
     }
     element.setOrigin(0.5, 1).setFlipX(objet.flippedHorizontal).setDepth(objet.y);
+    if (objet.name === "trone_liche") {
+      scene.trone = element;
+    }
   }
 
   for (const zone of carte.getObjectLayer("collisions").objects) {

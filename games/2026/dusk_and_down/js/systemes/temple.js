@@ -121,7 +121,7 @@ function detruireTemple(scene) {
   scene.cameras.main.shake(500, 0.012);
   scene.cameras.main.flash(400, 90, 40, 160);
   jouerSon("temple_detruit");
-  annoncer(scene, "LE TEMPLE EST TOMBÉ", "Tenez 2 vagues pour qu'il renaisse");
+  annoncer(scene, "LE TEMPLE EST TOMBÉ", "Plus de réapparition : tenez 2 vagues pour qu'il renaisse");
 }
 
 export function reconstruireTemple(scene) {
@@ -142,7 +142,13 @@ export function reconstruireTemple(scene) {
   flashLumineux(scene, temple.x, temple.y - 20, 0xffd27a, 900);
   scene.cameras.main.flash(500, 255, 220, 150);
   jouerSon("reanimation");
-  annoncer(scene, "L'AUBE RENAÎT", "Le temple est reconstruit");
+  annoncer(scene, "L'AUBE RENAÎT", "Le temple est reconstruit : les gardiens tombés reviennent");
+
+  for (const joueur of scene.joueurs) {
+    if (joueur.estMort) {
+      joueur.reanimationA = scene.tempsJeu + 600;
+    }
+  }
 }
 
 export function rayonLumiereTemple(scene) {

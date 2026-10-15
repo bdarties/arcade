@@ -31,6 +31,7 @@ export const TEMPLE = {
 export const JOUEUR = {
   rayonLumiere: 190,
   invulnerabilite: 700,
+  delaiReanimation: 5000,
   ecartMaxX: 1160,
   ecartMaxY: 580
 };
@@ -47,7 +48,8 @@ export const VAGUES = {
   delaiPremiereVague: 3500,
   pauseEntreVagues: 3000,
   ennemisBase: 8,
-  ennemisParVague: 3,
+  ennemisParNiveau: 3,
+  ennemisParVague: 2,
   multiplicateurDuo: 1.6,
   intervalleApparition: 1100,
   tailleGroupeMin: 2,
@@ -56,7 +58,10 @@ export const VAGUES = {
   attenteMax: 25000,
   maxEnnemis: 150,
   distanceMin: 650,
-  distanceMax: 1000
+  distanceMax: 1000,
+  bonusPvParNiveau: 0.12,
+  bonusDegatsParNiveau: 0.06,
+  frequenceBoss: 5
 };
 
 export const RARETES = [
@@ -66,7 +71,7 @@ export const RARETES = [
   { id: "heroique", nom: "Héroïque", poids: 4, multiplicateur: 2.5, couleur: 0xff5c3d }
 ];
 
-export const SONS = { actifs: true, volume: 0.35, volumeMusique: 0.2 };
+export const SONS = { actifs: true, volume: 0.35, volumeMusique: 0.45 };
 
 export const POLICE_TITRE = "Cormorant SC";
 export const POLICE_TEXTE = "Lora";
@@ -74,5 +79,6 @@ export const POLICE_TEXTE = "Lora";
 export const BARRES = {
   temple: { x: 22, y: 16 },
   joueur_1: { x: 52, y: 18 },
-  joueur_2: { x: 15, y: 16 }
+  joueur_2: { x: 15, y: 16 },
+  boss: { x: 21, y: 15 }
 };

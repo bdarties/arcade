@@ -1,9 +1,9 @@
 import { creerCarte, creerCamera, mettreAJourCamera } from "./systemes/carte.js";
 import { creerTemple, creerTenebres, mettreAJourTenebres } from "./systemes/temple.js";
 import {
-  creerJoueur, mettreAJourJoueur, garderJoueursEnsemble, tousTombes
+  creerJoueur, mettreAJourJoueur, garderJoueursEnsemble, verifierReanimations, tousTombes
 } from "./systemes/joueurs.js";
-import { mettreAJourArme } from "./systemes/armes.js";
+import { mettreAJourArme, mettreAJourProjectiles, projectileTouche } from "./systemes/armes.js";
 import {
   mettreAJourEnnemis, ombreAttaqueTemple, ombreToucheJoueur, craneToucheJoueur, craneToucheTemple,
   exploserCrane, mettreAJourCranes
@@ -14,6 +14,7 @@ import { demarrerVagues } from "./systemes/vagues.js";
 import { creerHud, mettreAJourHud, annoncer } from "./systemes/hud.js";
 import { reinitialiserEffets } from "./systemes/effets.js";
 import { initialiserSons, jouerMusique } from "./systemes/sons.js";
+import { vientDEtrePressee } from "./reglages/controles.js";
 
 export default class jeu extends Phaser.Scene {
   constructor() {
@@ -22,6 +23,7 @@ export default class jeu extends Phaser.Scene {
 
   init(donnees) {
     this.nbJoueurs = donnees.nbJoueurs || 1;
+    this.classes = donnees.classes || ["chevalier", "chevalier"];
   }
 
   create() {
@@ -34,6 +36,9 @@ export default class jeu extends Phaser.Scene {
     this.xpRequise = xpPourNiveau(1);
     this.niveauxEnAttente = 0;
     this.choixEnCours = false;
+    this.bossActif = null;
+    this.nbBossApparus = 0;
+    this.bossVaincus = 0;
     reinitialiserEffets();
 
     creerCarte(this);
@@ -41,11 +46,12 @@ export default class jeu extends Phaser.Scene {
 
     this.groupeEnnemis = this.physics.add.group();
     this.groupeGemmes = this.physics.add.group();
+    this.groupeProjectiles = this.physics.add.group();
     this.groupeCranes = this.physics.add.group();
 
     this.joueurs = [];
     for (let numero = 1; numero <= this.nbJoueurs; numero++) {
-      this.joueurs.push(creerJoueur(this, numero, "chevalier"));
+      this.joueurs.push(creerJoueur(this, numero, this.classes[numero - 1]));
     }
 
     creerTenebres(this);
@@ -61,12 +67,15 @@ export default class jeu extends Phaser.Scene {
     this.physics.add.collider(this.joueurs, this.groupeObstacles);
     this.physics.add.overlap(this.joueurs, this.groupeEnnemis, (joueur, ennemi) => ombreToucheJoueur(this, joueur, ennemi));
     this.physics.add.overlap(this.joueurs, this.groupeGemmes, (joueur, gemme) => ramasserGemme(this, joueur, gemme));
+    this.physics.add.overlap(this.groupeProjectiles, this.groupeEnnemis, (projectile, ennemi) =>
+      projectileTouche(this, projectile, ennemi)
+    );
     this.physics.add.overlap(this.joueurs, this.groupeCranes, (joueur, crane) => craneToucheJoueur(this, crane, joueur));
     this.physics.add.overlap(temple.corps, this.groupeCranes, (corps, crane) => craneToucheTemple(this, crane));
     this.physics.add.collider(this.groupeCranes, this.groupeObstacles, (crane) => exploserCrane(this, crane));
 
     creerHud(this);
-    annoncer(this, "Protégez le Temple de l'Aube", "Joystick : se déplacer   ·   l'attaque est automatique");
+    annoncer(this, "Protégez le Temple de l'Aube", "Joystick : se déplacer   ·   l'attaque est automatique   ·   B : pause");
     demarrerVagues(this);
     initialiserSons(this);
     jouerMusique(this, "musique_jeu");
@@ -81,6 +90,13 @@ export default class jeu extends Phaser.Scene {
     if (this.partieTerminee) {
       return;
     }
+    for (const joueur of this.joueurs) {
+      if (vientDEtrePressee(joueur.touches.B)) {
+        this.scene.pause();
+        this.scene.launch("pause");
+        return;
+      }
+    }
     this.tempsJeu += delta;
 
     for (const joueur of this.joueurs) {
@@ -88,8 +104,10 @@ export default class jeu extends Phaser.Scene {
       mettreAJourArme(this, joueur);
     }
     garderJoueursEnsemble(this);
+    verifierReanimations(this);
 
     mettreAJourEnnemis(this);
+    mettreAJourProjectiles(this);
     mettreAJourCranes(this);
     mettreAJourGemmes(this);
 
@@ -97,7 +115,7 @@ export default class jeu extends Phaser.Scene {
     mettreAJourTenebres(this);
     mettreAJourHud(this);
 
-    if (tousTombes(this)) {
+    if (this.temple.detruit && tousTombes(this)) {
       this.terminerPartie();
       return;
     }
@@ -120,8 +138,10 @@ export default class jeu extends Phaser.Scene {
         vague: this.vague.numero,
         niveau: this.niveau,
         ennemisVaincus: this.ennemisVaincus,
+        bossVaincus: this.bossVaincus,
         score: this.score,
-        nbJoueurs: this.joueurs.length
+        nbJoueurs: this.joueurs.length,
+        classes: this.classes
       });
     });
   }

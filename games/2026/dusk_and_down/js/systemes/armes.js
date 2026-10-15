@@ -1,12 +1,15 @@
 import { ISO, PROFONDEUR } from "../reglages/config.js";
 import { ARSENAL } from "../reglages/arsenal.js";
-import { plusProche } from "../fonctions.js";
+import { directionSol, deplacerAuSol, plusProche } from "../fonctions.js";
 import { blesserEnnemi } from "./ennemis.js";
+import { jouerEffet } from "./effets.js";
 import { jouerSon } from "./sons.js";
 
 export function creerArme(scene, id) {
   const arme = Object.assign({ id: id, prochaineAttaque: 0 }, ARSENAL[id].base);
-  arme.visuel = scene.add.graphics().setDepth(PROFONDEUR.lumieres);
+  if (id === "epee") {
+    arme.visuel = scene.add.graphics().setDepth(PROFONDEUR.lumieres);
+  }
   return arme;
 }
 
@@ -16,7 +19,11 @@ export function mettreAJourArme(scene, joueur) {
     return;
   }
   arme.prochaineAttaque = scene.tempsJeu + Math.max(arme.rechargeMin, arme.recharge * joueur.stats.recharge);
-  coupEpee(scene, joueur, arme);
+  if (arme.id === "epee") {
+    coupEpee(scene, joueur, arme);
+  } else {
+    lancerFlammes(scene, joueur, arme);
+  }
 }
 
 export function infligerDegats(scene, joueur, ennemi, degats, sourceX, sourceY, recul) {
@@ -94,4 +101,54 @@ function dessinerCoupEpee(scene, joueur, arme, portee, angles, demiAngle) {
   g.setAlpha(1);
   scene.tweens.killTweensOf(g);
   scene.tweens.add({ targets: g, alpha: 0, duration: 220 });
+}
+
+function lancerFlammes(scene, joueur, arme) {
+  const ennemisActifs = scene.groupeEnnemis.getChildren().filter((ennemi) => ennemi.active);
+  const cible = plusProche(joueur.x, joueur.y, ennemisActifs, arme.portee * joueur.stats.portee);
+  if (cible === null) {
+    arme.prochaineAttaque = scene.tempsJeu + 150;
+    return;
+  }
+  joueur.setFlipX(joueur.classe.regardeAGauche ? cible.x > joueur.x : cible.x < joueur.x);
+  joueur.finAttaque = scene.tempsJeu + 380;
+  joueur.anims.play(joueur.cleTexture + "_attaque", true);
+
+  const direction = directionSol(joueur.x, joueur.y, cible.x, cible.y);
+  const angleCible = Math.atan2(direction.y, direction.x);
+  for (let i = 0; i < arme.nombre; i++) {
+    const angle = angleCible + (i - (arme.nombre - 1) / 2) * 0.2;
+    const vx = Math.cos(angle);
+    const vy = Math.sin(angle);
+    const flamme = scene.groupeProjectiles.create(joueur.x, joueur.y - 30, "trait_solaire", 0);
+    flamme.play("anim_trait_solaire");
+    flamme.body.setCircle(9, flamme.width / 2 - 9, flamme.height / 2 - 9 + 18);
+    flamme.setScale(joueur.stats.portee);
+    flamme.setBlendMode(Phaser.BlendModes.ADD);
+    flamme.setDepth(PROFONDEUR.lumieres);
+    deplacerAuSol(flamme, vx, vy, arme.vitesse);
+    flamme.setRotation(Math.atan2(vy * ISO.ratioY, vx));
+    flamme.joueur = joueur;
+    flamme.degats = arme.degats;
+    flamme.recul = arme.recul;
+    flamme.finVie = scene.tempsJeu + arme.duree;
+  }
+  jouerSon("mage");
+}
+
+export function projectileTouche(scene, projectile, ennemi) {
+  if (!projectile.active || !ennemi.active) {
+    return;
+  }
+  jouerEffet(scene, "anim_impact_sacre", ennemi.x, ennemi.y - 16, {});
+  infligerDegats(scene, projectile.joueur, ennemi, projectile.degats, projectile.x, projectile.y + 18, projectile.recul);
+  projectile.destroy();
+}
+
+export function mettreAJourProjectiles(scene) {
+  for (const projectile of scene.groupeProjectiles.getChildren().slice()) {
+    if (scene.tempsJeu > projectile.finVie) {
+      projectile.destroy();
+    }
+  }
 }

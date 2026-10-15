@@ -1,6 +1,26 @@
 {
 	"title": "Dusk and Dawn",
-	"description": "Protégez la flamme du temple contre les ombres.",
+	"description": "La dernière flamme brûle au centre du temple de l'aube et les ombres arrivent pour l'éteindre. Seul ou à deux tu joues le chevalier ou le mage, tu bouges au joystick et ton perso attaque tout seul l'ombre la plus proche. Les vagues grossissent au fil de la partie, le démon le spectre et le colosse arrivent quand tu montes de niveau et le roi de l'ombre se réveille toutes les 5 vagues. Chaque ombre tuée lâche un éclat de lumière et à chaque niveau tu choisis un bonus parmi 3. Tant que le temple tient tu reviens près de la flamme quand tu tombes, s'il est détruit il faut tenir 2 vagues pour qu'il se reconstruise. On peut pas gagner, tu tiens le plus longtemps possible et tu laisses tes 3 lettres dans les scores.",
 	"genre" : "survie / action",
-	"authors": ["A REMPLIR", "A REMPLIR", "A REMPLIR"]
+	"authors": ["Alexandre Villiers", "Enzo Jacinto", "Benjamin Granier"],
+	"sources": [
+		"musique écran titre et intro : Ring of Black Wings de Zeu",
+		"musique en jeu : Orchestra 11 de Koichi Morita, musique : MaouDamashii (maou.audio)",
+		"musique de fin : Requiem de Kaniwa Neon",
+		"son xp 1 : bubble popping de universfield (pixabay)",
+		"son xp 2 : satisfying mechanical keyboard click 7 de sdanezis (pixabay)",
+		"son niveau : level up 03 de universfield (pixabay)",
+		"son attaque mage : fire magic 6 de yodguard (pixabay)",
+		"son attaque chevalier : sword swing sfx de oxidvideos (pixabay)",
+		"sol décor arbres et trône : Free Undead Tileset Top Down Pixel Art de CraftPix.net",
+		"chevalier : Free Characters Animations Asset Pack de Szadi art",
+		"mage : Top Down Pixel Art Wizard de GandalfHardcore",
+		"ombre rampante démon colosse et roi de l'ombre : Tiny RPG Character Asset Pack 02 de Zerie",
+		"spectre crânes et flammes du mage : Dark Spell Effect et Holy Spell Effect de pimen",
+		"autel et statues du temple : Pixel Art Top Down Basic de Cainos",
+		"dalles torches et bougies : RF Catacombs v1.0 (domaine public)",
+		"polices : Cormorant SC et Lora (google fonts)",
+		"images de l'intro : générées par ia pour chaque phrase de l'histoire en s'inspirant de l'intro d'undertale, texte ajouté sur canva",
+		"fait par nous : écran titre, barres de vie et d'xp, flamme du temple et halos de lumière"
+	]
 }

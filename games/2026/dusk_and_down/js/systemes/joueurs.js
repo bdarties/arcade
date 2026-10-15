@@ -3,6 +3,7 @@ import { CLASSES } from "../reglages/classes.js";
 import { creerControles } from "../reglages/controles.js";
 import { deplacerAuSol, trierProfondeur } from "../fonctions.js";
 import { creerArme } from "./armes.js";
+import { jouerEffet, flashLumineux } from "./effets.js";
 import { jouerSon } from "./sons.js";
 
 export function creerJoueur(scene, numero, idClasse) {
@@ -23,6 +24,7 @@ export function creerJoueur(scene, numero, idClasse) {
   joueur.stats = {
     pvMax: classe.pvMax,
     vitesse: classe.vitesse,
+    armure: classe.armure,
     regeneration: classe.regeneration,
     rayonCollecte: classe.rayonCollecte,
     rayonLumiere: JOUEUR.rayonLumiere,
@@ -35,6 +37,7 @@ export function creerJoueur(scene, numero, idClasse) {
   joueur.estMort = false;
   joueur.finInvulnerabilite = 0;
   joueur.finAttaque = 0;
+  joueur.reanimationA = 0;
   joueur.bienfaits = {};
   joueur.directionX = 1;
   joueur.directionY = 0;
@@ -126,7 +129,7 @@ export function blesserJoueur(scene, joueur, degats) {
   if (joueur.estMort || scene.tempsJeu < joueur.finInvulnerabilite) {
     return;
   }
-  joueur.pv -= degats;
+  joueur.pv -= Math.max(1, degats - joueur.stats.armure);
   joueur.finInvulnerabilite = scene.tempsJeu + JOUEUR.invulnerabilite;
   joueur.setTint(0xff5555);
   scene.time.delayedCall(120, () => joueur.clearTint());
@@ -140,6 +143,7 @@ export function blesserJoueur(scene, joueur, degats) {
 function tuerJoueur(scene, joueur) {
   joueur.pv = 0;
   joueur.estMort = true;
+  joueur.reanimationA = scene.tempsJeu + JOUEUR.delaiReanimation;
   joueur.setVelocity(0, 0);
   joueur.body.enable = false;
   joueur.setAlpha(1);
@@ -148,6 +152,40 @@ function tuerJoueur(scene, joueur) {
   joueur.barreFond.setVisible(false);
   joueur.barrePv.setVisible(false);
   jouerSon("mort_joueur");
+}
+
+export function verifierReanimations(scene) {
+  if (scene.temple.detruit) {
+    return;
+  }
+  for (const joueur of scene.joueurs) {
+    if (joueur.estMort && scene.tempsJeu >= joueur.reanimationA) {
+      reanimerJoueur(scene, joueur);
+    }
+  }
+}
+
+function reanimerJoueur(scene, joueur) {
+  let x = scene.temple.x + Phaser.Math.Between(-40, 40);
+  let y = scene.temple.y + 110;
+  const coequipier = scene.joueurs.find((autre) => autre !== joueur && !autre.estMort);
+  if (coequipier) {
+    x = Phaser.Math.Clamp(x, coequipier.x - JOUEUR.ecartMaxX, coequipier.x + JOUEUR.ecartMaxX);
+    y = Phaser.Math.Clamp(y, coequipier.y - JOUEUR.ecartMaxY, coequipier.y + JOUEUR.ecartMaxY);
+  }
+  joueur.estMort = false;
+  joueur.pv = joueur.stats.pvMax;
+  joueur.finInvulnerabilite = scene.tempsJeu + 2000;
+  joueur.setPosition(x, y);
+  joueur.body.enable = true;
+  joueur.body.reset(x, y);
+  joueur.anims.play(joueur.cleTexture + "_repos");
+  joueur.etiquette.setVisible(true);
+  joueur.barreFond.setVisible(true);
+  joueur.barrePv.setVisible(true);
+  jouerEffet(scene, "anim_colonne_sacree", x, y + 4, { origineY: 0.95, echelle: 1.4 });
+  flashLumineux(scene, x, y - 20, 0xffe2a0, 260);
+  jouerSon("reanimation");
 }
 
 export function tousTombes(scene) {

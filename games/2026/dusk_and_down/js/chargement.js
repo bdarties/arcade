@@ -11,7 +11,7 @@ const DECORS = [
 
 const LUMIERES = ["lumiere", "braise", "fumee", "vignette"];
 
-const SONS = ["xp_1", "xp_2", "niveau", "epee", "musique_menu", "musique_jeu", "musique_fin"];
+const SONS = ["xp_1", "xp_2", "niveau", "mage", "epee", "musique_menu", "musique_jeu", "musique_fin"];
 
 export default class chargement extends Phaser.Scene {
   constructor() {
@@ -35,20 +35,25 @@ export default class chargement extends Phaser.Scene {
 
     this.load.spritesheet("chevalier_j1", "./assets/personnages/chevalier_j1.png", { frameWidth: 112, frameHeight: 48 });
     this.load.spritesheet("chevalier_j2", "./assets/personnages/chevalier_j2.png", { frameWidth: 112, frameHeight: 48 });
+    this.load.spritesheet("mage_j1", "./assets/personnages/mage_j1.png", { frameWidth: 44, frameHeight: 68 });
+    this.load.spritesheet("mage_j2", "./assets/personnages/mage_j2.png", { frameWidth: 44, frameHeight: 68 });
 
-    this.load.spritesheet("rampant", "./assets/ennemis/rampant.png", { frameWidth: 112, frameHeight: 56 });
     this.load.spritesheet("demon", "./assets/ennemis/demon.png", { frameWidth: 96, frameHeight: 50 });
     this.load.spritesheet("colosse", "./assets/ennemis/colosse.png", { frameWidth: 96, frameHeight: 50 });
+    this.load.spritesheet("boss", "./assets/ennemis/boss.png", { frameWidth: 96, frameHeight: 50 });
+    this.load.spritesheet("rampant", "./assets/ennemis/rampant.png", { frameWidth: 112, frameHeight: 56 });
     this.load.spritesheet("spectre", "./assets/ennemis/spectre.png", { frameWidth: 80, frameHeight: 124 });
 
     this.load.spritesheet("crane_ombre", "./assets/effets/crane_ombre.png", { frameWidth: 64, frameHeight: 40 });
     this.load.spritesheet("crane_impact", "./assets/effets/crane_impact.png", { frameWidth: 68, frameHeight: 64 });
-
+    this.load.spritesheet("trait_solaire", "./assets/effets/trait_solaire.png", { frameWidth: 64, frameHeight: 24 });
+    this.load.spritesheet("impact_sacre", "./assets/effets/impact_sacre.png", { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet("colonne_sacree", "./assets/effets/colonne_sacree.png", { frameWidth: 96, frameHeight: 96 });
 
     for (const lumiere of LUMIERES) {
       this.load.image("img_" + lumiere, "./assets/lumieres/" + lumiere + ".png");
     }
+    this.load.image("gemme", "./assets/lumieres/gemme.png");
 
     this.load.spritesheet("flamme", "./assets/temple/flamme.png", { frameWidth: 44, frameHeight: 76 });
     this.load.spritesheet("bougie", "./assets/temple/bougie.png", { frameWidth: 32, frameHeight: 32 });
@@ -58,6 +63,7 @@ export default class chargement extends Phaser.Scene {
 
     this.load.tilemapTiledJSON("carte", "./assets/carte/carte.json");
     this.load.image("sol_tuiles", "./assets/sol/sol_tuiles.png");
+    this.load.image("sol_iso", "./assets/sol/sol_iso.png");
     this.load.image("parvis_iso", "./assets/sol/parvis_iso.png");
     for (let i = 1; i <= 3; i++) {
       this.load.image("paves_" + i, "./assets/sol/paves_" + i + ".png");
@@ -68,12 +74,14 @@ export default class chargement extends Phaser.Scene {
     this.load.spritesheet("arbre_anime", "./assets/decor/arbre_anime.png", { frameWidth: 160, frameHeight: 192 });
     this.load.spritesheet("trone_liche", "./assets/decor/trone_liche.png", { frameWidth: 192, frameHeight: 224 });
 
-    this.load.image("menu_fond", "./assets/interface/menu_fond.jpg");
-    this.load.image("xp_remplissage", "./assets/interface/xp_remplissage.png");
-    this.load.image("gemme", "./assets/lumieres/gemme.png");
-    for (const barre of ["temple", "joueur_1", "joueur_2"]) {
+    for (const barre of ["temple", "joueur_1", "joueur_2", "boss"]) {
       this.load.image(barre + "_cadre", "./assets/interface/" + barre + "_cadre.png");
       this.load.image(barre + "_remplissage", "./assets/interface/" + barre + "_remplissage.png");
+    }
+    this.load.image("xp_remplissage", "./assets/interface/xp_remplissage.png");
+    this.load.image("menu_fond", "./assets/interface/menu_fond.jpg");
+    for (let i = 1; i <= 6; i++) {
+      this.load.image("intro_" + i, "./assets/intro/intro_" + i + ".jpg");
     }
 
     for (const son of SONS) {
@@ -86,6 +94,6 @@ export default class chargement extends Phaser.Scene {
     creerAnimations(this);
     Promise.all(this.polices)
       .catch(() => null)
-      .then(() => this.scene.start("menu"));
+      .then(() => this.scene.start("intro"));
   }
 }
