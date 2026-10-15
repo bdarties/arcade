@@ -7,7 +7,7 @@
 ## Ce qu'elle contient
 - la fuite du niveau 2 (`niveau2.js`, `poursuite.js`, `vide.js`, `faisceaux.js`, `fuite.js`),
 - le dernier combat contre le Dieu enragé (`niveau3.js`, `boss_final.js`, `attaques.js`, `attaques_ultimes.js`, `forme_finale.js`),
-- le mode NO HIT (`mode_no_hit.js`) : en maintenant les touches O et M pendant 1 seconde, on active un mode où le robot n'a qu'1 PV (barre de vie d'une seule cellule) : un seul coup reçu fait recommencer le niveau ; la même manipulation le désactive. Une phrase « NO HIT » est alors affichée en bas de l'écran,
+- le mode NO HIT (`mode_no_hit.js`) : en maintenant les touches O et M pendant 1 seconde, on active un mode où le robot n'a qu'1 PV (barre de vie d'une seule cellule) : un seul coup reçu fait recommencer tout le jeu depuis le début du niveau 1 ; la même manipulation le désactive. Une petite phrase blanche « NO HIT » est alors affichée en bas à droite de l'écran de jeu. Si on termine le jeu sans avoir quitté le mode, une pastille « NO HIT » apparaît à côté de la ligne dans le panthéon,
 - la fausse fin (`faux_pantheon.js`), les musiques et sons ajoutés (`musique.js`, `synth.js`), et des touches de test (`tests_borne.js`).
 
 ## Comment elle s'accroche à la partie 1

@@ -6,9 +6,20 @@
 // Elle s'ajoute à la table MUSIQUES_BOSS de partie1/systemes/sons.js (version "2"). Elle n'est PAS chargée avec le reste du jeu : décodée, elle pèse
 // 21 Mo en mémoire (le reste de la musique : 20 Mo au lancement), et le Raspberry Pi de la borne est juste en mémoire. Elle se charge seulement quand on arrive
 // au dernier combat (niveau3.js, preload).
-import { MUSIQUES_BOSS } from "../partie1/systemes/sons.js";
+import { MUSIQUES_BOSS, musiqueBoss } from "../partie1/systemes/sons.js";
 
 const DOSSIER = "./assets/sons/";
+const VOLUME_PHASE_4 = 0.3; // le volume de base de la musique de la phase 4 (la forme finale) : plus fort que celui des phases 1 à 3 (0,18)
+
+// Lance la musique du dernier combat plus fort : c'est celle de la phase 4. Si la musique des phases précédentes joue encore, on la coupe d'abord.
+export function lancerMusiquePhase4(scene) {
+    const fiche = MUSIQUES_BOSS["2"]; // les réglages de la musique du dernier combat
+    const volumeNormal = fiche.volume; // le volume des phases 1 à 3, qu'on remettra ensuite
+    ["musique_boss2_intro", "musique_boss2_boucle"].forEach((cle) => scene.sound.getAll(cle).forEach((son) => son.stop())); // on coupe la musique en cours : elle repart plus fort
+    fiche.volume = VOLUME_PHASE_4; // le temps du lancement, le volume est celui de la phase 4
+    musiqueBoss(scene, "2"); // on lance la musique du dernier combat (l'introduction puis la boucle gardent ce volume)
+    fiche.volume = volumeNormal; // on remet le volume des phases 1 à 3 pour la prochaine fois
+}
 
 export function chargerMusiqueDernierBoss(scene) {
     if (scene.cache.audio.exists("cri_boss")) return; // (déjà chargés : le niveau a déjà été joué)
