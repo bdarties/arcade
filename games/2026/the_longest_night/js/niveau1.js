@@ -3,7 +3,7 @@ import * as fct from "./fonctions.js";
 /***********************************************************************/
 /** VARIABLES GLOBALES 
 /***********************************************************************/
-var mode_fantome = true;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions restes actives.
+var mode_fantome = false;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions restes actives.
 var player; // désigne le sprite du joueur
 var player2;
 var clavier; // pour la gestion du clavier. Semble initulisé mais en fait, si, elle l'est.

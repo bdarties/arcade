@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<<<<<<< HEAD
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="25">
-=======
 <map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="108" height="50" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="26">
->>>>>>> 4234b07d57611fcb5b9999382a6973a0f86d0e7f
  <editorsettings>
   <export target="niveau_2.json" format="json"/>
  </editorsettings>
@@ -280,12 +276,9 @@
    <point/>
   </object>
   <object id="19" name="Autre_spawn" x="2884" y="585">
-<<<<<<< HEAD
-=======
    <point/>
   </object>
   <object id="25" name="porte" x="1420.67" y="924.667">
->>>>>>> 4234b07d57611fcb5b9999382a6973a0f86d0e7f
    <point/>
   </object>
  </objectgroup>
