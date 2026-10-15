@@ -360,9 +360,8 @@ export default class niveau1 extends Phaser.Scene {
   player2_spawn = cfg.player2_spawn;
   tableau_spawn = cfg.tableau_spawn;;
 
-<<<<<<< HEAD
   if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
-    const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
+    const point_porte = liste_spawn.objects.find((point) => cfg.porte_pattern.test((point.name || "").toLowerCase()));
     if (point_porte) {
       cfg.porte = { x: point_porte.x, y: point_porte.y };
     }
@@ -392,22 +391,6 @@ export default class niveau1 extends Phaser.Scene {
     }
   }
 
-=======
-  /*Définition des points d'aparitions.*/
-if (liste_spawn) { //ce systeme fonctionne aussi pour le niveau 22
-  liste_spawn.objects.forEach((point) => {
-    if (point.name == "Spawn_joueur1") {
-      player_spawn = {x: point.x, y: point.y};
-    } else if (point.name == "Spawn_joueur2") {
-      player2_spawn = { x: point.x, y: point.y };
-    } else if (point.name == "Spawn_porte") {
-      player2_spawn = { x: point.x, y: point.y };
-    } else {
-      tableau_spawn.push({ x: point.x, y: point.y }); //"push" permet d'ajouter des éléments directement a la fin du tableau.
-    }
-  });
-}
->>>>>>> ac301f78d6847ca78bab7795561f2524ac85af41
   /**************************
    * INSTALATION DES ELEMENTS
   ***************************/
