@@ -38,12 +38,13 @@ export default class gameover extends Phaser.Scene {
 
     this.niveau = data.niveau;
     // le score est uniquement le niveau atteint (ni ennemis tués, ni pierres)
-    this.add.text(this.scale.width / 2, 430, "Niveau atteint : " + data.niveau, { fontFamily: fct.POLICES.bouton, fontSize: "34px", color: "#EC8697", stroke: "#080D1C", strokeThickness: 6 }).setOrigin(0.5);
+    this.add.text(this.scale.width / 2, 430, "Niveau atteint : " + data.niveau, { fontFamily: fct.POLICES.texte, fontSize: "34px", color: "#EC8697", stroke: "#080D1C", strokeThickness: 6 }).setOrigin(0.5);
 
+    this.add.text(this.scale.width / 2, 492, "Entrez votre nom :", { fontFamily: fct.POLICES.texte, fontSize: "26px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 6 }).setOrigin(0.5);
     // saisie des initiales : une lettre par case, la case active est en couleur
     this.lettres = new Array(NB_LETTRES).fill(0); // indices dans ALPHABET
     this.position = 0;
-    this.cases = this.lettres.map((_, i) => this.add.text(this.scale.width / 2 + (i - (NB_LETTRES - 1) / 2) * 70, 548, "A", { fontFamily: fct.POLICES.bouton, fontSize: "48px", color: COULEUR_LETTRE, stroke: "#080D1C", strokeThickness: 7 }).setOrigin(0.5));
+    this.cases = this.lettres.map((_, i) => this.add.text(this.scale.width / 2 + (i - (NB_LETTRES - 1) / 2) * 70, 548, "A", { fontFamily: fct.POLICES.texte, fontSize: "48px", color: COULEUR_LETTRE, stroke: "#080D1C", strokeThickness: 7 }).setOrigin(0.5));
     this.majInitiales();
 
     const invite = this.add.text(this.scale.width / 2, 630, "Joystick : lettres      Bouton " + fct.ETIQUETTES.frapper_tirer + " : valider", { fontFamily: fct.POLICES.texte, fontSize: "24px", color: "#BFC3CC", stroke: "#080D1C", strokeThickness: 5 })

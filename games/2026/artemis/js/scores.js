@@ -46,7 +46,7 @@ export default class scores extends Phaser.Scene {
 
     this.add.image(0, 0, "img_fond_menu").setOrigin(0, 0);
     this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x080d1c, 0.78).setOrigin(0, 0);
-    this.add.text(this.scale.width / 2, 70, "CLASSEMENT", { fontFamily: fct.POLICES.bouton, fontSize: "40px", color: "#EC8697", stroke: "#20283A", strokeThickness: 6 })
+    this.add.text(this.scale.width / 2, 70, "CLASSEMENT", { fontFamily: fct.POLICES.texte, fontSize: "40px", color: "#EC8697", stroke: "#20283A", strokeThickness: 6 })
       .setOrigin(0.5);
     this.add.text(this.scale.width / 2, this.scale.height - 34, "Appuie sur le bouton " + fct.ETIQUETTES.frapper_tirer + " pour revenir", { fontFamily: fct.POLICES.texte, fontSize: "22px", color: "#E8EBF0", stroke: "#080D1C", strokeThickness: 5 })
       .setOrigin(0.5);
@@ -63,9 +63,9 @@ export default class scores extends Phaser.Scene {
       const y = 150 + i * 46;
       const couleur = i === data?.rang ? "#EC8697" : "#E8EBF0";
       const style = (police, taille) => ({ fontFamily: police, fontSize: taille + "px", color: couleur, stroke: "#080D1C", strokeThickness: 4 });
-      this.add.text(380, y, (i + 1) + ".", style(fct.POLICES.bouton, 24)).setOrigin(1, 0.5);
-      this.add.text(430, y, e.initiales, style(fct.POLICES.bouton, 26)).setOrigin(0, 0.5);
-      this.add.text(900, y, "Niveau " + e.niveau, style(fct.POLICES.bouton, 26)).setOrigin(1, 0.5);
+      this.add.text(380, y, (i + 1) + ".", style(fct.POLICES.texte, 24)).setOrigin(1, 0.5);
+      this.add.text(430, y, e.initiales, style(fct.POLICES.texte, 26)).setOrigin(0, 0.5);
+      this.add.text(900, y, "Niveau " + e.niveau, style(fct.POLICES.texte, 26)).setOrigin(1, 0.5);
     });
   }
 
