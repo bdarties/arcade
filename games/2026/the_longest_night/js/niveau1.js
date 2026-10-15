@@ -1,12 +1,12 @@
-import * as fct from "./fonctions.js";
-import * as cont from "./controles.js";
-
 /***********************************************************************/
 /** VARIABLES GLOBALES 
 /***********************************************************************/
 var mode_fantome = false;//une variable qui sert a activer un mode_fantome, utilisé pour tester des fonctionalités. Ce mode_fantome permet de traverser les murs pour parcourir le labyrinthe plus rapidement. Les autres colisions restes actives.
 var player; // désigne le sprite du joueur
 var player2;
+var clavier; // pour la gestion du clavier. Semble initulisé mais en fait, si, elle l'est.
+var J1Haut, J1Bas, J1Gauche, J1Droite, J1boutonFeu,J1Interaction; //variables des touches du joueur 1
+var J2Haut, J2Bas, J2Gauche, J2Droite, J2boutonFeu,J2Interaction; //variables des touches du joueur 2
 var player_spawn; //définit l'endroit d'apparition du joueur1
 var player2_spawn; //définit l'endroit d'apparition du joueur2
 var tableau_spawn //tableau qui sert a reunir tous les points de spawn. Ces points de spawn sont définit dans le fichier Tiled, cependant, ils ne servent que de référence pour inscrire les coordonées manuelllement. Une amélioration de ce systeme serait possible.
@@ -56,7 +56,9 @@ var cibleCamera; // point invisible au milieu des deux joueurs sur laquelle la c
 var gagnant //variable qui définira le vainqeur du niveau a la fin du calcul des points. Est éfféctivement initulisée pour l'instant.
 var sortie_ouverte = false; //définit si toutes les clés ont été trouvées, et donc, si la porte du niveau du jeu est ouverte pour s'échapper.
 var gameOver = false; //fonction pouvant etre utilisée pour définir si la partie se termine ou non. N'a pas d'utilité pour l'instant.
-var spawns_complets = []; //copie de TOUS les points de spawn de la carte (tableau_spawn, lui, se vide à mesure que les objets apparaissent). Sert au mode compétitif pour faire réapparaître clés, ennemis, soins et recharges.
+var murs; //le calque des murs (sert aux collisions de la faucheuse)
+var faucheuse = null; //la faucheuse du niveau. Reste null tant que le timer n'est pas arrivé à 0
+var fin_de_partie = false; //passe à true quand tous les joueurs sont morts
 // définition de la classe "selection"
 export default class niveau1 extends Phaser.Scene {
   constructor(cle = "niveau1") {
@@ -65,7 +67,6 @@ export default class niveau1 extends Phaser.Scene {
 
   init(data) {
     this.donnees = data || {}; // scores transmis par le niveau précédent (vide pour le niveau 1)
-    mode_deux_joueurs = this.donnees.mode === 2; //mode 1 = histoire (1 joueur, porte de sortie), mode 2 = compétitif (2 joueurs, pas de porte)
   }
 
   /** Tous les réglages qui changent d'un niveau à l'autre sont ici.
@@ -77,7 +78,7 @@ export default class niveau1 extends Phaser.Scene {
       tileset_nom: "tileset_good",
       tileset_image: "Phaser_tuileGood",
       temps: 120,
-      nombre_cles: 2,
+      nombre_cles: 1,
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
@@ -94,13 +95,24 @@ export default class niveau1 extends Phaser.Scene {
         degats: 1,
         score: 100
       }],
-      niveau_suivant: "niveau2",
-      competitif: { //réglages du mode 2 joueurs. Ils remplacent temps / nombre_cles / nombre_ennemis du niveau.
-        temps: 90,                  // durée du match en secondes
-        cles_simultanees: 3,        // nombre de clés présentes en même temps sur la carte (une nouvelle réapparaît dès qu'on en ramasse une)
-        nombre_ennemis: 5,          // ennemis présents en même temps (ils réapparaissent quand on les tue)
-        delai_reapparition: 4000    // ms entre deux vérifications de réapparition
-      }
+      // LA FAUCHEUSE : apparaît quand le timer arrive à 0 et tue les joueurs. Mettre "faucheuse: null" pour la désactiver dans un niveau.
+      faucheuse: {
+        // images : "largeur" et "hauteur" = taille d'UNE case de la feuille, "images" = nombre de cases, "pieds" = point des pieds de la cape dans la case
+        marche:  { fichier: "./assets/enemies/faucheuse.png",         largeur: 96, hauteur: 96, images: 4,  pieds: { x: 31, y: 88 } },
+        attaque: { fichier: "./assets/enemies/faucheuse_attaque.png", largeur: 96, hauteur: 96, images: 13, pieds: { x: 31, y: 88 } },
+        vitesse: 400,              // les joueurs vont à 160 : elle est super rapide
+        hitbox: 20,                // taille de sa hitbox carrée (pixels)
+        distance_min: 230,         // elle apparaît entre ces deux distances du joueur (donc juste hors de l'écran)...
+        distance_max: 300,
+        delai_avant_charge: 1800,  // ...invisible, et elle fonce seulement après ce délai (ms) : le temps de lire le message
+        portee_attaque: 50,        // distance à laquelle elle lance son coup
+        portee_coup: 70,           // distance maximale pour être touché quand le coup arrive
+        delai_impact: 300,         // ms entre le début de l'attaque et le coup
+        duree_attaque: 650,        // ms : durée de l'animation d'attaque
+        pause_apres_attaque: 400   // ms de repos avant le coup suivant
+      },
+      scene_mort: "Ecran_score",   // scène lancée quand tous les joueurs sont morts
+      niveau_suivant: "niveau2"
     };
   }
 
@@ -121,7 +133,12 @@ export default class niveau1 extends Phaser.Scene {
     // tous les assets du jeu sont placés dans le sous-répertoire src/assets/
     this.load.image("Phaser_tuileGood", "./assets/map/tileset_good.png");
     const cfg_carte = this.parametres_niveau();
-    this.load.tilemapTiledJSON(cfg_carte.carte_cle, cfg_carte.carte_fichier); 
+    this.load.tilemapTiledJSON(cfg_carte.carte_cle, cfg_carte.carte_fichier);
+    if (cfg_carte.faucheuse) { //images de la faucheuse de CE niveau
+      ["marche", "attaque"].forEach((type) => {
+        this.load.image("img_faucheuse_" + type + "_" + this.scene.key, cfg_carte.faucheuse[type].fichier);
+      });
+    } 
     this.load.image("img_background", "./assets/arriere_plan.jpg");
     this.load.image("player1", "./assets/player_1/joueur1_image.png"); //servira a définir le joueur directement. L'image a en réalité peu d'importance car on verra l'animation d'attente du bas dès le début.
     this.load.image("player2", "./assets/player_2/joueur2_image.png");
@@ -257,10 +274,6 @@ export default class niveau1 extends Phaser.Scene {
       frameWidth : 64,
       frameHeight : 16
     });
-    this.load.spritesheet("porte_ouverture_animation", "./assets/door_open.png",{
-      frameWidth : 48,
-      frameHeight : 48
-    });
     this.load.spritesheet("animation_balle_droite", "./assets/bullets/bullet_right.png",{
       frameWidth : 48,
       frameHeight : 16
@@ -306,13 +319,7 @@ export default class niveau1 extends Phaser.Scene {
       //definition des paramètres du premier niveau
       const cfg = this.parametres_niveau();
       this.cfg = cfg;
-      if (mode_deux_joueurs) { //mode compétitif : on remplace les réglages de l'histoire par ceux du bloc "competitif"
-        cfg.temps = cfg.competitif.temps;
-        cfg.nombre_cles = cfg.competitif.cles_simultanees;
-        cfg.nombre_ennemis = cfg.competitif.nombre_ennemis;
-      }
       temps_restant = cfg.temps;
-      this.game_over_en_cours = false; //passe à true quand le game over est déclenché (évite de le lancer plusieurs fois)
       nombre_cles = cfg.nombre_cles;
       cles_restantes = nombre_cles;
       cles_creees = 0; //remis à zéro à chaque (re)lancement de niveau
@@ -359,7 +366,7 @@ export default class niveau1 extends Phaser.Scene {
 
   player_spawn = cfg.player_spawn;
   player2_spawn = cfg.player2_spawn;
-  tableau_spawn = cfg.tableau_spawn;;
+  tableau_spawn = cfg.tableau_spawn;
 
   if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
     const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
@@ -396,8 +403,7 @@ export default class niveau1 extends Phaser.Scene {
    * INSTALATION DES ELEMENTS
   ***************************/
   groupeBullets = this.physics.add.group();
-  spawns_complets = tableau_spawn.map((p) => ({ x: p.x, y: p.y })); //on garde tous les points avant que tableau_spawn ne se vide
-  porte = mode_deux_joueurs ? null : this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee"); //pas de porte en mode compétitif
+  porte = this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee");
   groupe_cle = this.physics.add.group();
   groupe_araignee = this.physics.add.group();
   groupe_recharges = this.physics.add.group();
@@ -409,23 +415,10 @@ export default class niveau1 extends Phaser.Scene {
       callback: () => {
         temps_restant -= 1;
         temps_restant_affiche.setText(String(temps_restant));
-        if (temps_restant <= 0) { //le temps est écoulé
-          declencher_game_over.call(this, "temps");
+        if (temps_restant <= 0 && this.cfg.faucheuse) { //le temps est écoulé : la faucheuse arrive
+          apparition_faucheuse.call(this);
         }
       }});
-      if (mode_deux_joueurs) { //mode compétitif : on remet régulièrement clés, ennemis, soins et recharges sur des points libres
-        this.time.addEvent({
-          delay: cfg.competitif.delai_reapparition,
-          loop: true,
-          callback: () => {
-            if (this.game_over_en_cours) {
-              return;
-            }
-            tableau_spawn = points_spawn_libres();
-            apparition_elements();
-          }
-        });
-      }
       
     
     /****************************
@@ -445,6 +438,12 @@ export default class niveau1 extends Phaser.Scene {
     // propriétées physique de l'objet player :
     player.setCollideWorldBounds(true);
     calque_mur.setCollisionByProperty({estSolide: true});
+    murs = calque_mur;
+    faucheuse = null; //remise à zéro à chaque (re)lancement du niveau
+    fin_de_partie = false;
+    if (cfg.faucheuse) {
+      preparer_faucheuse.call(this);
+    }
     if (!mode_fantome){
       this.physics.add.collider(player, calque_mur);
     }
@@ -461,7 +460,6 @@ export default class niveau1 extends Phaser.Scene {
       player2.direction = "down";
     //  propriétées physique de l'objet player2 :
     player2.setCollideWorldBounds(true);
-    calque_mur.setCollisionByProperty({estSolide: true});
     this.physics.add.collider(player2, calque_mur);
   }
     /***************************
@@ -724,15 +722,6 @@ export default class niveau1 extends Phaser.Scene {
       repeat: -1 
     });
     this.anims.create({
-      key: "animation_areignee",
-      frames: this.anims.generateFrameNumbers("areignee_ennemie", {
-        start: 0,
-        end: 7
-      }), 
-      frameRate: 3, 
-      repeat: -1 
-    });
-    this.anims.create({
       key: "animation_balle_droite",
       frames: this.anims.generateFrameNumbers("animation_balle_droite", {
         start: 0,
@@ -849,7 +838,6 @@ export default class niveau1 extends Phaser.Scene {
     player.iconeRecharge.setScrollFactor(0);
     balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326'});
     balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
-    balle_restanteJ1_affiche.setScrollFactor(0); //permet de faire en sorte que le texte (ou autre élément chosi) reste fixe sur l'écran.
     player.barreVie = this.add.sprite(70, 10, "pv_bar", player.points_vies); //note : cet élément d'UI possède plusieurs frames et est donc un sprite. Par rapport aux autres, on l'importe en tant que sprite.
     player.barreVie.setScale(2.2);
     player.barreVie.setOrigin(0.5, 0);
@@ -916,12 +904,29 @@ export default class niveau1 extends Phaser.Scene {
     son_areignne_blesse = this.sound.add('areignee_blesse')
     son_cle = this.sound.add('cle_collecte')
 
-   
+    /***********************
+     *  CREATION DU CLAVIER ET TOUCHES *
+     ************************/
+    clavier = this.input.keyboard.createCursorKeys(); //on importe les touches curseurs, le reste étant installé après cette ligne.
+
+    //touches Joueur 1
+      J1Haut = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP); //Phaser.Input.Keyboard.addKey.[...] représente la touche a associer (en l'occurence l'une des touche directionelle) par ce on ne peut pas associer une touche de direction a une variable comme les autres touches et qu'on doit donc utiliser cette méthode
+      J1Bas = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+      J1Gauche = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+      J1Droite = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+      J1Interaction = this.input.keyboard.addKey('I');
+      J1boutonFeu = this.input.keyboard.addKey('O');
+    //touches Joueur 2
+      J2Haut = this.input.keyboard.addKey('Z');
+      J2Bas = this.input.keyboard.addKey('S');
+      J2Gauche = this.input.keyboard.addKey('Q');
+      J2Droite = this.input.keyboard.addKey('D');
+      J2Interaction = this.input.keyboard.addKey('R');
+      J2boutonFeu = this.input.keyboard.addKey('T');
     /*************************************************
      * AJOUT DES ENNEMIS                             *
      ************************************************/
     
-    groupe_araignee = this.physics.add.group();
     this.physics.add.collider(groupe_araignee, calque_mur);
     tableau_ennemis = cfg.ennemis; //défini dans parametres_niveau()
      const nombre_appels_apparition = Math.max( //on rassemble le nombre d'élément total que l'on shouaiterais ici.
@@ -968,11 +973,6 @@ export default class niveau1 extends Phaser.Scene {
       panneauTimer, panneauCles,
       temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon
     ];
-    if (mode_deux_joueurs) { //en compétitif il n'y a pas de "clés restantes" à afficher : seuls les scores comptent
-      panneauCles.setVisible(false);
-      nombreCleIcon.setVisible(false);
-      cles_restantes_affiche.setVisible(false);
-    }
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
     camJ1UI.ignore(hudJ2);
     if (mode_deux_joueurs) {
@@ -988,45 +988,35 @@ export default class niveau1 extends Phaser.Scene {
 /***********************************************************************/
 
   update() {
-    if (this.game_over_en_cours) { //game over en cours : on fige le jeu en attendant le changement de scène
-      return;
-    }
     //gestion indépendante des points de vie (au cas ou on voudrait ajouter une option pour soigner)
     player.barreVie.setFrame(player.points_vies); //défini le numero de frame par rapport au nombre de point de vie restant. Très pratique pour une gestion indépendante.
     if (mode_deux_joueurs) {
       player2.barreVie.setFrame(player2.points_vies);
       gerer_cameras();
     }
-    if (player.points_vies <= 0) { //la barre de vie d'un des deux joueurs est vide : game over
-      declencher_game_over.call(this, "vie_J1");
-      return;
-    }
-    if (mode_deux_joueurs && player2.points_vies <= 0) {
-      declencher_game_over.call(this, "vie_J2");
-      return;
-    }
     deplacement_areignee.call(this);
+    deplacement_faucheuse.call(this);
     //commandes joueur1
     player.setVelocity(0);
-    if (cont.J1Gauche.isDown){
+    if (J1Gauche.isDown){
           player.direction = "left";
           player.setVelocityX(-160);
           if (!player.tirEnCours){
             player.anims.playReverse("anim_course_gauche_J1", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
         }}
-        else if (cont.J1Droite.isDown) {
+        else if (J1Droite.isDown) {
           player.direction = "right";
           player.setVelocityX(160);
           if (!player.tirEnCours){
             player.anims.play("anim_course_droite_J1", true);
         }}
-        else if (cont.J1Haut.isDown) {
+        else if (J1Haut.isDown) {
           player.direction = "up";
           player.setVelocityY(-160);
           if (!player.tirEnCours){
           player.anims.play("anim_course_haut_J1", true);
         }}
-        else if (cont.J1Bas.isDown) {
+        else if (J1Bas.isDown) {
           player.direction = "down";
           player.setVelocityY(160);
           if (!player.tirEnCours){
@@ -1052,34 +1042,34 @@ export default class niveau1 extends Phaser.Scene {
             player.anims.play("anim_attente_droite_J1",true);
         }}
       }
-        if (Phaser.Input.Keyboard.JustDown(cont.J1boutonFeu)){
+        if (Phaser.Input.Keyboard.JustDown(J1boutonFeu)){
           tirer.call(this, player);
         }
 
-    if (Phaser.Input.Keyboard.JustDown(cont.J1Interaction) && sortie_ouverte && this.physics.overlap(player, porte)) {
+    if (Phaser.Input.Keyboard.JustDown(J1Interaction) && sortie_ouverte && this.physics.overlap(player, porte)) {
       aller_niveau_suivant.call(this);
     }
   //commandes joueur2
   if (mode_deux_joueurs){
-        if (cont.J2Gauche.isDown) {
+        if (J2Gauche.isDown) {
           player2.direction = "left";
           player2.setVelocityX(-160);
             if (!player.tirEnCours){
           player2.anims.playReverse("anim_course_gauche_J2", true); //playReverse permettra de jouer l'animation de la fin jusqu'au début, permettant ainsi d'éviter les faux raccord entre l'animation de droite et de gauche.
         }}
-        else if (cont.J2Droite.isDown) {
+        else if (J2Droite.isDown) {
           player2.direction = "right";
           player2.setVelocityX(160);
           if (!player.tirEnCours){
             player2.anims.play("anim_course_droite_J2", true);
           }}
-        else if (cont.J2Haut.isDown) {
+        else if (J2Haut.isDown) {
           player2.direction = "up";
           player2.setVelocityY(-160);
           if (!player.tirEnCours){
           player2.anims.play("anim_course_haut_J2", true);
         }}
-        else if (cont.J2Bas.isDown) {
+        else if (J2Bas.isDown) {
           player2.direction = "down";
           player2.setVelocityY(160);
           if (!player.tirEnCours){
@@ -1304,7 +1294,7 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
       }
 
       function tirer(player){
-        if (player.peutTirer == true && player.balle_restante >0 ) {
+        if (player.peutTirer == true && player.balle_restante >0 && player.points_vies > 0) {
         var coefDir; 
         let bullet;
         player.tirEnCours = true;
@@ -1399,12 +1389,8 @@ function degat_contact_ennemi(player, ennemi, attaque = false) {
         const scoreText = player === player2 ? score_J2_affiche : score_J1_affiche;
         scoreText.setText(String(player.score));
         son_cle.play();
-        cle.destroy();
-        if (mode_deux_joueurs) { //compétitif : pas de porte ni de compteur, la clé ne fait que rapporter des points puis réapparaît ailleurs
-          cles_creees -= 1; //libère une place pour que apparition_elements() en recrée une
-          return;
-        }
         cles_restantes -= 1;
+        cle.destroy();
         cles_restantes_affiche.setText(String(cles_restantes));
         if (cles_creees >= nombre_cles && groupe_cle.countActive(true) == 0){
         porte.anims.play("animation_porte_ouverte");
@@ -1426,8 +1412,7 @@ function aller_niveau_suivant() { //arrête la musique puis lance le niveau déf
   this.scene.start(this.cfg.niveau_suivant, {
     scoreJ1: player.score,
     scoreJ2: mode_deux_joueurs ? player2.score : 0,
-    temps_restant,
-    mode: mode_deux_joueurs ? 2 : 1
+    temps_restant
   });
 }
 
@@ -1497,49 +1482,218 @@ function attaque_rodeur(ennemi, cible, joueurs) {
   });
 }
 
-function declencher_game_over(raison) { //raison : "temps", "vie_J1" ou "vie_J2". Fige le jeu une seconde (pour voir la barre de vie à 0) puis affiche l'écran Game_over
-  if (this.game_over_en_cours) {
-    return;
-  }
-  this.game_over_en_cours = true;
-  musique_niveau1.stop();
-  this.physics.pause();
-  this.time.delayedCall(1000, () => {
-    if (mode_deux_joueurs) { //mode compétitif : pas de game over, on désigne un gagnant
-      let gagnant_match; //1 = joueur 1, 2 = joueur 2, 0 = égalité
-      if (raison === "vie_J1") {
-        gagnant_match = 2; //J1 est tombé : J2 gagne
-      } else if (raison === "vie_J2") {
-        gagnant_match = 1;
-      } else { //temps écoulé : le plus gros score gagne
-        gagnant_match = player.score > player2.score ? 1 : (player2.score > player.score ? 2 : 0);
+/************************************************************************/
+/** LA FAUCHEUSE                                                       **/
+/** Quand le timer arrive à 0 : un message s'affiche, elle apparaît    **/
+/** (invisible) près du joueur, puis elle fonce dessus et le tue.      **/
+/************************************************************************/
+
+function joueurs_vivants() { //liste des joueurs encore en vie
+  const joueurs = mode_deux_joueurs ? [player, player2] : [player];
+  return joueurs.filter((joueur) => joueur.points_vies > 0);
+}
+
+// 1) Prépare les images et les animations de la faucheuse (appelée une fois dans create)
+function preparer_faucheuse() {
+  const cfg = this.cfg.faucheuse;
+  ["marche", "attaque"].forEach((type) => {
+    const p = cfg[type];
+    const cle = "faucheuse_" + type + "_" + this.scene.key; //ex : "faucheuse_marche_niveau2"
+    if (!this.textures.exists(cle)) {
+      // on recopie le PNG dans un canvas de la bonne taille puis on déclare chaque case (le PNG de marche du niveau 2 est rogné, ce qui casse un découpage normal)
+      const image = this.textures.get("img_" + cle).getSourceImage();
+      const canvas = document.createElement("canvas");
+      canvas.width = p.largeur * p.images;
+      canvas.height = p.hauteur;
+      canvas.getContext("2d").drawImage(image, 0, 0);
+      const texture = this.textures.addCanvas(cle, canvas);
+      for (let i = 0; i < p.images; i++) {
+        texture.add(i, 0, i * p.largeur, 0, p.largeur, p.hauteur);
       }
-      this.scene.start("Ecran_score", {
-        mode: 2,
-        raison,
-        gagnant: gagnant_match,
-        scoreJ1: player.score,
-        scoreJ2: player2.score
-      });
-      return;
     }
-    this.scene.start("Game_over", {
-      raison,
-      niveau: this.scene.key, //permet de relancer le même niveau depuis l'écran de game over
-      scoreJ1: player.score,
-      scoreJ2: mode_deux_joueurs ? player2.score : 0,
-      deux_joueurs: mode_deux_joueurs
-    });
+    if (!this.anims.exists(cle)) {
+      this.anims.create({
+        key: cle,
+        frames: this.anims.generateFrameNumbers(cle, { start: 0, end: p.images - 1 }),
+        frameRate: type === "marche" ? 8 : p.images / (cfg.duree_attaque / 1000), //l'attaque dure exactement duree_attaque
+        repeat: type === "marche" ? -1 : 0
+      });
+    }
   });
 }
 
-function points_spawn_libres() { //mode compétitif : renvoie les points de spawn qui ne sont ni occupés par un objet/ennemi, ni trop près d'un joueur
-  const occupants = [groupe_cle, groupe_recharges, groupe_soin, groupe_araignee]
-    .flatMap((groupe) => groupe.getChildren())
-    .filter((objet) => objet.active);
-  const joueurs = [player, player2];
-  return spawns_complets.filter((point) =>
-    occupants.every((o) => Phaser.Math.Distance.Between(o.x, o.y, point.x, point.y) > 24) &&
-    joueurs.every((j) => Phaser.Math.Distance.Between(j.x, j.y, point.x, point.y) > 120)
-  ).map((p) => ({ x: p.x, y: p.y }));
+// cherche un endroit sans mur à une distance comprise entre "min" et "max" du joueur
+function place_libre_autour(joueur, min, max) {
+  for (let essai = 0; essai < 50; essai++) {
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const distance = Phaser.Math.Between(min, max);
+    const x = joueur.x + Math.cos(angle) * distance;
+    const y = joueur.y + Math.sin(angle) * distance;
+    const tuile = murs.getTileAtWorldXY(x, y);
+    if (this.physics.world.bounds.contains(x, y) && !(tuile && tuile.collides)) {
+      return { x: x, y: y };
+    }
+  }
+  return { x: joueur.x, y: joueur.y }; //rien trouvé : on la met sur le joueur
+}
+
+// 2) Appelée quand le timer arrive à 0 : message + apparition de la faucheuse
+function apparition_faucheuse() {
+  const cfg = this.cfg.faucheuse;
+  const vivants = joueurs_vivants();
+  if (faucheuse || vivants.length === 0) {
+    return;
+  }
+
+  // le message, au centre de l'écran (seule camGlobalUI l'affiche, les autres caméras l'ignorent)
+  const message = this.add.text(640, 200, "LE TEMPS EST ÉCOULÉ...\nLA FAUCHEUSE ARRIVE !", {
+    fontFamily: "Arial, sans-serif",
+    fontSize: "40px",
+    color: "#ff3b3b",
+    align: "center",
+    stroke: "#000000",
+    strokeThickness: 6
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+  camJ1.ignore(message);
+  camJ2.ignore(message);
+  camJ1UI.ignore(message);
+  if (mode_deux_joueurs) {
+    camJ2UI.ignore(message);
+  }
+  this.tweens.add({ targets: message, alpha: 0, delay: cfg.delai_avant_charge, duration: 600, onComplete: () => message.destroy() });
+  camJ1.shake(600, 0.01);
+  camJ2.shake(600, 0.01);
+
+  // la faucheuse apparaît près du premier joueur vivant, mais invisible : on ne la voit pas arriver
+  const position = place_libre_autour.call(this, vivants[0], cfg.distance_min, cfg.distance_max);
+  faucheuse = this.physics.add.sprite(position.x, position.y, "faucheuse_marche_" + this.scene.key, 0);
+  faucheuse.setDepth(50);
+  faucheuse.setAlpha(0);
+  faucheuse.body.setSize(cfg.hitbox, cfg.hitbox);
+  poser_faucheuse.call(this, "marche", false);
+  this.physics.add.collider(faucheuse, murs); //elle ne traverse pas les murs
+  faucheuse.etat = "attente"; //"attente" -> "chasse" <-> "attaque"
+  faucheuse.prochaine_attaque = 0;
+  faucheuse.verif_coincee = 0;
+  faucheuse.dernier_x = position.x;
+  faucheuse.dernier_y = position.y;
+  camJ1UI.ignore(faucheuse);
+  camGlobalUI.ignore(faucheuse);
+  if (mode_deux_joueurs) {
+    camJ2UI.ignore(faucheuse);
+  }
+
+  const f = faucheuse;
+  this.time.delayedCall(cfg.delai_avant_charge, () => { //la charge commence : elle devient visible et fonce
+    if (f.active) {
+      f.etat = "chasse";
+      this.tweens.add({ targets: f, alpha: 1, duration: 200 });
+    }
+  });
+}
+
+// choisit la feuille (marche ou attaque) et le sens. Chaque feuille a ses cases : on place l'origine du sprite sur les pieds de la cape
+// et la hitbox dessus, sinon le dessin sauterait à chaque changement d'animation.
+function poser_faucheuse(type, retournee) {
+  const p = this.cfg.faucheuse[type];
+  const hitbox = this.cfg.faucheuse.hitbox;
+  if (faucheuse.pose !== type || faucheuse.flipX !== retournee) {
+    faucheuse.pose = type;
+    faucheuse.setFlipX(retournee);
+    const pieds_x = retournee ? p.largeur - p.pieds.x : p.pieds.x; //une image retournée est inversée dans sa case : les pieds aussi
+    faucheuse.setOrigin(pieds_x / p.largeur, p.pieds.y / p.hauteur);
+    faucheuse.body.setOffset(pieds_x - hitbox / 2, p.pieds.y - hitbox);
+  }
+  faucheuse.anims.play("faucheuse_" + type + "_" + this.scene.key, true);
+}
+
+// 3) Appelée à chaque image (dans update) : la faucheuse fonce sur le joueur vivant le plus proche
+function deplacement_faucheuse() {
+  if (!faucheuse || !faucheuse.active || fin_de_partie) {
+    return;
+  }
+  const cfg = this.cfg.faucheuse;
+  const vivants = joueurs_vivants();
+  if (faucheuse.etat !== "chasse" || vivants.length === 0) { //en attente ou en pleine attaque : elle ne bouge pas
+    faucheuse.setVelocity(0, 0);
+    return;
+  }
+
+  // le joueur le plus proche
+  const moi = faucheuse.body.center;
+  let cible = vivants[0];
+  let distance = Infinity;
+  vivants.forEach((joueur) => {
+    const d = Phaser.Math.Distance.Between(moi.x, moi.y, joueur.body.center.x, joueur.body.center.y);
+    if (d < distance) {
+      distance = d;
+      cible = joueur;
+    }
+  });
+  poser_faucheuse.call(this, "marche", cible.body.center.x < moi.x); //elle regarde vers la droite par défaut : on la retourne si la cible est à gauche
+
+  // assez proche : elle attaque
+  if (distance <= cfg.portee_attaque && this.time.now >= faucheuse.prochaine_attaque) {
+    attaque_faucheuse.call(this);
+    return;
+  }
+
+  // coincée derrière un mur ? Toutes les 0,8 s on vérifie qu'elle a bougé, sinon elle réapparaît près du joueur
+  if (this.time.now >= faucheuse.verif_coincee) {
+    const deplacement = Phaser.Math.Distance.Between(faucheuse.x, faucheuse.y, faucheuse.dernier_x, faucheuse.dernier_y);
+    if (deplacement < 15 && distance > 80) {
+      const position = place_libre_autour.call(this, cible, 100, 180);
+      faucheuse.body.reset(position.x, position.y);
+    }
+    faucheuse.dernier_x = faucheuse.x;
+    faucheuse.dernier_y = faucheuse.y;
+    faucheuse.verif_coincee = this.time.now + 800;
+  }
+
+  // elle fonce droit sur le joueur
+  const angle = Phaser.Math.Angle.Between(moi.x, moi.y, cible.body.center.x, cible.body.center.y);
+  faucheuse.setVelocity(Math.cos(angle) * cfg.vitesse, Math.sin(angle) * cfg.vitesse);
+}
+
+// 4) L'attaque : animation, puis le coup tue tout joueur à portée
+function attaque_faucheuse() {
+  const cfg = this.cfg.faucheuse;
+  const f = faucheuse;
+  f.etat = "attaque";
+  f.setVelocity(0, 0);
+  poser_faucheuse.call(this, "attaque", f.flipX);
+  this.time.delayedCall(cfg.delai_impact, () => { //le coup arrive
+    if (!f.active) {
+      return;
+    }
+    joueurs_vivants().forEach((joueur) => {
+      if (Phaser.Math.Distance.Between(f.body.center.x, f.body.center.y, joueur.body.center.x, joueur.body.center.y) <= cfg.portee_coup) {
+        tuer_joueur.call(this, joueur);
+      }
+    });
+  });
+  this.time.delayedCall(cfg.duree_attaque, () => { //fin de l'attaque : elle repart à la chasse
+    if (f.active) {
+      f.etat = "chasse";
+      f.prochaine_attaque = this.time.now + cfg.pause_apres_attaque;
+    }
+  });
+}
+
+// 5) Mort d'un joueur. Quand tous sont morts, on passe à l'écran de score.
+function tuer_joueur(joueur) {
+  joueur.points_vies = 0; //la barre de vie se vide toute seule dans update
+  joueur.body.enable = false; //il n'interagit plus avec rien
+  this.tweens.add({ targets: joueur, alpha: 0, duration: 400, onComplete: () => joueur.setVisible(false) });
+  if (joueurs_vivants().length === 0) {
+    fin_de_partie = true;
+    this.time.delayedCall(1500, () => {
+      musique_niveau1.stop();
+      this.scene.start(this.cfg.scene_mort, {
+        scoreJ1: player.score,
+        scoreJ2: mode_deux_joueurs ? player2.score : 0,
+        mort: true
+      });
+    });
+  }
 }
