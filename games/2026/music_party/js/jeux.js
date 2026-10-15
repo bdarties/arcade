@@ -12,11 +12,11 @@ export const JEUX = [
     cle: "music_fall",
     apercu: "apercu_music_fall",
     titre: "MUSIC FALL",
-    slogan: "Tamponne ta note au plus près de la ligne dorée !",
+    slogan: "Tamponne ta note au plus près de note de musique !",
     regles:
       "Au top départ, ton perso tombe de sa feuille avec sa note.\n" +
       "Appuie sur A pour tamponner ta note sur la partition, au plus près\n" +
-      "de la ligne dorée : 0 cm = parfait ! Si tu la dépasses : raté (60 cm).\n" +
+      "de la note de musique : 0 cm = parfait ! Si tu la dépasses : raté (60 cm).\n" +
       "3 essais : le plus petit total gagne.",
     scene: "music_fall",
     fond: "img_fond_scene",

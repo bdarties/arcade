@@ -8,7 +8,7 @@ import { participants } from "./persos.js";
 // ===========================================================================
 // MUSIC FALL
 // Le perso tombe avec sa note. On appuie sur A pour tamponner la note
-// le plus près possible de la ligne dorée. 3 essais : le plus petit total gagne.
+// le plus près possible de note de musique. 3 essais : le plus petit total gagne.
 // ===========================================================================
 
 // ----- Réglages -----
