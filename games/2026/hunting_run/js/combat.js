@@ -1,7 +1,7 @@
 import {
-  SPRITES, IMAGES_COMBAT, COMBAT, TYPES_ENNEMIS, ENNEMIS, POTIONS, CALQUES_TILED, PATROUILLE_GARDE, TROUS, PNJS, MAPS, ENIGMES, HORLOGE
+  SPRITES, IMAGES_COMBAT, COMBAT, TYPES_ENNEMIS, ENNEMIS, POTIONS, CALQUES_TILED, PATROUILLE_GARDE, TROUS, PNJS, MAPS, HORLOGE
 } from "./maps.js";
-  import { jouer, laserOn } from "./sons.js";
+import { jouer } from "./sons.js";
 
 const combat = {
 
@@ -86,7 +86,6 @@ const combat = {
       j.laserActif = false;
       j.laserCePress = false;
       j.prochainTick = 0;
-      j.sonLaser = null;
       j.energie = COMBAT.laser.energieMax;
       j.reculJusqua = 0;
       // petite protection à l'arrivée dans une pièce
@@ -107,9 +106,10 @@ const combat = {
     this.physics.add.overlap(this.boulesJ, this.groupeEnn, (b, s) => {
       if (!b.active || !s.active || s.e.mort) return;
       const dir = b.body.velocity.x >= 0 ? 1 : -1;
+      const tireur = b.joueur;
       this.etincelles(b.x, b.y, 0x66ffcc);
       b.destroy();
-      this.frapperEnnemi(s, COMBAT.tir.degats, dir, 160);
+      this.frapperEnnemi(s, COMBAT.tir.degats, dir, 160, tireur);
     });
     // boule ennemie -> joueur
     // (Phaser peut inverser l'ordre des deux objets quand on mélange groupe et sprites : on retrouve qui est qui)
@@ -131,9 +131,6 @@ const combat = {
     this.creerPNJ();
     this.creerIndiceHautPorte();
     this.creerHorloges();
-
-    // si on quitte la map pendant un laser, on coupe le son
-    this.events.once("shutdown", () => this.joueurs.forEach((j) => j.sonLaser && j.sonLaser.stop()));
 
     // le PNJ du début se met à parler tout seul, une seule fois
     const intro = (PNJS[this.nomMap] || []).find((p) => p.auto && !(p.vu && this.registry.get(p.vu)));
@@ -170,8 +167,6 @@ const combat = {
 
   couperLasers() {
     (this.joueurs || []).forEach((j) => {
-      if (j.sonLaser) j.sonLaser.stop();
-      j.sonLaser = null;
       j.laserActif = false;
     });
     if (this.laserGfx) this.laserGfx.clear();
@@ -303,7 +298,6 @@ const combat = {
         e.prepareJusqua = 0;
         s.clearTint();
         s.anims.resume();
-        jouer(this, "coup");
         this.effetCoupEnnemi(s, e.dir);
         const c = this.joueurProche(s);
         if (c && Math.abs(c.dx) < t.portee + 24 && Math.abs(c.dy) < 64) this.perdreVie(c.j, t.degats, s.x);
@@ -318,7 +312,6 @@ const combat = {
       if (Math.abs(cible.dx) < t.portee && time >= e.prochainCoup) {
         e.prepareJusqua = time + t.preparation;
         s.setTint(0xff8888);
-        jouer(this, "alerte");
         s.setVelocityX(0);
         return;
       }
@@ -373,7 +366,6 @@ const combat = {
     } else if (time >= e.prochainCoup) {
       e.prepareJusqua = time + t.preparation;
       s.setTint(0xffaa55); // il charge son tir
-      jouer(this, "alerte");
     }
   },
 
@@ -391,19 +383,17 @@ const combat = {
     b.setRotation(im.regardeDroite ? ang : ang + Math.PI);
     b.setVelocity(Math.cos(ang) * t.vitesseBoule, Math.sin(ang) * t.vitesseBoule);
     this.time.delayedCall(2600, () => b.active && b.destroy());
-    jouer(this, "tirEnnemi");
   },
 
-  // un ennemi reçoit des dégâts (dir : sens du coup, 1 = vers la droite)
-  frapperEnnemi(s, degats, dir, recul = 120, silencieux = false) {
+  // un ennemi reçoit des dégâts (dir : sens du coup, 1 = vers la droite ; j : le joueur qui frappe, il gagne les points)
+  frapperEnnemi(s, degats, dir, recul = 120, j = null) {
     if (!s.active || s.e.mort) return;
     const e = s.e;
     e.pv -= degats;
-    if (!silencieux) jouer(this, "impact");
     s.setTintFill(0xffffff);
     this.time.delayedCall(70, () => s.active && !e.mort && s.clearTint());
     if (e.pv <= 0) {
-      this.mortEnnemi(s);
+      this.mortEnnemi(s, j);
       return;
     }
     e.stun = this.time.now + 180;
@@ -411,11 +401,10 @@ const combat = {
     s.setVelocityX(dir * recul);
   },
 
-  mortEnnemi(s) {
+  mortEnnemi(s, j) {
     const e = s.e;
     e.mort = true;
-    jouer(this, "mortEnnemi");
-    this.ajouterScore(e.t.points || 100, s.x, s.y - 60); // SCORE
+    this.ajouterScore(e.t.points || 100, j, s.x, s.y - 60); // SCORE du joueur qui a tué
     this.etincelles(s.x, s.y - 20, 0xffffff, 10);
     s.disableBody(true, false);
     s.clearTint();
@@ -475,8 +464,8 @@ const combat = {
         if (!Phaser.Geom.Intersects.RectangleToRectangle(this.rectCorps(j.sprite), p.zone)) continue;
         if (p.type === "soin") {
           const pv = this.registry.get("pv_" + j.num) ?? 100;
-          if (pv >= 100) {
-            // vie pleine : on la laisse pour plus tard
+          if (pv >= 100 && !this.joueurs.some((x) => x.mort)) {
+            // vie pleine (et personne à ranimer) : on la laisse pour plus tard
             if (this.time.now > this.derniereAlertePotion) {
               this.derniereAlertePotion = this.time.now + 4000;
               this.message("Ta vie est pleine. Garde cette potion pour plus tard !", 2500);
@@ -556,7 +545,6 @@ const combat = {
       if (!b) continue;
       const trou = defs.find((t) => j.sprite.x > t.x1 * 32 && j.sprite.x < t.x2 * 32 && b.bottom >= t.y * 32 - 2);
       if (!trou) continue;
-      jouer(this, "pique");
       this.cameras.main.shake(250, 0.012);
       this.registry.set("pv_" + j.num, 0);
       this.joueurMort(j);
@@ -621,7 +609,6 @@ const combat = {
     j.prochainCoup = time + c.recharge;
     const s = j.sprite;
     const dir = j.dir;
-    jouer(this, "coup");
     // effet visuel : un arc blanc devant le joueur
     const g = this.add.graphics().setDepth(250);
     g.lineStyle(5, 0xffffff, 0.95);
@@ -633,7 +620,7 @@ const combat = {
     const zone = new Phaser.Geom.Rectangle(dir > 0 ? s.x + 2 : s.x - 2 - c.portee, s.y - c.hauteur, c.portee, c.hauteur);
     this.ennemis.forEach((e) => {
       if (!e.active || e.e.mort) return;
-      if (Phaser.Geom.Intersects.RectangleToRectangle(zone, this.rectCorps(e))) this.frapperEnnemi(e, c.degats, dir, c.recul);
+      if (Phaser.Geom.Intersects.RectangleToRectangle(zone, this.rectCorps(e))) this.frapperEnnemi(e, c.degats, dir, c.recul, j);
     });
     this.boulesE.getChildren().forEach((b) => {
       if (b.active && zone.contains(b.x, b.y)) this.detruireBoule(b); // on peut casser les boules ennemies
@@ -651,22 +638,19 @@ const combat = {
     b.setFlipX(im.regardeDroite ? dir < 0 : dir > 0);
     b.body.allowGravity = false;
     b.body.setSize(14, 14).setOffset(9, 9);
+    b.joueur = j; // pour donner les points à celui qui tire
     b.setVelocityX(dir * T.vitesse);
     this.time.delayedCall(T.duree, () => b.active && b.destroy());
-    jouer(this, "tir");
   },
 
   demarrerLaser(j) {
     j.laserActif = true;
     j.laserCePress = true;
     j.prochainTick = 0;
-    j.sonLaser = laserOn(this);
   },
 
   arreterLaser(j) {
     j.laserActif = false;
-    if (j.sonLaser) j.sonLaser.stop();
-    j.sonLaser = null;
   },
 
   dessinerLasers(time) {
@@ -701,7 +685,7 @@ const combat = {
         this.ennemis.forEach((e) => {
           if (!e.active || e.e.mort) return;
           if (Phaser.Geom.Intersects.RectangleToRectangle(zone, this.rectCorps(e))) {
-            this.frapperEnnemi(e, L.degatsParTick, dir, 30, true);
+            this.frapperEnnemi(e, L.degatsParTick, dir, 30, j);
             this.etincelles(e.x, e.y - 24, 0x66ffcc, 2);
           }
         });
@@ -832,7 +816,6 @@ const combat = {
         if (d.car >= d.lignes[d.i].length) return;
         d.car++;
         d.texte.setText(d.lignes[d.i].slice(0, d.car));
-        if (d.car % 3 === 0) jouer(this, "parler");
         if (d.car >= d.lignes[d.i].length) d.suite.setAlpha(1);
       }
     });
@@ -862,7 +845,6 @@ const combat = {
       d.suite.setAlpha(1);
       return;
     }
-    jouer(this, "page");
     if (d.i < d.lignes.length - 1) {
       d.i++;
       d.car = 0;

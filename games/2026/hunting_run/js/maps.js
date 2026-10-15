@@ -1,5 +1,3 @@
-export const DEBUG = false;
-
 export const PERSO = {
   cle: "img_perso",
   fichier: "./assets/dude.png",
@@ -102,7 +100,8 @@ export const MAPS = {
     tilesets: {
       JeuDeTuile1: "tuiles1",
       TuileDeJeu2: "tuiles2",
-      TuileDeJeu3: "tuiles3"
+      TuileDeJeu3: "tuiles3",
+      TuileDeJeu1: "tuiles1"
     },
     portes: [
       { x: 1, y: 15, vers: "hasard" },  // porte1
@@ -312,7 +311,7 @@ export const POINTS = {
 
 /*ÉTATS DE LA PARTIE à remettre à zéro à chaque nouvelle partie*/
 
-export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue", "score", "bibliotheque_resolue", "puits_resolu", "horloges_prises", "lien", "exclusions"];
+export const ETATS_PARTIE = ["finPartie", "cle", "miroir_resolu", "cle_revelee", "gardienne_resolue", "potions_prises", "pouvoir_1", "pouvoir_2", "intro_vue", "score_1", "score_2", "bibliotheque_resolue", "puits_resolu", "horloges_prises", "lien", "exclusions"];
 /*ÉCRANS D'HISTOIRE*/
 
 export const ECRANS = {
@@ -332,9 +331,9 @@ export const ECRANS = {
 
 export const DUREE_PARTIE = 210; // secondes : 3 min 30 (3 minutes + 30 secondes)
 export const REVIE = {
-  pv: 100 // points de vie quand on revit (100 = 3 cœurs pleins ; 34 = 1 seul cœur)
-}
-;
+  pv: 100,         // points de vie quand on revit après un Game Over (100 = 3 cœurs pleins ; 34 = 1 seul cœur)
+  pvCoequipier: 34 // points de vie d'un joueur K.O. ramené à la vie par son coéquipier (34 = 1 cœur)
+};
 export const SCORES = {
   nbMax: 10 // nombre de scores gardés dans le tableau
 };

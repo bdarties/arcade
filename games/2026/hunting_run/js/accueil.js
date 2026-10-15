@@ -1,5 +1,5 @@
-import { jouer, chargerSons } from "./sons.js";
 import { lireScores } from "./scores.js";
+import { SCORES } from "./maps.js";
 
 // Écran d'accueil : fond + bouton Play, puis passage à l'écran de choix du mode (scène "menu")
 export default class accueil extends Phaser.Scene {
@@ -12,7 +12,6 @@ export default class accueil extends Phaser.Scene {
     this.load.image("accueil_fond", "./assets/ui/accueil.png");
     this.load.image("play_hover", "./assets/ui/play-hover.png");
     this.load.audio("musique_demo", ["./assets/audio/demo.mp3"]);
-    chargerSons(this); // bruitages
   }
 
   create() {
@@ -39,12 +38,9 @@ export default class accueil extends Phaser.Scene {
     const zone = this.add.zone(PLAY.x, PLAY.y, PLAY.w, PLAY.h).setInteractive({ useHandCursor: true });
     zone.on("pointerdown", () => this.lancer());
 
-    // meilleur score : lu dans la sauvegarde (asynchrone), affiché dès que c'est prêt
+    // classement : lu dans la sauvegarde (asynchrone), affiché dès que c'est prêt
     lireScores().then((liste) => {
-      const meilleur = (liste[0] || {}).score;
-      if (meilleur && this.scene.isActive()) {
-        this.add.text(L / 2, H - 80, "MEILLEUR SCORE : " + meilleur, { fontSize: "22px", color: "#cccccc", fontStyle: "bold" }).setOrigin(0.5).setShadow(2, 2, "#000000", 4);
-      }
+      if (this.scene.isActive()) this.afficherClassement(liste);
     });
 
     this.add
@@ -60,10 +56,33 @@ export default class accueil extends Phaser.Scene {
     });
   }
 
+  // panneau du classement à droite de l'écran (top SCORES.nbMax)
+  afficherClassement(liste) {
+    const cx = 1110;
+    const haut = 190;
+    const pas = 30;
+    const police = { fontFamily: "Georgia, serif", fontSize: "21px" };
+    const objets = [
+      this.add.rectangle(cx, haut + 20 + (SCORES.nbMax * pas) / 2, 290, SCORES.nbMax * pas + 70, 0x0d0610, 0.78).setStrokeStyle(3, 0x8a1c1c),
+      this.add.text(cx, haut, "CLASSEMENT", { ...police, fontSize: "26px", fontStyle: "bold", color: "#c9a24a" }).setOrigin(0.5)
+    ];
+    for (let i = 0; i < SCORES.nbMax; i++) {
+      const e = liste[i];
+      const y = haut + 40 + i * pas;
+      const couleur = i === 0 ? "#ffd24a" : e ? "#ffffff" : "#777777";
+      objets.push(
+        this.add.text(cx - 125, y, String(i + 1).padStart(2, " ") + ".", { ...police, color: couleur }),
+        this.add.text(cx - 85, y, e ? e.nom : "---", { ...police, color: couleur }),
+        this.add.text(cx + 125, y, e ? String(e.score) : "-", { ...police, color: couleur }).setOrigin(1, 0)
+      );
+    }
+    objets.forEach((o) => o.setAlpha(0));
+    this.tweens.add({ targets: objets, alpha: 1, duration: 400 });
+  }
+
   lancer() {
     if (this.demarre) return;
     this.demarre = true;
-    jouer(this, "valider");
     this.cameras.main.fadeOut(250, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("menu"));
   }

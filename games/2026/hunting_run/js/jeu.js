@@ -1,6 +1,7 @@
 import { PERSO, PERSO2, TUILES, MAPS, JOUEUR, CLE, ECRANS, HASARD, MURMURES, ENIGMES, POINTS, DUREE_PARTIE, REVIE } from "./maps.js";
 import combat from "./combat.js"; // ennemis, tirs, laser, potions, PNJ
 import { jouer, chargerSons } from "./sons.js"; // bruitages
+import { scoresDeLaPartie } from "./scores.js";
 
 // réglages de l'escalier
 const MARCHE_MAX = 40;
@@ -161,7 +162,6 @@ export default class jeu extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setDepth(300)
       .setVisible(false);
-    this.toucheE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E); // raccourci clavier de test (J1)
 
      /*JOUEUR*/
 
@@ -194,6 +194,7 @@ export default class jeu extends Phaser.Scene {
     }
     this.spawnPoint = { x: departX, y: departY }; // pour revivre ici
 
+    this.toucheE = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E); // raccourci clavier de test (J1) : même rôle que O
     const K = Phaser.Input.Keyboard.KeyCodes;
     const clavier = this.input.keyboard;
     const nb = this.registry.get("nbJoueurs") || 1; // choisi dans le menu (1 ou 2)
@@ -346,14 +347,21 @@ export default class jeu extends Phaser.Scene {
 
     this.initHudCombat();
 
-    // SCORE (en haut, au milieu) : il garde sa valeur d'une map à l'autre (registry)
-    if (!this.registry.has("score")) this.registry.set("score", 0);
-    this.texteScore = this.add
-      .text(this.scale.width / 2, 10, "", { fontSize: "24px", color: "#cccccc", backgroundColor: "#000a", padding: { x: 8, y: 4 }, fontStyle: "bold" })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(1000);
-    this.dernierScore = -1;
+    // SCORES (en haut, au milieu) : un par joueur, gardés d'une map à l'autre (registry : score_1, score_2)
+    const duo = nb > 1;
+    this.texteScores = this.joueurs.map((j, i) =>
+      this.add
+        .text(this.scale.width / 2 + (duo ? (i ? 8 : -8) : 0), 10, "", {
+          fontSize: duo ? "20px" : "24px",
+          color: duo ? (i ? "#7ab8ff" : "#ff9a9a") : "#cccccc",
+          backgroundColor: "#000a",
+          padding: { x: 8, y: 4 },
+          fontStyle: "bold"
+        })
+        .setOrigin(duo ? (i ? 0 : 1) : 0.5, 0)
+        .setScrollFactor(0)
+        .setDepth(1000)
+    );
 
     this.toucheRejouer = this.input.keyboard.addKeys({
       entree: Phaser.Input.Keyboard.KeyCodes.ENTER,
@@ -547,7 +555,6 @@ export default class jeu extends Phaser.Scene {
 
    ouvrirEnigme(id, joueur) {
     this.couperLasers();
-    jouer(this, "page");
     this.physics.world.pause(); // les ennemis s'arrêtent aussi pendant l'énigme
     const e = ENIGMES[id];
     const L = this.scale.width;
@@ -611,12 +618,10 @@ export default class jeu extends Phaser.Scene {
       }
     });
     if (fermer) {
-      jouer(this, "retour");
       this.fermerEnigme();
       return;
     }
     if (dir) {
-      jouer(this, "clic");
       en.index = (en.index + dir + n) % n;
       en.retour.setText("");
       this.majOptionsEnigme();
@@ -624,14 +629,12 @@ export default class jeu extends Phaser.Scene {
     if (!valider) return;
 
     if (en.index === en.def.bonne) {
-      const id = en.id;
-      const def = en.def;
+      const { id, def, joueur } = en;
       this.fermerEnigme();
       this.registry.set(def.resolu, true);
-      jouer(this, "bonneReponse");
       this.cameras.main.flash(350, 255, 255, 255);
       if (def.recompense) {
-        if (def.recompense.score) this.ajouterScore(def.recompense.score);
+        if (def.recompense.score) this.ajouterScore(def.recompense.score, joueur);
         if (def.recompense.soin) this.vivants().forEach((j) => this.soigner(j, def.recompense.soin));
       }
       if (id === "miroir") {
@@ -657,8 +660,6 @@ export default class jeu extends Phaser.Scene {
     }
     this.message("Clic... Un grondement monte des canalisations... CHHHHHH !\nQuelque chose brille au fond de la cuvette.", 6000);
     this.cameras.main.shake(700, 0.006);
-    jouer(this, "clic");
-    this.time.delayedCall(300, () => jouer(this, "chasse"));
     this.montrerCle(true);
   }
 
@@ -720,7 +721,6 @@ export default class jeu extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000);
     this.time.delayedCall(2000, () => message.destroy());
-    jouer(this, "cle");
     // INDICES : la clé ouvre la grande porte, cachée derrière la bibliothèque (des notes le rappellent dans chaque pièce)
     this.time.delayedCall(2200, () =>
       this.message("La clé est froide... Elle ouvre la GRANDE PORTE, derrière la bibliothèque.\nDes notes aux murs te guideront. Cherche l'échelle, tout en haut à droite.", 7500)
@@ -769,79 +769,53 @@ export default class jeu extends Phaser.Scene {
     this.peutRevivre = peutRevivre;
     this.heureMort = Date.now(); // le chrono est mis en pause tant qu'on choisit
     this.couperLasers();
-    this.time.delayedCall(500, () => jouer(this, "gameOver"));
     this.perduPret = false; // évite de relancer tout de suite si le joueur appuie sur B au moment de mourir
     this.time.delayedCall(800, () => (this.perduPret = true));
     this.physics.pause();
-    this.joueurs.forEach((j) => {
+    this.vivants().forEach((j) => {
       j.sprite.setVelocity(0, 0);
       j.sprite.anims.play(this.anim(j, "anim_face"));
     });
 
     const L = this.scale.width;
     const H = this.scale.height;
-    const fond = this.add.rectangle(L / 2, H / 2, L, H, 0x000000, 1).setScrollFactor(0).setDepth(2000);
-    const elements = [fond];
+    const texte = (x, y, t, style, prof = 2002) => this.add.text(x, y, t, style).setOrigin(0.5).setScrollFactor(0).setDepth(prof).setShadow(2, 2, "#000000", 4);
+    const elements = [this.add.rectangle(L / 2, H / 2, L, H, 0x000000, 1).setScrollFactor(0).setDepth(2000)];
 
     if (this.textures.exists("game_over")) {
       elements.push(this.add.image(L / 2, H / 2, "game_over").setDisplaySize(L, H).setScrollFactor(0).setDepth(2000));
     } else {
-      elements.push(
-        this.add.text(L / 2, H / 2 - 40, "Game Over", { fontSize: "72px", color: "#cc1111", fontStyle: "bold" }).setOrigin(0.5).setScrollFactor(0).setDepth(2001),
-        this.add.text(L / 2, H / 2 + 30, raison, { fontSize: "24px", color: "#ffffff" }).setOrigin(0.5).setScrollFactor(0).setDepth(2001)
-      );
+      elements.push(texte(L / 2, H / 2 - 40, "Game Over", { fontSize: "72px", color: "#cc1111", fontStyle: "bold" }), texte(L / 2, H / 2 + 30, raison, { fontSize: "24px", color: "#ffffff" }));
     }
 
-    // score de la partie
-    const score = this.registry.get("score") || 0;
-    elements.push(
-      this.add
-        .text(L / 2, H - 205, "SCORE : " + score, { fontFamily: "Georgia, serif", fontSize: "34px", color: "#ffd24a", fontStyle: "bold" })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
-    );
-      if (peutRevivre) {
-    const nbC = Math.max(1, Math.round(REVIE.pv / (JOUEUR.pvMax / HUD.nbCoeurs))); // nombre de cœurs rendus
-    elements.push(
-        this.add
-        .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
-      );
-    }
+    // score(s) de la partie : un par joueur en duo
+    const scores = scoresDeLaPartie(this.registry).map((s) => (s.joueur ? "J" + s.joueur + " : " : "SCORE : ") + s.score);
+    elements.push(texte(L / 2, H - 205, scores.join("        "), { fontFamily: "Georgia, serif", fontSize: "34px", color: "#ffd24a", fontStyle: "bold" }));
 
-    // boutons
-  this.goBoutons = [];
-    const creerRejouer = (x) => {
-    const b = this.add.image(x, H - 80, "rejouer").setOrigin(0.5);
-      b.base = 0.5;
-      return b;
-    };
     if (peutRevivre) {
-      // bouton REVIVRE
-      const revivre = this.add.image(L / 2 - 230, H - 80, "revivre").setOrigin(0.5);
-        revivre.base = 0.5;
-        this.goBoutons.push({ obj: revivre, action: () => this.revivre() });
-      const rejouer = creerRejouer(L / 2 + 230);
-        this.goBoutons.push({ obj: rejouer, action: () => this.rejouer() });
-        this.goChoix = 0; // par défaut : Revivre
-    } else {
-        this.goBoutons.push({ obj: creerRejouer(L / 2), action: () => this.rejouer() });
-        this.goChoix = 0;
+      const nbC = Math.max(1, Math.round(REVIE.pv / (JOUEUR.pvMax / HUD.nbCoeurs))); // nombre de cœurs rendus
+      elements.push(texte(L / 2, H - 150, "Revivre : " + nbC + (nbC > 1 ? " cœurs" : " cœur") + ", scores remis à zéro", { fontFamily: "Georgia, serif", fontSize: "22px", color: "#ffffff" }));
     }
-    this.goBoutons.forEach((b, i) => {
-      b.obj.setScrollFactor(0).setDepth(2002).setInteractive({ useHandCursor: true });
-      b.obj.on("pointerover", () => {
+
+    // boutons : Revivre à gauche (si possible), Rejouer à droite
+    this.goBoutons = [];
+    const bouton = (x, cle, action) => {
+      const b = this.add.image(x, H - 80, cle).setOrigin(0.5).setScrollFactor(0).setDepth(2002).setInteractive({ useHandCursor: true });
+      b.base = 0.5;
+      const i = this.goBoutons.push({ obj: b, action }) - 1;
+      b.on("pointerover", () => {
         this.goChoix = i;
         this.majChoixGameOver();
       });
-      b.obj.on("pointerdown", () => this.perduPret && b.action());
-      elements.push(b.obj);
-    });
+      b.on("pointerdown", () => this.perduPret && action());
+      elements.push(b);
+    };
+    if (peutRevivre) bouton(L / 2 - 230, "revivre", () => this.revivre());
+    bouton(L / 2 + (peutRevivre ? 230 : 0), "rejouer", () => this.rejouer());
+    this.goChoix = 0; // par défaut : Revivre (ou Rejouer s'il est seul)
     this.majChoixGameOver();
 
-    elements.push(
-      this.add
-        .text(L / 2, H - 24, peutRevivre ? "Joystick : choisir      Bouton B : valider" : "Bouton B : rejouer", { fontSize: "16px", color: "#cccccc" })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(2002).setShadow(2, 2, "#000000", 4)
-    );
+    elements.push(texte(L / 2, H - 24, peutRevivre ? "Joystick : choisir      Bouton B : valider" : "Bouton B : rejouer", { fontSize: "16px", color: "#cccccc" }));
 
     // apparition en fondu
     elements.forEach((e) => e.setAlpha(0));
@@ -854,7 +828,7 @@ export default class jeu extends Phaser.Scene {
     this.goBoutons.forEach((b, i) => {
       const actif = i === this.goChoix;
       b.obj.setScale(b.obj.base * (actif ? 1.1 : 0.95));
-      if (b.obj.setTint && b.obj.type === "Image") actif ? b.obj.clearTint() : b.obj.setTint(0x888888);
+      actif ? b.obj.clearTint() : b.obj.setTint(0x888888);
     });
   }
 
@@ -871,7 +845,6 @@ export default class jeu extends Phaser.Scene {
     });
     if (dir && this.goBoutons.length > 1) {
       this.goChoix = Phaser.Math.Clamp(this.goChoix + dir, 0, this.goBoutons.length - 1);
-      jouer(this, "clic");
       this.majChoixGameOver();
     }
     if (valider && this.perduPret) this.goBoutons[this.goChoix].action();
@@ -899,7 +872,6 @@ export default class jeu extends Phaser.Scene {
       /* tant pis : seuls les petits flottements (potions...) continuent */
     }
     this.texteTimer.setText("00:00").setColor("#ff3333");
-    jouer(this, "gameOver");
 
     const L = this.scale.width;
     const H = this.scale.height;
@@ -957,7 +929,6 @@ export default class jeu extends Phaser.Scene {
     this.registry.set(cle, pv);
     jouer(this, "degats"); // son hurt (fichier)
     if (pv <= 0) {
-      this.time.delayedCall(250, () => jouer(this, "mortJoueur"));
       this.joueurMort(j);
       return;
     }
@@ -971,11 +942,25 @@ export default class jeu extends Phaser.Scene {
     this.time.delayedCall(JOUEUR.invincibilite, () => j.sprite.active && j.sprite.setAlpha(1));
   }
 
-  // le joueur j récupère des points de vie
+  // le joueur j récupère des points de vie. DUO : un cœur récupéré ramène aussi le coéquipier K.O. à la vie
   soigner(j, pv) {
     if (j.mort) return;
     const cle = "pv_" + j.num;
     this.registry.set(cle, Math.min(JOUEUR.pvMax, (this.registry.get(cle) ?? JOUEUR.pvMax) + pv));
+    this.joueurs.filter((x) => x.mort).forEach((x) => this.ressusciter(x, j));
+  }
+
+  // le joueur K.O. j revient à côté de son coéquipier, avec 1 cœur (REVIE.pvCoequipier) et une courte protection
+  ressusciter(j, sauveur) {
+    const s = sauveur.sprite;
+    j.mort = false;
+    this.registry.set("pv_" + j.num, REVIE.pvCoequipier);
+    j.sprite.enableBody(true, s.x + (j.num === 2 ? 24 : -24), s.y, true, true);
+    j.sprite.setVelocity(0, 0).setAlpha(0.4);
+    j.invulJusqua = this.time.now + 1500;
+    this.time.delayedCall(1500, () => j.sprite.active && j.sprite.setAlpha(1));
+    this.etincelles(j.sprite.x, j.sprite.y - 30, 0xff6677, 12);
+    this.message("Joueur " + j.num + " est de retour !  (1 cœur)", 3000);
   }
 
   // un joueur n'a plus de points de vie : en solo c'est perdu, en duo il faut que les deux soient K.O.
@@ -984,17 +969,18 @@ export default class jeu extends Phaser.Scene {
     j.mort = true;
     j.sprite.disableBody(true, true);
     if (this.joueurs.every((x) => x.mort)) this.afficherGameOver("Tu es K.O. !", true);
+    else this.message("Joueur " + j.num + " est K.O. !  Ramasse un cœur pour le ramener.", 4000);
   }
 
   // met à jour les cœurs de chaque joueur (1 cœur = pvMax / nbCoeurs, un cœur peut être rempli en partie)
   majBarres() {
-    const sc = this.registry.get("score") || 0;
-    if (sc !== this.dernierScore) {
-      this.dernierScore = sc;
-      this.texteScore.setText("SCORE " + String(sc).padStart(5, "0"));
-    }
     const part = JOUEUR.pvMax / HUD.nbCoeurs;
     this.joueurs.forEach((j, i) => {
+      const sc = this.registry.get("score_" + j.num) || 0;
+      if (sc !== j.dernierScore) {
+        j.dernierScore = sc;
+        this.texteScores[i].setText((this.joueurs.length > 1 ? "J" + j.num + "  " : "SCORE ") + String(sc).padStart(5, "0"));
+      }
       const h = this.hud[i];
       const pv = Math.max(0, this.registry.get("pv_" + j.num) ?? JOUEUR.pvMax);
       if (pv === h.dernierPv) return; // rien n'a changé
@@ -1022,8 +1008,7 @@ export default class jeu extends Phaser.Scene {
   rejouer() {
     if (this.partiEnCours) return;
     this.partiEnCours = true;
-    const score = this.registry.get("score") || 0;
-    this.scene.start("scores", { score, suite: "rejouer" });
+    this.scene.start("scores", { scores: scoresDeLaPartie(this.registry), suite: "rejouer" });
   }
 
   // REVIVRE : on reste dans la même salle, avec UN seul cœur, le score est perdu. Le chrono reprend là où il s'était arrêté.
@@ -1033,14 +1018,15 @@ export default class jeu extends Phaser.Scene {
     this.registry.set("finPartie", this.registry.get("finPartie") + (Date.now() - this.heureMort));
     this.registry.set("pv_1", REVIE.pv);
     this.registry.set("pv_2", REVIE.pv);
-    this.registry.set("score", 0);
-    jouer(this, "bonneReponse");
+    this.registry.set("score_1", 0);
+    this.registry.set("score_2", 0);
     this.scene.restart({ map: this.nomMap, origine: this.origine, hasard: false, spawn: this.spawnPoint });
   }
 
-  // ajoute des points (et affiche "+100" à l'endroit indiqué)
-  ajouterScore(points, x, y) {
-    this.registry.set("score", (this.registry.get("score") || 0) + points);
+  // ajoute des points au joueur j (et affiche "+100" à l'endroit indiqué)
+  ajouterScore(points, j, x, y) {
+    const cle = "score_" + (j ? j.num : 1);
+    this.registry.set(cle, (this.registry.get(cle) || 0) + points);
     if (x === undefined) return;
     const t = this.add
       .text(x, y, "+" + points, { fontSize: "22px", color: "#ffd24a", fontStyle: "bold", stroke: "#000", strokeThickness: 4 })
@@ -1064,8 +1050,9 @@ export default class jeu extends Phaser.Scene {
     const ss = String(restant % 60).padStart(2, "0");
     this.texteTimer.setText(mm + ":" + ss);
     // rouge sur les 30 dernières secondes, vert un instant quand on gagne du temps (horloge)
-    this.texteTimer.setColor(time < (this.timerVertJusqua || 0) ? "#66ff88" : restant <= 30 ? "#ff5555" : "#ffffff");    if (restant <= 0 && !this.gagne) {
-    this.tempsEcoule();
+    this.texteTimer.setColor(time < (this.timerVertJusqua || 0) ? "#66ff88" : restant <= 30 ? "#ff5555" : "#ffffff");
+    if (restant <= 0 && !this.gagne) {
+      this.tempsEcoule();
       return;
     }
 
@@ -1101,10 +1088,8 @@ export default class jeu extends Phaser.Scene {
       if (!porte) continue;
       if (!porteVisible) porteVisible = porte;
       const fermee = !!this.raisonFermee(porte); // porte fermée à clé / énigme pas résolue
-      if (porte.vers && fermee && j.appuiAction) jouer(this, "verrou"); // porte fermée : clac !
       if (porte.vers && !fermee && j.appuiAction) {
-        jouer(this, "porte");
-      if (porte.vers === "fin") this.finir(); // grande porte de la map6 : fin du jeu
+        if (porte.vers === "fin") this.finir(); // grande porte de la map6 : fin du jeu
         else if (porte.vers === "hasard") this.prendrePorteHasard(porte); // on ne sait pas où elle mène !
         else {
           this.registry.remove("lien"); // porte fixe : plus de retour mémorisé
@@ -1119,7 +1104,8 @@ export default class jeu extends Phaser.Scene {
       const mystere = porteVisible.vers === "hasard";
       const lien = this.registry.get("lien");
       const retour = mystere && lien && lien.map === this.nomMap && lien.porte === porteVisible.idx; // la porte par laquelle on est arrivé
-      this.indice.setText(fermee ? raison : retour ? "Appuie sur B... retour" : mystere ? "Appuie sur B... où mène-t-elle ?" : "Appuie sur B");      this.indice.setColor(fermee ? "#ff8888" : "#ffffff");
+      this.indice.setText(fermee ? raison : retour ? "Appuie sur B... retour" : mystere ? "Appuie sur B... où mène-t-elle ?" : "Appuie sur B");
+      this.indice.setColor(fermee ? "#ff8888" : "#ffffff");
     }
     this.indice.setVisible(!!(porteVisible && porteVisible.vers));
     if (porteVisible) this.indice.setPosition(porteVisible.x, porteVisible.y - 60);
