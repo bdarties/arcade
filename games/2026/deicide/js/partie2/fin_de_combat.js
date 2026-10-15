@@ -1,3 +1,7 @@
+// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
+// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
+// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // fin_de_combat.js : ce qui se passe quand le boss final tombe à 0 PV.
 //  - En phase 3 (ou avant) : c'est une FAUSSE FIN. Il se dissout comme pour une vraie victoire, l'écran du panthéon s'affiche... puis l'écran se fissure et le boss revient
 //    en arrière-plan sous sa forme finale (faux_pantheon.js, forme_finale.js).

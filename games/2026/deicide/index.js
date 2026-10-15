@@ -1,8 +1,14 @@
+// PARTIE ÉVALUÉE : la partie 1 (js/partie1/), le jeu jusqu'à la fin du premier boss. C'est sur elle que s'est concentrée notre compréhension du code.
+// La partie 2 (js/partie2/) n'est PAS à prendre en compte : elle a été ajoutée uniquement pour rendre le jeu plus intéressant sur la borne
+// et répondre à la demande de Nicolas Maurin (jeu plus difficile, plus de contenu). Elle s'ajoute par installerPartie2() et on peut la retirer.
+// RETIRER LA PARTIE 2 (elle est indépendante) : supprimer le dossier js/partie2/, puis dans CE fichier la ligne « import ... from ./js/partie2/index.js »,
+// l'appel installerPartie2(), l'appel activerTestsPartie2(game) et « ...scenesPartie2 » dans la liste des scènes. Rien d'autre : la partie 1 ne l'importe jamais.
 // index.js : le point de départ du jeu (chargé par index.html). Il règle Phaser (taille, physique, cadence d'images, rendu pour la borne),
 // donne la liste des scènes (les écrans du jeu, dans js/partie1/scenes/) et lance le jeu. La première scène de la liste, le menu, démarre toute seule.
 
 // les scènes du jeu et les outils
 import "./js/donnees.js"; // la sauvegarde des données (le panthéon) : lireDonneesJSON et ecrireDonneesJSON, voir js/donnees.js
+import { MONDE } from "./js/partie1/parametres.js"; // les chiffres de réglage du jeu (gravité, cadence...)
 import { compteurImages, regulerCadence } from "./js/partie1/systemes/optimisation.js";
 import menu from "./js/partie1/scenes/menu.js";
 import niveau1 from "./js/partie1/scenes/niveau1.js";
@@ -14,7 +20,7 @@ import { activerRaccourcis } from "./js/partie1/systemes/raccourcis.js"; // rese
 import credits from "./js/partie1/scenes/credits.js"; // les crédits, après le panthéon
 import classement from "./js/partie1/scenes/classement.js"; // écran de fin : temps, saisie du nom et top 10 de la borne
 
-const IMAGES_PAR_SECONDE = 30; // le jeu est bloqué à ce nombre d'images par seconde. Si c'est pire sur la borne, mettre 40 (seul ce chiffre change).
+const IMAGES_PAR_SECONDE = MONDE.imagesParSeconde; // le jeu est bloqué à ce nombre d'images par seconde (réglé dans parametres.js).
 // Un écran de 60 Hz affiche 60 images par seconde. Quand le chiffre ci-dessus divise 60 (60, 30, 20), le jeu saute simplement
 // une image d'écran sur deux (sur trois...) : toutes les images durent exactement le même temps. Sinon (40, 25...), il est cadencé
 // par une minuterie, ce qui donne bien la bonne moyenne mais des durées d'image un peu inégales à l'écran.
@@ -37,7 +43,7 @@ const config = {
     arcade: {
       // parametres du mode arcade
       gravity: {
-        y: 300 // gravité verticale : acceleration ddes corps en pixels par seconde
+        y: MONDE.gravite // gravité verticale (réglée dans parametres.js)
       },
       debug: false, // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
       // la profondeur (en px) jusqu'à laquelle un corps qui s'enfonce dans une tuile est remis dessus. Par défaut 16 : à 900 px/s en chute

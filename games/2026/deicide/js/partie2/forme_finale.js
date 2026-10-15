@@ -1,3 +1,7 @@
+// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
+// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
+// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // forme_finale.js : tout ce qui rend le dernier boss plus difficile à finir (phase 3) et ce qui fait sa FORME FINALE (phase 4) :
 //  - le tirage des attaques de la phase 3 (et de la forme finale) n'est plus au hasard pur : le boss lance d'abord toutes celles qu'il n'a pas encore faites ;
 //  - il TIENT BON à 1 PV tant qu'il n'a pas lancé chacune de ses attaques au moins une fois : impossible de le finir sans les avoir toutes vues ;

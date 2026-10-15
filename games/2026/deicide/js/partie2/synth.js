@@ -1,3 +1,7 @@
+// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
+// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
+// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // synth.js : les sons de la FAUSSE FIN du dernier boss (faux_pantheon.js), fabriqués par synthèse avec l'API audio du navigateur : aucun fichier audio.
 // Fanfare de victoire, battements de cœur, montée de tension, souffle de la lame, tintement du métal, impact et grondement.
 // Ils suivent le réglage « bruitages » du menu pause. Si le navigateur n'a pas d'audio Web, ils se taisent sans rien casser.
