@@ -7,9 +7,10 @@ import { creerTouchesDeuxJoueurs } from "./controles.js";
 /** les autres en version "sombre".
 /***********************************************************************/
 
+// rideau : la scène suivante s'ouvre avec l'animation du rideau de théâtre
 const BOUTONS = [
-  { cle: "bouton_solo", actif: false },
-  { cle: "bouton_multi", actif: true, scene: "selection" },
+  { cle: "bouton_solo", actif: true, scene: "solo", rideau: true },
+  { cle: "bouton_multi", actif: true, scene: "connexion", rideau: true },
   { cle: "bouton_commandes", actif: true, scene: "commandes" }
 ];
 
@@ -74,9 +75,9 @@ export default class menu extends Phaser.Scene {
       return;
     }
     fct.jouerSon(this, "menu_valider");
-    if (bouton.scene === "selection") {
+    if (bouton.rideau) {
       // le rideau s'ouvre sur la scène du théâtre
-      fct.transitionRideau(this, "rideau_ouverture", () => this.scene.start("selection"));
+      fct.transitionRideau(this, "rideau_ouverture", () => this.scene.start(bouton.scene));
     } else {
       fct.changerScene(this, bouton.scene);
     }

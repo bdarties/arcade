@@ -1,5 +1,5 @@
 import * as fct from "./fonctions.js";
-import { PERSONNAGES } from "./donnees.js";
+import { PERSONNAGES } from "./reglages.js";
 import { creerTouchesDeuxJoueurs } from "./controles.js";
 
 /***********************************************************************/
@@ -80,6 +80,8 @@ export default class selection extends Phaser.Scene {
     this.add.image(x, 300, "carte_joueur" + numero).setScale(k);
     p.apercu = this.add.sprite(x, 300 + 64 * k, PERSONNAGES[0].id).setOrigin(0.5, 1);
     if (numero === 2) p.apercu.setFlipX(true);
+    const joueur = (this.registry.get("joueurs") || [null, null])[numero - 1];
+    this.add.text(x, 98, joueur ? joueur.pseudo + "  (" + joueur.elo + ")" : "Invité", fct.style(26, fct.couleurTexte(couleur))).setOrigin(0.5);
     p.nom = this.add.text(x, 300 + 111 * k, "", fct.style(26)).setOrigin(0.5);
     p.role = this.add.text(x, 500, "", fct.style(18, "#e8d8c0")).setOrigin(0.5);
     p.pret = this.add.text(x, 250, "PRÊT !", fct.style(52, "#7dff9a")).setOrigin(0.5).setAngle(-12).setVisible(false).setDepth(5);

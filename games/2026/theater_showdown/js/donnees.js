@@ -1,86 +1,60 @@
-/***********************************************************************/
-/** DONNÉES DU JEU : personnages, arènes et objets
-/** On regroupe ici tous les "chiffres" du jeu pour pouvoir les équilibrer
-/** facilement sans toucher à la logique des scènes.
-/***********************************************************************/
+// Stockage JSON libre par jeu.
+//   await lireDonneesJSON()      -> la valeur stockée (null si rien)
+//   await ecrireDonneesJSON(obj) -> true si écrit (base ou localStorage)
+// Sur la borne, les données vont dans la base, sous le nom du répertoire du jeu.
+// Si la base est injoignable (jeu développé en local), localStorage prend le relais.
+// Hors borne : copier ce fichier dans le jeu (ex. js/donnees.js) et, tout en haut de index.js :
+//   import "./js/donnees.js";
+// Sur la borne ce même import est sans effet : la première version chargée l'emporte,
+// il n'y a donc aucun conflit avec la copie globale de /static/js/donnees.js.
+(function () {
+  if (window.lireDonneesJSON && window.ecrireDonneesJSON) return;
 
-// Planches de sprites : 14 frames (repos, marche, saut, garde, attaques, touché, K.O., victoire)
-//   largeur / hauteur : taille d'une frame      echelle : agrandissement en jeu
-//   pixelArt : affichage sans lissage            animations : frames remplaçant celles par défaut
-const SPRITE_PIXEL_ART = {
-  largeur: 128,
-  hauteur: 128,
-  echelle: 1.45,
-  pixelArt: true,
-  // les frames 14 à 16 contiennent la vraie séquence d'attaque
-  animations: { lourde: [14, 15, 16], tir: [14, 15, 16] }
-};
-
-// vitesse : vitesse de déplacement (px/s)      saut : vitesse initiale du saut (px/s)
-// force : multiplicateur de dégâts              vitesseNote : vitesse du projectile (px/s)
-// projectile : planche animée du projectile (sinon une note de musique à la couleur du perso)
-export const PERSONNAGES = [
-  {
-    id: "doremi",
-    nom: "Doremi",
-    role: "Prodige du solfège",
-    couleur: 0xf2b632,
-    vitesse: 250, saut: 800, force: 1.1, vitesseNote: 540,
-    special: "Ah ! vous dirai-je, maman",
-    compositeur: "Mozart",
-    sprite: SPRITE_PIXEL_ART,
-    projectile: "cle_de_fa"
-  },
-  {
-    id: "symphanie",
-    nom: "Symphanie",
-    role: "Étoile de l'orchestre",
-    couleur: 0xe05ab4,
-    vitesse: 300, saut: 850, force: 0.9, vitesseNote: 640,
-    special: "Danse de la Fée Dragée",
-    compositeur: "Tchaïkovski",
-    sprite: SPRITE_PIXEL_ART,
-    projectile: "cle_de_sol"
+  function gameId() {
+    if (window.GAME_ID) return window.GAME_ID;
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (parts.length && parts[parts.length - 1].includes(".")) parts.pop();
+    return parts.length ? decodeURIComponent(parts[parts.length - 1]) : "jeu";
   }
-];
 
-// sol : hauteur (y) où les pieds des combattants touchent le sol du décor
-export const ARENES = [
-  {
-    id: "opera",
-    nom: "L'Opéra",
-    description: "Balcons dorés et lustre en mouvement",
-    musique: "musique_opera",
-    sol: 640
-  },
-  {
-    id: "piano",
-    nom: "Le Piano géant",
-    description: "Chaque touche foulée joue sa note",
-    musique: "musique_piano",
-    sol: 620
-  },
-  {
-    id: "coulisses",
-    nom: "Les Coulisses",
-    description: "Caisses, flight cases et projecteurs",
-    musique: "musique_opera",
-    sol: 600
-  }
-];
+  const cleLocale = () => "arcade_donnees_" + gameId();
+  const urlApi = () => "/api/donnees/" + encodeURIComponent(gameId());
 
-// objets qui tombent du ciel pendant le combat (poids = probabilité relative d'apparition)
-export const OBJETS = [
-  { cle: "objet_rose", type: "soin", valeur: 15, poids: 25, texte: "+15 PV" },
-  { cle: "objet_partition", type: "energie", valeur: 40, poids: 30, texte: "+2 notes" },
-  { cle: "objet_metronome", type: "vitesse", valeur: 1.4, duree: 6000, poids: 25, texte: "Tempo accéléré !" },
-  { cle: "objet_baguette", type: "force", valeur: 1.5, duree: 6000, poids: 20, texte: "Force x1,5 !" }
-];
+  window.lireDonneesJSON = async function () {
+    try {
+      const response = await fetch(urlApi());
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (error) {
+      console.warn("Base indisponible, lecture dans localStorage :", error.message);
+      try {
+        const brut = localStorage.getItem(cleLocale());
+        return brut === null ? null : JSON.parse(brut);
+      } catch (e) {
+        return null;
+      }
+    }
+  };
 
-export function trouverPerso(id) {
-  return PERSONNAGES.find((perso) => perso.id === id);
-}
-
-export function trouverArene(id) {
-  return ARENES.find((arene) => arene.id === id);
-}
+  window.ecrireDonneesJSON = async function (donnees) {
+    const corps = JSON.stringify(donnees);
+    try {
+      const response = await fetch(urlApi(), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: corps,
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return true;
+    } catch (error) {
+      console.warn("Base indisponible, écriture dans localStorage :", error.message);
+      try {
+        localStorage.setItem(cleLocale(), corps);
+        return true;
+      } catch (e) {
+        console.error("Écriture impossible :", e);
+        return false;
+      }
+    }
+  };
+})();

@@ -1,5 +1,5 @@
 import * as fct from "./fonctions.js";
-import { trouverPerso, trouverArene, OBJETS } from "./donnees.js";
+import { trouverPerso, trouverArene, OBJETS } from "./reglages.js";
 import { creerTouches } from "./controles.js";
 import Combattant, { PV_MAX, ENERGIE_MAX, COUPS } from "./combattant.js";
 
@@ -31,8 +31,9 @@ const DUREE_QTE = 3500;
 const GAMME = [0, 2, 4, 5, 7, 9, 11];
 
 // barre de vie (image 462x116) : zone rouge entre ces deux abscisses de l'image
-const BARRE_DEBUT = 113;
-const BARRE_FIN = 421;
+// (exportées : le HUD du mode solo utilise la même image)
+export const BARRE_DEBUT = 113;
+export const BARRE_FIN = 421;
 
 export default class combat extends Phaser.Scene {
   constructor() {
@@ -114,8 +115,9 @@ export default class combat extends Phaser.Scene {
   }
 
   update(temps) {
-    if (this.demandePause()) {
-      this.ouvrirPause();
+    const pauseur = this.demandePause();
+    if (pauseur !== null) {
+      this.ouvrirPause(pauseur);
       return;
     }
     if (this.qte) {
@@ -129,17 +131,20 @@ export default class combat extends Phaser.Scene {
   }
 
   // à lire AVANT combattant.gerer(), qui "consomme" les appuis de toutes les touches
+  // Renvoie le numéro du joueur qui demande la pause (1 ou 2, 0 pour la touche Échap), sinon null.
   demandePause() {
-    if (this.enTransition) return false;
-    return Phaser.Input.Keyboard.JustDown(this.toucheEchap) ||
-      Phaser.Input.Keyboard.JustDown(this.j1.touches.start) ||
-      Phaser.Input.Keyboard.JustDown(this.j2.touches.start);
+    if (this.enTransition) return null;
+    if (Phaser.Input.Keyboard.JustDown(this.j1.touches.start)) return 1;
+    if (Phaser.Input.Keyboard.JustDown(this.j2.touches.start)) return 2;
+    if (Phaser.Input.Keyboard.JustDown(this.toucheEchap)) return 0;
+    return null;
   }
 
-  ouvrirPause() {
+  // pauseur : le joueur qui a mis en pause (il perd le duel classé s'il quitte depuis le menu pause)
+  ouvrirPause(pauseur) {
     this.sound.pauseAll(); // musique et attaque spéciale en cours
     fct.jouerSon(this, "menu_valider");
-    this.scene.launch("pause", this.donnees);
+    this.scene.launch("pause", { ...this.donnees, pauseur: pauseur });
     this.scene.pause();
   }
 
@@ -634,7 +639,9 @@ export default class combat extends Phaser.Scene {
       // "J1"/"J2" dans le losange, nom du personnage sous la barre
       const losangeX = j1 ? x + 58 : x - 58;
       this.add.text(losangeX, 62, "J" + c.numero, fct.style(26, couleur)).setOrigin(0.5).setDepth(102);
-      this.add.text(j1 ? x + 120 : x - 120, 100, c.perso.nom, fct.style(20, couleur)).setOrigin(j1 ? 0 : 1, 0.5).setDepth(102);
+      const joueur = (this.registry.get("joueurs") || [null, null])[c.numero - 1]; // compte connecté (null = invité)
+      const nom = joueur ? c.perso.nom + " (" + joueur.pseudo + ")" : c.perso.nom;
+      this.add.text(j1 ? x + 120 : x - 120, 100, nom, fct.style(20, couleur)).setOrigin(j1 ? 0 : 1, 0.5).setDepth(102);
       return barre;
     });
 
