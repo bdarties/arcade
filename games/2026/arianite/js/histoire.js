@@ -27,6 +27,7 @@ export default class histoire extends Phaser.Scene {
   }
 
   preload() {
+    document.fonts.load('10px "Press Start 2P"');
     this.load.setBaseURL(this.sys.game.config.baseURL);
     // on charge toutes les images de la séquence (le chemin sert de clé)[cite: 15]
     this.slides.forEach((s) => {
@@ -89,15 +90,17 @@ export default class histoire extends Phaser.Scene {
     this.input.keyboard.on("keydown-I", () => this.avancer());
     this.input.keyboard.once("keydown-M", () => this.terminer());
 
-    this.add
-      .text(this.game.config.width - 20, 20, "Bouton F : passer", {
-        fontFamily: POLICE,
-        fontSize: "20px",
-        color: "#ffffff"
-      })
-      .setOrigin(1, 0)
-      .setAlpha(0.7)
-      .setDepth(30);
+    document.fonts.ready.then(() => {
+      this.add
+        .text(this.game.config.width - 20, 20, "Bouton F : passer", {
+          fontFamily: "Press Start 2P",
+          fontSize: "20px",
+          color: "#ffffff"
+        })
+        .setOrigin(1, 0) // Votre origine (en haut à droite) est déjà bien définie ici !
+        .setAlpha(0.7)
+        .setDepth(30);
+    }); 
 
     if (this.slides.length === 0) {
       this.terminer();
@@ -165,16 +168,22 @@ export default class histoire extends Phaser.Scene {
       .setDepth(3);
     this.elements.push(boite);
 
-    this.texteObj = this.add
-      .text(w / 2 - 570, 540, "", {
-        fontFamily: POLICE,
-        fontSize: "28px",
-        color: "#ffffff",
-        wordWrap: { width: 1140 },
-        lineSpacing: 8
-      })
-      .setDepth(4);
-    this.elements.push(this.texteObj);
+    document.fonts.ready.then(() => {
+      this.texteObj = this.add
+        .text(w / 2 - 570, 540, "", {
+          fontFamily: "Press Start 2P",
+          fontSize: "580px",
+          color: "#ffffff",
+          wordWrap: { width: 1140 },
+          lineSpacing: 8
+        })
+        .setDepth(4);
+        this.elements.push(this.texteObj);
+    });
+
+
+
+    
 
     // le texte s'écrit lettre par lettre[cite: 15]
     this.texteComplet = s.texte || "";
@@ -254,7 +263,7 @@ export default class histoire extends Phaser.Scene {
     this.fini = true;
     const fleche = this.add
       .text(this.game.config.width / 2 + 570, 680, "▼", {
-        fontFamily: POLICE,
+        fontFamily: 'montserrat_alternates',
         fontSize: "24px",
         color: "#e0a83a"
       })
