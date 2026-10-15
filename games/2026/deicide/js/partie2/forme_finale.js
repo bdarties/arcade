@@ -1,6 +1,6 @@
-// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
-// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
-// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// PARTIE 2 : nous ne souhaitons pas soumettre cette partie du code à l'évaluation. Nous ne présentons que la partie 1 (js/partie1/).
+// La partie 2 est uniquement présente pour améliorer la rejouabilité du jeu sur la borne (un jeu plus difficile et plus de contenu), suite à la demande
+// de Nicolas Maurin. Voir js/partie2/lisez-moi.md.
 // RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // forme_finale.js : tout ce qui rend le dernier boss plus difficile à finir (phase 3) et ce qui fait sa FORME FINALE (phase 4) :
 //  - le tirage des attaques de la phase 3 (et de la forme finale) n'est plus au hasard pur : le boss lance d'abord toutes celles qu'il n'a pas encore faites ;
@@ -17,22 +17,10 @@ const ECHELLE_FINALE = 4.8; // il a grossi (3,8 dans les phases 1 à 3)
 const TEINTE_FINALE = 0x9a7cff; // un violet : il n'est plus rouge
 export const ATTAQUES_FORME_FINALE = ["meteores", "rideaux", "horloge", "etau", "traque", "damier"]; // celles qu'il tire en forme finale : aucune ne sert avant (voir attaques_ultimes.js)
 
-// Les attaques qu'il doit avoir lancées avant de pouvoir mourir : toutes celles de la liste de la phase (phase 3 et forme finale seulement).
+// Les attaques qu'il lance en priorité dans la phase 3 et la forme finale : toutes celles de la liste de la phase, tant qu'il ne les a pas toutes lancées une fois (voir choisirAttaque).
+// Elles ne retiennent plus le boss : il meurt dès que ses PV tombent à 0.
 function attaquesRequises(boss) {
     return boss.phase >= 2 ? [...new Set(boss.profil.attaques[boss.phase])] : null;
-}
-
-export function pvMinimum(boss) { // il ne peut pas descendre sous 1 PV tant qu'il lui reste une attaque à lancer
-    const requises = attaquesRequises(boss);
-    // (une attaque impossible en ce moment ne le retient pas : l'horloge n'est lancée que si le robot est au centre, et il restait sinon bloqué à 1 PV, invincible, tant que le robot n'y allait pas)
-    const lancable = (nom) => attaquePossible(boss.scene, boss, nom) && !(nom === "lanternes" && boss.scene.lanternesVivantes && boss.scene.lanternesVivantes.countActive() >= 2);
-    const retenu = requises && !requises.every((nom) => boss.faits.has(nom) || !lancable(nom));
-    // filet de sécurité : s'il est retenu à 1 PV depuis plus de 20 s (une attaque qui ne vient pas, pour une raison imprévue), on le laisse mourir plutôt que de le rendre invincible
-    if (retenu && boss.pv <= 1) {
-        boss.retenuDepuis = boss.retenuDepuis ?? boss.scene.time.now;
-        if (boss.scene.time.now - boss.retenuDepuis > 20000) return 0;
-    } else boss.retenuDepuis = undefined;
-    return retenu ? 1 : 0;
 }
 
 // Le tirage de la phase 3 et de la forme finale : d'abord, au hasard parmi les attaques pas encore lancées ; ensuite, un « sac » mélangé (chaque attaque de la liste

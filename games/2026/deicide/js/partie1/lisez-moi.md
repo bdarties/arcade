@@ -1,10 +1,10 @@
 # Partie 1 : le code expliqué simplement
 
-> **À LIRE EN PREMIER : ce qui est évalué**
-> **La partie évaluée est la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
-> **La partie 2** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires) **n'est pas à prendre en compte dans l'évaluation.** Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin : rendre le jeu plus difficile et ajouter du contenu. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
+> **À LIRE EN PREMIER : ce que nous présentons**
+> **Nous ne présentons que la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
+> **Nous ne souhaitons pas soumettre la partie 2 du code à l'évaluation** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires). Elle est uniquement présente pour améliorer la rejouabilité du jeu sur la borne : un jeu plus difficile et plus de contenu, suite à la demande de Nicolas Maurin. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
 >
-> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon mène aux crédits puis au classement, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
+> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon ramène alors directement au menu, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
 
 La partie 1 est le jeu complet jusqu'à la fin du premier boss (le Dieu de la Lumière) : menu, niveau 1, ennemis, lumière, boss, 1 contre 1, pause, panthéon, crédits. La partie 2 (`js/partie2`) ajoute la suite et se branche sur la partie 1 sans la modifier.
 
@@ -17,7 +17,7 @@ Un robot monte une tour dans l'ombre. Seules les zones de lumière éclairent, m
 - Les cartes sont dessinées dans **Tiled** (`assets/maps/*.json`) : des calques de tuiles (le décor, le sol) et des calques d'objets (les points de départ, les ennemis, les lanternes).
 
 ## Le trajet d'une partie
-`index.js` (racine) → `menu` → `niveau1` → combat du boss → `pantheon` (le choix) → suite (partie 2) → `credits` → `classement` (le panthéon) → `menu`
+`index.js` (racine) → `menu` → `niveau1` → combat du boss → `pantheon` (le choix) → NON : `menu` ; OUI : suite (partie 2) → `credits` → `classement` (le panthéon) → `menu`
 
 ## Modifier le jeu : `parametres.js`
 Tous les chiffres de réglage sont dans **un seul fichier**, `js/partie1/parametres.js` : gravité, vitesse et saut du robot, dash, tir, PV et points des ennemis, lanternes vivantes, PV et attaques du boss, score. On change un chiffre, on recharge la page, c'est tout. Chaque ligne a un commentaire qui dit ce qu'elle fait et son unité.

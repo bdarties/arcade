@@ -1,6 +1,6 @@
-// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
-// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
-// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// PARTIE 2 : nous ne souhaitons pas soumettre cette partie du code à l'évaluation. Nous ne présentons que la partie 1 (js/partie1/).
+// La partie 2 est uniquement présente pour améliorer la rejouabilité du jeu sur la borne (un jeu plus difficile et plus de contenu), suite à la demande
+// de Nicolas Maurin. Voir js/partie2/lisez-moi.md.
 // RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // fuite.js : ce qui se passe quand le joueur répond OUI au choix du panthéon, après la défaite du 1er boss.
 //  1. Le Dieu s'enrage (enrager) : il gonfle, devient rouge et ne peut plus être touché.

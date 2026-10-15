@@ -1,10 +1,10 @@
 # DEICIDE
 
-> **À LIRE EN PREMIER : ce qui est évalué**
-> **La partie évaluée est la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
-> **La partie 2** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires) **n'est pas à prendre en compte dans l'évaluation.** Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin : rendre le jeu plus difficile et ajouter du contenu. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
+> **À LIRE EN PREMIER : ce que nous présentons**
+> **Nous ne présentons que la partie 1** (`js/partie1/`) : le jeu jusqu'à la fin du premier boss. C'est sur elle que nous avons concentré notre travail et notre compréhension du code : nous savons expliquer chacun de ses fichiers.
+> **Nous ne souhaitons pas soumettre la partie 2 du code à l'évaluation** (`js/partie2/` : fuite du niveau 2, dernier combat, attaques supplémentaires). Elle est uniquement présente pour améliorer la rejouabilité du jeu sur la borne : un jeu plus difficile et plus de contenu, suite à la demande de Nicolas Maurin. Elle se branche sur la partie 1 sans la modifier, et le jeu fonctionne sans elle.
 >
-> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon mène aux crédits puis au classement, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
+> **La partie 2 est indépendante : on peut la retirer complètement.** Pour cela : (1) supprimer le dossier `js/partie2/` ; (2) dans `index.js`, supprimer la ligne `import { installerPartie2, ... }`, l'appel `installerPartie2();`, l'appel `activerTestsPartie2(game);` et `...scenesPartie2` dans la liste des scènes. Rien d'autre à changer : la partie 1 n'importe jamais la partie 2. Le jeu s'arrête alors à la défaite du premier boss (le choix du panthéon ramène alors directement au menu, quelle que soit la réponse). Nous l'avons testé : jeu lancé sans le dossier `partie2`, boss battu, crédits atteints, aucune erreur.
 
 Plateformer « ombre et lumière » (Phaser 3.60) — SAÉ borne d'arcade. Le robot monte une tour dans l'ombre, la lumière le brûle ; il affronte le Dieu de la Lumière, fuit en dashant à travers un deuxième niveau, puis livre un dernier combat. Un mode 1 contre 1 se joue à deux sur la borne.
 
@@ -23,7 +23,7 @@ js/
     ennemis/            ce qui attaque : archers, mages, orcs, le boss du niveau 1 (le moteur des boss), les lanternes vivantes
     mecanismes/         les règles du niveau 1 : lumière, salles de combat, arène du boss, bonus, boost
     systemes/           les outils partagés : chargement, sons, réglages, effets, points, optimisations, raccourcis
-  partie2/              HORS ÉVALUATION : la SUITE ajoutée pour la borne, après la réponse OUI au choix du panthéon (voir « La partie 2 » plus bas)
+  partie2/              NON SOUMISE À L'ÉVALUATION : la SUITE ajoutée pour la rejouabilité, après la réponse OUI au choix du panthéon (voir « La partie 2 » plus bas)
     niveau2.js, niveau3.js, vide.js, faisceaux.js, poursuite.js   la fuite (niveau 2) et l'arène du dernier combat (niveau 3)
     fuite.js            le Dieu s'enrage, brise le mur de l'arène, le robot fuit vers le niveau 2
     boss_final.js, attaques.js   le boss du dernier combat et ses attaques en plus (lasers, geysers, spirale, piqué)
@@ -53,10 +53,9 @@ Chaque fichier commence par un commentaire qui dit à quoi il sert. Pour compren
 Menu pause : Échap ou X (start). Recommencer la partie : maintenir C + F (les boutons C et F de la borne, P et ; au clavier, la touche M en AZERTY) pendant 0,5 s.
 Touches de test, à retirer avant la borne : F4 (l'écran de victoire), F8 (téléporter), F9 (niveau 2 direct), F10 (phase 3 du boss final, boss à pleine vie), F5 (la fausse fin : la fissure de l'écran, puis la phase 4, la forme finale du boss ; F5 ne recharge donc plus la page).
 
-## La partie 2 (facultative, hors évaluation)
+## La partie 2 (facultative, non soumise à l'évaluation)
 
-Le jeu est coupé en deux dossiers. `js/partie1` est un jeu complet qui se termine quand le Dieu de la Lumière est vaincu : le joueur choisit alors d'enregistrer
-son temps dans le panthéon (le tableau des scores). `js/partie2` est la suite (la fuite, le dernier combat) : elle se branche sur la partie 1 sans la modifier,
+Le jeu est coupé en deux dossiers. `js/partie1` est un jeu complet qui se termine quand le Dieu de la Lumière est vaincu : le joueur choisit alors s'il continue (OUI : la suite, dans la partie 2) ou s'il s'arrête (NON : retour direct au menu). Le panthéon (le tableau des scores) se remplit à la fin de la suite. `js/partie2` est la suite (la fuite, le dernier combat) : elle se branche sur la partie 1 sans la modifier,
 par quelques tables que la partie 1 expose : `PROFILS` et `ATTAQUES` (les boss et leurs attaques, `partie1/ennemis/boss.js`), `MUSIQUES_BOSS` (`partie1/systemes/sons.js`),
 `CHARGEMENTS_SUPPLEMENTAIRES` (`partie1/systemes/chargement.js`) et `EXTENSIONS_NIVEAU1` (`partie1/scenes/niveau1.js`).
 

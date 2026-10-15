@@ -1,6 +1,6 @@
 // pantheon.js : le choix proposé quand le Dieu du niveau 1 est battu : « Si tu veux entrer dans le panthéon, affronte la mort. »
 // Comme la pause, c'est une scène posée PAR-DESSUS le niveau : le niveau est figé (boss, chrono, tirs) pendant que le joueur choisit.
-// OUI : la suite du jeu commence (le Dieu s'enrage, fuite du niveau 2). NON : la partie s'arrête là et on va au classement (voir boss.js, refuserPantheon).
+// OUI : la suite du jeu commence (le Dieu s'enrage, fuite du niveau 2). NON : la partie s'arrête là et on retourne directement au menu (voir boss.js, refuserPantheon).
 // Le décor reprend celui de l'écran de fin (classement.js) : la même police pixel et les mêmes plaques d'armure que le HUD.
 import { rattraperHorloge } from "./pause.js"; // pour que le niveau « ne sente pas » le temps passé à choisir
 import { ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel et les couleurs
@@ -11,7 +11,7 @@ const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // les mêmes que le menu pause
 
 const E = 4; // une plaque est dessinée en pixels de 4 x 4 à l'écran
 const CHOIX = ["OUI", "NON"]; // les deux choix proposés
-const EXPLICATIONS = ["LA SUITE DU JEU COMMENCE", "LA PARTIE SE TERMINE ICI"]; // (la police n'a ni accents ni apostrophe)
+const EXPLICATIONS = ["LA SUITE DU JEU COMMENCE", "RETOUR AU MENU"]; // (la police n'a ni accents ni apostrophe)
 const X_BOUTONS = [490, 790]; // le centre de chaque bouton
 const Y_BOUTONS = 438; // y des boutons
 const L_BOUTON = 52, H_BOUTON = 22; // un bouton fait 52 x 22 pixels de dessin
@@ -93,6 +93,6 @@ export default class pantheon extends Phaser.Scene { // la scène du choix, pos�
         this.scene.resume(this.origine); // le niveau reprend
         this.scene.stop(); // ferme le choix
         if (this.choix === 0) this.accepter(); // OUI : la suite commence
-        else this.refuser(); // NON : la partie s'arrête (le niveau a repris pour pouvoir lancer l'écran de fin)
+        else this.refuser(); // NON : la partie s'arrête (le niveau a repris pour pouvoir fermer le jeu proprement et retourner au menu)
     }
 }

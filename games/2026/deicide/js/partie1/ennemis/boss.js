@@ -22,9 +22,9 @@
 // suite du jeu est alors dans js/partie2 (profil.suite).
 import { BOSS, ATTAQUES_BOSS, DEGATS } from "../parametres.js"; // PV, phases, points et réglages des attaques du boss
 import { VERSION } from "../../version.js"; // le numéro de version du jeu (sert à recharger les images du boss après une mise à jour)
-import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, musiqueNiveau, viderSons } from "../systemes/sons.js"; // sons du combat : bruitages, musiques, rythme
+import { jouerSon, jouerSonSurLeTemps, surLeTemps, quantifier, musiqueBoss, viderSons } from "../systemes/sons.js"; // sons du combat : bruitages, musiques, rythme
 import * as effets from "../systemes/effets.js"; // flashs, éclats, tremblements
-import { gagnerPoints, finirPartie } from "../systemes/points.js"; // points gagnés et fin de partie
+import { gagnerPoints } from "../systemes/points.js"; // points gagnés
 import { faireApparaitre as invoquerLanterne } from "./lanterne_vivante.js"; // le boss invoque des lanternes vivantes
 import { lacherPV } from "../mecanismes/bonus.js"; // le boss lâche une croix de soin à chaque changement de phase
 
@@ -458,7 +458,7 @@ export function changerDePhase(scene, boss, phase) { // fait passer le boss à l
 }
 
 // Le Soldat est battu : « Si tu veux entrer dans le panthéon, affronte la mort » (scène pantheon.js, posée par-dessus le niveau).
-// OUI : la suite du jeu commence (profil.suite, dans js/partie2 : le Dieu s'enrage, la fuite). NON : la partie s'arrête ici.
+// OUI : la suite du jeu commence (profil.suite, dans js/partie2 : le Dieu s'enrage, la fuite). NON : la partie s'arrête ici et on retourne au menu.
 function proposerPantheon(scene, boss) { // le boss est battu : on propose le choix du panthéon
     nettoyerCombat(scene, boss); // on efface ce qu'il avait lancé
     boss.etat = "choix"; // intouchable, plus d'attaque
@@ -471,12 +471,16 @@ function proposerPantheon(scene, boss) { // le boss est battu : on propose le ch
     });
 }
 
-function refuserPantheon(scene, boss) { // NON : la partie se termine ici (le boss est battu : il garde son bonus)
+function refuserPantheon(scene, boss) { // NON : la partie s'arrête ici, et on retourne directement au menu (sans crédits ni saisie du nom)
     boss.etat = "fin"; // le boss ne fait plus rien
-    gagnerPoints(scene, profil.points, boss.x, boss.y - 120);
-    boss.body.enable = false;
+    boss.body.enable = false; // plus de collision avec lui
     if (scene.lanternesVivantes) scene.lanternesVivantes.clear(true, true); // on enlève les lanternes vivantes restantes
-    musiqueNiveau(scene); // le metal s'arrête
+    scene.partieFinie = true; // plus de pause ni de coups reçus pendant la sortie
+    scene.registry.set("chronoActif", false); // le chrono s'arrête
     scene.tweens.add({ targets: [boss, boss.halo, ...elementsBarre(boss)], alpha: 0, duration: 1200 }); // le boss s'efface
-    finirPartie(scene); // arrête le chrono, puis ouvre le classement
+    scene.cameras.main.fadeOut(900, 0, 0, 0); // l'écran s'assombrit
+    scene.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => { // quand il est tout noir...
+        scene.sound.stopAll(); // ...on coupe la musique...
+        scene.scene.start("menu"); // ...et on retourne au menu
+    });
 }

@@ -1,6 +1,6 @@
-// PARTIE ÉVALUÉE : la partie 1 (js/partie1/), le jeu jusqu'à la fin du premier boss. C'est sur elle que s'est concentrée notre compréhension du code.
-// La partie 2 (js/partie2/) n'est PAS à prendre en compte : elle a été ajoutée uniquement pour rendre le jeu plus intéressant sur la borne
-// et répondre à la demande de Nicolas Maurin (jeu plus difficile, plus de contenu). Elle s'ajoute par installerPartie2() et on peut la retirer.
+// Nous ne présentons que la PARTIE 1 (js/partie1/) : le jeu jusqu'à la fin du premier boss. C'est sur elle que s'est concentrée notre compréhension du code.
+// Nous ne souhaitons pas soumettre la partie 2 (js/partie2/) à l'évaluation : elle est uniquement présente pour améliorer la rejouabilité du jeu sur la borne
+// (un jeu plus difficile et plus de contenu), suite à la demande de Nicolas Maurin. Elle s'ajoute par installerPartie2() et on peut la retirer.
 // RETIRER LA PARTIE 2 (elle est indépendante) : supprimer le dossier js/partie2/, puis dans CE fichier la ligne « import ... from ./js/partie2/index.js »,
 // l'appel installerPartie2(), l'appel activerTestsPartie2(game) et « ...scenesPartie2 » dans la liste des scènes. Rien d'autre : la partie 1 ne l'importe jamais.
 // index.js : le point de départ du jeu (chargé par index.html). Il règle Phaser (taille, physique, cadence d'images, rendu pour la borne),
