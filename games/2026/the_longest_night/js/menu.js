@@ -107,9 +107,11 @@ export default class Menu extends Phaser.Scene {
   }
 
   startGame() {
-    this.scene.start("niveau1", { mode: this.mode });
-    if (this.mode === 2) {
-      this.scene.launch("niveau2", { mode: this.mode });
+    if (this.mode === 2) { //compétitif : une des deux cartes au hasard
+      const carte = Phaser.Utils.Array.GetRandom(["niveau1", "niveau2"]);
+      this.scene.start(carte, { mode: 2 });
+    } else { //histoire : niveau 1 puis niveau 2
+      this.scene.start("niveau1", { mode: 1 });
     }
   }
 
