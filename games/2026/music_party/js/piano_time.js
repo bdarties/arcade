@@ -2,6 +2,7 @@
 // Il faut appuyer sur la touche du couloir quand la note est dans la zone.
 // Solo : 6 couloirs (I O P R T Y). Duo : 3 couloirs par joueur (J1 : I O P, J2 : R T Y).
 
+import { POLICE } from "./interface.js";
 import { creerTouches, vientDAppuyer, unJoueurAppuie, oublierAppuis } from "./controles.js";
 import { jouerSon, jouerPiano, lancerMusique, volumeMusique } from "./sons.js";
 import { participants } from "./persos.js";
@@ -54,7 +55,7 @@ const FENETRE_BIEN = 46;             // jusqu'à 46 px d'écart pour le "bien"
 const FENETRE_PARFAIT = 15;          // jusqu'à 15 px d'écart pour le "parfait"
 const FENETRE_TROP_TOT = 110;        // appui trop tôt (c'est une erreur)
 
-const STYLE_AUTEUR = { fontFamily: "Georgia, serif", fontSize: "18px", fontStyle: "italic", color: "#ffe9a8" };
+const STYLE_AUTEUR = { fontFamily: POLICE, fontSize: "18px", fontStyle: "italic", color: "#ffe9a8" };
 
 // Ordre d'affichage : plus le chiffre est grand, plus l'élément est devant
 const PROF = { piste: 1, zone: 2, tuile: 3, clavier: 4, lumiere: 5, perso: 6, voile: 7, hud: 50 };

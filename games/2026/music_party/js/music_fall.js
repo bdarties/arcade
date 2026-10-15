@@ -1,3 +1,4 @@
+import { POLICE } from "./interface.js";
 // importe les fonctions des touches (créer les touches, détecter un appui de J1 ou J2)
 import { creerTouches, vientDAppuyer, unJoueurAppuie } from "./controles.js";
 // importe les fonctions des sons (bruitages, tampon, sifflet de chute, musique et son volume)
@@ -21,7 +22,6 @@ const CM_RATE = 60;                  // score si on dépasse la ligne
 const X_DUO = [440, 840];            // position du perso de J1 et de J2 en duo
 const X_SOLO = 640;                  // position du perso en solo
 const ECHELLE_PERSO = 2;             // le perso fait 32 px, on le grossit x3
-const POLICE = '"Arial Black", Arial';
 
 // les 3 essais, de plus en plus durs
 const ESSAIS = [
@@ -234,7 +234,7 @@ export default class music_fall extends Phaser.Scene {
     var fond = this.add.rectangle(0, 0, 860, hauteur, 0x2b1f5c, 0.94).setStrokeStyle(4, 0xe0a818);
     var texte = this.add
       .text(0, premierEssai ? -40 : 0, lignes.join("\n"), {
-        fontFamily: "Arial",
+        fontFamily: POLICE,
         fontSize: "25px",
         fontStyle: "bold",
         color: "#ffffff",

@@ -2,8 +2,8 @@
 // panneau de présentation avant le jeu, médaillon avec la tete du perso,
 // textes qui s'envolent, réactions des persos à la fin...
 
-export const POLICE = "Arial Black";
-const ENCRE = "#1b1030";
+  export const POLICE = "Jersey15";
+  const ENCRE = "#1b1030";
 export const OR = "#ffd23f";
 
 // gros texte avec un contour sombre
@@ -21,7 +21,7 @@ export function style(taille, couleur, contour) {
 // texte courant (règles, descriptions)
 export function styleTexte(taille, couleur) {
   return {
-    fontFamily: "Arial",
+  fontFamily: POLICE,
     fontSize: taille + "px",
     fontStyle: "bold",
     color: couleur || "#ffffff",

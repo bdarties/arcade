@@ -29,6 +29,8 @@ var config = {
   baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
 };
 
+await document.fonts.load('20px "Jersey15"');
+//pour que la police soit chargée avant que Phaser affiche le texte :
 // création et lancement du jeu (la 1re scène de la liste démarre toute seule)
 export var game = new Phaser.Game(config);
 //fin
