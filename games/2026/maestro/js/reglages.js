@@ -1,10 +1,7 @@
-// ============================================================================
-//  js/reglages.js — TOUS les réglages du jeu au même endroit
-//
-//  Pour équilibrer le jeu (plus de vitesse, plus de vies...), on change les
-//  chiffres ici et nulle part ailleurs. Les autres fichiers font :
-//      import { REGLAGES } from "./reglages.js";
-// ============================================================================
+// Police unique de tout le jeu (texte gras sans empattement, lisible sur borne)
+export const POLICE = 'Arial Black, Arial, Helvetica, sans-serif';
+
+// Tous les réglages du jeu (vitesse, lampe, vies, ennemis) au même endroit.
 
 export const REGLAGES = {
   // ---- Déplacements communs aux deux personnages ----
@@ -56,10 +53,7 @@ export const REGLAGES = {
     vitesse: 70, // vitesse à laquelle il avance vers le joueur (px/s)
     pv: 1, // nombre d'ondes de la BONNE note pour le détruire (chaque cristal a une couleur = une note)
     etourdissementMauvaiseNoteMs: 600, // une onde d'une autre note ne fait que l'étourdir un instant (ms)
-    detectionPx: 450, // il se réveille quand un joueur est plus proche que ça
-    // Pour plus tard (niveau 3) : le cristal apparaîtra toutes les 4 à 7 secondes
-    apparitionMinMs: 4000,
-    apparitionMaxMs: 7000
+    detectionPx: 450 // il se réveille quand un joueur est plus proche que ça
   },
   // ---- Choc quand un personnage est touché ----
   recul: {

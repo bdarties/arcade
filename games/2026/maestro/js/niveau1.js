@@ -1,33 +1,16 @@
-// ============================================================================
-//  js/niveau1.js — NIVEAU 1 : LES COULISSES (carte Tiled « coulisse »)
-//
-//  Objectif : monter jusqu'au PARCHEMIN (fragment de partition), puis franchir
-//  la PORTE DE SORTIE. Pour atteindre le parchemin, le Détective doit révéler
-//  les PASSERELLES FANTÔMES avec sa lampe, pendant que l'autre personnage saute dessus.
-//
-//  - Cantatrice (J1) : O = tire une onde · P = change de note (Do / Mi / Sol)
-//  - Détective (J2)  : T = allume / éteint la lampe · haut / bas du joystick = oriente la lampe
-//  - Les deux        : flèches ou ZQSD pour marcher, bouton A pour sauter,
-//                      haut / bas devant une échelle pour monter / descendre
-//  - Solo : le bouton D (K) change de personnage. Duo : chacun son personnage.
-//
-//  La carte vient de Tiled (assets/coulisse.json). On y lit des RECTANGLES posés
-//  dans les calques d'objets "collisions" et "mecaniques" : c'est plus fiable
-//  que de deviner les collisions à partir des images des tuiles.
-//  Les touches sont dans controles.js, les chiffres d'équilibrage dans reglages.js.
-// ============================================================================
+// Niveau 1 : Les Coulisses. Lampe, passerelles fantômes, ondes, Tuba et cristaux.
 
 // On importe ce dont le niveau a besoin : réglages, touches, progression, musique et sons
-import { REGLAGES } from "./reglages.js";
+import { REGLAGES, POLICE } from "./reglages.js";
 import { creerPanneau, aideBorne, aideClavier } from "./controles.js";
 import { enregistrerVictoire, NIVEAUX } from "./progression.js";
 import { jouerMusique, arreterMusique, jouerSonNote, jouerSonEnnemi } from "./musique.js";
+import { toucheEnfoncee, toucheAppuyee, lacherEchelle, gererEchelle } from "./controles.js";
 
 // ---- Dimensions du niveau (136 x 46 tuiles de 16 px) ----
 const LARGEUR_MONDE = 2176;
 const HAUTEUR_MONDE = 736;
 const COULEUR_FOND = 0x090d17; // couleur de fond de la carte (réglée dans Tiled)
-const OPACITE_FOND = 0.42; // opacité de l'image de fond (propriété fond_opacite de la carte)
 const ECART_MAX_DUO = 1180; // en duo, les joueurs ne peuvent pas s'éloigner plus que ça (pour rester à l'écran)
 // Mur de lumière : empêche d'atteindre le parchemin en sautant depuis la plateforme de droite
 // (sol_14). Sans lui, on pourrait se passer des passerelles fantômes, donc du Détective.
@@ -36,7 +19,6 @@ const MARGE_REPRISE = 96; // à la réapparition, le héros est au moins à 96 p
 const FIGE_REPRISE_MS = 500; // et il est figé 0,5 s pour ne pas retomber avec une touche encore enfoncée
 const SEUIL_TIR_LAMPE_MS = 350; // au-delà de ce temps d'appui sur B, c'est un tir (et non un allumage de lampe)
 const CADENCE_ECLAT_MS = 600; // délai minimum entre deux éclats
-const POLICE = 'Arial Black, Arial, Helvetica, sans-serif'; // police de tous les textes du niveau
 
 // Les 3 notes de la Cantatrice (même ordre que les lignes de la planche d'onde)
 const NOTES = [
@@ -87,12 +69,9 @@ export default class niveau1 extends Phaser.Scene {
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.tilemapTiledJSON("carte_coulisse", "./assets/coulisse.json");
-    // Images de la carte. Si l'une manque, le niveau est quand même jouable :
-    // il utilise alors un décor de secours (voir creerCarte).
+    // Images de la carte. Si l'une manque, le niveau reste jouable : un décor de secours est dessiné (voir creerCarte).
     this.load.image("ts_plateformes", "./assets/plateformes-coulisses-grid-50.png"); // tuiles des plateformes
-    this.load.image("ts_complements", "./assets/coulisses_complements.png"); // tuiles de la structure et des échelles
     this.load.image("img_lanterne", "./assets/lanterne_chinoise.png");
-    this.load.image("img_fond_coulisse", "./assets/coulisse.jpg");
   }
 
   // ==========================================================================
@@ -160,8 +139,8 @@ export default class niveau1 extends Phaser.Scene {
     return image;
   }
 
-  // Surveille la vitesse du jeu : F2 affiche le compteur ; si le jeu reste lent plusieurs secondes de suite,
-  // on passe en mode économique tout seul.
+  // Affiche la vitesse du jeu : F2 montre ou cache le compteur d'images par seconde (en bas à droite).
+  // Le mode économique n'est pas activé ici : il est déjà allumé dès le lancement (voir chargement.js).
   installerSurveillance() {
     this.compteurFps = this.add // le texte du compteur, en bas à droite
       .text(1270, 712, "", { fontFamily: "monospace", fontSize: "12pt", color: "#9dffb0", stroke: "#000000", strokeThickness: 3 })
@@ -273,19 +252,15 @@ export default class niveau1 extends Phaser.Scene {
     this.groupe_plateformes = this.physics.add.staticGroup(); // plateformes solides
     this.groupe_fantomes = this.physics.add.staticGroup(); // passerelles fantômes
 
-    // Les images de tuiles sont-elles là ? (1er nom = nom du tileset dans Tiled, 2e nom = clé chargée dans preload)
+    // L'image de tuiles des plateformes est-elle là ? (1er nom = nom du tileset dans Tiled, 2e nom = clé chargée dans preload)
     const tuilesPlateformes = this.textures.exists("ts_plateformes")
       ? this.carte.addTilesetImage("plateformes_coulisses_niveau1", "ts_plateformes")
       : null;
-    const tuilesComplements = this.textures.exists("ts_complements")
-      ? this.carte.addTilesetImage("coulisses_complements", "ts_complements")
-      : null;
-    // Chaque jeu d'images est indépendant : s'il manque, on dessine un décor de secours à la place
+    // S'il manque, on dessine un décor de secours à la place
     this.avecTuilesPlateformes = tuilesPlateformes != null; // vrai si les images des plateformes sont là
-    this.avecTuilesComplements = tuilesComplements != null; // vrai si les images de la structure sont là
 
     this.creerFond(); // l'image de fond
-    this.creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements); // les calques de tuiles, du fond vers l'avant
+    this.creerCalquesDeTuiles(tuilesPlateformes); // les calques de tuiles, du fond vers l'avant
 
     // ---- Les objets de la carte ----
     const objetsDe = (calque) => this.carte.getObjectLayer(calque).objects; // la liste des objets d'un calque d'objets
@@ -300,9 +275,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Échelles : on garde le point où le personnage se tient en haut et en bas (= dessus des plateformes)
     this.echelles = deType("echelle").map((objet) => { // pour chaque échelle de la carte
-      if (this.avecTuilesComplements == false) {
-        this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3); // décor de secours : une échelle dessinée
-      }
+      this.add.tileSprite(objet.x + 8, objet.y + objet.height / 2, 16, objet.height, "tex_echelle").setDepth(3); // l'échelle dessinée par le code
       return {
         centreX: objet.x + objet.width / 2, // le milieu de l'échelle en x
         haut: objet.y + 12, // le haut de l'échelle dépasse de 12 px au-dessus de la plateforme
@@ -338,29 +311,14 @@ export default class niveau1 extends Phaser.Scene {
     this.ajouterIndice(1880, 560, "Un TUBA hanté patrouille...\nÉtourdis-le avec une onde (bouton B) et passe !");
   }
 
-  // Le fond : l'image de la carte (coulisse.jpg) si elle est là, sinon fond_niveau1.jpg.
-  // Dans les deux cas l'image est ÉTIRÉE pour couvrir toute la carte, quelle que soit sa taille d'origine.
+  // Le fond : l'image fond_niveau1.jpg, étirée pour couvrir toute la carte, quelle que soit sa taille d'origine.
   creerFond() {
-    if (this.textures.exists("img_fond_coulisse")) { // l'image du niveau est là
-      this.add
-        .image(0, 0, "img_fond_coulisse") // posée au coin haut gauche
-        .setOrigin(0, 0)
-        .setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE) // étirée à la taille du monde
-        .setAlpha(OPACITE_FOND) // un peu transparente, pour que le décor reste sombre
-        .setDepth(0); // tout au fond
-    } else {
-      this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0); // image de secours
-    }
+    this.add.image(0, 0, "img_fond_niveau1").setOrigin(0, 0).setDisplaySize(LARGEUR_MONDE, HAUTEUR_MONDE).setDepth(0); // tout au fond
   }
 
   // Les calques de tuiles de Tiled (leurs noms doivent être ceux de Tiled), du plus loin au plus proche.
-  // Chaque calque n'utilise qu'UN des deux jeux d'images : on ne crée que ceux dont l'image est présente.
-  creerCalquesDeTuiles(tuilesPlateformes, tuilesComplements) {
-    // Calques dessinés avec coulisses_complements.png : la structure et les échelles
-    if (tuilesComplements != null) {
-      this.carte.createLayer("structure", tuilesComplements).setDepth(1).setAlpha(0.65); // la structure, un peu transparente
-      this.carte.createLayer("echelles", tuilesComplements).setDepth(3); // les échelles
-    }
+  // On ne crée que les calques dont l'image de tuiles est présente.
+  creerCalquesDeTuiles(tuilesPlateformes) {
     // Calques dessinés avec plateformes-coulisses-grid-50.png : plateformes, décors, passerelles
     if (tuilesPlateformes != null) {
       this.carte.createLayer("plateformes_tuiles", tuilesPlateformes).setDepth(2); // les plateformes visibles
@@ -591,6 +549,7 @@ export default class niveau1 extends Phaser.Scene {
     // (la 3e fonction est une CONDITION : si elle renvoie false, il n'y a pas de collision)
     this.physics.add.collider(this.persos, this.groupe_plateformes, null, (perso, plateforme) => this.peutMarcherSur(perso, plateforme));
     this.physics.add.collider(this.groupe_tubas, this.groupe_plateformes); // les Tubas marchent sur les plateformes
+    this.physics.add.collider(this.groupe_cristaux, this.groupe_plateformes); // les cristaux s'arrêtent contre les plateformes
     this.physics.add.collider(this.persos, this.groupe_murs); // le mur de lumière bloque les personnages
 
     // Les passerelles fantômes ne sont solides que si elles sont éclairées
@@ -702,7 +661,7 @@ export default class niveau1 extends Phaser.Scene {
     }
 
     // Solo : le bouton D change de personnage
-    if (this.mode == "solo" && this.toucheAppuyee(this.actif, "D")) {
+    if (this.mode == "solo" && toucheAppuyee(this.actif, "D")) {
       this.changerDePerso(); // on change (ou on se transforme) une seule fois par appui
     }
 
@@ -769,19 +728,6 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------------
-  //  Lecture des touches (un perso peut avoir plusieurs claviers : voir creerPersonnages)
-  // --------------------------------------------------------------------------
-  // Vrai si le bouton est maintenu enfoncé (une touche de ce personnage est appuyée)
-  toucheEnfoncee(perso, bouton) {
-    return perso.touches.some((clavier) => clavier[bouton].isDown);
-  }
-
-  // Vrai UNE SEULE FOIS par appui (pas tant que la touche reste enfoncée)
-  toucheAppuyee(perso, bouton) {
-    return perso.touches.map((clavier) => Phaser.Input.Keyboard.JustDown(clavier[bouton])).includes(true);
-  }
-
-  // --------------------------------------------------------------------------
   //  Un personnage : échelle, déplacement, saut, pouvoir, animation
   // --------------------------------------------------------------------------
   gererPersonnage(perso, temps, delta) {
@@ -791,14 +737,14 @@ export default class niveau1 extends Phaser.Scene {
     const controle = (this.mode == "duo" || perso == this.actif) && fige == false; // ce personnage est-il commandé ?
     const sonne = temps < perso.sonneJusqua; // vient d'être touché : pas de contrôle un court instant
 
-    this.gererEchelle(perso, controle, sonne); // l'échelle peut modifier le mouvement
+    gererEchelle(this, perso, controle, sonne); // l'échelle peut modifier le mouvement
     const aTerre = perso.body.blocked.down || perso.body.touching.down; // vrai s'il touche le sol
 
     let direction = 0; // -1 gauche, 0 immobile, 1 droite
     if (controle && sonne == false && perso.enEchelle == false) {
-      if (this.toucheEnfoncee(perso, "gauche")) {
+      if (toucheEnfoncee(perso, "gauche")) {
         direction = -1;
-      } else if (this.toucheEnfoncee(perso, "droite")) {
+      } else if (toucheEnfoncee(perso, "droite")) {
         direction = 1;
       }
     }
@@ -814,7 +760,7 @@ export default class niveau1 extends Phaser.Scene {
 
     if (controle && sonne == false) {
       // Bouton A : sauter (seulement depuis le sol)
-      if (perso.enEchelle == false && this.toucheAppuyee(perso, "A") && aTerre) {
+      if (perso.enEchelle == false && toucheAppuyee(perso, "A") && aTerre) {
         perso.setVelocityY(REGLAGES.saut); // saut vers le haut
       }
       // Pouvoir propre à chaque personnage
@@ -849,85 +795,17 @@ export default class niveau1 extends Phaser.Scene {
   }
 
   // --------------------------------------------------------------------------
-  //  Échelles : haut / bas du joystick devant une échelle pour s'y accrocher
-  // --------------------------------------------------------------------------
-  gererEchelle(perso, controle, sonne) {
-    const corps = perso.body; // le corps physique du personnage
-    const pied = corps.bottom; // hauteur des pieds
-
-    // L'échelle devant le personnage : alignée en x, et les pieds entre le haut et le bas de l'échelle
-    const echelle = this.echelles.find(function (e) {
-      return Math.abs(corps.center.x - e.centreX) <= 16 && pied >= e.haut - 3 && pied <= e.bas + 3;
-    });
-
-    if (sonne == true) {
-      this.lacherEchelle(perso); // un coup fait lâcher prise
-      return;
-    }
-
-    // S'accrocher : on monte (sauf si on est déjà tout en haut) ou on descend (sauf si on est tout en bas)
-    if (perso.enEchelle == false && controle == true && echelle !== undefined) {
-      const veutMonter = this.toucheEnfoncee(perso, "haut") && pied > echelle.haut + 2;
-      const veutDescendre = this.toucheEnfoncee(perso, "bas") && pied < echelle.bas - 2;
-      if (veutMonter || veutDescendre) {
-        perso.enEchelle = true; // il s'accroche
-      }
-    }
-    if (perso.enEchelle == false) {
-      return; // pas accroché : rien à faire ici
-    }
-
-    // Accroché : si on n'est plus devant une échelle, on lâche
-    if (echelle === undefined) {
-      this.lacherEchelle(perso);
-      return;
-    }
-    let vitesseY = 0; // vitesse verticale sur l'échelle (0 = immobile)
-    if (controle == true) {
-      if (this.toucheEnfoncee(perso, "haut")) {
-        vitesseY = -REGLAGES.echelle.vitesse; // négatif = vers le haut
-      } else if (this.toucheEnfoncee(perso, "bas")) {
-        vitesseY = REGLAGES.echelle.vitesse; // positif = vers le bas
-      }
-      // Bouton A : on saute de l'échelle
-      if (this.toucheAppuyee(perso, "A")) {
-        this.lacherEchelle(perso);
-        perso.setVelocityY(REGLAGES.saut); // on lance un petit saut
-        return;
-      }
-    }
-    perso.body.setAllowGravity(false);
-    perso.setVelocity(0, vitesseY); // pas de marche sur l'échelle, seulement monter ou descendre
-    perso.x = echelle.centreX; // on reste bien au milieu de l'échelle
-
-    // Arrivé en haut ou en bas : on se pose sur la plateforme et on lâche l'échelle
-    if (vitesseY < 0 && pied <= echelle.haut) {
-      perso.y += echelle.haut - pied; // on le remet pile sur le dessus de la plateforme
-      this.lacherEchelle(perso);
-    } else if (vitesseY > 0 && pied >= echelle.bas) {
-      perso.y -= pied - echelle.bas; // on le remet pile en bas de l'échelle
-      this.lacherEchelle(perso);
-    }
-  }
-
-  // Lâcher l'échelle : la gravité revient et le personnage n'est plus « accroché »
-  lacherEchelle(perso) {
-    perso.enEchelle = false;
-    perso.body.setAllowGravity(true);
-  }
-
-  // --------------------------------------------------------------------------
   //  Pouvoirs
   // --------------------------------------------------------------------------
   // La Cantatrice : C change de note, B chante une onde
   pouvoirCantatrice(perso, temps) {
     // Bouton C : changer de note (Do -> Mi -> Sol -> Do...)
-    if (this.toucheAppuyee(perso, "C")) {
+    if (toucheAppuyee(perso, "C")) {
       this.noteActuelle = (this.noteActuelle + 1) % NOTES.length; // la note suivante, et on revient à Do après Sol
       this.majNote(); // on met à jour l'affichage de la note
     }
     // Bouton B : chanter une onde (tenir appuyé = une onde toutes les 500 ms)
-    if (this.toucheEnfoncee(perso, "B") && temps - perso.dernierTir >= REGLAGES.onde.cadenceMs) {
+    if (toucheEnfoncee(perso, "B") && temps - perso.dernierTir >= REGLAGES.onde.cadenceMs) {
       perso.dernierTir = temps; // on retient l'instant du tir
       perso.tireJusqua = temps + 500; // l'animation de tir dure 0,5 s
       perso.anims.play("cantatrice_shoot"); // on force le redémarrage de l'animation
@@ -953,7 +831,7 @@ export default class niveau1 extends Phaser.Scene {
   // Le Détective : B (appui court = lampe, appui long = éclat), C recharge (en duo), haut / bas orientent la lampe
   pouvoirDetective(perso, temps, delta) {
     // Bouton B : un APPUI COURT allume / éteint la lampe ; un appui MAINTENU plus de 0,35 s tire un éclat de lumière.
-    const bTenu = this.toucheEnfoncee(perso, "B"); // B est-il maintenu ?
+    const bTenu = toucheEnfoncee(perso, "B"); // B est-il maintenu ?
     if (bTenu == true && perso.appuiB === undefined) {
       perso.appuiB = temps; // début de l'appui
     }
@@ -972,10 +850,10 @@ export default class niveau1 extends Phaser.Scene {
     // Haut / bas du joystick : orienter la lampe (sauf sur une échelle, où ils servent à grimper)
     if (this.lampe.allumee == true && perso.enEchelle == false) {
       const pas = REGLAGES.lampe.vitesseVisee * (delta / 1000); // de combien tourner pendant cette image
-      if (this.toucheEnfoncee(perso, "haut")) {
+      if (toucheEnfoncee(perso, "haut")) {
         this.lampe.angle += pas; // vers le haut
       }
-      if (this.toucheEnfoncee(perso, "bas")) {
+      if (toucheEnfoncee(perso, "bas")) {
         this.lampe.angle -= pas; // vers le bas
       }
       this.lampe.angle = Phaser.Math.Clamp(this.lampe.angle, -REGLAGES.lampe.angleMax, REGLAGES.lampe.angleMax); // on reste dans les limites
@@ -1033,17 +911,16 @@ export default class niveau1 extends Phaser.Scene {
     if (lampe.allumee == false) {
       return; // éteinte : rien d'autre à dessiner
     }
-    const intensite = 1; // la lumière reste pleine
 
     const f = this.calculerFaisceau(); // où pointe la lampe
     // le cône de lumière : un triangle de la main du Détective jusqu'à la tache de lumière
     const nx = -f.dy; // perpendiculaire à la direction, pour donner sa largeur au cône
     const ny = f.dx;
     const largeur = REGLAGES.lampe.rayon * 0.6; // la demi-largeur du cône, à l'arrivée
-    this.faisceau.fillStyle(0xffe9a0, 0.2 * intensite); // couleur dorée, transparente
+    this.faisceau.fillStyle(0xffe9a0, 0.2); // couleur dorée, transparente
     this.faisceau.fillTriangle(f.ox, f.oy, f.cx + nx * largeur, f.cy + ny * largeur, f.cx - nx * largeur, f.cy - ny * largeur); // le cône
-    this.halo.setPosition(f.cx, f.cy).setAlpha(intensite);
-    this.haloProche.setPosition(this.detective.body.center.x, this.detective.body.center.y).setAlpha(0.7 * intensite); // le petit halo autour du Détective
+    this.halo.setPosition(f.cx, f.cy).setAlpha(1);
+    this.haloProche.setPosition(this.detective.body.center.x, this.detective.body.center.y).setAlpha(0.7); // le petit halo autour du Détective
   }
 
   // Distance entre un point et un rectangle (0 si le point est dedans)
@@ -1336,7 +1213,7 @@ export default class niveau1 extends Phaser.Scene {
 
     // Recul + animation "hurt"
     const sens = perso.x < sourceX ? -1 : 1; // on le repousse à l'opposé du coup
-    this.lacherEchelle(perso); // s'il était sur une échelle, il la lâche
+    lacherEchelle(perso); // s'il était sur une échelle, il la lâche
     perso.sonneJusqua = temps + REGLAGES.recul.dureeMs; // pendant le recul il ne contrôle plus rien
     perso.setVelocity(sens * REGLAGES.recul.x, REGLAGES.recul.y); // la poussée : sur le côté et un petit saut
     perso.anims.play(perso.nom + "_hurt"); // animation de blessure
@@ -1410,7 +1287,7 @@ export default class niveau1 extends Phaser.Scene {
     const depart = perso == this.cantatrice ? this.departs.j1 : this.departs.j2; // le point de départ de ce personnage
     // sa dernière position sûre, ou le point de départ s'il n'en a pas encore
     const sure = perso.positionSure !== undefined ? perso.positionSure : { x: depart.x, y: depart.y - 40 };
-    this.lacherEchelle(perso); // il lâche l'échelle s'il y était
+    lacherEchelle(perso); // il lâche l'échelle s'il y était
     // body.reset : la bonne façon de téléporter un corps physique (position ET vitesse remises à zéro).
     // Avec un simple setPosition, le corps garde sa vitesse de chute : le héros s'enfonçait dans le sol et retombait.
     perso.body.reset(sure.x, sure.y); // on le replace à sa position sûre
@@ -1425,7 +1302,7 @@ export default class niveau1 extends Phaser.Scene {
     this.fini = true; // le niveau est terminé (perdu)
     this.arreterSonPartition(); // le chœur s'arrête
     this.persos.forEach((perso) => {
-      this.lacherEchelle(perso); // plus d'échelle
+      lacherEchelle(perso); // plus d'échelle
       perso.setVelocityX(0); // on arrête la marche
       perso.setAlpha(1); // on le rend bien visible pour l'animation de mort
       perso.anims.play(perso.nom + "_death"); // animation de mort
@@ -1466,7 +1343,7 @@ export default class niveau1 extends Phaser.Scene {
     }
     this.fini = true; // le niveau est gagné
     this.persos.forEach((perso) => {
-      this.lacherEchelle(perso); // plus d'échelle
+      lacherEchelle(perso); // plus d'échelle
       perso.setVelocity(0, 0); // on arrête les personnages
       this.jouerAnimation(perso, perso.nom + "_idle"); // animation d'attente
     });

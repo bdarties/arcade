@@ -1,12 +1,4 @@
-// ============================================================================
-//  js/chargement.js — première scène du jeu
-//
-//  Elle fait 3 choses, UNE SEULE FOIS au lancement :
-//    1. charge toutes les images (preload)
-//    2. fabrique quelques textures dessinées en code (plateformes, cœurs, lumière)
-//    3. crée toutes les animations, puis lance l'écran d'accueil
-//  Les images et les animations sont partagées par toutes les scènes du jeu.
-// ============================================================================
+// Premier écran : charge les images, les sons et les animations, puis lance l'accueil.
 
 // Pour chaque personnage : le nom des animations (= une image par animation,
 // toutes en frames de 64 x 64 pixels) et leurs réglages.
