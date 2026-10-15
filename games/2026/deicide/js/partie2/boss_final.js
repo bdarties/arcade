@@ -1,6 +1,6 @@
-// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
-// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
-// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// PARTIE 2 : nous ne souhaitons pas soumettre cette partie du code à l'évaluation. Nous ne présentons que la partie 1 (js/partie1/).
+// La partie 2 est uniquement présente pour améliorer la rejouabilité du jeu sur la borne (un jeu plus difficile et plus de contenu), suite à la demande
+// de Nicolas Maurin. Voir js/partie2/lisez-moi.md.
 // RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // boss_final.js : le boss du DERNIER COMBAT (niveau3.js) : le Dieu de la Lumière enragé. C'est le même moteur que le boss du niveau 1 (partie1/ennemis/boss.js),
 // réglé par un profil : plus de PV, trois phases, des attaques plus rapides et plus nombreuses, et des attaques en plus (attaques.js). Une 4e phase, la FORME FINALE
@@ -11,7 +11,7 @@ import { balayageApresColonnes, installerAttaques } from "./attaques.js";
 import { enrager } from "./fuite.js";
 import { finDeCombat } from "./fin_de_combat.js";
 import { lancerMusiquePhase4 } from "./musique.js"; // la musique de la phase 4, plus forte que celle des phases 1 à 3
-import { PV_PHASE_3, ATTAQUES_FORME_FINALE, PHASE_FINALE, installerFormeFinale, pvMinimum, choisirAttaque, pvDePhase, appliquerFormeFinale } from "./forme_finale.js";
+import { PV_PHASE_3, ATTAQUES_FORME_FINALE, PHASE_FINALE, installerFormeFinale, choisirAttaque, pvDePhase, appliquerFormeFinale } from "./forme_finale.js";
 
 // Les réglages du boss final, une entrée par phase (voir BASE dans boss.js pour la signification de chaque valeur). Il est dur dès la phase 1.
 // La 4e entrée est la forme finale : seuls « charge » (annonces plus courtes) et « periodeMouvement » comptent, ses attaques sont dans attaques_ultimes.js.
@@ -52,8 +52,7 @@ export function installerBossFinal() { // à appeler une fois, avant la créatio
         ],
         dureeEnPlus,
         apresColonnes(scene, boss, valide) { if (DUR[boss.phase].balayage) balayageApresColonnes(scene, boss, valide); }, // dès la phase 2, les colonnes sont suivies d'un balayage
-        // phase 3 et forme finale : le boss doit avoir lancé toutes ses attaques avant de pouvoir mourir, et il les tire dans un ordre plus régulier (forme_finale.js)
-        pvMinimum,
+        // phase 3 et forme finale : il lance d'abord toutes ses attaques une fois, dans un ordre régulier (voir forme_finale.js) ; rien ne le retient quand ses PV tombent à 0
         choisirAttaque,
         pvDePhase, // la forme finale a ses propres PV
         // La phase 3 commence avec les 91 PV qu'il lui reste : le boss ne se soigne JAMAIS en changeant de phase (avant, il remontait à 91 PV au milieu du combat). Après une mort, il repart
