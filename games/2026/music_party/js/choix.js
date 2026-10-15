@@ -1,13 +1,13 @@
- 
 import { creerTouches, vientDAppuyer, oublierAppuis } from "./controles.js";
 import { jouerSon, jouerMotif, lancerMusique } from "./sons.js";
 import { PERSOS } from "./persos.js";
 import { infosJeu } from "./jeux.js";
-import { style, styleTexte, annonce, POLICE, OR } from "./interface.js";
+import { style, styleTexte, annonce, aideBas, POLICE, OR } from "./interface.js";
 
-const X_PERSO = 640; 
+// Réglages de l'écran (images du dossier "Page selection perso" de l'équipe)
+const X_PERSO = 640; // le perso sélectionné, au milieu de la scène
 const Y_PIEDS = 525;
-const ECART_FLECHES = 195; 
+const ECART_FLECHES = 195; // les 2 flèches, de chaque coté du perso
 const X_ZONE = 1080; // la zone de texte, à coté du perso
 const Y_CASES = 628; // les 4 cases, dans la bande rouge du bas
 const ECART_CASES = 170;
@@ -35,7 +35,8 @@ export default class choix extends Phaser.Scene {
 
     this.add.image(0, 0, "img_fond_choix").setOrigin(0);
     this.add.image(640, 64, "img_choisis");
-    this.consigne = this.add.text(640, 140, "", style(20)).setOrigin(0.5);
+    this.consigne = this.add.text(190, 140, "", style(28)).setOrigin(0.5);
+    aideBas(this, [["horizontal", "Choisir"], ["a", "Valider"], ["b", "Retour"]], 140);
 
     // le perso sélectionné (sa grande planche), entre les 2 flèches
     this.sprite = this.add.sprite(X_PERSO, Y_PIEDS, "img_grand_" + PERSOS[this.index].cle).setOrigin(0.5, 1);
@@ -46,7 +47,7 @@ export default class choix extends Phaser.Scene {
     this.add.image(X_ZONE, 276, "img_zone_texte");
     this.nom = this.add.image(X_ZONE, 100, "img_nom_" + PERSOS[this.index].cle);
     this.texte = this.add.text(X_ZONE - 94, 136, "", {
-      ...styleTexte(15, "#fff1dc"),
+      ...styleTexte(18, "#fff1dc"),
       align: "left",
       lineSpacing: 3,
       wordWrap: { width: 188 }
@@ -85,8 +86,7 @@ export default class choix extends Phaser.Scene {
       // le cadre doré est plus grand : on le dessine par-dessus les cases voisines
       c.cadre = this.add.image(x, Y_CASES, selectionne ? "img_cadre_choisi" : "img_cadre").setDepth(selectionne ? 2 : 1);
     });
-    var texte = "◄ ►  choisir     A  valider     B  retour";
-    if (this.duo) texte = "JOUEUR " + (this.joueur + 1) + "  ·  " + texte;
+    var texte = this.duo ? "Choix de J" + (this.joueur + 1) : "Ton personnage";
     this.consigne.setText(texte).setTint(this.joueur == 0 ? 0xffd23f : 0x5fc8ff);
   }
 
@@ -116,9 +116,9 @@ export default class choix extends Phaser.Scene {
     var c = this.cases[this.index];
     this.pris.push(this.index);
     this.attente = true;
+    jouerSon(this, "selection");
     jouerMotif(this, PERSOS[this.index]);
-    // le perso saute de joie et sa case grossit un instant
-    this.tweens.add({ targets: this.sprite, y: Y_PIEDS - 40, duration: 160, yoyo: true, ease: "Linear" });
+    // sa case grossit un instant
     this.tweens.add({ targets: [c.portrait, c.cadre], scaleX: 1.15, scaleY: 1.15, duration: 150, yoyo: true, ease: "Linear" });
 
     if (this.duo && this.joueur == 0) {
@@ -136,10 +136,10 @@ export default class choix extends Phaser.Scene {
     this.registry.set("perso1", PERSOS[this.pris[0]].cle);
     if (this.duo) this.registry.set("perso2", PERSOS[this.pris[1]].cle);
     annonce(this, "C'EST PARTI !", OR, 800, 340);
-    this.time.delayedCall(900, () => this.partir(this.jeu.scene, "valider"));
+    this.time.delayedCall(900, () => this.partir(this.jeu.scene));
   }
 
-  // B : J1 revient au menu du jeu, J2 revient au choix de J1K
+  // B : J1 revient au menu du jeu, J2 revient au choix de J1
   annuler() {
     if (this.joueur == 0) {
       this.partir("menu", "retour");
@@ -156,7 +156,7 @@ export default class choix extends Phaser.Scene {
 
   partir(scene, son) {
     this.attente = true;
-    jouerSon(this, son);
+    if (son) jouerSon(this, son);
     // {} = on repart de zéro (sinon Phaser redonne à Music Fall les données de la partie d'avant)
     this.scene.start(scene, {});
   }

@@ -1,4 +1,5 @@
-// Music Party : 4 mini-jeux musicaux pour la borne d'arcade, en solo ou à deux.
+import "./js/donnees.js";
+// Music Party : 3 mini-jeux musicaux pour la borne d'arcade, en solo ou à deux.
 // Point de départ du jeu (comme dans le template) : on importe les scènes
 // et on lance le jeu.
 
@@ -9,9 +10,11 @@ import selection from "./js/selection.js"; // choix du mini-jeu
 import menu from "./js/menu.js"; // solo ou duo
 import choix from "./js/choix.js"; // choix des persos
 import music_fall from "./js/music_fall.js"; // mini-jeu Music Fall
-import piano_time from "./js/piano_time.js"; // mini-jeu piano_time Time
+import piano_time from "./js/piano_time.js"; // mini-jeu Piano Time
 import memoire from "./js/memoire.js"; // mini-jeu Memory Song
 import resultats from "./js/resultats.js"; // scores et gagnant 
+import credits from "./js/credits.js"; // page des crédits (depuis l'écran titre)
+
 
 // configuration générale du jeu
 var config = {
@@ -23,12 +26,14 @@ var config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  // pas de moteur physique : les music_falls et les rebonds des notes sont
+  // pas de moteur physique : les chutes et les rebonds des notes sont
   // calculés à la main (voir music_fall.js)
-  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats],
-  baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
+  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats, credits],
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, "") // dossier du jeu (ex : "/games/2026/music_party"), base des chemins d'assets
 };
 
+await document.fonts.load('20px "Jersey15"');
+//pour que la police soit chargée avant que Phaser affiche le texte :
 // création et lancement du jeu (la 1re scène de la liste démarre toute seule)
 export var game = new Phaser.Game(config);
 //fin

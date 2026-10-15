@@ -1,20 +1,9 @@
 import { creerTouches, vientDAppuyer, unJoueurAppuie, oublierAppuis } from "./controles.js";
-import { jouerSon, jouerSaxo, lancerMusique, volumeMusique } from "./sons.js";
+import { jouerSon, jouerSaxo, arreterMusique } from "./sons.js";
 import { participants } from "./persos.js";
 import { infosJeu } from "./jeux.js";
-import {
-  style,
-  styleTexte,
-  panneauPresentation,
-  fermerPanneau,
-  creerMedaillon,
-  creerVies,
-  casserVie,
-  texteFlottant,
-  annonce,
-  partieTerminee,
-  OR
-} from "./interface.js";
+import {style,styleTexte,
+  panneauPresentation, fermerPanneau, creerMedaillon, creerVies, casserVie, texteFlottant, annonce, partieTerminee, compteRebours, OR } from "./interface.js";
 
 const BOUTONS = ["a", "b", "c", "d", "e", "f"];
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
@@ -63,10 +52,12 @@ export default class memoire extends Phaser.Scene {
   }
 
   create() {
+    arreterMusique(this);
     this.touches = creerTouches(this);
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
     this.manche = 0;
+    this.erreurManche = false;
     if (!this.sonsSaxo) this.sonsSaxo = {};
     this.arretsSaxo = {};
     NOTES.forEach((note) => {
@@ -87,7 +78,6 @@ export default class memoire extends Phaser.Scene {
     this.creerTextes();
     this.joueurs = participants(this.registry).map((perso, i) => this.creerJoueur(perso, i));
 
-    lancerMusique(this);
     this.panneau = panneauPresentation(this, JEU.titre, JEU.regles.split("\n"));
   }
 
@@ -223,14 +213,16 @@ export default class memoire extends Phaser.Scene {
   // DEROULEMENT D'UNE MANCHE
   // ---------------------------------------------------------------------------
   commencer() {
-    volumeMusique(this, 0); // on coupe la musique pour bien entendre le saxo
-    annonce(this, "Prêts ?", OR, 900, 330);
-    this.time.delayedCall(1300, () => this.nouvelleManche());
+    this.etat = "decompte";
+    compteRebours(this, () => this.nouvelleManche());
   }
 
   nouvelleManche() {
-    this.manche++;
-    this.sequence.push(this.noteAuHasard()); // 1 note de plus à chaque fois
+    if (!this.erreurManche) {
+     this.manche++;
+     this.sequence.push(this.noteAuHasard());
+   }
+   this.erreurManche = false;
     this.texteManche.setText("Mélodie n°" + this.manche + "  ·  " + this.sequence.length + " notes");
     this.joueurs.forEach((j) => {
       j.position = 0;
@@ -327,6 +319,7 @@ export default class memoire extends Phaser.Scene {
 
   erreur(j, texte) {
     if (j.fini) return;
+    this.erreurManche = true;
     j.fini = true;
     j.reussi = false;
     j.chances--;
@@ -361,10 +354,11 @@ export default class memoire extends Phaser.Scene {
   }
 
   fin() {
+    if (this.etat == "fin") return;
     this.etat = "fin";
     this.statut("");
     annonce(this, "FIN DU CONCERT !", OR, 1700, 330);
-    jouerSon(this, "bravo");
+    jouerSon(this, "final");
     this.time.delayedCall(2300, () => {
       this.scene.start("resultats", {
           scores: this.joueurs.map((j) => j.score),

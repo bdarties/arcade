@@ -12,9 +12,25 @@ export default class chargement extends Phaser.Scene {
     // les chemins sont relatifs à la page du jeu
     this.load.setBaseURL(this.sys.game.config.baseURL);
 
+    // texte et barre de progression pendant le chargement
+    this.add
+      .text(640, 330, "Chargement...", { fontFamily: "Jersey15", fontSize: "28px", color: "#ffffff" })
+      .setOrigin(0.5);
+    var barre = this.add.graphics();
+    this.load.on("progress", function (valeur) {
+      barre.clear();
+      barre.fillStyle(0xffc83d, 1);
+      barre.fillRect(440, 370, 400 * valeur, 16);
+    });
+
     // fonds
     this.load.image("img_fond_accueil", "./assets/images/fond_accueil.jpg");
     this.load.image("img_fond_scene", "./assets/images/fond_scene.jpg");
+
+    // images d'interface : feuille de règles, bandeau, billets SOLO / DUO, pastille de touche, cadre du mode
+    ["regles", "bandeau", "billet_solo", "billet_duo", "bouton", "cadre_mode"].forEach((nom) =>
+      this.load.image("ui_" + nom, "./assets/images/ui_" + nom + ".png")
+    );
 
     // écran de sélection des jeux : titre, cadre doré et vignettes
     this.load.image("img_choisis_jeu", "./assets/images/choisis_jeu.png");
@@ -47,26 +63,38 @@ export default class chargement extends Phaser.Scene {
     // petites images des jeux
     this.load.image("img_vie", "./assets/images/vie.png");
     this.load.image("img_etoile", "./assets/images/etoile.png");
-    this.load.image("img_note", "./assets/images/note.png");
+    this.load.image("img_note", "./assets/images/note.png?v=3");
     this.load.image("img_page", "./assets/images/page.png");
     this.load.image("img_rideau", "./assets/images/rideau.png");
 
     // Piano Time : la tuile qui descend dans chaque couloir
     this.load.image("img_touche_note", "./assets/images/touche_note.png");
+    // le clavier du piano et l'image qui éclaire une touche
+    this.load.image("img_piano", "./assets/images/piano.png");
+    this.load.image("img_touche_piano", "./assets/images/touche_piano.png");
 
     // Memory Song : le décor, le saxophone, ses six touches, le bandeau du titre et ses 6 notes
     this.load.image("img_fond_opera", "./assets/images/fond_opera.jpg");
     this.load.image("img_saxo", "./assets/images/saxo.png");
-    this.load.image("ui_bandeau", "./assets/images/ui_bandeau.png");
     for (var i = 1; i <= 6; i++) {
       this.load.image("img_touche" + i, "./assets/images/touche" + i + ".png");
     }
     [60, 62, 64, 67, 69, 72].forEach((note) => {
-      this.load.audio("saxo_" + note, "./assets/sons/saxo_" + note + ".wav");
+      this.load.audio("saxo_" + note, "./assets/sons/saxo_" + note + ".mp3");
     });
 
-    // musique de fond
-    this.load.audio("musique", "./assets/sons/musique.ogg");
+    // Musique, menus, décompte, fin de partie et bruitages : uniquement des MP3.
+    ["musique", "selection", "timer", "final", "tic", "top", "compteur", "couac", "trop_tot", "combo", "elimine", "bravo", "sifflet"].forEach((nom) => {
+      this.load.audio(nom, "./assets/sons/" + nom + ".mp3");
+    });
+    PERSOS.forEach((perso) => this.load.audio("motif_" + perso.cle, "./assets/sons/motif_" + perso.cle + ".mp3"));
+    for (var note = 60; note <= 89; note++) {
+      this.load.audio("piano_" + note, "./assets/sons/piano_" + note + ".mp3");
+    }
+    for (var hauteur = 60; hauteur <= 80; hauteur++) {
+      this.load.audio("tampon_" + hauteur, "./assets/sons/tampon_" + hauteur + ".mp3");
+    }
+    this.load.audio("tampon_84", "./assets/sons/tampon_84.mp3");
   }
 
   create() {
@@ -88,7 +116,8 @@ export default class chargement extends Phaser.Scene {
     this.registry.set("jeu", "music_fall");
     this.registry.set("mode", "solo");
     this.registry.set("perso1", "carmen");
-    this.registry.set("perso2", "figaro");
-    this.scene.start("accueil");
+    this.registry.set("perso2", "diva");
+    // on attend que la police soit chargée avant d'afficher le premier écran
+    document.fonts.load('24px "Jersey15"').then(() => this.scene.start("accueil"));
   }
 }
