@@ -35,7 +35,7 @@ const ECHELLE_PERSO = 2;             // taille des persos : x2 (pixel art de ~65
 const BOUTONS = ["a", "b", "c"];
 const LETTRES_SOLO = [["A", "B", "C"], ["A", "B", "C"]];
 const COULEURS_SOLO = ["#000000", "#e02020"];
-const LETTRES_DUO = [["I", "O", "P"], ["R", "T", "Y"]]; // [J1, J2]
+const LETTRES_DUO = [["A", "B", "C"], ["A", "B", "C"]]; // [J1, J2]
 
 const IMAGE_TUILE = "img_touche_note";
 const ERREURS_MAX = 5;               // 5 erreurs D'AFFILÉE : le joueur est éliminé
