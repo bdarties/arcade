@@ -67,6 +67,7 @@ export default class memoire extends Phaser.Scene {
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
     this.manche = 0;
+    this.erreurManche = false;
     if (!this.sonsSaxo) this.sonsSaxo = {};
     this.arretsSaxo = {};
     NOTES.forEach((note) => {
@@ -229,8 +230,11 @@ export default class memoire extends Phaser.Scene {
   }
 
   nouvelleManche() {
-    this.manche++;
-    this.sequence.push(this.noteAuHasard()); // 1 note de plus à chaque fois
+    if (!this.erreurManche) {
+     this.manche++;
+     this.sequence.push(this.noteAuHasard());
+   }
+   this.erreurManche = false;
     this.texteManche.setText("Mélodie n°" + this.manche + "  ·  " + this.sequence.length + " notes");
     this.joueurs.forEach((j) => {
       j.position = 0;
@@ -327,6 +331,7 @@ export default class memoire extends Phaser.Scene {
 
   erreur(j, texte) {
     if (j.fini) return;
+    this.erreurManche = true;
     j.fini = true;
     j.reussi = false;
     j.chances--;
