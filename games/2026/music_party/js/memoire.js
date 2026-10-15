@@ -2,19 +2,8 @@ import { creerTouches, vientDAppuyer, unJoueurAppuie, oublierAppuis } from "./co
 import { jouerSon, jouerSaxo, lancerMusique, volumeMusique } from "./sons.js";
 import { participants } from "./persos.js";
 import { infosJeu } from "./jeux.js";
-import {
-  style,
-  styleTexte,
-  panneauPresentation,
-  fermerPanneau,
-  creerMedaillon,
-  creerVies,
-  casserVie,
-  texteFlottant,
-  annonce,
-  partieTerminee,
-  OR
-} from "./interface.js";
+import {style,styleTexte,
+  panneauPresentation, fermerPanneau, creerMedaillon, creerVies, casserVie, texteFlottant, annonce, partieTerminee, OR } from "./interface.js";
 
 const BOUTONS = ["a", "b", "c", "d", "e", "f"];
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
@@ -67,6 +56,7 @@ export default class memoire extends Phaser.Scene {
     this.etat = "presentation";
     this.solo = this.registry.get("mode") == "solo";
     this.manche = 0;
+    this.erreurManche = false;
     if (!this.sonsSaxo) this.sonsSaxo = {};
     this.arretsSaxo = {};
     NOTES.forEach((note) => {

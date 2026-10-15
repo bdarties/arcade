@@ -1,22 +1,26 @@
 // Les personnages.
 //   texture : l'image du perso        tete : sa tete, affichée à coté du score
+//   echelle : taille quand on l'affiche en grand (écran des résultats)
 //   couleur : couleur de son texte     teinte : couleur de ses effets
 //   marche : sa spritesheet de marche (Piano Time, quand il change de touche)
 
-// Les 4 persos du document "Idées" (des archétypes d'opéra), pour Music Fall, Piano Time
-// et Memory Song. "motif" = son petit air quand on le choisit.
+// Les 4 persos du document "Idées" (des archétypes d'opéra), pour piano_time_time Time,
+// Memory Song et Note Catcher. "motif" = son petit air quand on le choisit.
 export const PERSOS = [
   {
     cle: "diva",
     nom: "La Reine de la Nuit",
+    titre: "La Diva dramatique",
     description: "Reine de la Nuit. \nSa voix brise les verres...",
     texture: "img_diva",
     tete: "img_tete_reine",
     marche: "img_marche_diva",           // spritesheet quand il marche (6 images)
     tailleMarche: [58, 83],              // largeur et hauteur d'une image
     animMarche: "anim_marche_diva",
+    echelle: 1.1,
     // planche d'animation affichée sur l'écran de fin (à la place de diva.png)
     fin: {
+      texture: "img_fin_diva",
       fichier: "reine.png",
       taille: [172, 252],    // largeur et hauteur d'une image (6 images)
       images: 6,
@@ -31,13 +35,16 @@ export const PERSOS = [
   {
     cle: "figaro",
     nom: "Figaro",
+    titre: "Le Barbier hyperactif",
     description: "Figaro ci, Figaro là...\ntoujours pressé,\njamais fatigué !",
     texture: "img_figaro",
     tete: "img_tete_figaro",
     marche: "img_marche_figaro",           // spritesheet quand il marche (6 images)
     tailleMarche: [47, 74],              // largeur et hauteur d'une image
     animMarche: "anim_marche_figaro",
+    echelle: 1.1,
     fin: {
+      texture: "img_fin_figaro",
       fichier: "figaro.png",
       taille: [176, 252],
       images: 6,
@@ -52,13 +59,16 @@ export const PERSOS = [
   {
     cle: "carmen",
     nom: "Carmen",
+    titre: "La Rebelle",
     description: "Libre comme l'oiseau...\net très mauvaise\nperdante !",
     texture: "img_carmen",
     tete: "img_tete_carmen",
     marche: "img_marche_carmen",           // spritesheet quand il marche (6 images)
     tailleMarche: [48, 64],              // largeur et hauteur d'une image
     animMarche: "anim_marche_carmen",
+    echelle: 1.1,
     fin: {
+      texture: "img_fin_carmen",
       fichier: "carmen.png",
       taille: [184, 252],
       images: 6,
@@ -73,13 +83,16 @@ export const PERSOS = [
   {
     cle: "maestro",
     nom: "Le Maestro",
+    titre: "Le Maestro mystérieux",
     description: "Il dirige l'orchestre\ndepuis les coulisses...\nsans jamais se montrer.",
     texture: "img_maestro",
     tete: "img_tete_maestro",
     marche: "img_marche_maestro",           // spritesheet quand il marche (6 images)
     tailleMarche: [45, 66],              // largeur et hauteur d'une image
     animMarche: "anim_marche_maestro",
+    echelle: 1.1,
     fin: {
+      texture: "img_fin_maestro",
       fichier: "don_giovanni.png",
       taille: [167, 252],
       images: 6,
@@ -103,8 +116,7 @@ function trouverPerso(cle) {
 export function participants(registry) {
   var duo = registry.get("mode") == "duo";
   // les persos choisis sur l'écran de choix (pour les 2 mini-jeux)
-  var persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];  
-  var joueurs = [{ ...persos[0], etiquette: "J1" }];
+  var persos = [trouverPerso(registry.get("perso1")), trouverPerso(registry.get("perso2"))];  var joueurs = [{ ...persos[0], etiquette: "J1" }];
   if (duo) joueurs.push({ ...persos[1], etiquette: "J2" });
   return joueurs;
 }

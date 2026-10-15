@@ -2,14 +2,7 @@ import { creerTouches, unJoueurAppuie } from "./controles.js";
 import { jouerSon, lancerMusique } from "./sons.js";
 import { participants } from "./persos.js";
 import { infosJeu } from "./jeux.js";
-import {
-  style,
-  styleTexte,
-  fondAssombri,
-  aideBas,
-  creerMedaillon,
-  OR
-} from "./interface.js";
+import { style, styleTexte, fondAssombri, aideBas, creerMedaillon, OR } from "./interface.js";
 
 // Écran des résultats, commun aux 4 mini-jeux.
 // On reçoit { scores: [score J1, score J2], stats: [{ titre, valeurs }] }
@@ -44,9 +37,12 @@ export default class resultats extends Phaser.Scene {
 
   // le perso en grand, animé
   afficherPerso(j, x) {
-    // la planche de fin du perso (chargée sous la clé j.texture) et son animation
-    var sprite = this.add.sprite(x, 650, j.texture).setOrigin(0.5, 1).setScale(j.fin.echelle).setFlipX(x > 640);
-    sprite.play(j.fin.anim);
+    // si le perso a une planche pour l'écran de fin (j.fin), on l'utilise à la place de son image
+    var texture = j.fin ? j.fin.texture : j.texture;
+    var echelle = j.fin ? j.fin.echelle : j.echelle;
+    var sprite = this.add.sprite(x, 650, texture).setOrigin(0.5, 1).setScale(echelle).setFlipX(x > 640);
+    if (j.fin) sprite.play(j.fin.anim);
+    else if (j.anim) sprite.play(j.anim);
     return sprite;
   }
 

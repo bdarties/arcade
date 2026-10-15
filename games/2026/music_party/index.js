@@ -12,6 +12,8 @@ import music_fall from "./js/music_fall.js"; // mini-jeu Music Fall
 import piano_time from "./js/piano_time.js"; // mini-jeu Piano Time
 import memoire from "./js/memoire.js"; // mini-jeu Memory Song
 import resultats from "./js/resultats.js"; // scores et gagnant 
+import credits from "./js/credits.js"; // page des crédits (depuis l'écran titre)
+
 
 // configuration générale du jeu
 var config = {
@@ -25,8 +27,8 @@ var config = {
   },
   // pas de moteur physique : les chutes et les rebonds des notes sont
   // calculés à la main (voir music_fall.js)
-  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats],
-  baseURL: window.location.pathname.replace(/\/[^/]*$/, "")
+  scene: [chargement, accueil, selection, menu, choix, music_fall, piano_time, memoire, resultats, credits],
+  baseURL: window.location.pathname.replace(/\/[^/]*$/, "") // dossier du jeu (ex : "/games/2026/music_party"), base des chemins d'assets
 };
 
 await document.fonts.load('20px "Jersey15"');

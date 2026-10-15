@@ -14,10 +14,11 @@ export default class menu extends Phaser.Scene {
     this.touches = creerTouches(this);
     this.jeu = infosJeu(this.registry.get("jeu"));
     this.choix = this.registry.get("mode") == "duo" ? 1 : 0;
+    this.niveau = this.registry.get("niveau") || 1; // niveau de Piano Time (1 à 3)
     this.lancement = false;
 
     fondAssombri(this, this.jeu.fond, 0.55);
-    this.add.text(640, 105, this.jeu.titre, style(80, OR, 12)).setOrigin(0.5);
+    var titre = this.add.text(640, 105, this.jeu.titre, style(80, OR, 12)).setOrigin(0.5);
     this.add
       .text(640, 178, this.jeu.slogan, { fontFamily: "Georgia, serif", fontSize: "28px", fontStyle: "italic", color: "#ffffff" })
       .setOrigin(0.5);
@@ -33,7 +34,7 @@ export default class menu extends Phaser.Scene {
 
     // ----- règles -----
     this.add.text(640, 562, this.jeu.regles, { ...styleTexte(20), lineSpacing: 8 }).setOrigin(0.5);
-    aideBas(this, "Joystick : choisir     A : valider     B : autres jeux");
+    aideBas(this, this.jeu.niveaux ? "Joystick : choisir   ◄ ► : niveau   A : valider   B : autres jeux" : "Joystick : choisir     A : valider     B : autres jeux");
 
 
 
@@ -50,10 +51,21 @@ export default class menu extends Phaser.Scene {
       jouerSon(this, "menu");
       this.majMenu();
     }
+    // gauche / droite : le niveau (seulement pour les jeux qui en ont)
+    if (this.jeu.niveaux) {
+      var niveauAvant = this.niveau;
+      if (unJoueurAppuie(this.touches, "gauche")) this.niveau = Math.max(1, this.niveau - 1);
+      if (unJoueurAppuie(this.touches, "droite")) this.niveau = Math.min(3, this.niveau + 1);
+      if (this.niveau != niveauAvant) {
+        this.registry.set("niveau", this.niveau);
+        jouerSon(this, "menu");
+        this.majMenu();
+      }
+    }
     if (unJoueurAppuie(this.touches, "a")) {
       this.registry.set("mode", this.choix == 0 ? "solo" : "duo");
-      // écran de choix des persos (ou directement le jeu si choixPersos n'est pas à true)
-      this.partir(this.jeu.choixPersos ? "choix" : this.jeu.scene, "valider");
+      // tous les jeux passent par le choix des persos (choix.js), puis lancent le jeu
+      this.partir("choix", "valider");
     } else if (unJoueurAppuie(this.touches, "b")) {
       this.partir("selection", "retour");
     }
@@ -63,15 +75,14 @@ export default class menu extends Phaser.Scene {
     this.lancement = true;
     jouerSon(this, son);
     this.cameras.main.fadeOut(300);
-    // {} = on repart de zéro (sinon Phaser redonne au jeu les données de la partie d'avant)
-    this.time.delayedCall(300, () => this.scene.start(scene, {}));
+    this.time.delayedCall(300, () => this.scene.start(scene));
   }
 
   majMenu() {
     this.surligne.y = this.textesChoix[this.choix].y;
     this.textesChoix.forEach((t, i) => t.setScale(i == this.choix ? 1.08 : 1));
-    // en solo : le meilleur score à battre
-    if (this.choix == 1) this.texteInfo.setText("À deux sur la borne : le meilleur score gagne !");
-    else this.texteInfo.setText("");
+    var duo = this.choix == 1 ? "À deux sur la borne : le meilleur score gagne !" : "";
+    if (this.jeu.niveaux) this.texteInfo.setText("◄  Niveau " + this.niveau + "  ►" + (duo ? "      " + duo : ""));
+    else this.texteInfo.setText(duo);
   }
 }

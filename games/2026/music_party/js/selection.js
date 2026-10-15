@@ -44,6 +44,7 @@ export default class selection extends Phaser.Scene {
   creerVignette(jeu, i) {
     var x = POSITIONS[i].x;
     var y = POSITIONS[i].y;
+    var gauche = x - LARGEUR / 2;
     var haut = y - HAUTEUR / 2;
     var bas = haut + HAUTEUR;
 
