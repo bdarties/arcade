@@ -1,42 +1,38 @@
 import * as fct from "./fonctions.js";
 
-/***********************************************************************/
-/** RÉGLAGES (à adapter si besoin)
-/***********************************************************************/
-
 const FICHIER_TUILES = "./assets/tileset_opera.png";
 const NOM_TUILESET = "tileset_opera";
 const FICHIER_FOND = "./assets/fondopera.png";
 
-// corde / échelle (même principe que dans exterieur.js)
-const CORDE_VITESSE = 120; // vitesse de montée / descente (px/s)
+// Réglages de déplacement des cordes et de patrouille du boss.
+const CORDE_VITESSE = 120;
 
-// Constantes du Boss
 const BOSS_PV_MAX = 15;
 const BOSS_SPAWN_X = 961.0;
 const BOSS_SPAWN_Y = 632.0;
 const BOSS_VITESSE_PATROUILLE = 70;
-const BOSS_LIMITE_GAUCHE = 780;  // Bord gauche de la plateforme centrale
-const BOSS_LIMITE_DROITE = 1140; // Bord droit de la plateforme centrale
-const BOSS_PORTEE_ATTAQUE = 220; // Distance à laquelle le boss déclenche un coup de poing
-const BOSS_DELAI_ATTAQUE = 2500; // Temps minimum (ms) entre deux attaques
+const BOSS_LIMITE_GAUCHE = 780;
+const BOSS_LIMITE_DROITE = 1140;
+const BOSS_PORTEE_ATTAQUE = 220;
+const BOSS_DELAI_ATTAQUE = 2500;
 
-// Constantes calquées sur fonctions.js pour les coups de poing d'Aria
+// Frame d'impact du joueur et dégâts appliqués au boss.
 const FRAME_IMPACT_JOUEUR = { aria_punch_right: 2, aria_punch_left: 6 };
 const COUP_PORTEE_JOUEUR = 70;
 const COUP_DEGATS_JOUEUR = 1;
 
+// Scène du boss à l'Opéra, avec cordes, plateformes et accès aux niveaux voisins.
 export default class opera extends Phaser.Scene {
   constructor() {
     super({ key: "opera" });
   }
 
-  // reçoit { depuis: "precedent" } quand on arrive du grenier,
-  //        { depuis: "suivant" } quand on revient des égouts
+  // Choisit le point d'arrivée en fonction du niveau précédent.
   init(data) {
     this.depuis = data.depuis;
   }
 
+  // Charge la carte, les décors, la foule et les animations du boss.
   preload() {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
@@ -47,17 +43,14 @@ export default class opera extends Phaser.Scene {
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
-    this.load.image("img_lustre", "./assets/lustre.png")
+    this.load.image("img_lustre", "./assets/lustre.png");
     this.load.audio("musique_opera", "./assets/musique/music_opera.mp3");
-    this.load.spritesheet('foule', 'assets/spritesheet/foule.png', {
-            frameWidth: 612,
-            frameHeight: 126
-        });
+    this.load.spritesheet("foule", "./assets/spritesheet/foule.png", {
+      frameWidth: 612,
+      frameHeight: 126
+    });
     fct.chargerPerso(this);
 
-    /*************************************
-     * 1. CHARGEMENT DES ASSETS DU BOSS  *
-     *************************************/
     this.load.spritesheet("gros_mechant_attack", "./assets/spritesheet/gros_mechant_attack.png", {
       frameWidth: 236,
       frameHeight: 252
@@ -72,11 +65,9 @@ export default class opera extends Phaser.Scene {
     });
   }
 
+  // Construit la salle, configure ses portes et initialise Aria et le boss.
   create() {
-    /*************************************
-     *  MAP TILED                        *
-     *************************************/
-    // Phaser ne sait pas lire les tilesets externes (.tsx) : on les remplace par une définition intégrée
+    // Les tilesets externes Tiled (.tsx) sont remplacés par une définition intégrée pour Phaser.
     const donnees = this.cache.tilemap.get("map_opera").data;
     donnees.tilesets = donnees.tilesets.map((ts) =>
       ts.source
@@ -100,23 +91,23 @@ export default class opera extends Phaser.Scene {
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("musique_opera")) {
-      const musique = this.sound.add("musique_opera", { loop: true, volume: 0.5, });
+      const musique = this.sound.add("musique_opera", { loop: true, volume: 0.5 });
       musique.play();
       this.events.once("shutdown", () => musique.stop());
     } else {
-      console.warn("Musique introuvable : vérifie le chemin ./assets/music_opera.mp3");
+      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_opera.mp3");
     }
 
     this.anims.create({
-            key: 'anim_foule',
-            frames: this.anims.generateFrameNumbers('foule', { start: 0, end: 5 }),
-            frameRate: 6, // Vitesse de l'animation (images par seconde)
-            repeat: -1     // -1 pour une boucle infinie
-        });
+      key: "anim_foule",
+      frames: this.anims.generateFrameNumbers("foule", { start: 0, end: 5 }),
+      frameRate: 6,
+      repeat: -1
+    });
 
-    const fouleSprite = this.add.sprite(640, 720, 'foule');
+    const fouleSprite = this.add.sprite(640, 720, "foule");
     fouleSprite.setOrigin(0.5, 0.5);
-    fouleSprite.play('anim_foule');
+    fouleSprite.play("anim_foule");
     fouleSprite.setScrollFactor(0);
     fouleSprite.setDepth(9999);
     fouleSprite.setScale(2.4);
@@ -134,7 +125,7 @@ export default class opera extends Phaser.Scene {
     this.calque_sol = map.createLayer("Calque de Tuiles 1", tileset, 0, 0);
     this.calque_sol.setCollisionByExclusion([-1, 0]);
 
-    // Rend TOUTES les tuiles solides du calque traversables par le dessous (one-way platforms)
+    // Seule la face supérieure des plateformes bloque les joueurs.
     this.calque_sol.forEachTile((t) => {
       if (t.index !== -1 && t.index !== 0) {
         t.setCollision(false, false, true, false);
@@ -145,15 +136,11 @@ export default class opera extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.hauteurMap = map.heightInPixels;
 
-    /*************************************
-     *  PORTES (zones + sprites)         *
-     *************************************/
     const prop = (o, nom, defaut) => {
       const p = o.properties && o.properties.find((p) => p.name === nom);
       return p ? p.value : defaut;
     };
 
-    // Crée une zone d'interaction et stocke la référence du sprite dans `zone.sprite`
     const creerPorte = (o) => {
       const zone = this.add.zone(o.x, o.y - 48, 48, 96);
       this.physics.add.existing(zone, true);
@@ -168,7 +155,6 @@ export default class opera extends Phaser.Scene {
       return zone;
     };
 
-    // porte d'arrivée (retour vers le grenier) : objet "entree" du calque "spawn"
     const entree = map.findObject("spawn", (o) => o.name === "entree");
     if (entree) {
       this.porte_precedent = creerPorte(entree);
@@ -177,7 +163,6 @@ export default class opera extends Phaser.Scene {
       this.porte_precedent = creerPorte({ x: 1800, y: 352 });
     }
 
-    // porte de sortie (vers les égouts) : objet "sortie" du calque "portes"
     const sortie = map.findObject("portes", (o) => o.name === "sortie");
     if (sortie) {
       this.porte_suivant = creerPorte(sortie);
@@ -186,17 +171,11 @@ export default class opera extends Phaser.Scene {
       this.porte_suivant = creerPorte({ x: 170, y: 832, properties: [{ name: "sprite", value: "img_porte1" }] });
     }
 
-    /*************************************
-     * 6. VERROUILLAGE INITIAL PORTE     *
-     *************************************/
     this.porteVerrouillee = true;
     if (this.porte_suivant.sprite) {
-      this.porte_suivant.sprite.setTint(0x555555); // Grise la porte tant que le boss est en vie
+      this.porte_suivant.sprite.setTint(0x555555);
     }
 
-    /*************************************
-     *  JOUEUR                           *
-     *************************************/
     const porteDepart = this.depuis === "suivant" ? this.porte_suivant : this.porte_precedent;
     const departX = porteDepart.x;
     const departY = porteDepart.y - 40;
@@ -206,14 +185,12 @@ export default class opera extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.clavier = fct.creerClavier(this);
 
-    // pendant qu'on est sur la corde, le sol ne bloque plus (la corde traverse les plateformes)
     this.enCorde = false;
     this.physics.add.collider(this.player, this.calque_sol, null, () => !this.enCorde, this);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-    fct.initVies(this, false); // on garde les vies du niveau précédent
+    fct.initVies(this, false);
 
-    // Active l'effet visuel de l'arc blanc lors des coups de poing d'Aria (via fonctions.js)
     fct.activerCoups(this.player, []);
 
     this.texte_info = this.add
@@ -223,17 +200,11 @@ export default class opera extends Phaser.Scene {
       .setDepth(20)
       .setVisible(false);
 
-    /*************************************
-     *  INITIALISATION DU BOSS           *
-     *************************************/
     this.creerAnimationsBoss();
     this.creerBoss();
   }
 
-  /***********************************************************************/
-  /** LOGIQUE DU BOSS (Création, Attaque, Dégâts, Mort, Update)
-  /***********************************************************************/
-
+  // Prépare les animations de patrouille, d'attente et d'attaque du boss.
   creerAnimationsBoss() {
     if (!this.anims.exists("gros_mechant_stand_right")) {
       this.anims.create({
@@ -263,48 +234,41 @@ export default class opera extends Phaser.Scene {
     }
   }
 
+  // Crée le boss, ses hitboxes et le déclencheur périodique de ses attaques.
   creerBoss() {
-    // 2. Positionnement et Physique du Boss sur la plateforme (961.0 / 632.0)
     this.boss = this.physics.add.sprite(BOSS_SPAWN_X, BOSS_SPAWN_Y, "gros_mechant_stand_right");
     this.boss.setOrigin(0.5, 1);
     this.boss.setCollideWorldBounds(true);
 
-    // Corps physique principal du boss pour reposer sur la plateforme
     this.boss.body.setSize(120, 230);
     this.boss.body.setOffset(58, 22);
 
-    // Statistiques et états du boss
-    this.boss.pv = BOSS_PV_MAX; // 15 PV
+    this.boss.pv = BOSS_PV_MAX;
     this.boss.estMort = false;
     this.boss.enAttaque = false;
     this.boss.invincible = false;
-    this.boss.direction = 1; // 1 = droite, -1 = gauche
+    this.boss.direction = 1;
 
-    // Collision entre le boss et le calque de plateforme
     this.physics.add.collider(this.boss, this.calque_sol);
 
-    // Animation et déplacement de patrouille par défaut
     this.boss.play("gros_mechant_walk");
     this.boss.setVelocityX(BOSS_VITESSE_PATROUILLE * this.boss.direction);
 
-    // 3. Hitbox du Visage (Point faible) : Zone physique attachée sur la tête du boss
+    // Seule cette hitbox mobile permet de blesser le boss.
     this.hitboxVisage = this.add.zone(this.boss.x, this.boss.y - 165, 80, 95);
     this.physics.add.existing(this.hitboxVisage);
     this.hitboxVisage.body.setAllowGravity(false);
     this.hitboxVisage.body.moves = false;
 
-    // Zone physique représentant le coup de poing d'Aria (portée de 70px comme dans fonctions.js)
     this.zoneAttaqueJoueur = this.add.zone(0, 0, COUP_PORTEE_JOUEUR, 64);
     this.physics.add.existing(this.zoneAttaqueJoueur);
     this.zoneAttaqueJoueur.body.setAllowGravity(false);
     this.zoneAttaqueJoueur.body.moves = false;
 
-    // Écoute les frames d'impact d'Aria (aria_punch_right: 2, aria_punch_left: 6) définies dans fonctions.js
     this.player.on("animationupdate", (anim, frame) => {
       if (FRAME_IMPACT_JOUEUR[anim.key] !== frame.textureFrame) return;
       if (!this.boss || this.boss.estMort || !this.hitboxVisage) return;
 
-      // Positionne la zone de coup devant Aria selon son orientation (flipX)
       const b = this.player.body;
       const centreX = this.player.flipX
         ? b.left - COUP_PORTEE_JOUEUR / 2
@@ -314,7 +278,6 @@ export default class opera extends Phaser.Scene {
       this.zoneAttaqueJoueur.setPosition(centreX, centreY);
       this.zoneAttaqueJoueur.body.updateFromGameObject();
 
-      // Vérifie uniquement la collision entre le coup d'Aria et le visage du boss
       this.physics.overlap(
         this.hitboxVisage,
         this.zoneAttaqueJoueur,
@@ -324,7 +287,6 @@ export default class opera extends Phaser.Scene {
       );
     });
 
-    // 4. Timer d'attaque périodique du Boss
     this.timerAttaqueBoss = this.time.addEvent({
       delay: BOSS_DELAI_ATTAQUE,
       callback: () => {
@@ -335,13 +297,13 @@ export default class opera extends Phaser.Scene {
     });
   }
 
+  // Oriente le boss vers Aria et active temporairement sa zone de dégâts.
   declencherAttaqueBoss() {
     if (this.boss.estMort || this.boss.enAttaque) return;
 
     this.boss.enAttaque = true;
     this.boss.setVelocityX(0);
 
-    // S'oriente vers Aria avant de frapper
     if (this.player.x < this.boss.x) {
       this.boss.direction = -1;
       this.boss.setFlipX(true);
@@ -352,7 +314,6 @@ export default class opera extends Phaser.Scene {
 
     this.boss.play("gros_mechant_attack");
 
-    // 4. Génère une large hitbox devant le boss qui s'éclaire en rouge (alpha 0.5)
     const decalageX = this.boss.direction * 130;
     const zoneX = this.boss.x + decalageX;
     const zoneY = this.boss.y - 125;
@@ -374,7 +335,6 @@ export default class opera extends Phaser.Scene {
       this
     );
 
-    // La zone rouge disparaît à la fin de l'animation `gros_mechant_attack`
     this.boss.once("animationcomplete-gros_mechant_attack", () => {
       this.nettoyerHitboxAttaqueBoss();
 
@@ -386,6 +346,7 @@ export default class opera extends Phaser.Scene {
     });
   }
 
+  // Retire la zone d'attaque et son collider après la fin du coup.
   nettoyerHitboxAttaqueBoss() {
     if (this.overlapAttaqueJoueur) {
       this.physics.world.removeCollider(this.overlapAttaqueJoueur);
@@ -397,26 +358,25 @@ export default class opera extends Phaser.Scene {
     }
   }
 
+  // Applique les dégâts du boss avec la gestion de vie commune aux niveaux.
   infligerDegatsAuJoueur() {
-    // Utilise `perdreVieJoueur` de fonctions.js (gère l'invincibilité, la barre de vie et le recul)
     const plusDeVie = fct.perdreVieJoueur(this, this.player, 1, this.boss);
     if (plusDeVie) {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
   }
 
+  // Compte un impact sur le point faible et lance la défaite du boss si nécessaire.
   toucherVisageBoss() {
     if (this.boss.estMort || this.boss.invincible) return;
 
     this.boss.pv -= COUP_DEGATS_JOUEUR;
 
-    // 5. Si les PV tombent à 0, lance la séquence de mort
     if (this.boss.pv <= 0) {
       this.mourirBoss();
       return;
     }
 
-    // Clignotement rouge et courte invincibilité (250ms) quand le visage est touché
     this.boss.invincible = true;
     this.boss.setTint(0xff0000);
     this.time.delayedCall(250, () => {
@@ -427,11 +387,11 @@ export default class opera extends Phaser.Scene {
     });
   }
 
+  // Désactive les attaques, fait tomber le boss et déverrouille la sortie.
   mourirBoss() {
     this.boss.estMort = true;
     this.boss.enAttaque = false;
 
-    // 5. Désactive ses attaques et ses collisions avec le joueur
     if (this.timerAttaqueBoss) {
       this.timerAttaqueBoss.remove();
     }
@@ -442,26 +402,23 @@ export default class opera extends Phaser.Scene {
       this.hitboxVisage = null;
     }
 
-    // Joue l'animation `gros_mechant_stand_right` et applique un filtre rouge
     this.boss.setVelocityX(0);
     this.boss.play("gros_mechant_stand_right");
     this.boss.setTint(0xff0000);
 
-    // Désactive sa collision avec le sol pour qu'il tombe sous la map avec la gravité
     this.boss.setCollideWorldBounds(false);
     this.boss.body.checkCollision.none = true;
 
-    // 6. Retire le tint et déverrouille la porte
     this.porteVerrouillee = false;
     if (this.porte_suivant && this.porte_suivant.sprite) {
       this.porte_suivant.sprite.clearTint();
     }
   }
 
+  // Suit la hitbox faciale, gère la patrouille et déclenche les attaques à portée.
   updateBoss() {
     if (!this.boss || !this.boss.active) return;
 
-    // 5. Détruit l'objet boss quand il sort de l'écran par le bas
     if (this.boss.estMort) {
       if (this.boss.y - this.boss.height > this.hauteurMap) {
         this.boss.destroy();
@@ -469,14 +426,12 @@ export default class opera extends Phaser.Scene {
       return;
     }
 
-    // Maintient la hitbox du visage positionnée sur la tête du boss
     if (this.hitboxVisage) {
       const decalageVisageX = this.boss.direction * 15;
       this.hitboxVisage.setPosition(this.boss.x + decalageVisageX, this.boss.y - 165);
       this.hitboxVisage.body.updateFromGameObject();
     }
 
-    // Patrouille sur la plateforme (961, 632) et attaque si Aria est à portée
     if (!this.boss.enAttaque) {
       if (this.boss.x <= BOSS_LIMITE_GAUCHE) {
         this.boss.direction = 1;
@@ -491,7 +446,6 @@ export default class opera extends Phaser.Scene {
         this.boss.play("gros_mechant_walk", true);
       }
 
-      // Attaque si le joueur est à portée
       const distanceX = Math.abs(this.player.x - this.boss.x);
       const distanceY = Math.abs(this.player.y - (this.boss.y - 100));
       if (distanceX < BOSS_PORTEE_ATTAQUE && distanceY < 150) {
@@ -500,11 +454,7 @@ export default class opera extends Phaser.Scene {
     }
   }
 
-  /***********************************************************************/
-  /** CORDE
-  /***********************************************************************/
-
-  // renvoie le haut et le bas (en pixels) de la corde à laquelle appartient la tuile donnée
+  // Cherche toute la colonne de corde pour déterminer ses limites d'escalade.
   bornesCorde(tuile) {
     let haut = tuile.y;
     let bas = tuile.y;
@@ -513,12 +463,14 @@ export default class opera extends Phaser.Scene {
     return { haut: haut * 32, bas: (bas + 1) * 32 };
   }
 
+  // Rend sa gravité au joueur lorsqu'il se détache d'une corde.
   quitterCorde() {
     this.enCorde = false;
     this.player.body.setAllowGravity(true);
     this.player.anims.resume();
   }
 
+  // Gère l'accrochage, la montée et la sortie des cordes du décor.
   gererCorde() {
     const p = this.player;
     const b = p.body;
@@ -526,7 +478,6 @@ export default class opera extends Phaser.Scene {
     const tuileCentre = this.calque_corde.getTileAtWorldXY(b.center.x, b.center.y);
 
     if (!this.enCorde) {
-      // on s'accroche : Haut sur une corde, ou Bas quand on se tient sur le sommet d'une corde
       let tuile = null;
       if (c.up.isDown && tuileCentre) {
         tuile = tuileCentre;
@@ -542,7 +493,6 @@ export default class opera extends Phaser.Scene {
       p.x = tuile.pixelX + tuile.width / 2; // centré sur la corde
     }
 
-    // sur la corde
     const tuile = tuileCentre || this.calque_corde.getTileAtWorldXY(b.center.x, b.bottom + 4);
     if (!tuile) {
       this.quitterCorde();
@@ -550,21 +500,18 @@ export default class opera extends Phaser.Scene {
     }
     const { haut, bas } = this.bornesCorde(tuile);
 
-    // sommet atteint : on se pose sur la plateforme
     if (b.center.y < haut && c.up.isDown) {
       p.y += haut - b.bottom;
       p.setVelocity(0, 0);
       this.quitterCorde();
       return;
     }
-    // bas atteint : on se pose sur le sol
     if (b.bottom >= bas && c.down.isDown) {
       p.y += bas - b.bottom;
       p.setVelocity(0, 0);
       this.quitterCorde();
       return;
     }
-    // gauche / droite : on lâche la corde (sauf si on est encore dans une plateforme)
     if (c.left.isDown || c.right.isDown) {
       const dansSol =
         this.calque_sol.hasTileAtWorldXY(b.center.x, b.center.y) ||
@@ -590,10 +537,7 @@ export default class opera extends Phaser.Scene {
     else p.anims.pause();
   }
 
-  /***********************************************************************/
-  /** UPDATE
-  /***********************************************************************/
-
+  // Met à jour le boss, les déplacements, les chutes et les transitions.
   update() {
     this.gererCorde();
     this.updateBoss();
@@ -613,7 +557,6 @@ export default class opera extends Phaser.Scene {
       }
     }
 
-    // chute dans le vide (bas de la map) : mort
     if (this.player.body.bottom >= this.hauteurMap - 1) {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
@@ -622,7 +565,6 @@ export default class opera extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("toit", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        // 6. Empêche l'ouverture tant que la porte est verrouillée
         if (!this.porteVerrouillee) {
           this.scene.start("egouts", { depuis: "precedent" });
         } else {

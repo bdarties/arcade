@@ -1,23 +1,21 @@
 import * as fct from "./fonctions.js";
 
-/***********************************************************************/
-/** RÉGLAGES (à adapter si besoin)
-/***********************************************************************/
-
 const FICHIER_TUILES = "./assets/tileset_sewer.png";
 const NOM_TUILESET = "tileset_sewer";
-const COULEUR_FOND = "#383543"; // couleur du bandeau au-dessus de la map (la map fait 640px de haut pour un écran de 720)
+const COULEUR_FOND = "#383543";
 
+// Niveau des égouts : carte Tiled, portes de transition et déplacement du joueur.
 export default class egouts extends Phaser.Scene {
   constructor() {
     super({ key: "egouts" });
   }
 
-  // reçoit { depuis: "precedent" } quand on arrive de l'opéra
+  // Conserve l'origine de la transition pour choisir la porte de départ.
   init(data) {
     this.depuis = data.depuis;
   }
 
+  // Charge la carte, les tuiles, les portes et les sprites du joueur.
   preload() {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
@@ -30,11 +28,9 @@ export default class egouts extends Phaser.Scene {
     fct.chargerPerso(this);
   }
 
+  // Construit la carte et ses collisions, puis place le joueur et les portes.
   create() {
-    /*************************************
-     *  MAP TILED                        *
-     *************************************/
-    // Phaser ne sait pas lire les tilesets externes (.tsx) : on les remplace par une définition intégrée
+    // Les tilesets externes Tiled (.tsx) sont remplacés par une définition intégrée pour Phaser.
     const donnees = this.cache.tilemap.get("map_egouts").data;
     donnees.tilesets = donnees.tilesets.map((ts) =>
       ts.source
@@ -57,7 +53,6 @@ export default class egouts extends Phaser.Scene {
     const map = this.make.tilemap({ key: "map_egouts" });
     const tileset = map.addTilesetImage(NOM_TUILESET, "img_tuiles_egouts");
 
-    // la map est plus basse que l'écran : on la colle au bas de l'écran
     const hauteurEcran = this.cameras.main.height;
     const decalageY = hauteurEcran - map.heightInPixels;
     this.cameras.main.setBackgroundColor(COULEUR_FOND);
@@ -68,26 +63,19 @@ export default class egouts extends Phaser.Scene {
     const calque_sol = map.createLayer("calque_plateformes", tileset, 0, decalageY);
     calque_sol.setCollisionByExclusion([-1, 0]);
 
-    // le bas de la map est le fond du monde : y tomber = mort (voir update)
     this.physics.world.setBounds(0, decalageY, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, hauteurEcran);
 
-    /*************************************
-     *  PORTES (zones sur le décor)      *
-     *************************************/
-    // les portes sont déjà dessinées dans les tuiles : on pose seulement des zones d'interaction
     const creerZonePorte = (o) => {
       const zone = this.add.zone(o.x, o.y + decalageY - 48, 48, 96);
       this.physics.add.existing(zone, true);
       return zone;
     };
 
-    // porte d'arrivée (retour vers l'opéra) : objet "entree" du calque "spawn"
     const entree = map.findObject("spawn", (o) => o.name === "entree");
     this.porte_precedent = creerZonePorte(entree || { x: 112, y: 224 });
     if (!entree) console.warn('Point "entree" introuvable dans le calque "spawn" : position par défaut utilisée');
 
-    // porte de fin de niveau : objet "sortie" du calque "portes"
     const sortie = map.findObject("portes", (o) => o.name === "sortie");
     this.porte_suivant = creerZonePorte(sortie || { x: 3796, y: 576 });
     if (!sortie) console.warn('Point "sortie" introuvable dans le calque "portes" : position par défaut utilisée');
@@ -99,9 +87,6 @@ export default class egouts extends Phaser.Scene {
       .setDepth(20)
       .setVisible(false);
 
-    /*************************************
-     *  JOUEUR                           *
-     *************************************/
     const porteDepart = this.depuis === "suivant" ? this.porte_suivant : this.porte_precedent;
     const departX = porteDepart.x;
     const departY = porteDepart.y - 40;
@@ -114,11 +99,11 @@ export default class egouts extends Phaser.Scene {
     this.physics.add.collider(this.player, calque_sol);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-    fct.initVies(this, false); // on garde les vies du niveau précédent
+    fct.initVies(this, false);
   }
 
+  // Gère les chutes, le déplacement, les sauts et les interactions avec les portes.
   update() {
-    // chute dans l'eau / le vide (bas de la map) : mort
     if (this.player.body.bottom >= this.cameras.main.height - 1) {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
@@ -133,7 +118,6 @@ export default class egouts extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("opera", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        // dernier niveau pour l'instant
         this.texte_info.setText("Niveau suivant pas encore disponible").setVisible(true);
         if (this.timerInfo) this.timerInfo.remove();
         this.timerInfo = this.time.delayedCall(1500, () => this.texte_info.setVisible(false));

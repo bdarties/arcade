@@ -1,17 +1,11 @@
-// ============================================================================
-// VERSUS : scène du mode arcade 2 joueurs (1v1 local)
-//
-// Cette scène est AUTONOME : elle ne partage rien avec le mode narratif
-// (ni vies dans le registry, ni touche "F", ni musique), donc elle ne peut pas
-// l'impacter. On y entre depuis le menu (accueil.js) et on y retourne avec la touche F.
-// ============================================================================
-import * as fct from "../fonctions.js"; // on réutilise seulement le chargement et les animations d'Aria[cite: 14]
-import { CLE_SCENE, DEBUG, REGLES, ETATS, JOUEURS, POLICE, PHYSIQUE, ARENES_REGLES } from "./versusConfig.js";
+import * as fct from "../fonctions.js";
+import { CLE_SCENE, REGLES, ETATS, JOUEURS, POLICE, PHYSIQUE, ARENES_REGLES } from "./versusConfig.js";
 import Joueur from "./Joueur.js";
 import { ARENES, chargerAssetsArenes, construireArene, detruireArene, etendreOrdre } from "./arenes.js";
 import { ARMES, chargerAssetsArmes, jouerSon } from "./armes.js";
 import GestionnaireArmes from "./GestionnaireArmes.js";
 
+// Pilote l'ensemble du match local : scènes, manches, arènes et interface.
 export default class VersusScene extends Phaser.Scene {
   constructor() {
     super({ key: CLE_SCENE,
@@ -24,42 +18,33 @@ export default class VersusScene extends Phaser.Scene {
      });
   }
 
-  // --------------------------------------------------------------------------
-  // init : appelée à CHAQUE entrée dans la scène (même après un restart).
-  // On y remet tout l'état du match à zéro : c'est ce qui garantit qu'un nouveau
-  // match ne garde rien du précédent.
-  // --------------------------------------------------------------------------
+  // Réinitialise les données du match, y compris lors d'un redémarrage.
   init() {
     this.etat = null;
-    this.scores = [0, 0]; // manches gagnées par joueur[cite: 14]
-    this.manche = 1; // numéro de la manche en cours[cite: 14]
-    this.indexArene = 0; // arène en cours (position dans la liste ARENES)[cite: 14]
-    this.ordreArenes = []; // arène de chaque manche (index dans ARENES), allongée au besoin[cite: 14]
-    this.compteur = 0; // valeur affichée pendant le décompte[cite: 14]
+    this.scores = [0, 0];
+    this.manche = 1;
+    this.ordreArenes = [];
+    this.compteur = 0;
     this.evenementDecompte = null;
-    this.peutRelancer = false; // devient true 1 s après la fin du match (évite de relancer en martelant ses touches)[cite: 14]
+    this.peutRelancer = false;
 
-    this.joueurs = []; // les deux instances de Joueur[cite: 14]
-    this.collisions = []; // colliders Phaser (retirés / recréés à chaque changement d'arène)[cite: 14]
-    this.arene = null; // arène chargée : { def, solides, spawns, limiteBas, objets } (voir arenes.js)[cite: 14]
-    this.coeurs = []; // images des cœurs du HUD : coeurs[joueur][numéro][cite: 14]
-    this.iconesArmes = []; // HUD de l'arme tenue : { icone, texte } par joueur[cite: 14]
-    this.armes = null; // GestionnaireArmes (apparition des armes et cœurs, tirs)[cite: 14]
+    this.joueurs = [];
+    this.collisions = [];
+    this.arene = null;
+    this.coeurs = [];
+    this.iconesArmes = [];
+    this.armes = null;
   }
 
-  // --------------------------------------------------------------------------
-  // preload : le chargement des assets du versus se fera ici.
-  // --------------------------------------------------------------------------
+  // Charge les ressources partagées par les joueurs, les arènes et les armes.
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
-    fct.chargerPerso(this); // spritesheets d'Aria[cite: 14]
-    chargerAssetsArenes(this); // cartes Tiled, tilesets et fonds de toutes les arènes[cite: 14]
-    chargerAssetsArmes(this); // sprites et sons des armes[cite: 14]
+    fct.chargerPerso(this);
+    chargerAssetsArenes(this);
+    chargerAssetsArmes(this);
   }
 
-  // --------------------------------------------------------------------------
-  // create : construit la scène une fois, puis lance la première manche.
-  // --------------------------------------------------------------------------
+  // Assemble l'interface et les objets du match avant de lancer la première manche.
   create() {
     this.sound.stopByKey("musique_menu");
 
@@ -68,7 +53,6 @@ export default class VersusScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#0b0b1a");
     
-    // fond assombri pour faire ressortir les plateformes[cite: 14]
     this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.6).setOrigin(0).setDepth(-1);
 
     fct.creerAnimsPerso(this);
@@ -77,7 +61,6 @@ export default class VersusScene extends Phaser.Scene {
     this.creerHUD();
     this.creerEntrees();
 
-    // le bas de l'écran reste OUVERT : on peut tomber dans le vide[cite: 14]
     this.physics.world.setBoundsCollision(true, true, true, false);
 
     this.chargerArene(this.arenePourManche(1));
@@ -92,10 +75,8 @@ export default class VersusScene extends Phaser.Scene {
     this.demarrerManche();
   }
 
-  // --------------------------------------------------------------------------
-  // update : appelée 60 fois par seconde, aiguillée selon l'état courant.
-  // --------------------------------------------------------------------------
-  update(temps, delta) {
+  // Met à jour les joueurs et les objets, et détecte les chutes pendant le combat.
+  update(_temps, delta) {
     const actif = this.etat === ETATS.COMBAT;
     this.joueurs.forEach((j) => j.mettreAJour(actif));
     if (this.armes) this.armes.mettreAJour(delta, actif);
@@ -108,10 +89,7 @@ export default class VersusScene extends Phaser.Scene {
     }
   }
 
-  // ==========================================================================
-  //  COMBAT : coups, chutes, élimination
-  // ==========================================================================
-
+  // Vérifie si la zone du coup de l'attaquant touche le joueur adverse.
   traiterCoup(attaquant, zone) {
     if (this.etat !== ETATS.COMBAT) return;
     const i = this.joueurs.indexOf(attaquant);
@@ -126,6 +104,7 @@ export default class VersusScene extends Phaser.Scene {
     }
   }
 
+  // Centralise les dégâts, l'actualisation des cœurs et l'élimination.
   infligerDegats(index, direction, degats = 1, recul = 1) {
     if (this.etat !== ETATS.COMBAT) return false;
     const cible = this.joueurs[index];
@@ -135,6 +114,7 @@ export default class VersusScene extends Phaser.Scene {
     return true;
   }
 
+  // Retire une vie après une chute puis replace le joueur, ou l'élimine.
   joueurTombe(i) {
     const joueur = this.joueurs[i];
     joueur.vies = REGLES.CHUTE === "elimination" ? 0 : Math.max(0, joueur.vies - 1);
@@ -148,15 +128,14 @@ export default class VersusScene extends Phaser.Scene {
     joueur.invulnerableJusqua = this.time.now + PHYSIQUE.DUREE_INVULNERABLE_RESPAWN;
   }
 
+  // Marque le joueur comme éliminé et attribue la manche à l'adversaire.
   eliminer(i) {
     this.joueurs[i].mourir();
     this.rafraichirArmesHUD();
     this.finDeManche(1 - i);
   }
 
-  // ==========================================================================
-  //  JOUEURS
-  // ==========================================================================
+  // Crée les deux joueurs aux positions définies par l'arène active.
   creerJoueurs() {
     this.joueurs = [0, 1].map((i) => {
       const spawn = this.arene.spawns[i];
@@ -167,6 +146,7 @@ export default class VersusScene extends Phaser.Scene {
     this.rafraichirCoeurs();
   }
 
+  // Replace les joueurs et réinitialise les objets au début d'une manche.
   placerJoueurs() {
     this.joueurs.forEach((j, i) => {
       const spawn = this.arene.spawns[i];
@@ -177,6 +157,7 @@ export default class VersusScene extends Phaser.Scene {
     this.rafraichirArmesHUD();
   }
 
+  // Relie les joueurs et les objets aux plateformes de l'arène.
   brancherCollisions() {
     this.retirerCollisions();
     const [j1, j2] = this.joueurs.map((j) => j.sprite);
@@ -186,35 +167,31 @@ export default class VersusScene extends Phaser.Scene {
     if (this.armes) this.armes.brancherCollisions();
   }
 
+  // Retire les collisions avant de détruire ou remplacer l'arène.
   retirerCollisions() {
     this.collisions.forEach((c) => c.destroy());
     this.collisions = [];
     if (this.armes) this.armes.retirerCollisions();
   }
 
-  // ==========================================================================
-  //  ARÈNES
-  // ==========================================================================
-
+  // Renvoie l'arène prévue pour la manche, en complétant l'ordre au besoin.
   arenePourManche(manche) {
     etendreOrdre(this.ordreArenes, manche, ARENES_REGLES.ORDRE);
     return this.ordreArenes[manche - 1];
   }
 
+  // Remplace proprement l'arène en cours et reconnecte les collisions.
   chargerArene(index) {
     if (this.arene) {
       this.retirerCollisions();
       detruireArene(this.arene);
     }
-    this.indexArene = index;
     this.arene = construireArene(this, index);
     if (this.joueurs.length) this.brancherCollisions();
     this.rafraichirHUD();
   }
 
-  // ==========================================================================
-  //  INTERFACE (HUD)
-  // ==========================================================================
+  // Dessine les textures des cœurs une seule fois dans le gestionnaire Phaser.
   creerTexturesCoeur() {
     const dessiner = (cle, couleur, alpha) => {
       if (this.textures.exists(cle)) return;
@@ -230,6 +207,7 @@ export default class VersusScene extends Phaser.Scene {
     dessiner("versus_coeur_vide", 0x3a3a4e, 0.8);
   }
 
+  // Crée les scores, les cœurs et les textes centraux de l'interface.
   creerHUD() {
     const w = this.cameras.main.width;
     const h = this.cameras.main.height;
@@ -279,13 +257,6 @@ export default class VersusScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(100);
 
-    const aide = DEBUG;
-
-    this.add
-      .text(w / 2, h - 28, aide, { fontFamily: POLICE, fontSize: "22px", color: "#888888" })
-      .setOrigin(0.5, 1)
-      .setDepth(100);
-
     this.rafraichirHUD();
 
     document.fonts.ready.then(() => {
@@ -298,6 +269,7 @@ export default class VersusScene extends Phaser.Scene {
     });
   }
 
+  // Met à jour les icônes pleines ou vides selon les vies restantes.
   rafraichirCoeurs() {
     this.coeurs.forEach((rangee, i) => {
       const vies = this.joueurs[i] ? this.joueurs[i].vies : REGLES.VIES;
@@ -305,6 +277,7 @@ export default class VersusScene extends Phaser.Scene {
     });
   }
 
+  // Affiche l'arme tenue et ses munitions pour chaque joueur.
   rafraichirArmesHUD() {
     this.iconesArmes.forEach((h, i) => {
       const arme = this.joueurs[i] && this.joueurs[i].arme;
@@ -321,25 +294,22 @@ export default class VersusScene extends Phaser.Scene {
     });
   }
 
+  // Synchronise les scores, le numéro de manche et le nom de l'arène.
   rafraichirHUD() {
     this.texteScores.forEach((t, i) => t.setText(`${JOUEURS[i].nom}\n${this.scores[i]} / ${REGLES.MANCHES_POUR_GAGNER}`));
     this.texteManche.setText(`MANCHE ${this.manche}\n${this.arene ? this.arene.def.nom : ""}`);
   }
 
-  // ==========================================================================
-  //  ENTRÉES DE FIN DE MATCH (Quitter avec F, Relancer avec A)
-  // ==========================================================================
+  // Active les commandes de retour au menu et de relance après le match.
   creerEntrees() {
     const clavier = this.input.keyboard;
 
-    // Quitter avec la touche F de la borne (M pour J1, H pour J2), UNIQUEMENT sur l'écran de fin de match
     const quitterMatch = () => {
       if (this.etat === ETATS.FIN_MATCH) this.quitter();
     };
     clavier.on("keydown-M", quitterMatch);
     clavier.on("keydown-H", quitterMatch);
 
-    // Relancer avec la touche A de la borne (I pour J1, R pour J2), UNIQUEMENT sur l'écran de fin de match
     const relancer = () => {
       if (this.etat === ETATS.FIN_MATCH && this.peutRelancer) this.scene.restart();
     };
@@ -347,10 +317,7 @@ export default class VersusScene extends Phaser.Scene {
     clavier.on("keydown-R", relancer);
   }
 
-  // ==========================================================================
-  //  MACHINE À ÉTATS : DECOMPTE -> COMBAT -> FIN_MANCHE -> (DECOMPTE | FIN_MATCH)
-  // ==========================================================================
-
+  // Démarre le décompte après le placement des joueurs et la remise à zéro de la manche.
   demarrerManche() {
     this.etat = ETATS.DECOMPTE;
     this.rafraichirHUD();
@@ -360,6 +327,7 @@ export default class VersusScene extends Phaser.Scene {
     this.lancerDecompte();
   }
 
+  // Compte avant le combat, puis active les contrôles au signal « GO ! ».
   lancerDecompte() {
     this.compteur = REGLES.DUREE_DECOMPTE;
     this.texteCentre.setText(String(this.compteur)).setColor("#ffffff");
@@ -385,6 +353,7 @@ export default class VersusScene extends Phaser.Scene {
     });
   }
 
+  // Enregistre le gagnant et décide s'il faut continuer ou terminer le match.
   finDeManche(gagnant) {
     if (this.etat !== ETATS.COMBAT) return;
     this.scores[gagnant]++;
@@ -407,6 +376,7 @@ export default class VersusScene extends Phaser.Scene {
     });
   }
 
+  // Change d'arène sous fondu puis redémarre la manche suivante.
   passerALaMancheSuivante() {
     const camera = this.cameras.main;
     camera.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
@@ -419,6 +389,7 @@ export default class VersusScene extends Phaser.Scene {
     camera.fadeOut(ARENES_REGLES.DUREE_FONDU);
   }
 
+  // Affiche le vainqueur et active les commandes de fin de match.
   finDuMatch(gagnant) {
     this.etat = ETATS.FIN_MATCH;
     this.peutRelancer = false;
@@ -430,13 +401,12 @@ export default class VersusScene extends Phaser.Scene {
       .setText(`${JOUEURS[gagnant].nom}\nREMPORTE LE MATCH !\n\nBOUTON A : rejouer\nBOUTON F : menu`);
   }
 
-  // ==========================================================================
-  //  SORTIE
-  // ==========================================================================
+  // Retourne au menu principal.
   quitter() {
     this.scene.start("accueil");
   }
 
+  // Libère temporisations, musique, collisions et objets avant l'arrêt de la scène.
   nettoyer() {
     if (this.evenementDecompte) this.evenementDecompte.remove(false);
     this.evenementDecompte = null;

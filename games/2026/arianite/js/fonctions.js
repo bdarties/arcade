@@ -1,36 +1,24 @@
-// fonctions partagées par tous les niveaux : le personnage (Aria) est géré ici, une seule fois
-
-// ====== RÉGLAGES : vitesse de chaque animation (images par seconde) ======
-// plus le chiffre est grand, plus l'animation est rapide
+// Cadences des animations d'Aria, exprimées en images par seconde.
 const VITESSE_ANIMS = {
-  stand: 2, // immobile
-  walk: 14, // marche
-  up: 8, // grimpe
-  jump: 20, // saut
-  punch: 10 // coups de poing
+  stand: 2,
+  walk: 14,
+  up: 8,
+  jump: 20,
+  punch: 10
 };
 
-// vitesse de déplacement de la marche (pixels par seconde)
 const VITESSE_MARCHE = 250;
 
-/***********************************************************************/
-/** CONTRÔLES BORNE D'ARCADE (MODE 1 JOUEUR)
-/***********************************************************************/
-
-// Crée un objet clavier compatible avec les sticks et boutons J1 de la borne :
-// - Stick J1 (UP, DOWN, LEFT, RIGHT)
-// - Bouton A (Sauter) : I (J1) /
-// - Bouton B (Attaquer) : O (J1) /
-// - Bouton D (Interagir) : K (J1) / (+ SPACE par sécurité)
+// Construit une interface clavier uniforme pour les niveaux narratifs.
 export function creerClavier(scene) {
   const k = scene.input.keyboard.addKeys({
     upJ1: Phaser.Input.Keyboard.KeyCodes.UP,
     downJ1: Phaser.Input.Keyboard.KeyCodes.DOWN,
     leftJ1: Phaser.Input.Keyboard.KeyCodes.LEFT,
     rightJ1: Phaser.Input.Keyboard.KeyCodes.RIGHT,
-    jumpJ1: Phaser.Input.Keyboard.KeyCodes.I,     // Bouton A (J1) - Sauter
-    attackJ1: Phaser.Input.Keyboard.KeyCodes.O,   // Bouton B (J1) - Attaquer
-    interactJ1: Phaser.Input.Keyboard.KeyCodes.K, // Bouton D (J1) - Interagir
+    jumpJ1: Phaser.Input.Keyboard.KeyCodes.I,
+    attackJ1: Phaser.Input.Keyboard.KeyCodes.O,
+    interactJ1: Phaser.Input.Keyboard.KeyCodes.K,
     space: Phaser.Input.Keyboard.KeyCodes.SPACE
   });
 
@@ -46,7 +34,7 @@ export function creerClavier(scene) {
   };
 }
 
-// Renvoie true si le joueur vient d'appuyer sur le bouton Interagir (Bouton D : K ou F, ou Espace)
+// Détecte un nouvel appui sur la touche d'interaction (ou Espace).
 export function justDownInteragir(clavier) {
   if (!clavier || !clavier._keys) return false;
   const k = clavier._keys;
@@ -56,7 +44,7 @@ export function justDownInteragir(clavier) {
   );
 }
 
-// Renvoie true si le joueur vient d'appuyer sur le bouton Attaquer (Bouton B : O ou T)
+// Détecte un nouvel appui sur la touche d'attaque.
 export function justDownAttaquer(clavier) {
   if (!clavier || !clavier._keys) return false;
   const k = clavier._keys;
@@ -65,11 +53,7 @@ export function justDownAttaquer(clavier) {
   );
 }
 
-/***********************************************************************/
-/** PERSONNAGE (ARIA) : CHARGEMENT, ANIMATIONS ET DÉPLACEMENT
-/***********************************************************************/
-
-// à appeler dans preload() de chaque niveau
+// Charge les spritesheets d'Aria partagés par les scènes du jeu.
 export function chargerPerso(scene) {
   scene.load.setBaseURL(scene.sys.game.config.baseURL);
   scene.load.spritesheet("img_perso", "./assets/spritesheet/aria_spritesheet.png", {
@@ -82,7 +66,7 @@ export function chargerPerso(scene) {
   });
 }
 
-// à appeler dans create() de chaque niveau (ne recrée pas une animation qui existe déjà)
+// Crée une seule fois les animations standard utilisées par Aria.
 export function creerAnimsPerso(scene) {
   const anims = [
     { key: "aria_stand", start: 0, end: 1, frameRate: VITESSE_ANIMS.stand, repeat: -1 },
@@ -103,9 +87,9 @@ export function creerAnimsPerso(scene) {
   });
 }
 
-// à appeler dans update() : déplacement gauche/droite + choix de l'animation
+// Applique déplacement, saut et animation à un joueur du mode narratif.
 export function deplacerPerso(joueur, clavier, auSol, vitesse = VITESSE_MARCHE) {
-  // première fois : on repère la fin des animations de coup
+  // Un seul écouteur est installé par sprite, même si cette fonction tourne à chaque image.
   if (!joueur.initCoupListener) {
     joueur.initCoupListener = true;
     joueur.enCoup = false;
@@ -114,16 +98,13 @@ export function deplacerPerso(joueur, clavier, auSol, vitesse = VITESSE_MARCHE) 
     });
   }
 
-  // sécurité : si l'animation de coup a été interrompue, on libère le joueur
   if (joueur.enCoup && !joueur.anims.currentAnim?.key.startsWith("aria_punch")) joueur.enCoup = false;
 
-  // pendant un coup de poing, Aria reste sur place
   if (joueur.enCoup) {
     joueur.setVelocityX(0);
     return;
   }
 
-  // nouveau coup de poing avec le Bouton B (O ou T) (au sol seulement) : droite ou gauche au hasard
   if (auSol && justDownAttaquer(clavier)) {
     joueur.enCoup = true;
     joueur.setVelocityX(0);
@@ -142,47 +123,41 @@ export function deplacerPerso(joueur, clavier, auSol, vitesse = VITESSE_MARCHE) 
   }
 
   if (!auSol) {
-    // saut : l'animation se joue une seule fois, puis reste sur la dernière image jusqu'à l'atterrissage
     if (joueur.anims.currentAnim?.key !== "aria_jump") joueur.anims.play("aria_jump");
   }
   else if (clavier.left.isDown || clavier.right.isDown) joueur.anims.play("aria_walk", true);
   else joueur.anims.play("aria_stand", true);
 }
 
+// Valeurs communes à la barre de vie et à l'invulnérabilité après un impact.
+const VIES_MAX = 5;
+const INVINCIBILITE = 1000;
 
-/***********************************************************************/
-/** VIES DU JOUEUR + BARRE DE VIE (partagées par tous les niveaux)
-/***********************************************************************/
-
-const VIES_MAX = 5; // vies au départ
-const INVINCIBILITE = 1000; // ms d'invincibilité après un coup reçu
-
-// à appeler dans create() de chaque niveau, APRÈS la création du joueur.
-// nouvellePartie = true : on remet les vies au maximum (1er niveau). Sinon on garde les vies du niveau précédent.
+// Initialise le nombre de vies et l'interface qui l'affiche.
 export function initVies(scene, nouvellePartie = false) {
   if (nouvellePartie || scene.registry.get("vies") === undefined) scene.registry.set("vies", VIES_MAX);
-  scene.barreVie = scene.add.graphics().setScrollFactor(0).setDepth(100); // fixe à l'écran, devant tout
+  scene.barreVie = scene.add.graphics().setScrollFactor(0).setDepth(100);
   dessinerBarreVie(scene);
 }
 
+// Lit le nombre de vies partagé entre les scènes via le registre Phaser.
 export function getVies(scene) {
   return scene.registry.get("vies");
 }
 
-// dessine la barre : cadre doré, segments rouges (un par vie), segments éteints pour les vies perdues
+// Dessine les segments actifs et perdus de la barre de vie.
 function dessinerBarreVie(scene) {
   const g = scene.barreVie;
   if (!g) return;
   const vies = getVies(scene);
 
-  // ---- réglages du look (couleurs en hexadécimal) ----
   const COULEUR_FOND = 0x140a0a;
-  const COULEUR_CADRE = 0xc9a24b; // or
-  const COULEUR_VIE = 0xa3121c; // rouge opéra
+  const COULEUR_CADRE = 0xc9a24b;
+  const COULEUR_VIE = 0xa3121c;
   const COULEUR_REFLET = 0xe0434c;
   const COULEUR_VIDE = 0x3a1f1f;
-  const x = 24, y = 22; // position à l'écran
-  const segL = 46, segH = 22, ecart = 6, marge = 8; // taille des segments
+  const x = 24, y = 22;
+  const segL = 46, segH = 22, ecart = 6, marge = 8;
 
   const L = VIES_MAX * segL + (VIES_MAX - 1) * ecart + marge * 2;
   const H = segH + marge * 2;
@@ -201,8 +176,7 @@ function dessinerBarreVie(scene) {
   }
 }
 
-// le joueur subit des dégâts (invincibilité, rouge, recul). Renvoie true s'il n'a plus de vie :
-// le niveau décide alors quoi faire (relancer la scène, écran de défaite...). Les vies sont remises au max.
+// Retire des vies, applique le recul et signale si le joueur est éliminé.
 export function perdreVieJoueur(scene, joueur, degats, source) {
   if (joueur.invincible) return false;
   joueur.invincible = true;
@@ -227,23 +201,18 @@ export function perdreVieJoueur(scene, joueur, degats, source) {
 }
 
 
-/***********************************************************************/
-/** COUPS DE POING : DÉGÂTS SUR LES ENNEMIS
-/***********************************************************************/
-
-// image de l'animation où le coup "touche" (numéro de frame de la planche aria_spritesheet_fight)
+// Frame de chaque animation où les dégâts de mêlée sont appliqués.
 const FRAME_IMPACT = { aria_punch_right: 2, aria_punch_left: 6 };
-const COUP_PORTEE = 70; // distance devant Aria où le coup touche (px)
-const COUP_DEGATS = 1; // dégâts d'un coup
-const AFFICHER_PORTEE = true; // true = un arc blanc montre la portée du coup (false = invisible)
+const COUP_PORTEE = 70;
+const COUP_DEGATS = 1;
+const AFFICHER_PORTEE = true;
 
-// à appeler dans create() de chaque niveau avec le tableau des ennemis du niveau.
-// Chaque ennemi doit avoir une propriété "pv". Quand pv tombe à 0, il est retiré du tableau et disparaît.
+// Vérifie la cible à la frame d'impact de chaque coup animé.
 export function activerCoups(joueur, ennemis, degats = COUP_DEGATS) {
   joueur.on("animationupdate", (anim, frame) => {
-    if (FRAME_IMPACT[anim.key] !== frame.textureFrame) return; // pas la frame d'impact
+    if (FRAME_IMPACT[anim.key] !== frame.textureFrame) return;
 
-    // zone du coup : devant Aria, selon le côté où elle regarde
+    // La collision est testée uniquement pendant la frame où le coup touche.
     const b = joueur.body;
     const x = joueur.flipX ? b.left - COUP_PORTEE : b.right;
     const zone = new Phaser.Geom.Rectangle(x, b.top, COUP_PORTEE, b.height);
@@ -257,12 +226,12 @@ export function activerCoups(joueur, ennemis, degats = COUP_DEGATS) {
   });
 }
 
+// Applique les dégâts et l'effet visuel approprié à l'ennemi touché.
 function toucherEnnemi(ennemi, degats, joueur, ennemis) {
   const scene = ennemi.scene;
   ennemi.pv -= degats;
 
   if (ennemi.pv <= 0) {
-    // mort : plus de collision, fondu rouge puis suppression
     ennemis.splice(ennemis.indexOf(ennemi), 1);
     ennemi.body.enable = false;
     ennemi.anims.stop();
@@ -271,17 +240,16 @@ function toucherEnnemi(ennemi, degats, joueur, ennemis) {
     return;
   }
 
-  // touché mais vivant : clignote en rouge et recule un peu
   ennemi.setTint(0xff0000);
   ennemi.x += joueur.x < ennemi.x ? 15 : -15;
   scene.time.delayedCall(150, () => ennemi.active && ennemi.clearTint());
 }
 
-// petit arc blanc devant Aria qui s'efface vite : sa taille correspond à la portée du coup
+// Dessine brièvement l'arc qui visualise la portée d'un coup.
 function afficherArcCoup(joueur) {
   const b = joueur.body;
   const rayon = COUP_PORTEE + b.width / 2;
-  const ouverture = Phaser.Math.DegToRad(55); // largeur de l'arc
+  const ouverture = Phaser.Math.DegToRad(55);
   const debut = joueur.flipX ? Math.PI - ouverture : -ouverture;
   const fin = joueur.flipX ? Math.PI + ouverture : ouverture;
 
@@ -293,12 +261,7 @@ function afficherArcCoup(joueur) {
   joueur.scene.tweens.add({ targets: arc, alpha: 0, duration: 180, onComplete: () => arc.destroy() });
 }
 
-/***********************************************************************/
-/** MORT PAR CHUTE (eau, vide...) : partagée par tous les niveaux
-/***********************************************************************/
-
-// à appeler dans update() dès que le joueur est tombé : fondu au noir, vies remises au max,
-// puis le niveau appelle "relancer" (en général scene.restart). Peut être appelée à chaque frame sans danger.
+// Lance une seule séquence de mort, réinitialise les vies et relance après le fondu.
 export function mortParChute(scene, relancer) {
   if (scene.enMort) return;
   scene.enMort = true;

@@ -1,72 +1,46 @@
 import * as fct from "./fonctions.js";
 
-/***********************************************************************/
-/** VARIABLES GLOBALES 
-/***********************************************************************/
+let player;
+let clavier;
+let calque_sol;
 
-var player; // désigne le sprite du joueur
-var clavier; // pour la gestion du clavier
-var calque_sol; // calque de tuiles solides (map Tiled)
-
-// parallaxe : 0 = le fond ne bouge pas, 1 = il bouge comme le décor.
-// plus le fond est loin, plus le chiffre est petit
 const PARALLAXE_CIEL = 0.05;
-
-// hauteur dont on remonte tous les fonds (px) : 0 = collés au bas de l'écran
 const RELEVER = 40;
-
-// pluie
 const PLUIE_VENT = -100; // vitesse horizontale des gouttes (négatif = vers la gauche)
-const PLUIE_INTENSITE = 6; // ms entre deux gouttes : plus petit = plus de pluie
+const PLUIE_INTENSITE = 6;
+const CORDE_VITESSE = 120;
 
-// corde (fonctionne comme une échelle)
-const CORDE_VITESSE = 120; // vitesse de montée / descente (px/s)
+// Dimensions, rythme et frames de la hitbox du crocodile.
+const CROCO_DELAI = 5000;
+const CROCO_ECHELLE = 0.45;
+const CROCO_HITBOX_L = 100;
+const CROCO_HITBOX_H = 600;
+const CROCO_FRAME_DEBUT_DEGATS = 2;
+const CROCO_FRAME_FIN_DEGATS = 6;
+const CROCO_DEGATS = 1;
 
-// crocodile
-const CROCO_DELAI = 5000; // ms entre deux sauts (peut être surchargé dans Tiled par la propriété "delay")
-const CROCO_ECHELLE = 0.45; // 720px * 0.45 = 324px de haut
-const CROCO_HITBOX_L = 100; // largeur de la hitbox (en pixels du spritesheet)
-const CROCO_HITBOX_H = 600; // hauteur de la hitbox
-const CROCO_FRAME_DEBUT_DEGATS = 2; // la hitbox est active de la frame 2...
-const CROCO_FRAME_FIN_DEGATS = 6; // ...à la frame 6
-const CROCO_DEGATS = 1; // vies perdues par le joueur
-const VIES_JOUEUR = 3; // vies au départ (à brancher sur ton config.txt si besoin)
-const INVINCIBILITE = 1000; // ms d'invincibilité après un coup
-
-// spritesheets de portes (optionnel). Clé -> fichier + taille d'UNE frame.
-const SPRITESHEETS_PORTES = {
-  // img_porte_bois: { fichier: "./assets/spritesheet/porte_bois.png", largeur: 60, hauteur: 80 }
-};
-const PORTE_VITESSE_ANIM = 10; // images par seconde de l'ouverture
-
+// Facteurs de parallaxe et apparences des plans de bâtiments.
 const COUCHES_BATIMENTS = [
   { facteur: 0.15, echelle: 0.45, pieds: 700, teinte: 0x7a809e, decalage: 900 },
   { facteur: 0.45, echelle: 0.65, pieds: 720, teinte: 0xffffff, decalage: 0 }
 ];
 
-// définition de la classe "exterieur" (Niveau 1)
 export default class exterieur extends Phaser.Scene {
   constructor() {
     super({ key: "exterieur" });
   }
 
-  // reçoit { depuis: "suivant" } quand on revient du toit
+  // Mémorise la porte d'origine lors d'un retour depuis un autre niveau.
   init(data) {
     this.depuis = data.depuis;
   }
 
-  /***********************************************************************/
-  /** FONCTION PRELOAD 
-/***********************************************************************/
-
+  // Charge les ressources du décor, des personnages et des dangers.
   preload() {
     const baseURL = this.sys.game.config.baseURL;
-    
     this.load.setBaseURL(baseURL);
-    
     this.load.image("img_ciel", "./assets/sky.png");
     this.load.image("img_batiments", "./assets/batiments.png");
-    this.load.image("img_plateforme", "./assets/platform.png");
     this.load.image("img_tuiles", "./assets/tuilesJeu.png");
     this.load.tilemapTiledJSON("map_exterieur", "./assets/map_exterieure.json");
     fct.chargerPerso(this);
@@ -75,10 +49,6 @@ export default class exterieur extends Phaser.Scene {
     this.load.image("img_porte3", "./assets/door3.png");
     this.load.image("img_opera", "./assets/opera.png");
     this.load.audio("son_pluie", "./assets/musique/fond_paris_pluie.mp3");
-    Object.entries(SPRITESHEETS_PORTES).forEach(([cle, d]) => {
-      this.load.spritesheet(cle, d.fichier, { frameWidth: d.largeur, frameHeight: d.hauteur });
-    });
-
     this.load.spritesheet("portier", "./assets/spritesheet/portier.png", {
       frameWidth: 36,
       frameHeight: 64
@@ -90,18 +60,8 @@ export default class exterieur extends Phaser.Scene {
     });
   }
 
-  /***********************************************************************/
-  /** FONCTION CREATE 
-/***********************************************************************/
-
+  // Construit le niveau extérieur, ses interactions, ses ennemis et la pluie.
   create() {
-    this.vies = VIES_JOUEUR;
-    this.invincible = false;
-
-    /*************************************
-     *  CREATION DU MONDE + PLATEFORMES  *
-     *************************************/
-
     const echelle = (720 + RELEVER) / 1536;
     this.echelle_fond = echelle;
 
@@ -117,7 +77,7 @@ export default class exterieur extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    this.opera = this.physics.add
+    this.physics.add
       .staticImage(3600, 1000, "img_opera")
       .setOrigin(0.5, 1)
       .setScale(2.8)
@@ -142,11 +102,7 @@ export default class exterieur extends Phaser.Scene {
       return { sprite, ...c };
     });
 
-    /****************************
-     *  PORTES (calque Tiled)   *
-     ****************************/
     this.portes = [];
-    this.porteEnCours = false;
     const calque_portes = map.getObjectLayer("portes");
     if (!calque_portes) {
       console.warn('Calque d\'objets "portes" introuvable dans la map Tiled');
@@ -170,7 +126,6 @@ export default class exterieur extends Phaser.Scene {
           .refreshBody();
         this.portes.push({
           sprite,
-          cle,
           destination: prop("destination", null),
           depuis: prop("depuis", "precedent"),
           verrouillee: prop("verrouillee", false),
@@ -191,12 +146,6 @@ export default class exterieur extends Phaser.Scene {
       .setDepth(20)
       .setVisible(false);
 
-    this.input.on("pointerdown", (p) => console.log(Math.round(p.worldX), Math.round(p.worldY)));
-
-    /****************************
-     *  CREATION DU PERSONNAGE  *
-     ****************************/
-
     const spawn_depart = map.findObject("spawn", (o) => o.name === "depart");
 
     let pos = spawn_depart;
@@ -211,15 +160,9 @@ export default class exterieur extends Phaser.Scene {
 
     this.cameras.main.startFollow(player, true, 0.1, 0.1);
 
-    /***************************
-     *  CREATION DES ANIMATIONS *
-     ****************************/
     fct.creerAnimsPerso(this);
     fct.initVies(this, this.depuis === undefined);
 
-    /*****************
-     *  PNJ (calque Tiled)
-     *****************/
     if (!this.anims.exists("portier_anim")) {
       this.anims.create({
         key: "portier_anim",
@@ -258,20 +201,10 @@ export default class exterieur extends Phaser.Scene {
       });
     }
 
-    /***********************
-     *  CREATION DU CLAVIER *
-     ************************/
     clavier = fct.creerClavier(this);
-
-    /*****************************************************
-     *  GESTION DES INTERATIONS ENTRE  GROUPES ET ELEMENTS *
-     ******************************************************/
 
     this.physics.add.collider(player, calque_sol);
 
-    /*****************
-     *  CROCODILES   *
-     *****************/
     this.groupe_crocos = this.physics.add.group({
       allowGravity: false,
       immovable: true
@@ -286,9 +219,6 @@ export default class exterieur extends Phaser.Scene {
 
     this.physics.add.overlap(player, this.groupe_crocos, this.toucheCroco, null, this);
 
-    /*****************
-     *  ESCALIERS    *
-     *****************/
     this.escaliers = [];
     this.surEscalier = false;
     const calque_escaliers = map.getObjectLayer("escaliers");
@@ -307,9 +237,6 @@ export default class exterieur extends Phaser.Scene {
       });
     }
 
-    /*****************
-     *  PLUIE        *
-     *****************/
     if (!this.textures.exists("img_goutte")) {
       const g = this.make.graphics({ x: 0, y: 0, add: false });
       g.fillStyle(0xaec6e8, 1);
@@ -318,7 +245,7 @@ export default class exterieur extends Phaser.Scene {
       g.destroy();
     }
 
-    this.pluie = this.add
+    this.add
       .particles(0, 0, "img_goutte", {
         emitZone: {
           type: "random",
@@ -338,22 +265,17 @@ export default class exterieur extends Phaser.Scene {
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("son_pluie")) {
-  // Vérifie si la musique joue déjà pour éviter de la superposer à chaque restart
-    let musique = this.sound.get("son_pluie");
-  
-  if (!musique) {
-    musique = this.sound.add("son_pluie", { loop: true, volume: 0.5 });
-    musique.play();
+      let musique = this.sound.get("son_pluie");
+      if (!musique) {
+        musique = this.sound.add("son_pluie", { loop: true, volume: 0.5 });
+        musique.play();
+      }
+    } else {
+      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
+    }
   }
-} else {
-  console.warn("Musique introuvable : vérifie le chemin ./assets/musique/fond_paris_pluie.mp3");
-  }
-}
 
-  /***********************************************************************/
-  /** FONCTIONS DU CROCODILE
-/***********************************************************************/
-
+  // Crée un crocodile animé dont la hitbox n'est active que sur ses frames d'attaque.
   creerCroco(o) {
     const c = this.groupe_crocos.create(o.x, o.y, "croco", 0);
     c.setOrigin(0.5, 1);
@@ -398,24 +320,22 @@ export default class exterieur extends Phaser.Scene {
     });
   }
 
+  // Évite plusieurs dégâts pendant une même attaque de crocodile.
   toucheCroco(joueur, croco) {
     if (!croco.body.enable || croco.a_touche) return;
     croco.a_touche = true;
     this.perdreVie(CROCO_DEGATS, croco);
   }
 
+  // Applique les dégâts partagés et redémarre si le joueur n'a plus de vie.
   perdreVie(degats, source) {
     if (fct.perdreVieJoueur(this, player, degats, source)) {
       this.scene.restart({});
     }
   }
 
-  /***********************************************************************/
-  /** PORTES
-/***********************************************************************/
-
+  // Affiche le message d'une porte verrouillée ou lance sa scène de destination.
   ouvrirPorte(porte) {
-    if (this.porteEnCours) return;
     if (porte.verrouillee || !porte.destination) {
       this.texte_verrou.setText(porte.message).setVisible(true);
       if (this.timerVerrou) this.timerVerrou.remove();
@@ -423,33 +343,11 @@ export default class exterieur extends Phaser.Scene {
       return;
     }
 
-    const partir = () => this.scene.start(porte.destination, { depuis: porte.depuis });
-
-    const nbFrames = this.textures.get(porte.cle).frameTotal - 1;
-    if (nbFrames > 1) {
-      this.porteEnCours = true;
-      const anim = "ouvrir_" + porte.cle;
-      if (!this.anims.exists(anim)) {
-        this.anims.create({
-          key: anim,
-          frames: this.anims.generateFrameNumbers(porte.cle, { start: 0, end: nbFrames - 1 }),
-          frameRate: PORTE_VITESSE_ANIM,
-          repeat: 0
-        });
-      }
-      porte.sprite.play(anim);
-      porte.sprite.once("animationcomplete", partir);
-    } else {
-      partir();
-    }
+    this.scene.start(porte.destination, { depuis: porte.depuis });
   }
 
-  /***********************************************************************/
-  /** FONCTION UPDATE 
-/***********************************************************************/
-
+  // Met à jour la parallaxe, l'escalade, les déplacements et les interactions.
   update() {
-    // chute dans l'eau : le fond de la map (dernière ligne de tuiles) est de l'eau -> mort
     if (player.body.bottom >= this.physics.world.bounds.bottom - 32 - 1) {
       fct.mortParChute(this, () => this.scene.restart({}));
     }
@@ -460,7 +358,7 @@ export default class exterieur extends Phaser.Scene {
       c.sprite.tilePositionX = (scrollX * c.facteur) / c.echelle + c.decalage;
     });
 
-    // corde : dès qu'on est sur une tuile du calque "corde", on s'accroche
+    // Le calque des cordes sert aussi de déclencheur pour s'y accrocher.
     const surCorde =
       this.calque_corde.getTileAtWorldXY(player.body.center.x, player.body.center.y) !== null;
 
@@ -495,7 +393,6 @@ export default class exterieur extends Phaser.Scene {
       fct.deplacerPerso(player, clavier, auSol);
     }
 
-    // escaliers
     this.surEscalier = false;
     this.escaliers.forEach((e) => {
       if (this.enCorde) return;
@@ -514,7 +411,6 @@ export default class exterieur extends Phaser.Scene {
       }
     });
 
-    // saut : Stick Haut (UP/Z) OU Bouton A (I/R) (désactivé sur la corde)
     if (
       (clavier.up.isDown || clavier.jump.isDown) &&
       !this.enCorde &&
@@ -523,7 +419,6 @@ export default class exterieur extends Phaser.Scene {
       player.setVelocityY(-330);
     }
 
-    // Interagir (Bouton D : K / F) : ouvre la porte devant laquelle on se trouve
     if (fct.justDownInteragir(clavier)) {
       const porte = this.portes.find((p) => this.physics.overlap(player, p.sprite));
       if (porte) this.ouvrirPorte(porte);
