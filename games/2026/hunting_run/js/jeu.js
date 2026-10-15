@@ -1006,7 +1006,7 @@ export default class jeu extends Phaser.Scene {
     this.cible.setPosition(x, y);
   }
 
-  // REJOUER : on passe par l'écran des scores (pour sauvegarder le score), puis nouvelle partie depuis la map1
+  // REJOUER : on passe par l'écran des scores, puis nouvelle partie depuis la map1
   rejouer() {
     if (this.partiEnCours) return;
     this.partiEnCours = true;
