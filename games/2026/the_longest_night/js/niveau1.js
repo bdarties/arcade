@@ -81,6 +81,7 @@ export default class niveau1 extends Phaser.Scene {
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
+      spawn_depuis_tiled: true, //les spawns du niveau 1 sont aussi lus dans calque_spawn (player_spawn / tableau_spawn ci-dessous sont vides)
       player_spawn: {},
       player2_spawn: {},
       tableau_spawn: [],
@@ -348,20 +349,37 @@ export default class niveau1 extends Phaser.Scene {
   player2_spawn = cfg.player2_spawn;
   tableau_spawn = cfg.tableau_spawn;;
 
-  /*Définition des points d'aparitions.*/
-if (liste_spawn) { //ce systeme fonctionne aussi pour le niveau 22
-  liste_spawn.objects.forEach((point) => {
-    if (point.name == "Spawn_joueur1") {
-      player_spawn = {x: point.x, y: point.y};
-    } else if (point.name == "Spawn_joueur2") {
-      player2_spawn = { x: point.x, y: point.y };
-    } else if (point.name == "Spawn_porte") {
-      porte_spawn = { x: point.x, y: point.y };
-    } else {
-      tableau_spawn.push({ x: point.x, y: point.y }); //"push" permet d'ajouter des éléments directement a la fin du tableau.
+  if (liste_spawn) { //dans tous les niveaux : un point dont le nom contient "porte" ou "sortie" dans calque_spawn place la porte de sortie
+    const point_porte = liste_spawn.objects.find((point) => /porte|sortie/.test((point.name || "").toLowerCase()));
+    if (point_porte) {
+      cfg.porte = { x: point_porte.x, y: point_porte.y };
     }
-  });
-}
+  }
+
+  if (cfg.spawn_depuis_tiled) { //les coordonnées sont lues dans le calque d'objets "calque_spawn" de la carte Tiled
+    if (!liste_spawn) {
+      console.warn("Calque d'objets 'calque_spawn' introuvable dans " + cfg.carte_fichier + ". Calques d'objets trouvés : " + carteDuNiveau.objects.map((o) => o.name).join(", ") + ". Les coordonnées de parametres_niveau() sont utilisées.");
+    } else {
+      const autres_spawns = [];
+      liste_spawn.objects.forEach((point) => {
+        const nom = (point.name || "").toLowerCase();
+        if (/(joueur|player|j)_?1/.test(nom)) {
+          player_spawn = { x: point.x, y: point.y };
+        } else if (/(joueur|player|j)_?2/.test(nom)) {
+          player2_spawn = { x: point.x, y: point.y };
+        } else if (/porte|sortie/.test(nom)) {
+          cfg.porte = { x: point.x, y: point.y };
+        } else {
+          autres_spawns.push({ x: point.x, y: point.y }); //tous les autres points servent à faire apparaître clés, soins, recharges et ennemis
+        }
+      });
+      if (autres_spawns.length > 0) {
+        tableau_spawn = autres_spawns;
+      }
+      console.log("Spawns lus dans Tiled :", { player_spawn, player2_spawn, porte: cfg.porte, autres: tableau_spawn.length });
+    }
+  }
+
   /**************************
    * INSTALATION DES ELEMENTS
   ***************************/

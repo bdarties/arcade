@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<<<<<<< HEAD
 <map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="101" height="41" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="25">
+=======
+<<<<<<< HEAD
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="101" height="41" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="22">
+=======
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="101" height="41" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="22">
+>>>>>>> ac301f78d6847ca78bab7795561f2524ac85af41
+>>>>>>> 4234b07d57611fcb5b9999382a6973a0f86d0e7f
  <editorsettings>
   <export target="niveau_1.json" format="json"/>
  </editorsettings>
@@ -214,7 +222,11 @@
   <object id="19" name="Autre_spawn" x="2604" y="700">
    <point/>
   </object>
+<<<<<<< HEAD
   <object id="23" name="Spawn_porte" x="1478.79" y="675.758">
+=======
+  <object id="21" name="porte" x="628" y="406">
+>>>>>>> 4234b07d57611fcb5b9999382a6973a0f86d0e7f
    <point/>
   </object>
  </objectgroup>

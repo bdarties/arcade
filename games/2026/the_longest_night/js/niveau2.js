@@ -17,7 +17,8 @@ export default class niveau2 extends niveau1 {
       tileset_nom: "tileset_reverse",       // nom du tileset DANS Tiled (à vérifier dans niveau_2.json, champ "name" de "tilesets")
       tileset_image: "Phaser_tuileReverse", // clé de l'image chargée dans preload() ci-dessous
 
-      // TO DO : remplacer par les coordonnées de la carte 2 (voir calque_spawn dans Tiled)
+      // les spawns sont lus dans le calque d'objets "calque_spawn" de la carte Tiled (voir la console pour vérifier)
+      spawn_depuis_tiled: true,
       player_spawn: cfg.player_spawn,
       player2_spawn: cfg.player2_spawn,
       tableau_spawn: cfg.tableau_spawn,
@@ -64,7 +65,7 @@ export default class niveau2 extends niveau1 {
       this.anims.create({
         key: "animation_renard_standing",
         frames: this.anims.generateFrameNumbers("renard_statique", { start: 0, end: 3 }),
-        frameRate: 5,
+        frameRate: 6,
         repeat: -1
 
       });
@@ -73,7 +74,7 @@ export default class niveau2 extends niveau1 {
       this.anims.create({
         key: "animation_renard_marche",
         frames: this.anims.generateFrameNumbers("renard", { start: 0, end: 3 }),
-        frameRate: 5,
+        frameRate: 6,
         repeat: -1
       });
     }
