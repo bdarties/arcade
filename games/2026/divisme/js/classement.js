@@ -48,7 +48,7 @@ export default class classement extends Phaser.Scene {
       .setOrigin(0.5).setDepth(1);
 
     if (liste.length === 0) {
-      this.add.text(x, 300, "Aucune partie jouée", style(TAILLE.PETIT))
+      this.add.text(x, 300, "Aucune partie jouée pour l'instant...", style(TAILLE.PETIT))
         .setOrigin(0.5).setDepth(1);
       return;
     }
