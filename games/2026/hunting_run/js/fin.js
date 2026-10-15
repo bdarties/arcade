@@ -1,5 +1,5 @@
-import { ECRANS, ETATS_PARTIE } from "./maps.js";
-import { jouer } from "./sons.js";
+import { ECRANS } from "./maps.js";
+import { scoresDeLaPartie } from "./scores.js";
 
 export default class fin extends Phaser.Scene {
   constructor() {
@@ -14,7 +14,6 @@ export default class fin extends Phaser.Scene {
 
   create() {
     this.cameras.main.fadeIn(500);
-    jouer(this, "victoire");
     this.parti = false;
     this.pret = false; // évite de quitter l'écran tout de suite si le bouton est encore appuyé
     this.time.delayedCall(1000, () => (this.pret = true));
@@ -31,10 +30,11 @@ export default class fin extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
-    // score final
-    this.score = this.registry.get("score") || 0;
+    // score final : un par joueur en duo
+    this.scores = scoresDeLaPartie(this.registry);
+    const txt = this.scores.map((x) => (x.joueur ? "J" + x.joueur + " : " : "SCORE : ") + x.score).join("      ");
     this.add
-      .text(L / 2, 335, "SCORE : " + this.score, { fontFamily: "Georgia, serif", fontSize: "44px", color: "#ffd24a", fontStyle: "bold" })
+      .text(L / 2, 335, txt, { fontFamily: "Georgia, serif", fontSize: this.scores.length > 1 ? "38px" : "44px", color: "#ffd24a", fontStyle: "bold" })
       .setOrigin(0.5)
       .setShadow(3, 3, "#000000", 6);
 
@@ -69,9 +69,8 @@ export default class fin extends Phaser.Scene {
   retour() {
     if (!this.pret || this.parti) return;
     this.parti = true;
-    jouer(this, "valider");
     // on passe par l'écran des scores pour sauvegarder le score (la partie est remise à zéro là-bas)
     this.cameras.main.fadeOut(400, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("scores", { score: this.score, suite: "accueil" }));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("scores", { scores: this.scores, suite: "accueil" }));
   }
 }
