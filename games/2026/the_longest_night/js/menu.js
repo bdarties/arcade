@@ -1,3 +1,5 @@
+import { TOUCHES, ecouter } from "./touches.js";
+
 export default class Menu extends Phaser.Scene {
   constructor() {
     super("Menu");
@@ -65,9 +67,10 @@ export default class Menu extends Phaser.Scene {
       }
     };
 
-    this.input.keyboard.on("keydown-UP", () => this.moveFocus(-1));
-    this.input.keyboard.on("keydown-DOWN", () => this.moveFocus(1));
-    this.input.keyboard.on("keydown-ENTER", () => this.confirm());
+    ecouter(this, TOUCHES.haut, () => this.moveFocus(-1));
+    ecouter(this, TOUCHES.bas, () => this.moveFocus(1));
+    ecouter(this, TOUCHES.valider, () => this.confirm());
+    ecouter(this, TOUCHES.retour, () => this.retour());
 
     this.showScreen("welcome");
   }
@@ -120,6 +123,14 @@ export default class Menu extends Phaser.Scene {
     if (n === 0) return;
     this.index = (this.index + dir + n) % n;
     this.updateFocus();
+  }
+
+  retour() { //bouton "retour" de la borne : remonte d'un écran
+    if (this.currentScreen === "story") {
+      this.showScreen("mode");
+    } else if (this.currentScreen !== "welcome") {
+      this.showScreen("welcome");
+    }
   }
 
   confirm() {

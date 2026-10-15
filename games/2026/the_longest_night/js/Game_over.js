@@ -1,3 +1,5 @@
+import { TOUCHES } from "./touches.js";
+
 export default class Game_over extends Phaser.Scene {
   constructor() {
     super({
@@ -37,9 +39,9 @@ export default class Game_over extends Phaser.Scene {
       : `Score : ${scoreJ1 ?? 0}`;
     this.add.text(640, 370, texte_score, style(26)).setOrigin(0.5);
 
-    const rejouer = this.add.text(640, 490, "Entrée : rejouer le niveau", style(26, "#f1c489"))
+    const rejouer = this.add.text(640, 490, "I / R : rejouer le niveau", style(26, "#f1c489"))
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const menu = this.add.text(640, 550, "Échap : retour au menu", style(26, "#f1c489"))
+    const menu = this.add.text(640, 550, "K / F : retour au menu", style(26, "#f1c489"))
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     const relancer = () => this.scene.start(niveau || "niveau1", { mode: deux_joueurs ? 2 : 1 });
@@ -47,7 +49,12 @@ export default class Game_over extends Phaser.Scene {
 
     rejouer.on("pointerdown", relancer);
     menu.on("pointerdown", retour_menu);
-    this.input.keyboard.once("keydown-ENTER", relancer);
-    this.input.keyboard.once("keydown-ESC", retour_menu);
+    //petit délai : évite de passer l'écran par erreur si le joueur est encore en train d'appuyer sur un bouton
+    this.time.delayedCall(700, () => {
+      let choisi = false;
+      const une_fois = (action) => () => { if (!choisi) { choisi = true; action(); } };
+      TOUCHES.valider.forEach((t) => this.input.keyboard.on("keydown-" + t, une_fois(relancer)));
+      TOUCHES.retour.forEach((t) => this.input.keyboard.on("keydown-" + t, une_fois(retour_menu)));
+    });
   }
 }
