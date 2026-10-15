@@ -1,3 +1,4 @@
+import controles from "./js/controles.js";
 export default class Menu extends Phaser.Scene {
   constructor() {
     super("Menu");
@@ -67,7 +68,7 @@ export default class Menu extends Phaser.Scene {
 
     this.input.keyboard.on("keydown-UP", () => this.moveFocus(-1));
     this.input.keyboard.on("keydown-DOWN", () => this.moveFocus(1));
-    this.input.keyboard.on("keydown-ENTER", () => this.confirm());
+    this.input.keyboard.on("I", () => this.confirm());
 
     this.showScreen("welcome");
   }
@@ -107,7 +108,7 @@ export default class Menu extends Phaser.Scene {
   }
 
   startGame() {
-    if (this.mode === 2) { //compétitif : une des deux cartes au hasard
+    if (this.mode == 2) { //compétitif : une des deux cartes au hasard
       const carte = Phaser.Utils.Array.GetRandom(["niveau1", "niveau2"]);
       this.scene.start(carte, { mode: 2 });
     } else { //histoire : niveau 1 puis niveau 2
