@@ -371,7 +371,7 @@ export default class clicker extends Phaser.Scene {
             .setStrokeStyle(6, COULEURS.DORE)
             .setInteractive({ useHandCursor: true });
 
-        this.texteBoutonJ1 = this.add.text(320, 470, "JOUEUR 1\nCLIQUE !", style(TAILLE.GRAND)).setOrigin(0.5);
+        this.texteBoutonJ1 = this.add.text(320, 470, "JOUEUR 1\nAPPUIE !", style(TAILLE.GRAND)).setOrigin(0.5);
 
         // --- JOUEUR 2 (à droite) ---
         this.add.text(960, 195, "JOUEUR 2",
@@ -385,7 +385,7 @@ export default class clicker extends Phaser.Scene {
             .setStrokeStyle(6, COULEURS.DORE)
             .setInteractive({ useHandCursor: true });
 
-        this.texteBoutonJ2 = this.add.text(960, 470, "JOUEUR 2\nCLIQUE !", style(TAILLE.GRAND)).setOrigin(0.5);
+        this.texteBoutonJ2 = this.add.text(960, 470, "JOUEUR 2\nAPPUIE !", style(TAILLE.GRAND)).setOrigin(0.5);
 
         // --- LA CORDE (en bas de l'écran) ---
         this.creerCorde();
