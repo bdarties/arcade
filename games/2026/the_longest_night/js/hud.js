@@ -3,18 +3,17 @@
 
 const POLICE = '"Courier New", Courier, monospace';
 
-// --- Palette : fond "nuit" violet sombre, bordures pêche/crème (comme les menus), accents par joueur ---
 const FOND = 0x1a1230;
 const FOND_ALPHA = 0.93;
 const BORD_NEUTRE = 0xf1c489;     // panneaux communs (timer, clés)
 const COULEUR_J1 = 0xa4dae4;      // bordures des cadres du joueur 1
 const COULEUR_J2 = 0x72089c;      // bordures des cadres du joueur 2 (mode multijoueur)
-const TEXTE_J1 = "#a4dae4";       // chiffres / badge du joueur 1
-const TEXTE_J2 = "#c58bff";       // version plus claire du violet de J2 : #72089c serait illisible sur le fond sombre
+const TEXTE_J1 = "#fff4dc";       // chiffres / badge du joueur 1
+const TEXTE_J2 = "#c58bff";    
 const TEXTE_DISCRET = "#b9a7d6";  // libellés (BALLES, SCORE, CLÉS)
 const TEXTE_CLAIR = "#fff4dc";    // chiffres neutres (timer)
-const COULEUR_BALLES = "#ffd166";
-const COULEUR_CLES = "#ffd9a0";
+const COULEUR_BALLES = "#fff4dc";
+const COULEUR_CLES = "#fff4dc";
 const COULEUR_ALERTE = "#ff5a5a";
 
 // --- Tailles (augmentées par rapport à la première version) ---
