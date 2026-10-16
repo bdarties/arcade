@@ -1,5 +1,14 @@
 import { TOUCHES } from "./touches.js";
 
+// Palette tirée de l'image screen_game_over.png (rouge néon, rose pâle, fond bordeaux très sombre)
+const POLICE = '"Courier New", Courier, monospace';
+const ROUGE = 0xff2d4d;
+const FOND_PANNEAU = 0x14081a;
+const TEXTE_ROSE = "#f1b0a8";
+const TEXTE_ROUGE = "#ff4d6d";
+const COULEUR_J1 = "#3bd5f0"; // mêmes couleurs que le HUD / l'écran de score
+const COULEUR_J2 = "#ff8c42";
+
 export default class Game_over extends Phaser.Scene {
   constructor() {
     super({
@@ -11,50 +20,64 @@ export default class Game_over extends Phaser.Scene {
     this.donnees = data || {}; // { raison, niveau, scoreJ1, scoreJ2, deux_joueurs }
   }
 
+  preload() {
+    // Chargement de l'image de fond du Game Over
+    this.load.image("screen_game_over", "./assets/screen_game_over.png");
+  }
+
   create() {
     const { raison, niveau, scoreJ1, scoreJ2, deux_joueurs } = this.donnees;
 
-    let message = "Vous êtes tombé au combat...";
-    if (raison === "temps") {
-      message = "Le temps est écoulé !";
-    } else if (raison === "vie_J1") {
-      message = deux_joueurs ? "Le joueur 1 est tombé au combat..." : message;
-    } else if (raison === "vie_J2") {
-      message = "Le joueur 2 est tombé au combat...";
-    }
+    // 1. Image de fond pleine écran (1280 x 720) + petit fondu à l'arrivée
+    this.add.image(0, 0, "screen_game_over").setOrigin(0, 0);
+    this.cameras.main.fadeIn(500);
 
-    const style = (taille, couleur = "#ffffff") => ({
-      fontFamily: "Arial, sans-serif",
+    // petit utilitaire : texte dans le style de l'écran (police pixel/arcade, contour sombre)
+    const texte = (x, y, contenu, taille, couleur) => this.add.text(x, y, contenu, {
+      fontFamily: POLICE,
       fontSize: taille + "px",
+      fontStyle: "bold",
       color: couleur,
-      align: "center"
-    });
+      align: "center",
+      stroke: "#1a0008",
+      strokeThickness: 4
+    }).setOrigin(0.5);
 
-    this.cameras.main.setBackgroundColor("#1a0a0a");
-    this.add.text(640, 190, "GAME OVER", style(72, "#c04545")).setOrigin(0.5);
-    this.add.text(640, 290, message, style(30)).setOrigin(0.5);
+// Fonction pour créer l'encadré rouge
+const cadre = (x, y, largeur, hauteur) => {
+  this.add.rectangle(
+    x, y, largeur, hauteur,
+    FOND_PANNEAU, 0.85
+  ).setStrokeStyle(3, ROUGE, 0.95);
 
-    const texte_score = deux_joueurs
-      ? `Score J1 : ${scoreJ1 ?? 0}   -   Score J2 : ${scoreJ2 ?? 0}`
-      : `Score : ${scoreJ1 ?? 0}`;
-    this.add.text(640, 370, texte_score, style(26)).setOrigin(0.5);
+  this.add.rectangle(
+    x, y, largeur - 12, hauteur - 12
+  ).setStrokeStyle(1, ROUGE, 0.45);
+};
 
-    const rejouer = this.add.text(640, 490, "I / R : rejouer le niveau", style(26, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const menu = this.add.text(640, 550, "K / F : retour au menu", style(26, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
+// Fonction pour animer le score
+const compteur = (cible, score) => {
+  const valeur = { v: 0 };
 
-    const relancer = () => this.scene.start(niveau || "niveau1", { mode: deux_joueurs ? 2 : 1 });
-    const retour_menu = () => this.scene.start("Menu");
+  this.tweens.add({
+    targets: valeur,
+    v: score,
+    duration: 900,
+    delay: 400,
+    ease: "Cubic.easeOut",
+    onUpdate: () => {
+      cible.setText(String(Math.round(valeur.v)));
+    }
+  });
+};
 
-    rejouer.on("pointerdown", relancer);
-    menu.on("pointerdown", retour_menu);
-    //petit délai : évite de passer l'écran par erreur si le joueur est encore en train d'appuyer sur un bouton
-    this.time.delayedCall(700, () => {
-      let choisi = false;
-      const une_fois = (action) => () => { if (!choisi) { choisi = true; action(); } };
-      TOUCHES.valider.forEach((t) => this.input.keyboard.on("keydown-" + t, une_fois(relancer)));
-      TOUCHES.retour.forEach((t) => this.input.keyboard.on("keydown-" + t, une_fois(retour_menu)));
-    });
-  }
+// SCORE FINAL (1 joueur)
+cadre(640, 602, 460, 74);
+
+texte(640, 582, "SCORE FINAL", 16, TEXTE_ROSE);
+
+const valeur = texte(640, 616, "0", 34, TEXTE_ROUGE);
+
+compteur(valeur, scoreJ1 ?? 0);
+}
 }
