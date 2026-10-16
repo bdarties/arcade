@@ -72,6 +72,11 @@ export default class opera extends Phaser.Scene {
       frameHeight: 252
     });
 
+    this.load.spritesheet("femme", "./assets/spritesheet/femme.png", {
+      frameWidth: 36,
+      frameHeight: 64
+    });
+
     // Lance-trompette : mêmes ressources et mêmes clés que le mode Versus.
     this.load.image("versus_lancetrompette", "./assets/versus/armes/lancetrompette.png");
     this.load.image("versus_lancetrompette_vide", "./assets/versus/armes/lancetrompette_vide.png");
@@ -218,6 +223,14 @@ export default class opera extends Phaser.Scene {
     this.creerAnimationsBoss();
     this.creerBoss();
     this.creerArmeRoquette(map);
+
+    this.anims.create({
+      key: "femme_anim", 
+      frames: this.anims.generateFrameNumbers("femme", { start: 0, end: 1 }),
+      frameRate: 4,
+      repeat: -1
+    }); 
+    this.femme = this.physics.add.sprite(450,450, "femme");
   }
 
   // Prépare les animations de patrouille, d'attente et d'attaque du boss.

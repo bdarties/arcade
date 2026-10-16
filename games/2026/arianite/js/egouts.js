@@ -4,6 +4,13 @@ const FICHIER_TUILES = "./assets/tileset_sewer.png";
 const NOM_TUILESET = "tileset_sewer";
 const COULEUR_FOND = "#383543";
 
+// Paramètres de déplacement et de résistance des ennemis, surchargeables dans Tiled.
+const ENNEMI_DEGATS = 1;
+const ENNEMI_PV = 2;
+const ENNEMI_VITESSE = 60;
+const ENNEMI_DISTANCE = 150;
+const ENNEMI_ECHELLE = 1;
+
 // Niveau des égouts : carte Tiled, portes de transition et déplacement du joueur.
 export default class egouts extends Phaser.Scene {
   constructor() {
@@ -65,8 +72,8 @@ export default class egouts extends Phaser.Scene {
     map.createLayer("calque_background", tileset, 0, decalageY).setDepth(-9);
     map.createLayer("calque_background_2", tileset, 0, decalageY).setDepth(-8);
     map.createLayer("calque_background_ombres", tileset, 0, decalageY).setDepth(-7);
-    const calque_sol = map.createLayer("calque_plateformes", tileset, 0, decalageY);
-    calque_sol.setCollisionByExclusion([-1, 0]);
+    this.calque_sol = map.createLayer("calque_plateformes", tileset, 0, decalageY);
+    this.calque_sol.setCollisionByExclusion([-1, 0]);
 
     this.physics.world.setBounds(0, decalageY, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, hauteurEcran);
@@ -101,7 +108,7 @@ export default class egouts extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.clavier = fct.creerClavier(this);
 
-    this.physics.add.collider(this.player, calque_sol);
+    this.physics.add.collider(this.player, this.calque_sol);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     fct.initVies(this, false);
@@ -118,6 +125,9 @@ export default class egouts extends Phaser.Scene {
     
     this.ennemis = [];
     const calque_ennemis = map.getObjectLayer("ennemis");
+    console.log("calque ennemis :", calque_ennemis);
+    console.log("calques d'objets :", map.objects.map((l) => l.name));
+
     if (!calque_ennemis) {
       console.warn('Calque d\'objets "ennemis" introuvable dans la map Tiled');
     } else {
@@ -138,7 +148,7 @@ export default class egouts extends Phaser.Scene {
       e.departX = o.x;
       e.sens = Math.random() < 0.5 ? -1 : 1;
       e.play("ennemi_marche");
-      this.physics.add.collider(e, calque_sol);
+      this.physics.add.collider(e, this.calque_sol);
       this.physics.add.overlap(this.player, e, () => this.perdreVie(ENNEMI_DEGATS, e));
       this.ennemis.push(e);
       });
@@ -158,6 +168,21 @@ export default class egouts extends Phaser.Scene {
       console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_grenier.mp3");
     }
       
+    const test = this.physics.add
+      .sprite(departX + 150, departY, "ennemi_grenier", 0)
+      .setOrigin(0.5, 1)
+      .setDepth(1);
+    test.body.setSize(24, 58).setOffset(6, 6);
+    test.vitesse = ENNEMI_VITESSE;
+    test.distance = ENNEMI_DISTANCE;
+    test.pv = ENNEMI_PV;
+    test.departX = test.x;
+    test.sens = 1;
+    test.play("ennemi_marche");
+    this.physics.add.collider(test, this.calque_sol);
+    this.physics.add.overlap(this.player, test, () => this.perdreVie(ENNEMI_DEGATS, test));
+    this.ennemis.push(test);
+
   }
 
 // Fait patrouiller les ennemis et les fait rebrousser chemin près des bords.
@@ -192,11 +217,6 @@ export default class egouts extends Phaser.Scene {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
     this.mettreAJourEnnemis();
-
-
-    if (this.player.body.bottom >= this.cameras.main.height - 1) {
-      fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
-    }
 
     const auSol = this.player.body.touching.down || this.player.body.blocked.down;
     fct.deplacerPerso(this.player, this.clavier, auSol);

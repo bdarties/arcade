@@ -3,6 +3,8 @@ import * as fct from "./fonctions.js";
 let player;
 let clavier;
 let calque_sol;
+let maZone;
+let boutonInteractif;
 
 const PARALLAXE_CIEL = 0.05;
 const RELEVER = 40;
@@ -47,6 +49,7 @@ export default class exterieur extends Phaser.Scene {
     this.load.image("img_porte1", "./assets/door1.png");
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
+    this.load.image('img_button', './assets/inputD.png');
     this.load.image("img_opera", "./assets/opera.png");
     this.load.audio("son_pluie", "./assets/musique/fond_paris_pluie.mp3");
     this.load.spritesheet("portier", "./assets/spritesheet/portier.png", {
@@ -101,6 +104,14 @@ export default class exterieur extends Phaser.Scene {
         .setDepth(-10);
       return { sprite, ...c };
     });
+    // 1. Créer l'image du bouton aux coordonnées (3024, 904) et la cacher par défaut
+    boutonInteractif = this.add.image(3024, 904, 'img_button');
+    boutonInteractif.setVisible(false);
+    boutonInteractif.setDepth(10);
+
+    // 2. Créer la zone aux coordonnées exactes de votre éditeur (X: 2990, Y: 840, W: 242, H: 141)
+    maZone = this.add.zone(3111, 910.5, 242, 141);
+    this.physics.add.existing(maZone, true);
 
     this.portes = [];
     const calque_portes = map.getObjectLayer("portes");
@@ -352,6 +363,10 @@ export default class exterieur extends Phaser.Scene {
       fct.mortParChute(this, () => this.scene.restart({}));
     }
 
+    if (player && maZone) {
+        const estDansLaZone = this.physics.overlap(player, maZone);
+        boutonInteractif.setVisible(estDansLaZone);
+    }
     const scrollX = this.cameras.main.scrollX;
     this.fond_ciel.tilePositionX = (scrollX * PARALLAXE_CIEL) / this.echelle_fond;
     this.couches.forEach((c) => {
