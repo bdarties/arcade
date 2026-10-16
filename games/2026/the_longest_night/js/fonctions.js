@@ -585,6 +585,7 @@ export function tuer_joueur(joueur) {
     if (joueurs_vivants.call(this).length === 0) {
     this.gameState.fin_de_partie = true;
     this.time.delayedCall(1500, () => {
+      texteBalles.setColor("#ffd166");
       this.gameState.musique_niveau1.stop();
       this.scene.start("Game_over", {
         raison: this.gameState.temps_restant <= 0 ? "temps" : "vie_J1", // "temps" si c'est la faucheuse qui l'a eu

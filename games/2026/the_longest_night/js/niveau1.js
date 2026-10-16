@@ -1,3 +1,4 @@
+import {creer_hud, maj_timer, COULEURS_HUD } from "./hud.js";
 import {
   ajouter_son,
   gerer_cameras,
@@ -373,7 +374,7 @@ export default class niveau1 extends Phaser.Scene {
       repeat: temps_restant - 1,
       callback: () => {
         temps_restant -= 1;
-        temps_restant_affiche.setText(String(temps_restant));
+        maj_timer(temps_restant_affiche, temps_restant);
         if (temps_restant <= 0 && mode_deux_joueurs) { //compétitif : le temps est écoulé, on compte les points
           terminer_match.call(this, "temps");
         } else if (temps_restant <= 0 && this.cfg.faucheuse) { //le temps est écoulé : la faucheuse arrive
@@ -578,80 +579,18 @@ export default class niveau1 extends Phaser.Scene {
     /************************************
      * ELEMENTS DE L'UI
     ************************************/
-    const panneauScoreJ1 = this.add.rectangle(76, 175, 152, 56, 0x111827, 0.8)
-      .setStrokeStyle(2, 0x3bd5f0, 0.7)
-      .setScrollFactor(0);
-    const panneauBallesJ1 = this.add.rectangle(76, 96, 152, 64, 0x111827, 0.8)
-      .setStrokeStyle(2, 0xc9a326, 0.7)
-      .setScrollFactor(0);
-    const panneauVieJ1 = this.add.rectangle(76, 26, 152, 48, 0x111827, 0.8)
-      .setStrokeStyle(2, 0x3bd5f0, 0.7)
-      .setScrollFactor(0);
-    //éléments de l'UI du joueur 1
-    player.iconeScore = this.add.image(30, 145, "Score").setDisplaySize(24, 24);
-    player.iconeScore.setScale(2);
-    player.iconeScore.setOrigin(0.5, 0);
-    player.iconeScore.setScrollFactor(0);
-    score_J1_affiche = this.add.text(64, 160, String(player.score), { fontSize: '32px', fill: '#3bd5f0' });
-    score_J1_affiche.setScrollFactor(0);
-    player.iconeRecharge = this.add.image(32, 74, "bullet_icone").setDisplaySize(24, 24);
-    player.iconeRecharge.setScale(1.5);
-    player.iconeRecharge.setOrigin(0.5, 0);
-    player.iconeRecharge.setScrollFactor(0);
-    balle_restanteJ1_affiche = this.add.text(64, 85, String(player.balle_restante), { fontSize: '32px', fill: '#c9a326' });
-    balle_restanteJ1_affiche.setScrollFactor(0);
-    player.barreVie = this.add.sprite(70, 10, "pv_bar", player.points_vies);
-    player.barreVie.setScale(2.2);
-    player.barreVie.setOrigin(0.5, 0);
-    player.barreVie.setScrollFactor(0);
 
-    //éléments de l'UI du joueur 2
-    let panneauxJ2 = [];
+    const hud = creer_hud(this, player, mode_deux_joueurs ? player2 : null, { temps: temps_restant, cles: cles_restantes });
+    score_J1_affiche = hud.j1.score;
+    balle_restanteJ1_affiche = hud.j1.balles;
+    player.barreVie = hud.j1.barreVie;
     if (mode_deux_joueurs) {
-      const panneauScoreJ2 = this.add.rectangle(556, 175, 152, 56, 0x111827, 0.8)
-        .setStrokeStyle(2, 0xf03b3b, 0.7)
-        .setScrollFactor(0);
-      const panneauBallesJ2 = this.add.rectangle(556, 96, 152, 64, 0x111827, 0.8)
-        .setStrokeStyle(2, 0x571881, 0.7)
-        .setScrollFactor(0);
-      const panneauVieJ2 = this.add.rectangle(556, 26, 152, 48, 0x111827, 0.8)
-        .setStrokeStyle(2, 0xf03b3b, 0.7)
-        .setScrollFactor(0);
-      panneauxJ2 = [panneauScoreJ2, panneauBallesJ2, panneauVieJ2];
-      player2.iconeScore = this.add.image(510, 145, "Score").setDisplaySize(24, 24);
-      player2.iconeScore.setScale(2.2);
-      player2.iconeScore.setOrigin(0.5, 0);
-      player2.iconeScore.setScrollFactor(0);
-      score_J2_affiche = this.add.text(544, 160, String(player2.score), { fontSize: '32px', fill: '#f03b3b' });
-      score_J2_affiche.setScrollFactor(0);
-      player2.iconeRecharge = this.add.image(512, 74, "bullet_icone").setDisplaySize(24, 24);
-      player2.iconeRecharge.setScale(1.5);
-      player2.iconeRecharge.setOrigin(0.5, 0);
-      player2.iconeRecharge.setScrollFactor(0);
-      balle_restanteJ2_affiche = this.add.text(544, 85, String(player2.balle_restante), { fontSize: '32px', fill: '#571881' });
-      balle_restanteJ2_affiche.setScrollFactor(0);
-      player2.barreVie = this.add.sprite(550, 10, "pv_bar2", player2.points_vies);
-      player2.barreVie.setScale(2);
-      player2.barreVie.setOrigin(0.5, 0);
-      player2.barreVie.setScrollFactor(0);
+      score_J2_affiche = hud.j2.score;
+      balle_restanteJ2_affiche = hud.j2.balles;
+      player2.barreVie = hud.j2.barreVie;
     }
-    //éléments UI globaux
-    const panneauTimer = this.add.rectangle(640, 32, 160, 56, 0x111827, 0.8)
-      .setStrokeStyle(2, 0xffffff, 0.7)
-      .setScrollFactor(0);
-    const panneauCles = this.add.rectangle(640, 100, 160, 56, 0x111827, 0.8)
-      .setStrokeStyle(2, 0xcd50ff, 0.7)
-      .setScrollFactor(0);
-    timerIcon = this.add.image(600, 32, "timer_icone").setDisplaySize(32, 32);
-    timerIcon.setScrollFactor(0);
-    temps_restant_affiche = this.add.text(628, 14, String(temps_restant), { fontSize: '32px', fill: '#ffffff' });
-    temps_restant_affiche.setScrollFactor(0);
-    nombreCleIcon = this.add.image(600, 100, "nombre_cle_icone").setDisplaySize(16, 32);
-    nombreCleIcon.setScrollFactor(0);
-    nombreCleIcon.setScale(1.2);
-    cles_restantes_affiche = this.add.text(628, 82, String(cles_restantes), { fontSize: '32px', fill: '#cd50ff' });
-    cles_restantes_affiche.setScrollFactor(0);
-
+    temps_restant_affiche = hud.commun.temps;
+    cles_restantes_affiche = hud.commun.cles;
 
     /*************************************
      *  CREATION DES SONS *
@@ -703,51 +642,20 @@ export default class niveau1 extends Phaser.Scene {
     /*****************************************************
      *  GESTION DES INTERACTIONS ENTRE GROUPES ET ELEMENTS (+ ignorance de la caméra) *
      ******************************************************/
-    this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
-    this.physics.add.overlap(player, groupe_recharges, recharger, null, this);
-    this.physics.add.overlap(player, groupe_soin, soigner, null, this);
-    player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
-    if (mode_deux_joueurs) {
-      this.physics.add.collider(player, player2);
-      this.physics.add.overlap(player2, groupe_recharges, recharger, null, this);
-      this.physics.add.overlap(player2, groupe_soin, soigner, null, this);
-      this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
-      player2.colliderEnnemis = this.physics.add.collider(player2, groupe_araignee, degat_contact_ennemi, null, this);
-    }
-    this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
-    //gestion des éléments ignorés par la caméra
-    hudJ1 = [
-      panneauScoreJ1, panneauBallesJ1, panneauVieJ1,
-      score_J1_affiche, player.iconeScore, balle_restanteJ1_affiche, player.iconeRecharge, player.barreVie
-    ];
-    if (mode_deux_joueurs) {
-      hudJ2 = [
-        ...panneauxJ2,
-        score_J2_affiche, player2.iconeScore, balle_restanteJ2_affiche, player2.iconeRecharge, player2.barreVie
-      ];
-    }
-    else {
-      hudJ2 = [];
-    }
-    hudCommun = [
-      panneauTimer, panneauCles,
-      temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon
-    ];
-    if (mode_deux_joueurs) { //en compétitif il n'y a pas de "clés restantes" à afficher : seuls les scores comptent
-      panneauCles.setVisible(false);
-      nombreCleIcon.setVisible(false);
-      cles_restantes_affiche.setVisible(false);
+    hudJ1 = hud.j1.objets;
+    hudJ2 = hud.j2 ? hud.j2.objets : [];
+    hudCommun = hud.commun.objets;
+    if (mode_deux_joueurs) { //en compétitif il n'y a pas de "clés restantes" : seuls les scores comptent
+      hud.commun.objetsCles.forEach((o) => o.setVisible(false));
     }
     camJ1.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-    camJ1UI.ignore(hudJ2);
+    camJ1UI.ignore([...hudJ2, ...hudCommun]);
     if (mode_deux_joueurs) {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-      camJ2UI.ignore([...hudJ1, panneauTimer, panneauCles, temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon]);
+      camJ2UI.ignore([...hudJ1, ...hudCommun]);
     }
-    camGlobalUI.ignore([...hudJ1, ...hudJ2]);
-  }
-
-
+    camGlobalUI.ignore([...hudJ1, ...hudJ2]);   // <-- celle qui manquait
+    }
   /***********************************************************************/
   /** FONCTION UPDATE
 /***********************************************************************/
