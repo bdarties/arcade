@@ -482,7 +482,9 @@ export function apparition_faucheuse() {
   this.gameState.faucheuse.setAlpha(0);
   this.gameState.faucheuse.body.setSize(cfg.hitbox, cfg.hitbox);
   poser_faucheuse.call(this, "marche", false);
-  this.physics.add.collider(this.gameState.faucheuse, this.gameState.calque_mur); //elle ne traverse pas les murs
+    if (!cfg.traverse_murs) { //si traverse_murs est vrai, la faucheuse passe à travers les murs comme un fantôme
+    this.physics.add.collider(this.gameState.faucheuse, this.gameState.murs);
+  } //Elle traverse pas les murs mais si on veut changer faut mettre false dans niveau1
   this.gameState.faucheuse.etat = "attente"; //"attente" -> "chasse" <-> "attaque"
   this.gameState.faucheuse.prochaine_attaque = 0;
   this.gameState.faucheuse.verif_coincee = 0;
@@ -587,13 +589,13 @@ export function tuer_joueur(joueur) {
     terminer_match.call(this, joueur === this.gameState.player ? "vie_J1" : "vie_J2");
     return;
   }
-    if (joueurs_vivants.call(this).length === 0) {
+      if (joueurs_vivants.call(this).length === 0) {
     this.gameState.fin_de_partie = true;
     this.time.delayedCall(1500, () => {
       this.sound.stopAll();
       this.scene.start("Game_over", {
-        raison: this.gameState.temps_restant <= 0 ? "temps" : "vie_J1", // "temps" si c'est la faucheuse qui l'a eu
-        niveau: this.scene.key, // permet de rejouer le bon niveau
+        raison: this.gameState.temps_restant <= 0 ? "temps" : "vie_J1", // "temps" si c'est la faucheuse
+        niveau: this.scene.key, // pour rejouer le bon niveau
         scoreJ1: this.gameState.player.score,
         deux_joueurs: false
       });
@@ -617,8 +619,8 @@ export function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le 
   } else {
     gagnant = this.gameState.player.score > this.gameState.player2.score ? 1 : (this.gameState.player2.score > this.gameState.player.score ? 2 : 0);
   }
-    this.time.delayedCall(1000, () => {
-    this.sound.stopAll();
+      this.time.delayedCall(1000, () => {
+    this.gameState.musique_niveau1.stop();
     if (raison === "vie_J1" || raison === "vie_J2") { // un joueur est mort : écran de Game Over
       this.scene.start("Game_over", {
         raison,
