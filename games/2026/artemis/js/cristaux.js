@@ -25,10 +25,12 @@ export function creerCristaux(scene, calque_sol, calque_murs) {
   const biome = biomes.biomeDuNiveau(scene.niveau); // la couleur des cristaux suit le biome du niveau
   scene.cristaux = scene.etat.cristaux.map((position) => {
     const cristal = scene.groupe_cristaux.create(position.x, position.y - 19, biome.cristal);
-    // hitbox sur le pied du cristal (colonnes 8 à 29, lignes 27 à 38) : on peut passer derrière le haut
-    cristal.body.setSize(22, 12);
-    cristal.body.setOffset(8, 27);
-    cristal.setDepth(position.y); // même tri d'affichage que les joueurs et les cailloux
+    // hitbox sur le corps du cristal, là où il est large (colonnes 4 à 33, lignes 21 à 38) : seule la pointe est traversable
+    cristal.body.setSize(30, 18);
+    cristal.body.setOffset(4, 21);
+    // tri d'affichage : un joueur est trié sur le centre de son sprite, ses pieds sont ~12 px plus bas. Avec la base du cristal comme profondeur,
+    // un joueur collé devant restait dessiné derrière : on avance la bascule de 16 px (devant dès qu'il touche le cristal, derrière au-delà du haut)
+    cristal.setDepth(position.y - 16);
     cristal.coups_restants = position.coups ?? COUPS_CRISTAL;
     cristal.anims.play({ key: biome.anim_cristal, startFrame: Phaser.Math.Between(0, 23) }); // pas tous synchronisés
     cristal.phase = Math.random() * Math.PI * 2; // pour la pulsation de la lumière
