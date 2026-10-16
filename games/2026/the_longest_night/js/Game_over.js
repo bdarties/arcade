@@ -24,6 +24,8 @@ export default class Game_over extends Phaser.Scene {
     // Chargement de l'image de fond du Game Over
     this.load.image("screen_game_over", "./assets/screen_game_over.png");
     this.load.image("button_retour", "./assets/menu/button_retour.png");
+    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
+    this.load.audio("Musique_voiture", "./assets/musique_et_sons/Musique_Victoire.mp3");
   }
 
   create() {
