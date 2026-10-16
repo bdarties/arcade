@@ -1,10 +1,17 @@
 import { TOUCHES } from "./touches.js";
 
+// Palette tirée de l'image screen_game_over.png
+const POLICE = '"Courier New", Courier, monospace';
+const ROUGE = 0xff2d4d;
+const FOND_PANNEAU = 0x14081a;
+const TEXTE_ROSE = "#f1b0a8";
+const TEXTE_ROUGE = "#ff4d6d";
+const COULEUR_J1 = "#3bd5f0";
+const COULEUR_J2 = "#ff8c42";
+
 export default class Game_over extends Phaser.Scene {
   constructor() {
-    super({
-      key: "Game_over"
-    });
+    super({ key: "Game_over" });
   }
 
   init(data) {
@@ -12,47 +19,76 @@ export default class Game_over extends Phaser.Scene {
   }
 
   preload() {
-    // Chargement de l'image de fond du Game Over
     this.load.image("screen_game_over", "./assets/screen_game_over.png");
+    this.load.image("button_retour", "./assets/menu/button_retour.png");
+    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
+    this.load.audio("Musique_victoire", "./assets/musique_et_sons/Musique_Victoire.mp3");
   }
 
   create() {
+    this.sound.stopAll();
+    this.sound.add("Musique_Game_Over").play({ loop: true });
     const { raison, niveau, scoreJ1, scoreJ2, deux_joueurs } = this.donnees;
 
-    // 1. Image de fond pleine écran (1280 x 720)
     this.add.image(0, 0, "screen_game_over").setOrigin(0, 0);
+    this.cameras.main.fadeIn(500);
 
-    const style = (taille, couleur = "#ffffff") => ({
-      fontFamily: "Arial, sans-serif",
+    const texte = (x, y, contenu, taille, couleur) => this.add.text(x, y, contenu, {
+      fontFamily: POLICE,
       fontSize: taille + "px",
+      fontStyle: "bold",
       color: couleur,
       align: "center",
-      stroke: "#000000",
+      stroke: "#1a0008",
       strokeThickness: 4
-    });
+    }).setOrigin(0.5);
 
-    // 2. Affichage des détails et du score sous l'encadré rouge
-    let detail = "Le joueur est tombé au combat...";
-    if (raison === "temps") {
-      detail = "Le temps s'est écoulé...";
-    } else if (raison === "vie_J1") {
-      detail = deux_joueurs ? "Le Joueur 1 a perdu la partie..." : detail;
-    } else if (raison === "vie_J2") {
-      detail = "Le Joueur 2 a perdu la partie...";
+    const cadre = (x, y, largeur, hauteur) => {
+      this.add.rectangle(x, y, largeur, hauteur, FOND_PANNEAU, 0.85)
+        .setStrokeStyle(3, ROUGE, 0.95);
+      this.add.rectangle(x, y, largeur - 12, hauteur - 12)
+        .setStrokeStyle(1, ROUGE, 0.45);
+    };
+
+    const compteur = (cible, score) => {
+      const valeur = { v: 0 };
+      this.tweens.add({
+        targets: valeur,
+        v: score,
+        duration: 900,
+        delay: 400,
+        ease: "Cubic.easeOut",
+        onUpdate: () => cible.setText(String(Math.round(valeur.v)))
+      });
+    };
+
+    // Scores
+    if (deux_joueurs) {
+      const panneau = (x, titre, couleurTitre, score) => {
+        cadre(x, 570, 400, 90);
+        texte(x, 548, titre, 16, couleurTitre);
+        const valeur = texte(x, 586, "0", 34, TEXTE_ROUGE);
+        compteur(valeur, score ?? 0);
+      };
+      panneau(400, "JOUEUR 1", COULEUR_J1, scoreJ1);
+      panneau(880, "JOUEUR 2", COULEUR_J2, scoreJ2);
+    } else {
+      cadre(640, 570, 460, 80);
+      texte(640, 550, "SCORE FINAL", 16, TEXTE_ROSE);
+      const valeur = texte(640, 584, "0", 34, TEXTE_ROUGE);
+      compteur(valeur, scoreJ1 ?? 0);
     }
 
-    this.add.text(640, 480, detail, style(22, "#aaaaaa")).setOrigin(0.5);
+    // "Rejouer" en bas à gauche, "Retour" en rouge en bas à droite
+    const rejouer = texte(200, 685, "A: Rejouer", 22, "#f1c489")
+      .setInteractive({ useHandCursor: true });
+    rejouer.on("pointerover", () => rejouer.setColor("#ffffff"));
+    rejouer.on("pointerout", () => rejouer.setColor("#f1c489"));
 
-    const texte_score = deux_joueurs
-      ? `Score Joueur 1 : ${scoreJ1 ?? 0}   -   Score Joueur 2 : ${scoreJ2 ?? 0}`
-      : `Score Final : ${scoreJ1 ?? 0}`;
-    this.add.text(640, 520, texte_score, style(28, "#ff3b3b")).setOrigin(0.5);
-
-    // 3. Navigation / Boutons sous forme de texte interactif
-    const rejouer = this.add.text(640, 580, "I / R : Rejouer le niveau", style(24, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const menu = this.add.text(640, 630, "K / F : Retour au menu principal", style(24, "#f1c489"))
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const menu = texte(1080, 685, "D : Retour", 22, TEXTE_ROUGE)
+      .setInteractive({ useHandCursor: true });
+    menu.on("pointerover", () => menu.setColor("#ffffff"));
+    menu.on("pointerout", () => menu.setColor(TEXTE_ROUGE));
 
     const relancer = () => this.scene.start(niveau || "niveau1", { mode: deux_joueurs ? 2 : 1 });
     const retour_menu = () => this.scene.start("Menu");
@@ -60,7 +96,6 @@ export default class Game_over extends Phaser.Scene {
     rejouer.on("pointerdown", relancer);
     menu.on("pointerdown", retour_menu);
 
-    // Évite la validation accidentelle si une touche était maintenue lors du Game Over
     this.time.delayedCall(700, () => {
       let choisi = false;
       const une_fois = (action) => () => { if (!choisi) { choisi = true; action(); } };
