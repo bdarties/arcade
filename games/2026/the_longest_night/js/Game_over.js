@@ -23,6 +23,8 @@ export default class Game_over extends Phaser.Scene {
   }
 
   create() {
+    this.sound.stopAll();
+    this.sound.add("Musique_Game_Over").play({ loop: true });
     const { raison, niveau, scoreJ1, scoreJ2, deux_joueurs } = this.donnees;
 
     this.add.image(0, 0, "screen_game_over").setOrigin(0, 0);

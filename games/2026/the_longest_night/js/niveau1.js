@@ -41,7 +41,7 @@ var hudJ1; //éléments d'UI du joueur 1
 var hudJ2; //éléments d'UI du joueur 2
 var hudCommun; //éléments d'UI communs (timer, clés)
 var groupeBullets;
-var groupe_araignee;
+var groupe_ennemis;
 var tableau_ennemis;
 var groupe_recharges;
 var groupe_soin;
@@ -54,7 +54,6 @@ var son_feu;
 var nombre_ennemis_apparaissant;
 var nombre_recharges_apparaissant;
 var nombre_soins_apparaissant;
-var musique_niveau1;
 var camJ1;
 var camJ1UI;
 var camJ2;
@@ -70,6 +69,13 @@ var son_joueur_blesse;
 var son_areignne_blesse;
 var son_soin;
 var son_cle;
+var son_renard_blesse;
+var son_porte_ouverte;
+var son_recharge_magique;
+var son_moniteur_coeur;
+var areignee_morte;
+var renard_mort;
+var musique_niveau;
 var cles_restantes_affiche;
 var temps_restant;
 var temps_restant_affiche;
@@ -100,13 +106,15 @@ const niveauState = {
   get cles_restantes_affiche() { return cles_restantes_affiche; }, set cles_restantes_affiche(value) { cles_restantes_affiche = value; },
   get fin_de_partie() { return fin_de_partie; }, set fin_de_partie(value) { fin_de_partie = value; },
   get faucheuse() { return faucheuse; }, set faucheuse(value) { faucheuse = value; },
-  get groupe_araignee() { return groupe_araignee; }, set groupe_araignee(value) { groupe_araignee = value; },
+  get groupe_ennemis() { return groupe_ennemis; }, set groupe_ennemis(value) { groupe_ennemis = value; },
   get groupeBullets() { return groupeBullets; }, set groupeBullets(value) { groupeBullets = value; },
   get groupe_cle() { return groupe_cle; }, set groupe_cle(value) { groupe_cle = value; },
   get groupe_recharges() { return groupe_recharges; }, set groupe_recharges(value) { groupe_recharges = value; },
   get groupe_soin() { return groupe_soin; }, set groupe_soin(value) { groupe_soin = value; },
   get murs() { return murs; }, set murs(value) { murs = value; },
-  get musique_niveau1() { return musique_niveau1; }, set musique_niveau1(value) { musique_niveau1 = value; },
+  get son_moniteur_coeur() { return son_moniteur_coeur; }, set son_moniteur_coeur(value) { son_moniteur_coeur = value; },
+  get son_porte_ouverte() { return son_porte_ouverte; }, set son_porte_ouverte(value) { son_porte_ouverte = value; },
+  get son_recharge_magique() { return son_recharge_magique; }, set son_recharge_magique(value) { son_recharge_magique = value; },
   get nombre_cles() { return nombre_cles; }, set nombre_cles(value) { nombre_cles = value; },
   get nombre_ennemis_apparaissant() { return nombre_ennemis_apparaissant; }, set nombre_ennemis_apparaissant(value) { nombre_ennemis_apparaissant = value; },
   get nombre_recharges_apparaissant() { return nombre_recharges_apparaissant; }, set nombre_recharges_apparaissant(value) { nombre_recharges_apparaissant = value; },
@@ -115,10 +123,13 @@ const niveauState = {
   get score_J1_affiche() { return score_J1_affiche; }, set score_J1_affiche(value) { score_J1_affiche = value; },
   get score_J2_affiche() { return score_J2_affiche; }, set score_J2_affiche(value) { score_J2_affiche = value; },
   get son_areignne_blesse() { return son_areignne_blesse; }, set son_areignne_blesse(value) { son_areignne_blesse = value; },
+  get areignee_morte() { return areignee_morte; }, set areignee_morte(value) { areignee_morte = value; },
+  get renard_mort() { return renard_mort; }, set renard_mort(value) { renard_mort = value; },
   get son_cle() { return son_cle; }, set son_cle(value) { son_cle = value; },
   get son_feu() { return son_feu; }, set son_feu(value) { son_feu = value; },
   get son_joueur_blesse() { return son_joueur_blesse; }, set son_joueur_blesse(value) { son_joueur_blesse = value; },
   get son_soin() { return son_soin; }, set son_soin(value) { son_soin = value; },
+  get son_renard_blesse() { return son_renard_blesse; }, set son_renard_blesse(value) { son_renard_blesse = value; },
   get sortie_ouverte() { return sortie_ouverte; }, set sortie_ouverte(value) { sortie_ouverte = value; },
   get spawns_complets() { return spawns_complets; }, set spawns_complets(value) { spawns_complets = value; },
   get tableau_ennemis() { return tableau_ennemis; }, set tableau_ennemis(value) { tableau_ennemis = value; },
@@ -161,6 +172,8 @@ export default class niveau1 extends Phaser.Scene {
         nom: "groupe_araignee",
         texture: "areignee_ennemie",
         animation: "animation_areignee",
+        son_blesse: "son_areignne_blesse",
+        son_mort: "areignee_morte",
         points_vies: 3,
         degats: 1,
         score: 100
@@ -223,20 +236,15 @@ export default class niveau1 extends Phaser.Scene {
     this.load.image("nombre_cle_icone", "./assets/UI/trousseau.png");
     // chargement des audios
     this.load.audio("coupDeFeu", "./assets/musique_et_sons/shoot.mp3");
-    this.load.audio("MusiqueNiveau1", "./assets/musique_et_sons/musique_niveau1.mp3");
+    this.load.audio("musique_niveau", "./assets/musique_et_sons/musique_niveau.mp3");
     this.load.audio("blesse", "./assets/musique_et_sons/blesse.mp3");
     this.load.audio("areignee_blesse", "./assets/musique_et_sons/areignee_blesse.mp3");
     this.load.audio("cle_collecte", "./assets/musique_et_sons/cle_collecte.wav");
     this.load.audio("areignee_morte", "./assets/musique_et_sons/areignee_morte.mp3");
     this.load.audio("Grognement_renard", "./assets/musique_et_sons/Grognement_renard.wav");
     this.load.audio("moniteur_coeur", "./assets/musique_et_sons/moniteur_coeur.wav");
-    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
-    this.load.audio("Musique_menu", "./assets/musique_et_sons/Musique_menu.mp3");
-    this.load.audio("musique_niveau2", "./assets/musique_et_sons/musique_niveau2.mp3");
-    this.load.audio("Musique_Victoire", "./assets/musique_et_sons/Musique_Victoire.mp3");
     this.load.audio("Porte_ouverte", "./assets/musique_et_sons/Porte_ouverte.wav");
     this.load.audio("recharge_magique", "./assets/musique_et_sons/recharge_magique.wav");
-    this.load.audio("renard_blesse", "./assets/musique_et_sons/renard_blesse.wav");
     this.load.audio("renard_mort", "./assets/musique_et_sons/renard_mort.wav");
     this.load.audio("soin_bandage", "./assets/musique_et_sons/soin_bandage.wav");
 
@@ -366,7 +374,7 @@ export default class niveau1 extends Phaser.Scene {
     spawns_complets = tableau_spawn.map((p) => ({ x: p.x, y: p.y }));
     porte = mode_deux_joueurs ? null : this.physics.add.staticSprite(cfg.porte_spawn.x, cfg.porte_spawn.y, "sortie_fermee"); //pas de porte en compétitif
     groupe_cle = this.physics.add.group();
-    groupe_araignee = this.physics.add.group();
+    groupe_ennemis = this.physics.add.group();
     groupe_recharges = this.physics.add.group();
     groupe_soin = this.physics.add.group();
     //le timer du jeu
@@ -383,7 +391,7 @@ export default class niveau1 extends Phaser.Scene {
         }
       }
     });
-    if (mode_deux_joueurs) { //compétitif : on remet régulièrement clés, ennemis, soins et recharges sur des points libres
+    if (mode_deux_joueurs) { //compétitif : on remet régulièrement clés, ennemis, soins et recharges sur des points libres si on en as plus.
       this.time.addEvent({
         delay: cfg.competitif.delai_reapparition,
         loop: true,
@@ -391,7 +399,7 @@ export default class niveau1 extends Phaser.Scene {
           if (fin_de_partie) {
             return;
           }
-          const elementsActifs = [groupe_cle, groupe_recharges, groupe_soin, groupe_araignee]
+          const elementsActifs = [groupe_cle, groupe_recharges, groupe_soin, groupe_ennemis]
             .some((groupe) => groupe.countActive(true) > 0);
           if (elementsActifs) {
             return;
@@ -596,15 +604,20 @@ export default class niveau1 extends Phaser.Scene {
     /*************************************
      *  CREATION DES SONS *
      *************************************/
+    this.sound.stopAll();
     son_feu = ajouter_son(this, 'coupDeFeu');
-    musique_niveau1 = ajouter_son(this, 'MusiqueNiveau1');
-    musique_niveau1.play({ loop: true });
     son_joueur_blesse = ajouter_son(this, 'blesse');
     son_areignne_blesse = ajouter_son(this, 'areignee_blesse');
+    son_renard_blesse = ajouter_son(this, 'Grognement_renard');
+    renard_mort = ajouter_son(this, 'renard_mort');
     son_cle = ajouter_son(this, 'cle_collecte');
-
-    son_soin = ajouter_son(this,'soin_bandage')
-
+    son_soin = ajouter_son(this, 'soin_bandage');
+    areignee_morte = ajouter_son(this, 'areignee_morte');
+    son_moniteur_coeur = ajouter_son(this, 'moniteur_coeur');
+    son_porte_ouverte = ajouter_son(this, 'Porte_ouverte');
+    son_recharge_magique = ajouter_son(this, 'recharge_magique');
+    musique_niveau = ajouter_son(this, 'musique_niveau');
+    musique_niveau.play({ loop: true });
 
     /***********************
      *  CREATION DU CLAVIER ET TOUCHES *
@@ -629,7 +642,7 @@ export default class niveau1 extends Phaser.Scene {
      * AJOUT DES ENNEMIS                             *
      ************************************************/
 
-    this.physics.add.collider(groupe_araignee, calque_mur);
+    this.physics.add.collider(groupe_ennemis, calque_mur);
     tableau_ennemis = cfg.ennemis;
     const nombre_appels_apparition = Math.max(
       nombre_ennemis_apparaissant,
@@ -647,15 +660,14 @@ export default class niveau1 extends Phaser.Scene {
     this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
     this.physics.add.overlap(player, groupe_recharges, recharger, null, this);
     this.physics.add.overlap(player, groupe_soin, soigner, null, this);
-    player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
+    player.colliderEnnemis = this.physics.add.collider(player, groupe_ennemis, degat_contact_ennemi, null, this);
     if (mode_deux_joueurs) {
       this.physics.add.overlap(player2, groupe_recharges, recharger, null, this);
       this.physics.add.overlap(player2, groupe_soin, soigner, null, this);
       this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
-      player2.colliderEnnemis = this.physics.add.collider(player2, groupe_araignee, degat_contact_ennemi, null, this);
+      player2.colliderEnnemis = this.physics.add.collider(player2, groupe_ennemis, degat_contact_ennemi, null, this);
     }
-    this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
-
+    this.physics.add.overlap(groupeBullets, groupe_ennemis, Elimination_ennemi, null, this);
     //gestion des éléments ignorés par la caméra
     hudJ1 = hud.j1.objets;
     hudJ2 = hud.j2 ? hud.j2.objets : [];

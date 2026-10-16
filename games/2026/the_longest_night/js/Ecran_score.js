@@ -11,8 +11,16 @@ export default class Ecran_score extends Phaser.Scene {
     this.resultats = data || {}; // { mode, scoreJ1, scoreJ2, gagnant, raison }
   }
 
+  preload() {
+    this.load.audio("Musique_Victoire", "./assets/musique_et_sons/Musique_Victoire.mp3");
+  }
+
   create() {
     const { mode, scoreJ1, scoreJ2, gagnant, raison } = this.resultats;
+    this.sound.stopAll();
+    if (mode !== 2 || gagnant === 1 || gagnant === 2) {
+      this.sound.add("Musique_Victoire").play();
+    }
     const valeurOuIndisponible = valeur => valeur ?? "Non renseigné";
     const style = (taille, couleur = "#ffffff") => ({
       fontFamily: "Arial, sans-serif",
