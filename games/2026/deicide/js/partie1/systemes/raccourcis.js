@@ -18,10 +18,11 @@
 // Deux façons de nommer une touche, selon l'outil qui la lit :
 //   - noms Phaser en MAJUSCULES ("ENTER", "SPACE", "X", "SEMICOLON"...) : pour this.input.keyboard.on("keydown-...") et addKey ;
 //   - codes du navigateur ("KeyO", "Enter", "Semicolon"...) : pour evenement.code (crédits, mode NO HIT) ; evenement.key pour les touches F.
-// Les flèches (déplacement, visée, menus) viennent de createCursorKeys() de Phaser : elles ne sont pas listées ici.
+// Deux cas ne sont PAS listés, car ils lisent toutes les touches : « n'importe quelle touche » pour rejouer en 1 contre 1 (versus.js) et la saisie du nom au classement (classement.js).
 // Sur la borne, les boutons A à F envoient I, O, P, K, L et ; (voir gpio2keys.py) ; le joystick du joueur 2 envoie Q/A, D, Z/W, S.
-// Si tu changes une touche d'action, change aussi l'aide affichée en jeu (TOUCHES dans personnage/hud.js).
+// L'aide affichée en jeu (personnage/hud.js) lit ces touches : changer une touche ici suffit (les lettres A à F viennent de BOUTONS_BORNE, les flèches de l'aide sont dessinées en dur).
 export const TOUCHES = {
+    joueur1Deplacement: { left: "LEFT", right: "RIGHT", up: "UP", down: "DOWN" }, // bouger (gauche, droite) et viser (haut, bas) du joueur 1 : les noms left/right/up/down sont ceux que le code attend
     joueur1: { saut: "I", tir: "K", dash: "L" }, // le robot du joueur 1 (personnage.js) : A = I, D = K, E = L sur la borne
     joueur2: { saut: "R", tir: "F", dash: "G" }, // le robot du joueur 2 en 1 contre 1 (versus.js)
     joueur2Deplacement: { gauche: ["Q", "A"], droite: "D", haut: ["Z", "W"], bas: "S" }, // déplacer et viser le joueur 2 (Q Z D S en AZERTY, A et W : joystick de la borne)
@@ -37,6 +38,10 @@ export const TOUCHES = {
         haut: ["UP"], bas: ["DOWN"], gauche: ["LEFT"], droite: ["RIGHT"] // naviguer dans le menu pause et régler les curseurs
     },
     pantheon: { precedent: ["LEFT", "UP"], suivant: ["RIGHT", "DOWN"] }, // le choix de fin de boss (pantheon.js) ; valider = pause.valider
+    classement: { // l'écran de fin (classement.js), codes du navigateur
+        valider: ["KeyI", "Enter", "Space"], // valident le choix, le nom et le classement (I = le bouton de saut de la borne)
+        gauche: "ArrowLeft", droite: "ArrowRight", haut: "ArrowUp", bas: "ArrowDown" // OUI / NON, puis changer la lettre (haut, bas) et la case (gauche, droite)
+    },
     credits: { sortir: ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"] }, // passent les crédits (credits.js), codes du navigateur
     noHit: ["KeyO", "Semicolon"], // maintenues ensemble : le mode NO HIT (mode_no_hit.js) ; ; = la touche M d'un clavier AZERTY
     reset: [80, "Semicolon"], // maintenues 0,5 s : recommencer la partie (ci-dessous) ; P (bouton C) = 80 et ; (bouton F)
@@ -46,6 +51,9 @@ export const TOUCHES = {
         cadence: "F3" // affiche ou cache la boîte d'images par seconde (optimisation.js) ; sur la borne : le bouton B (touche O)
     }
 };
+
+// Le bouton de la borne (A à F) que chaque touche représente, pour l'aide affichée en jeu (hud.js) : A = I, B = O, C = P, D = K, E = L, F = ;
+export const BOUTONS_BORNE = { I: "A", O: "B", P: "C", K: "D", L: "E", SEMICOLON: "F" };
 
 const COMBOS = [ // la liste des combinaisons de touches (une seule : le reset)
     { nom: "reset", touches: TOUCHES.reset, texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)

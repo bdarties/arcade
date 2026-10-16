@@ -14,6 +14,7 @@
 import { ROBOT, DEGATS } from "../parametres.js"; // PV de départ et invincibilité
 import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction } from "../personnage/personnage.js"; // le robot : création, animations, mise à jour, actions
 import { creerHud } from "../personnage/hud.js"; // l'interface : vie, dash, score, chrono
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 import * as ennemis from "../ennemis/ennemis_normaux.js"; // les ennemis normaux
 import * as lumiere from "../mecanismes/lumiere.js"; // la lumière et le voile d'ombre
 import { creerTextureHalo } from "../systemes/dessins_en_code.js"; // les dessins faits en code
@@ -119,7 +120,7 @@ export default class niveau extends Phaser.Scene { // la classe de base : chaque
     this.player.refreshBody(); // on met sa hitbox à jour
     this.player.setBounce(0.2); // il rebondit un peu
     this.player.setCollideWorldBounds(true); // il ne sort pas de la carte
-    this.clavier = this.input.keyboard.createCursorKeys(); // les flèches du clavier
+    this.clavier = this.input.keyboard.addKeys(TOUCHES.joueur1Deplacement); // les flèches du clavier (voir raccourcis.js)
     this.physics.add.collider(this.player, this.groupe_plateformes); // il ne traverse pas le sol
     // la caméra suit le joueur
     this.cameras.main.startFollow(this.player); // la caméra suit le robot

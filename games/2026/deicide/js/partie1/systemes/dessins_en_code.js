@@ -215,7 +215,8 @@ export const GLYPHES = { // les lettres de la police, en pixels
     "(": ["...#.", "..#..", ".#...", ".#...", ".#...", "..#..", "...#."], ")": [".#...", "..#..", "...#.", "...#.", "...#.", "..#..", ".#..."], // les caractères ( ) dessinés en pixels (5 colonnes sur 7 lignes)
     "/": ["....#", "....#", "...#.", "..#..", ".#...", "#....", "#...."], "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."], // les caractères / # dessinés en pixels (5 colonnes sur 7 lignes)
     "&": [".##..", "#..#.", "#.#..", ".#...", "#.#.#", "#..#.", ".##.#"], // les caractères & dessinés en pixels (5 colonnes sur 7 lignes)
-    "^": ["..#..", ".###.", "#####", ".....", ".....", ".....", "....."], "~": [".....", ".....", ".....", "#####", ".###.", "..#..", "....."] // les caractères ^ ~ dessinés en pixels (5 colonnes sur 7 lignes)
+    "^": ["..#..", ".###.", "#####", ".....", ".....", ".....", "....."], "~": [".....", ".....", ".....", "#####", ".###.", "..#..", "....."], // les caractères ^ ~ dessinés en pixels (5 colonnes sur 7 lignes)
+    ">": ["#....", "##...", "###..", "####.", "###..", "##...", "#...."], "<": ["....#", "...##", "..###", ".####", "..###", "...##", "....#"] // les flèches > < (pour changer de classement)
 };
 export const LARGEUR_CASE = 6; // une lettre fait 5 colonnes + 1 d'espace ; l'ombre prend la colonne et la ligne de plus
 
