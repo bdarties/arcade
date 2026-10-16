@@ -547,18 +547,6 @@ export function deplacement_faucheuse() {
     return;
   }
 
-  // coincée derrière un mur ? Toutes les 0,8 s on vérifie qu'elle a bougé, sinon elle réapparaît près du joueur
-  if (this.time.now >= this.gameState.faucheuse.verif_coincee) {
-    const deplacement = Phaser.Math.Distance.Between(this.gameState.faucheuse.x, this.gameState.faucheuse.y, this.gameState.faucheuse.dernier_x, this.gameState.faucheuse.dernier_y);
-    if (deplacement < 15 && distance > 80) {
-      const position = place_libre_autour.call(this, cible, 100, 180);
-      this.gameState.faucheuse.body.reset(position.x, position.y);
-    }
-    this.gameState.faucheuse.dernier_x = this.gameState.faucheuse.x;
-    this.gameState.faucheuse.dernier_y = this.gameState.faucheuse.y;
-    this.gameState.faucheuse.verif_coincee = this.time.now + 800;
-  }
-
   // elle fonce droit sur le joueur
   const angle = Phaser.Math.Angle.Between(moi.x, moi.y, cible.body.center.x, cible.body.center.y);
   this.gameState.faucheuse.setVelocity(Math.cos(angle) * cfg.vitesse, Math.sin(angle) * cfg.vitesse);
@@ -597,14 +585,15 @@ export function tuer_joueur(joueur) {
     terminer_match.call(this, joueur === this.gameState.player ? "vie_J1" : "vie_J2");
     return;
   }
-  if (joueurs_vivants.call(this).length === 0) {
+    if (joueurs_vivants.call(this).length === 0) {
     this.gameState.fin_de_partie = true;
     this.time.delayedCall(1500, () => {
       this.gameState.musique_niveau1.stop();
-      this.scene.start(this.cfg.scene_mort, {
+      this.scene.start("Game_over", {
+        raison: this.gameState.temps_restant <= 0 ? "temps" : "vie_J1", // "temps" si c'est la faucheuse qui l'a eu
+        niveau: this.scene.key, // permet de rejouer le bon niveau
         scoreJ1: this.gameState.player.score,
-        scoreJ2: this.gameState.mode_deux_joueurs ? this.gameState.player2.score : 0,
-        mort: true
+        deux_joueurs: false
       });
     });
   }
@@ -626,15 +615,25 @@ export function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le 
   } else {
     gagnant = this.gameState.player.score > this.gameState.player2.score ? 1 : (this.gameState.player2.score > this.gameState.player.score ? 2 : 0);
   }
-  this.time.delayedCall(1000, () => {
+    this.time.delayedCall(1000, () => {
     this.gameState.musique_niveau1.stop();
-    this.scene.start("Ecran_score", {
-      mode: 2,
-      raison,
-      gagnant,
-      scoreJ1: this.gameState.player.score,
-      scoreJ2: this.gameState.player2.score
-    });
+    if (raison === "vie_J1" || raison === "vie_J2") { // un joueur est mort : écran de Game Over
+      this.scene.start("Game_over", {
+        raison,
+        niveau: this.scene.key,
+        scoreJ1: this.gameState.player.score,
+        scoreJ2: this.gameState.player2.score,
+        deux_joueurs: true
+      });
+    } else { // temps écoulé : on garde l'écran qui annonce le vainqueur
+      this.scene.start("Ecran_score", {
+        mode: 2,
+        raison,
+        gagnant,
+        scoreJ1: this.gameState.player.score,
+        scoreJ2: this.gameState.player2.score
+      });
+    }
   });
 }
 
