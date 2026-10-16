@@ -642,6 +642,21 @@ export default class niveau1 extends Phaser.Scene {
     /*****************************************************
      *  GESTION DES INTERACTIONS ENTRE GROUPES ET ELEMENTS (+ ignorance de la caméra) *
      ******************************************************/
+ this.gameState.murs = calque_mur; // la faucheuse en a besoin pour ne pas traverser les murs
+    this.physics.add.collider(player, groupe_cle, recuperer_cle, null, this);
+    this.physics.add.overlap(player, groupe_recharges, recharger, null, this);
+    this.physics.add.overlap(player, groupe_soin, soigner, null, this);
+    player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
+    if (mode_deux_joueurs) {
+      this.physics.add.collider(player, player2);
+      this.physics.add.overlap(player2, groupe_recharges, recharger, null, this);
+      this.physics.add.overlap(player2, groupe_soin, soigner, null, this);
+      this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
+      player2.colliderEnnemis = this.physics.add.collider(player2, groupe_araignee, degat_contact_ennemi, null, this);
+    }
+    this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
+
+    //gestion des éléments ignorés par la caméra
     hudJ1 = hud.j1.objets;
     hudJ2 = hud.j2 ? hud.j2.objets : [];
     hudCommun = hud.commun.objets;
@@ -654,8 +669,8 @@ export default class niveau1 extends Phaser.Scene {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
       camJ2UI.ignore([...hudJ1, ...hudCommun]);
     }
-    camGlobalUI.ignore([...hudJ1, ...hudJ2]);   // <-- celle qui manquait
-    }
+    camGlobalUI.ignore([...hudJ1, ...hudJ2]);
+  }
   /***********************************************************************/
   /** FONCTION UPDATE
 /***********************************************************************/
