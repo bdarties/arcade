@@ -649,7 +649,6 @@ export default class niveau1 extends Phaser.Scene {
     this.physics.add.overlap(player, groupe_soin, soigner, null, this);
     player.colliderEnnemis = this.physics.add.collider(player, groupe_araignee, degat_contact_ennemi, null, this);
     if (mode_deux_joueurs) {
-      this.physics.add.collider(player, player2);
       this.physics.add.overlap(player2, groupe_recharges, recharger, null, this);
       this.physics.add.overlap(player2, groupe_soin, soigner, null, this);
       this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
