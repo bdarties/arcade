@@ -15,7 +15,8 @@ import {
   apparition_faucheuse,
   deplacement_faucheuse,
   terminer_match,
-  points_spawn_libres
+  points_spawn_libres,
+  detruire
 } from "./fonctions.js";
 /***********************************************************************/
 /** VARIABLES GLOBALES
@@ -123,7 +124,7 @@ const niveauState = {
   get tableau_spawn() { return tableau_spawn; }, set tableau_spawn(value) { tableau_spawn = value; },
   get temps_restant() { return temps_restant; }, set temps_restant(value) { temps_restant = value; },
   get balle_restanteJ1_affiche() { return balle_restanteJ1_affiche; }, set balle_restanteJ1_affiche(value) { balle_restanteJ1_affiche = value; },
-  get balle_restanteJ2_affiche() { return balle_restanteJ2_affiche; }, set balle_restanteJ2_affiche(value) { balle_restanteJ2_affiche = value; }
+  get balle_restanteJ2_affiche() { return balle_restanteJ2_affiche; }, set balle_restanteJ2_affiche(value) { balle_restanteJ2_affiche = value; },
 };
 
 // définition de la classe "selection"
@@ -317,6 +318,7 @@ export default class niveau1 extends Phaser.Scene {
     const calque_sol = carteDuNiveau.createLayer("calque_sol", tileset);
     const calque_details = carteDuNiveau.createLayer("calque_details", tileset);
     const calque_mur = carteDuNiveau.createLayer("calque_mur", tileset);
+    this.gameState.calque_mur = calque_mur;
     const liste_spawn = carteDuNiveau.getObjectLayer("calque_spawn");
     this.physics.world.setBounds(0, 0, carteDuNiveau.widthInPixels, carteDuNiveau.heightInPixels);
 
@@ -387,8 +389,16 @@ export default class niveau1 extends Phaser.Scene {
           if (fin_de_partie) {
             return;
           }
+          const elementsActifs = [groupe_cle, groupe_recharges, groupe_soin, groupe_araignee]
+            .some((groupe) => groupe.countActive(true) > 0);
+          if (elementsActifs) {
+            return;
+          }
+
           tableau_spawn = points_spawn_libres.call(this);
-          apparition_elements.call(this);
+          for (let i = 0; i < nombre_appels_apparition; i++) {
+            apparition_elements.call(this);
+          }
         }
       });
     }
@@ -399,7 +409,6 @@ export default class niveau1 extends Phaser.Scene {
      ****************************/
     //joueur 1
     player = this.physics.add.sprite(player_spawn.x, player_spawn.y, "player1");
-
     player.peutTirer = true;
     player.tirEnCours = false;
     player.enRechargement = false;
@@ -411,7 +420,6 @@ export default class niveau1 extends Phaser.Scene {
     player.direction = "down";
     player.setCollideWorldBounds(true);
     calque_mur.setCollisionByProperty({ estSolide: true });
-    murs = calque_mur;
     faucheuse = null; //remise à zéro à chaque (re)lancement du niveau
     fin_de_partie = false;
     if (cfg.faucheuse) {

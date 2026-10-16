@@ -15,7 +15,8 @@ import {
   apparition_faucheuse,
   deplacement_faucheuse,
   terminer_match,
-  points_spawn_libres
+  points_spawn_libres,
+  detruire
 } from "./fonctions.js";
 import niveau1 from "./niveau1.js";
 

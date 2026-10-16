@@ -85,10 +85,6 @@ export function apparition_elements() { //fait apparaître clés, soins, recharg
     this.gameState.cle.anims.play(typeCle.animation, true);
     this.gameState.camJ1UI.ignore(this.gameState.cle);
     this.gameState.camGlobalUI.ignore(this.gameState.cle);
-    if (this.gameState.mode_deux_joueurs) {
-      this.gameState.camJ2.ignore(this.gameState.cle);
-      this.gameState.camJ2UI.ignore(this.gameState.cle);
-    }
   }
   if (this.gameState.groupe_soin.countActive(true) < this.gameState.nombre_soins_apparaissant && this.gameState.tableau_spawn.length > 0) {
     const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
@@ -230,6 +226,7 @@ export function tirer(player) {
       player.anims.play("anim_attaque_bas_" + suffixe, true);
       bullet = this.gameState.groupeBullets.create(player.x, player.y + (25 * coefDir), 'animation_balle_bas');
     }
+    this.physics.add.collider(bullet, this.gameState.calque_mur,detruire,null,this);
     bullet.anims.play(bullet.texture.key);
     bullet.tireur = player;
     this.gameState.camJ1UI.ignore(bullet); //les balles sont créées en cours de jeu : on doit les faire ignorer à ce moment-là
@@ -438,7 +435,7 @@ export function place_libre_autour(joueur, min, max) {
     const distance = Phaser.Math.Between(min, max);
     const x = joueur.x + Math.cos(angle) * distance;
     const y = joueur.y + Math.sin(angle) * distance;
-    const tuile = this.gameState.murs.getTileAtWorldXY(x, y);
+    const tuile = this.gameState.calque_mur.getTileAtWorldXY(x, y);
     if (this.physics.world.bounds.contains(x, y) && !(tuile && tuile.collides)) {
       return { x: x, y: y };
     }
@@ -480,7 +477,7 @@ export function apparition_faucheuse() {
   this.gameState.faucheuse.setAlpha(0);
   this.gameState.faucheuse.body.setSize(cfg.hitbox, cfg.hitbox);
   poser_faucheuse.call(this, "marche", false);
-  this.physics.add.collider(this.gameState.faucheuse, this.gameState.murs); //elle ne traverse pas les murs
+  this.physics.add.collider(this.gameState.faucheuse, this.gameState.calque_mur); //elle ne traverse pas les murs
   this.gameState.faucheuse.etat = "attente"; //"attente" -> "chasse" <-> "attaque"
   this.gameState.faucheuse.prochaine_attaque = 0;
   this.gameState.faucheuse.verif_coincee = 0;
@@ -647,3 +644,8 @@ export function points_spawn_libres() { //renvoie les points de spawn ni occupé
     joueurs.every((j) => Phaser.Math.Distance.Between(j.x, j.y, point.x, point.y) > 120)
   ).map((p) => ({ x: p.x, y: p.y }));
 }
+
+export function detruire(objet,mur) {{
+    // Détruit instantanément la bombe et la retire du jeu
+    objet.destroy(); 
+  }};
