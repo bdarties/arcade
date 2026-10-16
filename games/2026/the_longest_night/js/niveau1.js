@@ -178,7 +178,8 @@ export default class niveau1 extends Phaser.Scene {
         portee_coup: 70,
         delai_impact: 300,
         duree_attaque: 650,
-        pause_apres_attaque: 400
+        pause_apres_attaque: 400,
+        traverse_murs: true, // elle traverse les murs pour pouvoir nous tuer
       },
       scene_mort: "Ecran_score",
       niveau_suivant: "niveau2",
