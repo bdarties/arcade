@@ -15,9 +15,9 @@ const VARIANTES_JOUEUR = ["", "_gun"];
 const DIRECTIONS_PIOCHE = ["down", "up", "right"];
 // biomes colorés : [nom, fichier du cristal] ; le tileset est assets/map/tileset_<nom>.png (cf. preload)
 const BIOMES_COLORES = [
-  ["bleu", "DarkBlueCrystal.png"],
-  ["vert", "GreenCrystal.png"],
-  ["violet", "PurpleCrystal.png"]
+  ["bleu", "dark_blue_crystal.png"],
+  ["vert", "green_crystal.png"],
+  ["violet", "purple_crystal.png"]
 ];
 
 // définition de la classe "selection"
@@ -152,7 +152,7 @@ export default class selection extends Phaser.Scene {
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("gameOver", "./assets/sons/music_game_over.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("map_safe", "./assets/sons/ambiance_map_safe.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("impact_ennemi", "./assets/sons/impact_ennemi.mp3");
-    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi", "./assets/sons/Laser_ennemi.mp3");
+    /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_ennemi", "./assets/sons/laser_ennemi.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("tir_laser", "./assets/sons/tir_laser.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("laser_de_zinzin", "./assets/sons/laser_de_zinzin.mp3");
     /* >>>>> AJOUT SON <<<<< */ this.load.audio("cristal_brise", "./assets/sons/cristal_casser.mp3");
