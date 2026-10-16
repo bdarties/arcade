@@ -81,7 +81,7 @@ function ramasserPV(scene, bonus) { // le robot ramasse une croix
 }
 
 // petit bip montant fabriqué dans le code (pas de fichier son) : trois notes rapides
-function bipPV(scene) { // joue un petit bip fabriqué dans le code
+export function bipPV(scene) { // joue un petit bip fabriqué dans le code
     const contexte = scene.sound.context; // le moteur audio du navigateur (absent si le son est coupé)
     if (!contexte) return; // pas de moteur audio : pas de bip
     const t = contexte.currentTime; // l'heure du moteur audio

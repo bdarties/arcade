@@ -12,6 +12,7 @@
 // et sans saisie : un appui sur I (ou Entrée, Espace) ramène à l'accueil.
 //
 import { jouerSon } from "../systemes/sons.js"; // les bruitages
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 import { creerTextureHalo, creerTexturePixel, creerPolice, plaque, GLYPHES, LARGEUR_CASE } from "../systemes/dessins_en_code.js"; // les dessins faits en code (halo, particules, police pixel, plaques)
 
 const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (sinon le texte changerait de longueur)
@@ -19,7 +20,7 @@ const TEMPS_MAX_MS = 99 * 60000 + 59990; // l'affichage s'arrête à 99:59.99 (s
 const LETTRES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "; // les 27 caractères qui défilent : l'alphabet et une case vide (le dernier)
 const COL_NET = 984, COL_BRUT = 1086, COL_MORTS = 1140, COL_COUPS = 1186; // la fin (côté droit) de chaque colonne du tableau
 const NB_LETTRES = 6; // le nom fait 6 caractères au plus : on peut n'en remplir que quelques-uns, les autres restent vides
-const TOUCHES_VALIDER = ["KeyI", "Enter", "Space"]; // I = le bouton de saut de la borne
+const TOUCHES_VALIDER = TOUCHES.classement.valider; // I = le bouton de saut de la borne
 const DELAI_AVANT_VALIDER = 900; // ms : le joueur tient encore ses boutons de jeu, on ignore les appuis au début
 
 export const OR = 0xffd45c; // la couleur or
@@ -37,7 +38,11 @@ function formaterTemps(ms) { // 83450 -> "01:23.45" (minutes:secondes.centièmes
 // Le panthéon est une simple LISTE, sauvegardée d'un bloc : un objet par partie enregistrée.
 //   { nom: "ABC", net: temps net (ms), brut: temps total (ms), morts: nombre de morts, coups: coups reçus, date: "2026-10-13" }
 // Elle est triée du temps net le plus COURT au plus long ; à égalité, le temps total le plus court, puis le moins de morts. Elle ne garde que les 10 meilleurs.
-const MAX_LIGNES = 10; // le panthéon garde 10 lignes
+// Il y a DEUX classements dans la même sauvegarde : { chrono: [...], nohit: [...] }. « chrono » = toutes les parties ; « nohit » = seulement
+// les parties jouées en entier en mode NO HIT (la ligne porte alors noHit: true, voir partie2/mode_no_hit.js). Une partie NO HIT entre donc
+// dans le classement NO HIT, et AUSSI dans le classement chrono si son temps y est dans les 10 premiers. (Ancien format : une simple liste = le chrono.)
+const MAX_LIGNES = 10; // chaque classement garde 10 lignes
+const ROUGE_NO_HIT = 0xff6a5a; // le rouge du titre du classement NO HIT
 const MORTS_MAX = 99; // nombre de morts maximum affiché
 const COUPS_MAX = 99; // (deux chiffres à l'écran)
 const arrondi = (ms) => Math.round(ms / 10) * 10; // les temps sont gardés au centième de seconde, comme à l'affichage
@@ -46,6 +51,9 @@ function comparer(a, b) { // compare deux parties : temps net, puis temps total,
 }
 // Une seule ligne par nom : on ajoute la ligne du joueur à la liste, on trie, et on ne garde que le MEILLEUR temps de chaque nom (à égalité parfaite, l'ancienne ligne reste).
 // Renvoie la nouvelle liste (10 lignes au plus) et « gardee » : vrai si la ligne du joueur y est (son temps bat l'ancien du même nom, ou le nom est nouveau).
+function estRecord(liste, mien) { // vrai si le résultat entre dans les 10 premiers de cette liste (à égalité on ne passe pas devant)
+    return liste.length < MAX_LIGNES || comparer(mien, liste[liste.length - 1]) < 0; // la liste n'est pas pleine, ou on bat la dernière ligne
+}
 function fusionner(liste, ligne) { // ajoute une ligne au panthéon sans doublon de nom
     const triee = [...liste, ligne].sort(comparer); // on ajoute la ligne et on trie
     const vus = new Set(); // les noms déjà vus
@@ -54,13 +62,15 @@ function fusionner(liste, ligne) { // ajoute une ligne au panthéon sans doublon
 }
 const valide = (l) => l && typeof l.nom === "string" && Number.isFinite(l.net) && Number.isFinite(l.brut) && Number.isFinite(l.morts); // (on ignore une ligne abîmée)
 
-// Lit le panthéon sauvegardé : la liste triée (vide s'il n'y a rien encore), ou null si le stockage est impossible à lire. ecrireDonneesJSON remplace TOUT :
+// Lit le panthéon sauvegardé : { chrono, nohit } (deux listes triées, vides s'il n'y a rien encore), ou null si le stockage est impossible à lire. ecrireDonneesJSON remplace TOUT :
 // pour ajouter une ligne, on lit, on ajoute, puis on réécrit (voir envoyer).
 async function lirePantheon() { // lit le panthéon sauvegardé
     if (typeof lireDonneesJSON !== "function") return null; // js/donnees.js n'est pas chargé
     try { // on essaie de lire
-        const liste = await lireDonneesJSON(); // on lit la liste sauvegardée
-        return Array.isArray(liste) ? liste.filter(valide).sort(comparer).slice(0, MAX_LIGNES) : []; // on garde les lignes valides, triées, limitées à 10
+        const donnees = await lireDonneesJSON(); // on lit ce qui est sauvegardé
+        const nettoyer = (liste) => Array.isArray(liste) ? liste.filter(valide).sort(comparer).slice(0, MAX_LIGNES) : []; // on garde les lignes valides, triées, limitées à 10
+        if (Array.isArray(donnees)) return { chrono: nettoyer(donnees), nohit: [] }; // ancien format : une simple liste, c'est le classement chrono
+        return { chrono: nettoyer(donnees && donnees.chrono), nohit: nettoyer(donnees && donnees.nohit) }; // nouveau format : les deux classements
     } catch (erreur) { // si la lecture échoue...
         console.warn("Panthéon illisible :", erreur); // ...on le signale dans la console...
         return null; // ...et on renvoie null
@@ -115,7 +125,9 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
         this.nom = ["A", ...Array(NB_LETTRES - 1).fill(" ")]; // la première case commence à A, les autres sont vides
         this.curseur = 0; // la case en cours de saisie
         this.pantheonDispo = false; // vrai si le panthéon a pu être lu (donc écrit)
-        this.tableau = []; // la liste du panthéon
+        this.tableau = []; // le classement chrono
+        this.tableauNoHit = []; // le classement NO HIT
+        this.vue = "chrono"; // le classement affiché : "chrono" ou "nohit"
         this.nomJoueur = null; // le nom choisi par le joueur
         this.clignote = []; // les clignotements du tableau
 
@@ -172,7 +184,7 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
         this.zoneNom = this.add.container(0, 0).setDepth(10); // la saisie du nom ou le message sous le temps final
 
         // panneau de droite : le classement
-        this.entete = ecrire(this, 930, 200, "PANTHEON", 4, { teinte: CLAIR }).setAlpha(0); // l'en-tête « PANTHEON »
+        this.entete = ecrire(this, 930, 200, "CHRONO", 4, { teinte: CLAIR }).setAlpha(0); // l'en-tête « CHRONO » (« NO HIT » quand on change de classement)
         this.traitEntete = this.add.rectangle(930, 228, 456, 3, 0x5f4f6e).setDepth(10).setAlpha(0); // un trait sous l'en-tête
         // les titres des colonnes : le temps net (celui qui classe), le temps total et le nombre de morts
         this.titresColonnes = [ecrire(this, COL_NET, 246, "NET", 2, { ancre: "droite", teinte: GRIS_VIOLET }), ecrire(this, COL_BRUT, 246, "TOTAL", 2, { ancre: "droite", teinte: GRIS_VIOLET }), // les titres des colonnes
@@ -189,7 +201,7 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
         this.titre.y = 0; // à sa place, sans la chute
         const decalage = -290; // le panneau de droite se place au centre (son centre passe de 930 à 640)
         this.entete.destroy(); // on remplace l'en-tête
-        this.entete = ecrire(this, 930, 200, "MEILLEURS TEMPS", 4, { teinte: CLAIR }); // le nouvel en-tête « MEILLEURS TEMPS »
+        this.entete = ecrire(this, 930, 200, "CHRONO", 4, { teinte: CLAIR }); // le nouvel en-tête « CHRONO »
         const droite = [this.plaqueDroite, this.entete, this.traitEntete, ...this.titresColonnes, this.groupeTableau]; // tout ce qui est à droite
         droite.forEach((objet) => { objet.x += decalage; objet.setAlpha(1); }); // le tableau (un conteneur) est décalé d'un bloc
         this.titre.setAlpha(1); // le titre est visible
@@ -240,7 +252,8 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
     async charger() { // charge le panthéon
         const liste = await lirePantheon(); // on lit la liste sauvegardée
         this.pantheonDispo = liste !== null; // vrai si la lecture a réussi
-        this.tableau = liste || []; // le tableau : la liste lue, ou vide
+        this.tableau = liste ? liste.chrono : []; // le classement chrono : la liste lue, ou vide
+        this.tableauNoHit = liste ? liste.nohit : []; // le classement NO HIT
         this.donneesPretes = true; // les données sont prêtes
         if (this.consultation) this.afficherTableau(); // pas de séquence à attendre : le tableau est montré dès qu'il est lu
         this.decider(); // si la séquence n'est pas finie, elle appellera decider() à sa fin
@@ -249,8 +262,11 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
     decider() { // la séquence est finie et le classement chargé : saisie du nom ou simple affichage
         if (!this.sequenceFinie || !this.donneesPretes || this.etape !== "intro") return; // si l'animation ou le chargement n'est pas fini, on attend
         const mien = this.monResultat(); // le résultat de la partie
-        const pire = this.tableau[this.tableau.length - 1]; // le dernier du panthéon : le temps le plus long
-        const nouveauRecord = this.pantheonDispo && (this.tableau.length < MAX_LIGNES || comparer(mien, pire) < 0); // à égalité on ne passe pas devant
+        const recordChrono = this.pantheonDispo && estRecord(this.tableau, mien); // le temps est dans les 10 premiers du chrono
+        const recordNoHit = this.pantheonDispo && mien.noHit === true && estRecord(this.tableauNoHit, mien); // partie NO HIT : dans les 10 premiers du NO HIT
+        const nouveauRecord = recordChrono || recordNoHit; // un seul des deux suffit pour proposer d'enregistrer
+        this.vue = mien.noHit ? "nohit" : "chrono"; // une partie NO HIT s'affiche d'abord dans le classement NO HIT
+        this.majEntete(); // le titre du tableau suit
         this.pret = false; // les validations sont bloquées un instant
         this.time.delayedCall(DELAI_AVANT_VALIDER, () => { this.pret = true; }); // puis elles sont autorisées
         if (nouveauRecord) this.ouvrirChoix(); // nouveau record : on propose d'enregistrer
@@ -334,26 +350,39 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
         this.zoneNom.removeAll(true); // on vide la zone
         if (message) this.zoneNom.add(ecrire(this, 350, 540, message, 3, { teinte: couleur })); // un message éventuel sous le temps
         this.pied.destroy(); // on remplace l'aide des touches
-        this.pied = ecrire(this, 640, 696, "A  RETOUR A L'ACCUEIL", 3, { teinte: CLAIR }); // « A RETOUR A L'ACCUEIL »
+        this.pied = ecrire(this, 640, 696, "GAUCHE DROITE  CHRONO  NO HIT    A  RETOUR A L'ACCUEIL", 2, { teinte: CLAIR }); // l'aide : changer de classement, retour à l'accueil
         this.tweens.add({ targets: this.pied, alpha: 0.35, duration: 650, yoyo: true, repeat: -1 }); // l'aide clignote
         this.afficherTableau(); // on affiche le tableau
+        this.montrerIndice(); // la flèche qui annonce l'autre classement
+    }
+
+    montrerIndice() { // à droite du tableau : une flèche et le nom de l'AUTRE classement, pour montrer qu'on peut le regarder (gauche ou droite)
+        if (this.indice) this.indice.destroy(); // on enlève l'ancien indice
+        const autre = this.vue === "chrono" ? "NO HIT" : "CHRONO"; // le classement qu'on peut aller voir
+        const teinte = autre === "NO HIT" ? ROUGE_NO_HIT : CLAIR; // rouge pour NO HIT, clair pour CHRONO
+        const x = this.plaqueDroite.x + 540 + 40; // au milieu de l'espace à droite de la plaque (540 px de large)
+        const fleche = ecrire(this, x - 13, 372, ">", 5, { ancre: "gauche", teinte }); // la flèche, au-dessus du mot (5 colonnes x 5 px = 25 px de large)
+        const mot = ecrire(this, x, 416, autre, 2, { teinte }); // le nom de l'autre classement
+        this.indice = this.add.container(0, 0, [fleche, mot]).setDepth(10); // on les range ensemble
+        this.tweens.add({ targets: fleche, x: "+=8", duration: 450, yoyo: true, repeat: -1, ease: "Sine.InOut" }); // la flèche fait de petits allers-retours de 8 px vers la droite
     }
 
     // ---- les touches ----
 
     touche(code) { // traite une touche appuyée selon l'étape
+        const T = TOUCHES.classement; // les touches de l'écran de fin
         const valider = TOUCHES_VALIDER.includes(code); // vrai si c'est une touche de validation
         if (this.etape === "choix") { // étape du choix OUI / NON :
-            if (code === "ArrowLeft" || code === "ArrowRight") { this.enregistrer = code === "ArrowLeft" ? 0 : 1; this.afficherChoix(); } // gauche = OUI, droite = NON
+            if (code === T.gauche || code === T.droite) { this.enregistrer = code === T.gauche ? 0 : 1; this.afficherChoix(); } // gauche = OUI, droite = NON
             else if (valider && this.pret) this.validerChoix(); // valider confirme le choix
         } else if (this.etape === "saisie") { // étape de la saisie du nom :
-            if (code === "ArrowUp" || code === "ArrowDown") { // haut ou bas : change la lettre
-                const decalage = code === "ArrowUp" ? 1 : -1; // haut = lettre suivante, bas = précédente
+            if (code === T.haut || code === T.bas) { // haut ou bas : change la lettre
+                const decalage = code === T.haut ? 1 : -1; // haut = lettre suivante, bas = précédente
                 const index = (LETTRES.indexOf(this.nom[this.curseur]) + decalage + LETTRES.length) % LETTRES.length; // % : on boucle de Z à A
                 this.nom[this.curseur] = LETTRES[index]; // la case reçoit la nouvelle lettre
-            } else if (code === "ArrowLeft") { // gauche : case précédente
+            } else if (code === T.gauche) { // gauche : case précédente
                 this.curseur = Math.max(0, this.curseur - 1); // sans dépasser la première
-            } else if (code === "ArrowRight") { // droite : case suivante
+            } else if (code === T.droite) { // droite : case suivante
                 this.curseur = Math.min(NB_LETTRES - 1, this.curseur + 1); // sans dépasser la dernière
             } else if (valider && this.pret) { // valider : on enregistre le nom
                 if (this.nom.join("").trim() === "") return; // au moins un caractère : un nom entièrement vide n'est pas accepté
@@ -362,10 +391,17 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
             }
             this.afficherNom(); // on met les cases à jour
             this.afficherTableau(); // la ligne du joueur suit les lettres
-        } else if (this.etape === "classement" && valider && this.pret) { // étape du classement : valider ramène à l'accueil
-            jouerSon(this, "porte"); // bruit de porte
-            this.sound.stopAll(); // on coupe la musique
-            this.scene.start("menu"); // la fin du jeu : le panthéon est la dernière chose vue (les crédits sont passés avant), retour à l'accueil pour la partie suivante
+        } else if (this.etape === "classement") { // étape du classement :
+            if (code === T.gauche || code === T.droite) { // gauche ou droite : on change de classement
+                this.vue = this.vue === "chrono" ? "nohit" : "chrono"; // chrono <-> NO HIT
+                this.majEntete(); // le titre
+                this.afficherTableau(); // les 10 lignes
+                this.montrerIndice(); // la flèche pointe maintenant vers l'autre classement
+            } else if (valider && this.pret) { // valider ramène à l'accueil
+                jouerSon(this, "porte"); // bruit de porte
+                this.sound.stopAll(); // on coupe la musique
+                this.scene.start("menu"); // la fin du jeu : le panthéon est la dernière chose vue (les crédits sont passés avant), retour à l'accueil pour la partie suivante
+            }
         }
     }
 
@@ -378,10 +414,16 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
             const liste = await lirePantheon(); // on relit juste avant d'écrire : ecrireDonneesJSON remplace tout le contenu précédent
             if (liste === null) throw new Error("panthéon illisible"); // s'il est illisible, on s'arrête
             const ligne = { nom, ...this.monResultat(), date: new Date().toISOString().slice(0, 10) }; // la ligne du joueur : nom, résultats et date
-            const { liste: nouvelle, gardee } = fusionner(liste, ligne); // un nom déjà présent : on garde le meilleur des deux temps
-            this.tableau = nouvelle; // le tableau devient la nouvelle liste
-            this.ligneGardee = gardee; // on retient si la ligne a été gardée
-            if ((await ecrireDonneesJSON(this.tableau)) === false) throw new Error("écriture impossible"); // la version de la borne renvoie false (sans erreur) quand elle ne peut pas écrire
+            const chrono = fusionner(liste.chrono, ligne); // un nom déjà présent : on garde le meilleur des deux temps
+            this.tableau = chrono.liste; // le classement chrono devient la nouvelle liste
+            this.ligneGardee = chrono.gardee; // on retient si la ligne a été gardée
+            this.tableauNoHit = liste.nohit; // le classement NO HIT reste comme il était...
+            if (ligne.noHit) { // ...sauf pour une partie jouée en NO HIT : elle va aussi dans le classement NO HIT
+                const nohit = fusionner(liste.nohit, ligne); // même règle : le meilleur temps de chaque nom
+                this.tableauNoHit = nohit.liste; // le classement NO HIT devient la nouvelle liste
+                this.ligneGardee = this.ligneGardee || nohit.gardee; // la ligne est gardée si l'un des deux classements l'a gardée
+            }
+            if ((await ecrireDonneesJSON({ chrono: this.tableau, nohit: this.tableauNoHit })) === false) throw new Error("écriture impossible"); // la version de la borne renvoie false (sans erreur) quand elle ne peut pas écrire
         } catch (erreur) { // en cas d'erreur...
             console.warn("Enregistrement impossible :", erreur); // ...on le signale dans la console...
             reussi = false; // ...et on retient l'échec
@@ -395,20 +437,28 @@ export default class classement extends Phaser.Scene { // la scène de l'écran 
 
     // ---- le classement : 10 lignes, la ligne du joueur en rose ----
 
-    lignesTableau() { // les 10 lignes à afficher : le top 10 de la borne, avec la ligne du joueur glissée à sa place pendant la saisie
+    lignesTableau() { // les 10 lignes à afficher : le top 10 du classement choisi, avec la ligne du joueur glissée à sa place pendant la saisie
         const mien = this.monResultat(); // mes chiffres, arrondis comme dans le panthéon
-        const reel = this.tableau.map((l) => ({ ...l })); // le panthéon est déjà trié : le temps le plus court en premier (on en fait une copie : on y glisse la ligne du joueur)
-        if (this.etape === "saisie") { // pendant la saisie :
+        const reel = (this.vue === "nohit" ? this.tableauNoHit : this.tableau).map((l) => ({ ...l })); // le classement est déjà trié : le temps le plus court en premier (on en fait une copie : on y glisse la ligne du joueur)
+        const concerne = this.vue === "chrono" || mien.noHit === true; // le classement NO HIT n'accueille que les parties jouées en NO HIT
+        if (this.etape === "saisie" && concerne) { // pendant la saisie :
             const nom = this.nom.join("").trimEnd(); // le nom en cours de saisie
             const ligne = { nom, ...mien, moi: true }; // la ligne provisoire du joueur
             const { liste, gardee } = fusionner(reel, ligne); // même règle que l'enregistrement : un nom déjà présent garde son meilleur temps
             if (!gardee) { const ancienne = liste.find((l) => l.nom === nom); if (ancienne) ancienne.moi = true; } // son ancien temps est meilleur : c'est lui qu'on surligne
             return liste; // on renvoie la liste
-        } else if (this.nomJoueur) { // après l'enregistrement :
+        } else if (this.nomJoueur && concerne) { // après l'enregistrement :
             const moi = reel.find((l) => l.nom === this.nomJoueur); // on cherche la ligne du joueur
             if (moi) moi.moi = true; // on la marque
         }
         return reel.slice(0, 10); // on renvoie les 10 premières lignes
+    }
+
+    majEntete() { // le titre du tableau : « CHRONO » ou « NO HIT » (rouge) selon le classement affiché
+        const { x, alpha } = this.entete; // l'ancien titre : on garde sa place (décalée en consultation) et sa transparence
+        this.entete.destroy(); // on l'enlève
+        this.entete = ecrire(this, 930, 200, this.vue === "nohit" ? "NO HIT" : "CHRONO", 4, { teinte: this.vue === "nohit" ? ROUGE_NO_HIT : CLAIR }).setAlpha(alpha); // le nouveau titre, de même largeur de case
+        this.entete.x = x; // à la même place
     }
 
     afficherTableau() { // dessine les 10 lignes du tableau

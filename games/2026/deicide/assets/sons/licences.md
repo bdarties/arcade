@@ -8,8 +8,6 @@ Les bruitages ont été découpés, avec un fondu de fin et un volume harmonisé
 | tir.mp3 | laserSmall_000 | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | Kenney |
 | saut.mp3 | thrusterFire_000 (0,3 s) | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | Kenney |
 | dash.mp3 | forceField_000 (0,5 s) | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | Kenney |
-| joueur_touche.mp3 | impactMetal_002 | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | Kenney |
-| joueur_mort.mp3 | lowFrequency_explosion_000 | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | Kenney |
 | fleche.mp3 | knifeSlice | [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney |
 | porte.mp3 | doorOpen_1 | [RPG Audio](https://kenney.nl/assets/rpg-audio) | Kenney |
 | fleche_mur.mp3 | impactWood_light_000 | [Impact Sounds](https://kenney.nl/assets/impact-sounds) | Kenney |
@@ -35,3 +33,10 @@ Les bruitages ont été découpés, avec un fondu de fin et un volume harmonisé
 | Fichier | Son d'origine | Page | Auteur | Licence |
 |---|---|---|---|---|
 | musique_credits.ogg / .mp3 | « Ending Scene » (version V3, mélange de rock/metal et d'orchestral ; passage de 54 s découpé de 44 s à 98 s, avec un fondu d'entrée et de sortie et un volume harmonisé) | [Ending Scene](https://opengameart.org/content/ending-scene) | nene | CC0 1.0 (domaine public) |
+
+## Les bruitages du robot (touché, mort)
+
+| Fichier | Son d'origine | Auteur | Licence |
+|---|---|---|---|
+| joueur_touche.mp3 | plaque de métal qui prend une balle, synthétisée par code | l'équipe DEICIDE (`outils/generer_sons_robot.py`) | créé par nous, aucun droit d'un tiers ; libre d'utilisation |
+| joueur_mort.mp3 | robot qui se désactive (moteur qui chute, étincelles, ferraille, relais final), synthétisé par code | l'équipe DEICIDE (`outils/generer_sons_robot.py`) | créé par nous, aucun droit d'un tiers ; libre d'utilisation |
