@@ -23,7 +23,7 @@ export default class Game_over extends Phaser.Scene {
   preload() {
     // Chargement de l'image de fond du Game Over
     this.load.image("screen_game_over", "./assets/screen_game_over.png");
-    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
+    this.load.image("button_retour", "./assets/menu/button_retour.png");
   }
 
   create() {
@@ -57,6 +57,12 @@ const cadre = (x, y, largeur, hauteur) => {
     x, y, largeur - 12, hauteur - 12
   ).setStrokeStyle(1, ROUGE, 0.45);
 };
+
+const menu = this.add.image(640, 655, "button_retour")
+  .setInteractive({ useHandCursor: true });
+menu.setTint(0x888888);
+menu.on("pointerover", () => menu.setTint(0xffffff));
+menu.on("pointerout", () => menu.setTint(0x888888));
 
 // Fonction pour animer le score
 const compteur = (cible, score) => {

@@ -667,12 +667,7 @@ export default class niveau1 extends Phaser.Scene {
       this.physics.add.overlap(player2, groupe_cle, recuperer_cle, null, this);
       player2.colliderEnnemis = this.physics.add.collider(player2, groupe_ennemis, degat_contact_ennemi, null, this);
     }
-<<<<<<< HEAD
     this.physics.add.overlap(groupeBullets, groupe_ennemis, Elimination_ennemi, null, this);
-=======
-    this.physics.add.overlap(groupeBullets, groupe_araignee, Elimination_ennemi, null, this);
-
->>>>>>> 47f66bec3c6c4ab0fdfd1b8841b45734ab935e98
     //gestion des éléments ignorés par la caméra
     hudJ1 = hud.j1.objets;
     hudJ2 = hud.j2 ? hud.j2.objets : [];
@@ -684,11 +679,7 @@ export default class niveau1 extends Phaser.Scene {
     camJ1UI.ignore([...hudJ2, ...hudCommun]);
     if (mode_deux_joueurs) {
       camJ2.ignore([...hudJ1, ...hudJ2, ...hudCommun]);
-<<<<<<< HEAD
-      camJ2UI.ignore([...hudJ1, panneauTimer, panneauCles, temps_restant_affiche, timerIcon, cles_restantes_affiche, nombreCleIcon,groupe_cle]);
-=======
       camJ2UI.ignore([...hudJ1, ...hudCommun]);
->>>>>>> 47f66bec3c6c4ab0fdfd1b8841b45734ab935e98
     }
     camGlobalUI.ignore([...hudJ1, ...hudJ2]);
   }
