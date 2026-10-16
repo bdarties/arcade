@@ -621,7 +621,7 @@ export function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le 
     gagnant = this.gameState.player.score > this.gameState.player2.score ? 1 : (this.gameState.player2.score > this.gameState.player.score ? 2 : 0);
   }
       this.time.delayedCall(1000, () => {
-    this.gameState.musique_niveau1.stop();
+    this.sound.stopAll();
     if (raison === "vie_J1" || raison === "vie_J2") { // un joueur est mort : écran de Game Over
       this.scene.start("Game_over", {
         raison,
