@@ -7,7 +7,7 @@
 //   - F10 : lance directement la phase 3 du dernier boss (niveau 3), le boss avec TOUTE sa vie (91 PV) pour avoir le temps de la tester
 //   - F5 : lance le dernier combat et déclenche tout de suite la fausse fin (le boss se dissout, le faux écran du panthéon, la fissure de l'écran), puis la phase 4
 //          (la forme finale, 180 PV). F5 ne recharge donc plus la page.
-import { arreterToutesLesScenes, nouvellePartie } from "../partie1/systemes/raccourcis.js";
+import { arreterToutesLesScenes, nouvellePartie, TOUCHES } from "../partie1/systemes/raccourcis.js";
 import { finDeCombat } from "./fin_de_combat.js";
 
 function lancerNiveau2(jeu) { // F9 : une partie qui commence directement au niveau 2
@@ -41,8 +41,8 @@ function lancerPhase4(jeu) { // F5 : le dernier combat, avec la fausse fin décl
 
 export function activerTestsPartie2(jeu) { // à appeler une fois, après la création du jeu
     window.addEventListener("keydown", (evenement) => {
-        if (evenement.key === "F9") { evenement.preventDefault(); lancerNiveau2(jeu); }
-        if (evenement.key === "F10") { evenement.preventDefault(); lancerPhase3(jeu); }
-        if (evenement.key === "F5") { evenement.preventDefault(); lancerPhase4(jeu); } // (preventDefault : F5 ne recharge plus la page)
+        if (evenement.key === TOUCHES.test.niveau2) { evenement.preventDefault(); lancerNiveau2(jeu); }
+        if (evenement.key === TOUCHES.test.phase3) { evenement.preventDefault(); lancerPhase3(jeu); }
+        if (evenement.key === TOUCHES.test.phase4) { evenement.preventDefault(); lancerPhase4(jeu); } // (preventDefault : F5 ne recharge plus la page)
     });
 }

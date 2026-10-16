@@ -11,9 +11,9 @@ import niveau from "../partie1/scenes/niveau_de_base.js"; // la classe de base d
 import { ROBOT } from "../partie1/parametres.js"; // le nombre de PV du robot en mode normal
 import classement from "../partie1/scenes/classement.js"; // l'écran du panthéon : on y colore en rouge les lignes jouées en mode NO HIT
 import { jouerAction } from "../partie1/personnage/personnage.js"; // pour jouer l'animation de mort du robot
-import { nouvellePartie } from "../partie1/systemes/raccourcis.js"; // remet le chrono, le score, les morts et le boss à zéro (comme une nouvelle partie)
+import { nouvellePartie, TOUCHES as TOUCHES_JEU } from "../partie1/systemes/raccourcis.js"; // remet le chrono, le score, les morts et le boss à zéro (comme une nouvelle partie)
 
-const TOUCHES = ["KeyO", "Semicolon"]; // O, et la touche M d'un clavier AZERTY (la même touche physique que le bouton « ; » de la borne)
+const TOUCHES = TOUCHES_JEU.noHit; // O, et la touche M d'un clavier AZERTY (la même touche physique que le bouton « ; » de la borne)
 const DUREE_MAINTIEN = 1000; // ms à maintenir les deux touches pour changer de mode
 const LARGEUR_IMAGE_BARRE = 112; // largeur d'une image de la barre de vie d'origine, en pixels
 const HAUTEUR_IMAGE_BARRE = 20; // hauteur d'une image de la barre de vie d'origine
