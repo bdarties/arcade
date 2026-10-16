@@ -318,7 +318,10 @@ export function soigner(cible, objet) {
 
 export function aller_niveau_suivant() { //arrête la musique puis lance le niveau suivant en lui transmettant les scores
   this.sound.stopAll();
-  this.scene.start(this.cfg.niveau_suivant, {
+  const solo = !this.gameState.mode_deux_joueurs;
+  //mode 1 joueur : la porte de la dernière carte mène à l'écran de victoire
+  const destination = (solo && this.cfg.niveau_suivant === "Ecran_score") ? "Win_screen" : this.cfg.niveau_suivant;
+  this.scene.start(destination, {
     scoreJ1: this.gameState.player.score,
     scoreJ2: this.gameState.mode_deux_joueurs ? this.gameState.player2.score : 0,
     temps_restant: this.gameState.temps_restant,
