@@ -240,7 +240,7 @@ export default class niveau1 extends Phaser.Scene {
     this.load.audio("cle_collecte", "./assets/musique_et_sons/cle_collecte.wav");
     this.load.audio("areignee_morte", "./assets/musique_et_sons/areignee_morte.mp3");
     this.load.audio("Grognement_renard", "./assets/musique_et_sons/Grognement_renard.wav");
-
+    this.load.audio("", "./assets/musique_et_sons/Grognement_renard.wav");
     this.load.audio("Porte_ouverte", "./assets/musique_et_sons/Porte_ouverte.wav");
     this.load.audio("recharge_magique", "./assets/musique_et_sons/recharge_magique.wav");
     this.load.audio("renard_mort", "./assets/musique_et_sons/renard_mort.wav");
