@@ -75,6 +75,11 @@ export default class niveau2 extends niveau1 {
     const cfg = super.parametres_niveau(); // on part des réglages du niveau 1...
     return {
       ...cfg, // ...et on remplace seulement ce qui est différent
+      temps: 180,
+      nombre_cles: 3,
+      nombre_ennemis:  5,
+      nombre_recharges: 2,
+      nombre_soins: 2,
       carte_cle: "carte2",
       carte_fichier: "./assets/map/niveau_2.json",
       tileset_nom: "tileset_reverse",       // nom du tileset DANS Tiled (à vérifier dans niveau_2.json, champ "name" de "tilesets")
