@@ -22,9 +22,12 @@ export default class Menu extends Phaser.Scene {
     this.load.image("button_1joueur", path + "1joueur.png");
     this.load.image("button_2joueurs", path + "2joueurs.png");
     this.load.image("button_retour", path + "button_retour.png");
+    this.load.audio("Musique_menu", "./assets/musique_et_sons/Musique_menu.mp3");
   }
 
   create() {
+    this.sound.stopAll();
+    this.sound.add("Musique_menu").play({ loop: true });
     this.mode = 1;
     this.currentScreen = null;
     this.objects = [];
@@ -106,11 +109,15 @@ export default class Menu extends Phaser.Scene {
 
   chooseMode(nbJoueurs) {
     this.mode = nbJoueurs;
-    this.showScreen("story");
+    if (nbJoueurs === 1) {
+      this.showScreen("story");
+    } else {
+      this.startGame();
+    }
   }
 
   startGame() {
-    if (this.mode == 2) { //compétitif : une des deux cartes au hasard
+    if (this.mode === 2) { //compétitif : une des deux cartes au hasard
       const carte = Phaser.Utils.Array.GetRandom(["niveau1", "niveau2"]);
       this.scene.start(carte, { mode: 2 });
     } else { //histoire : niveau 1 puis niveau 2

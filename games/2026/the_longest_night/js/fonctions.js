@@ -4,11 +4,10 @@
 
 /** Charge un son, avec un retour silencieux et un message explicite s'il manque. */
 export function ajouter_son(scene, cle_son) {
-  if (scene.cache.audio.exists(cle_son)) {
-    return scene.sound.add(cle_son);
+  if (!scene.cache.audio.exists(cle_son)) {
+    throw new Error("Son non préchargé : " + cle_son);
   }
-  console.error("Son manquant (vérifie le nom du fichier dans assets/musique_et_sons/) : " + cle_son);
-  return { play() {}, stop() {}, isPlaying: false };
+  return scene.sound.add(cle_son);
 }
 
 export function gerer_cameras() { //gère l'écart entre les joueurs 1 et 2 et décide quand séparer / fusionner les caméras
@@ -42,7 +41,7 @@ export function separer_cameras() { //on réactive la caméra de droite et on re
 
 export function deplacement_areignee() { //comportement des ennemis (araignée = poursuite, renard = rôdeur)
   const joueurs = this.gameState.mode_deux_joueurs ? [this.gameState.player, this.gameState.player2] : [this.gameState.player];
-  this.gameState.groupe_araignee.children.iterate((ennemi) => {
+  this.gameState.groupe_ennemis.children.iterate((ennemi) => {
     if (!ennemi || !ennemi.active || !ennemi.body) {
       return;
     }
@@ -106,10 +105,10 @@ export function apparition_elements() { //fait apparaître clés, soins, recharg
       this.gameState.camJ2UI.ignore(recharge);
     }
   }
-  if (this.gameState.groupe_araignee.countActive(true) < this.gameState.nombre_ennemis_apparaissant && this.gameState.tableau_spawn.length > 0) {
+  if (this.gameState.groupe_ennemis.countActive(true) || this.gameState.renard < this.gameState.nombre_ennemis_apparaissant && this.gameState.tableau_spawn.length > 0) {
     const definition = Phaser.Utils.Array.GetRandom(this.gameState.tableau_ennemis);
     const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
-    const ennemi = this.gameState.groupe_araignee.create(position.x, position.y, definition.texture);
+    const ennemi = this.gameState.groupe_ennemis.create(position.x, position.y, definition.texture);
     ennemi.points_vies = definition.points_vies;
     ennemi.degats = definition.degats;
     ennemi.score = definition.score;
@@ -117,6 +116,8 @@ export function apparition_elements() { //fait apparaître clés, soins, recharg
     ennemi.degats_au_contact = definition.degats_au_contact !== false; //false : ne blesse que par son attaque
     ennemi.animation_marche = definition.animation;
     ennemi.animation_attaque = definition.animation_attaque;
+    ennemi.son_blesse = this.gameState[definition.son_blesse];
+    ennemi.son_mort = this.gameState[definition.son_mort];
     ennemi.rayon = definition.rayon_detection;
     ennemi.vitesse = definition.vitesse || 45;
     ennemi.delai_impact = definition.delai_impact || 500;
@@ -135,7 +136,7 @@ export function apparition_elements() { //fait apparaître clés, soins, recharg
 }
 
 export function degat_contact_ennemi(player, ennemi, attaque = false) {
-  if (ennemi.degats_au_contact === false && !attaque) { //le renard ne blesse pas en simple contact, seulement avec son attaque
+  if (ennemi.degats_au_contact == false && !attaque) { //le renard ne blesse pas en simple contact, seulement avec son attaque
     return;
   }
   if (player.points_vies <= 0 || this.time.now < player.prochaineDegat) {
@@ -173,6 +174,7 @@ export function recharger(player, recharge) {
   if (player.enRechargement || player.balle_restante == player.balle_max) {
     return;
   }
+  this.gameState.son_recharge_magique.play();
   recharge.destroy();
   player.enRechargement = true; //empêche de relancer la fonction pendant qu'elle est déjà en cours
   player.peutTirer = false;
@@ -235,10 +237,10 @@ export function tirer(player) {
       this.gameState.camJ2UI.ignore(bullet);
     }
     if (player.direction == 'left' || player.direction == 'right') {
-      bullet.setVelocity(500 * coefDir, 0);
+      bullet.setVelocity(200 * coefDir, 0);
     }
     else {
-      bullet.setVelocity(0, 500 * coefDir);
+      bullet.setVelocity(0, 200 * coefDir);
     }
     this.gameState.son_feu.play();
     player.balle_restante -= 1;
@@ -268,7 +270,7 @@ export function Elimination_ennemi(bullet, ennemi) { //contact balle / ennemi
   const tireur = bullet.tireur;
   bullet.destroy();
   ennemi.points_vies -= 1;
-  this.gameState.son_areignne_blesse.play();
+  ennemi.son_blesse.play();
   ennemi.setTintFill(0xff0000);
   this.time.delayedCall(150, () => {
     if (ennemi.active) {
@@ -276,6 +278,7 @@ export function Elimination_ennemi(bullet, ennemi) { //contact balle / ennemi
     }
   });
   if (ennemi.points_vies <= 0) {
+    ennemi.son_mort.play();
     ennemi.destroy();
     if (tireur) {
       tireur.score += ennemi.score;
@@ -298,6 +301,7 @@ export function recuperer_cle(player, cle) { //contact joueur / clé
   this.gameState.cles_restantes -= 1;
   this.gameState.cles_restantes_affiche.setText(String(this.gameState.cles_restantes));
   if (this.gameState.cles_creees >= this.gameState.nombre_cles && this.gameState.groupe_cle.countActive(true) == 0) {
+    this.gameState.son_porte_ouverte.play();
     this.gameState.porte.anims.play("animation_porte_ouverte");
     this.gameState.sortie_ouverte = true;
   }
@@ -313,7 +317,7 @@ export function soigner(cible, objet) {
 }
 
 export function aller_niveau_suivant() { //arrête la musique puis lance le niveau suivant en lui transmettant les scores
-  this.gameState.musique_niveau1.stop();
+  this.sound.stopAll();
   this.scene.start(this.cfg.niveau_suivant, {
     scoreJ1: this.gameState.player.score,
     scoreJ2: this.gameState.mode_deux_joueurs ? this.gameState.player2.score : 0,
@@ -450,6 +454,7 @@ export function apparition_faucheuse() {
   if (this.gameState.faucheuse || vivants.length === 0) {
     return;
   }
+  this.gameState.son_moniteur_coeur.play();
 
   // le message, au centre de l'écran (seule camGlobalUI l'affiche, les autres caméras l'ignorent)
   const message = this.add.text(640, 200, "LE TEMPS EST ÉCOULÉ...\nLA FAUCHEUSE ARRIVE !", {
@@ -585,7 +590,7 @@ export function tuer_joueur(joueur) {
     if (joueurs_vivants.call(this).length === 0) {
     this.gameState.fin_de_partie = true;
     this.time.delayedCall(1500, () => {
-      this.gameState.musique_niveau1.stop();
+      this.sound.stopAll();
       this.scene.start("Game_over", {
         raison: this.gameState.temps_restant <= 0 ? "temps" : "vie_J1", // "temps" si c'est la faucheuse qui l'a eu
         niveau: this.scene.key, // permet de rejouer le bon niveau
@@ -613,7 +618,7 @@ export function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le 
     gagnant = this.gameState.player.score > this.gameState.player2.score ? 1 : (this.gameState.player2.score > this.gameState.player.score ? 2 : 0);
   }
     this.time.delayedCall(1000, () => {
-    this.gameState.musique_niveau1.stop();
+    this.sound.stopAll();
     if (raison === "vie_J1" || raison === "vie_J2") { // un joueur est mort : écran de Game Over
       this.scene.start("Game_over", {
         raison,
@@ -635,7 +640,7 @@ export function terminer_match(raison) { //fin du match 2 joueurs : "temps" (le 
 }
 
 export function points_spawn_libres() { //renvoie les points de spawn ni occupés par un objet/ennemi, ni trop près d'un joueur
-  const occupants = [this.gameState.groupe_cle, this.gameState.groupe_recharges, this.gameState.groupe_soin, this.gameState.groupe_araignee]
+  const occupants = [this.gameState.groupe_cle, this.gameState.groupe_recharges, this.gameState.groupe_soin, this.gameState.groupe_ennemis]
     .flatMap((groupe) => groupe.getChildren())
     .filter((objet) => objet.active);
   const joueurs = [this.gameState.player, this.gameState.player2];

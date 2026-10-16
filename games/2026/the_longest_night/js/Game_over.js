@@ -23,9 +23,12 @@ export default class Game_over extends Phaser.Scene {
   preload() {
     // Chargement de l'image de fond du Game Over
     this.load.image("screen_game_over", "./assets/screen_game_over.png");
+    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
   }
 
   create() {
+    this.sound.stopAll();
+    this.sound.add("Musique_Game_Over").play({ loop: true });
     const { raison, niveau, scoreJ1, scoreJ2, deux_joueurs } = this.donnees;
 
     // 1. Image de fond pleine écran (1280 x 720) + petit fondu à l'arrivée

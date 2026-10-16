@@ -37,13 +37,12 @@ const niveauState = {
   get cles_restantes_affiche() { return cles_restantes_affiche; }, set cles_restantes_affiche(value) { cles_restantes_affiche = value; },
   get fin_de_partie() { return fin_de_partie; }, set fin_de_partie(value) { fin_de_partie = value; },
   get faucheuse() { return faucheuse; }, set faucheuse(value) { faucheuse = value; },
-  get groupe_araignee() { return groupe_araignee; }, set groupe_araignee(value) { groupe_araignee = value; },
+  get groupe_ennemis() { return groupe_ennemis; }, set groupe_ennemis(value) { groupe_ennemis = value; },
   get groupeBullets() { return groupeBullets; }, set groupeBullets(value) { groupeBullets = value; },
   get groupe_cle() { return groupe_cle; }, set groupe_cle(value) { groupe_cle = value; },
   get groupe_recharges() { return groupe_recharges; }, set groupe_recharges(value) { groupe_recharges = value; },
   get groupe_soin() { return groupe_soin; }, set groupe_soin(value) { groupe_soin = value; },
   get murs() { return murs; }, set murs(value) { murs = value; },
-  get musique_niveau1() { return musique_niveau1; }, set musique_niveau1(value) { musique_niveau1 = value; },
   get nombre_cles() { return nombre_cles; }, set nombre_cles(value) { nombre_cles = value; },
   get nombre_ennemis_apparaissant() { return nombre_ennemis_apparaissant; }, set nombre_ennemis_apparaissant(value) { nombre_ennemis_apparaissant = value; },
   get nombre_recharges_apparaissant() { return nombre_recharges_apparaissant; }, set nombre_recharges_apparaissant(value) { nombre_recharges_apparaissant = value; },
@@ -93,6 +92,8 @@ export default class niveau2 extends niveau1 {
         texture: "renard",
         animation: "animation_renard_marche",
         animation_attaque: "animation_renard_attaque",
+        son_blesse: "son_renard_blesse",
+        son_mort: "renard_mort",
         comportement: "rodeur",   // se balade, n'attaque que si un joueur est dans son rayon
         rayon_detection: 70,      // en pixels : distance à partir de laquelle il attaque (et portée de son coup)
         vitesse: 45,              // vitesse de balade
