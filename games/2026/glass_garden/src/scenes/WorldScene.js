@@ -2,13 +2,14 @@ import InputManager from '../systems/InputManager.js';
 import timer from '../systems/TimerSystem.js';
 import { dropBomb } from '../systems/BombSystem.js';
 import { RecolteEtoiles, recolterEtoile } from '../systems/RecolteEtoiles.js';
-import { areAllStarsCollected } from '../systems/StarSystem.js';
 import { createBulletAnimations, explodeBullet, shoot } from '../systems/fonctionTir.js';
 import { preloadCrate, createCrates } from '../systems/CrateSystem.js';
 import { preloadDeco, createDeco } from '../systems/DecoSystem.js';
-import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear, getMirrorFacing, preloadMirrorLocks, createMirrorLocks } from '../systems/MirrorSystem.js';
+import { isMirrorUsed, markMirrorUsed, shouldMirrorDisappear, getMirrorFacing, preloadMirrorLocks, createMirrorLocks, addMirrorLock, playMirrorUnlock } from '../systems/MirrorSystem.js';
 import { applyTint } from '../systems/TintSystem.js';
 import { irisClose, irisOpen } from '../systems/TransitionSystem.js';
+import { consumeIntro } from '../systems/IntroSystem.js';
+import { preloadMusic, playMusic, fadeOutMusic } from '../systems/MusicSystem.js';
 import { preloadNpcs, createNpcs } from '../systems/NpcSystem.js';
 import DialogueBox, { isRiddleSolved } from '../systems/DialogueSystem.js';
 import { bounceStar } from '../systems/StarBounce.js';
@@ -17,7 +18,7 @@ import { preloadBubbles, createBubbles } from '../systems/BubbleSystem.js';
 import { preloadEnemies, createEnemies, updateEnemies, resetEnemies, isEnemiesCleared, markEnemiesCleared, startEnemyCounter } from '../systems/EnemySystem.js';
 import { DIALOGUES } from '../data/dialogues.js';
 import { pickVariant } from '../utils/helpers.js';
-import { loadSecondPlayer, createSecondPlayer, updateSecondPlayer } from '../systems/SecondPlayer.js';
+import { loadSecondPlayer, createSecondPlayer, updateSecondPlayer, findStartNear } from '../systems/SecondPlayer.js';
 import { getControlMode } from '../systems/ControlMode.js';
 import { ABILITIES, isUnlocked, notifyLocked, isMirrorLocked, getMirrorUnlocker } from '../systems/ProgressSystem.js';
 import {
@@ -49,6 +50,10 @@ import {
   STAR_BOUNCE,
   BUBBLES,
   ENEMY_AI,
+  INTRO,
+  OUTRO,
+  TRANSITION,
+  MIRROR_LOCK,
 } from '../utils/constants.js';
 
 /**
@@ -107,6 +112,9 @@ export default class WorldScene extends Phaser.Scene {
 
     // * Les images des personnages non joueurs (voir NPCS dans constants.js)
     preloadNpcs(this);
+
+    // * La musique de ce monde (voir MUSIC dans constants.js)
+    preloadMusic(this, this.getWorldName());
 
     // * L'image des bulles du monde magique (voir BUBBLES dans constants.js)
     preloadBubbles(this);
@@ -227,7 +235,11 @@ export default class WorldScene extends Phaser.Scene {
     this.vanishingMirror = null;
     this.dialogueInput = null;
     this.gameWon = false;
+    this.outroPlaying = false; // vrai pendant l'outro, après le dialogue de l'ancien (voir playOutro)
     this.transitioning = false; // vrai pendant la FERMETURE de l'iris, quand on prend un miroir : le joueur est figé (voir update)
+    this.introPlaying = this.isNormalWorld() && consumeIntro(); // vrai au tout début d'une partie : le jardin joue son intro (voir playIntro)
+    playMusic(this, this.getWorldName(), this.introPlaying ? INTRO.FADE_MS : undefined); // pendant l'intro, la musique monte avec le fondu blanc
+    this.mirrorLocks = []; // les cadenas des miroirs du jardin (créés plus bas)
     this.waterSprites = []; // les sprites de l'eau animée de CETTE visite (remplis par createAnimatedTiles)
 
     // * Le chronomètre et son affichage sont globaux : ils ne dépendent pas du monde.
@@ -237,7 +249,7 @@ export default class WorldScene extends Phaser.Scene {
       this.scene.launch(SCENES.UI);
     }
     this.scene.bringToTop(SCENES.UI);
-    timer.start(); // sans effet s'il tourne déjà
+    if (!this.introPlaying) timer.start(); // sans effet s'il tourne déjà (pendant l'intro, il démarre à la fin : voir endIntro)
 
     // * Les couleurs de ce monde sont une TEINTE (voir WORLD_TINTS), posée plus bas sur les tuiles (voir applyTint).
     // Les textures sont donc toujours les originales.
@@ -354,7 +366,7 @@ export default class WorldScene extends Phaser.Scene {
         this.mirrors.push(mirror);
       });
     // * Un cadenas sur chaque miroir encore verrouillé du jardin (et son animation d'ouverture pour ceux qui viennent de s'ouvrir)
-    if (this.isNormalWorld()) createMirrorLocks(this, this.mirrors);
+    if (this.isNormalWorld()) this.mirrorLocks = createMirrorLocks(this, this.mirrors);
 
 
     // * Texte d'aide, affiché en haut de l'écran quand on est près d'un miroir
@@ -464,6 +476,165 @@ export default class WorldScene extends Phaser.Scene {
       const arrival = this.mirrors.find((mirror) => mirror.world === this.fromWorld) || vanishingMirror || this.player;
       irisOpen(this, arrival.x, arrival.y, () => vanishingMirror?.play(MIRROR_VANISH.KEY));
     }
+
+    if (this.introPlaying) this.playIntro();
+  }
+
+  /**
+   * * L'intro du jardin, au début d'une nouvelle partie. Le joueur est figé (même mécanisme que la transition : transitioning) :
+   * 1. le jardin apparaît en fondu depuis le blanc, SANS ses miroirs, la caméra zoomée sur la maison ;
+   * 2. le joueur sort de la porte et s'arrête devant la maison, puis lit la lettre du gardien (DIALOGUES.lettre) ;
+   * 3. la caméra reprend sa place, les miroirs apparaissent un à un (cadenassés), la note au dos de la lettre explique les cadenas, celui du premier miroir s'ouvre, puis le joueur reprend la main et le chronomètre démarre (voir endIntro).
+   * L'interface est cachée pendant l'intro, et le joueur 2 arrive à côté du joueur 1 à la fin.
+   */
+  playIntro() {
+    const { FADE_MS, FADE_COLOR, CAMERA, DOOR } = INTRO;
+    const camera = this.cameras.main;
+    this.transitioning = true;
+    this.introStartedAt = this.time.now;
+    this.setMirrorsVisible(false);
+
+    // * O ou Échap passent l'intro à tout moment (I aussi, tant qu'aucune phrase n'est affichée : voir update)
+    this.skipIntroKeys = ['keydown-O', 'keydown-ESC'];
+    this.skipIntroKeys.forEach((event) => this.input.keyboard.on(event, this.skipIntro, this));
+
+    // * Pour l'histoire, TOUS les miroirs commencent verrouillés : ceux qui sont déjà ouverts reçoivent un cadenas, qui s'ouvrira après la note (voir introUnlockFirstMirror)
+    this.introOpenMirrors = this.mirrors
+      .filter((mirror) => !isMirrorLocked(mirror.world))
+      .map((mirror) => ({ mirror, padlock: addMirrorLock(this, mirror).setVisible(false) }));
+    this.mirrorLocks.push(...this.introOpenMirrors.map(({ padlock }) => padlock));
+
+    // * L'interface est lancée dans le même instant que l'intro et démarre après : on la cache tout de suite, puis une fois qu'elle existe
+    this.scene.setVisible(false, SCENES.UI);
+    this.time.delayedCall(0, () => this.introPlaying && this.scene.setVisible(false, SCENES.UI));
+    if (this.player2.active) this.player2.setVisible(false); // en solo, le joueur 2 n'existe pas
+
+    // * Le joueur attend sur le seuil de la porte, invisible, tourné vers le bas
+    this.player.setPosition(DOOR.X, DOOR.Y).setAlpha(0).setFrame(PLAYER.FRAMES.DOWN);
+
+    camera.setZoom(CAMERA.ZOOM_START).centerOn(CAMERA.CENTER_X, CAMERA.CENTER_Y);
+    camera.zoomTo(CAMERA.ZOOM_END, CAMERA.ZOOM_IN_MS, 'Sine.easeInOut'); // le zoom grossit lentement pendant tout le début
+    camera.fadeIn(FADE_MS, FADE_COLOR.RED, FADE_COLOR.GREEN, FADE_COLOR.BLUE);
+    camera.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => this.introWalkOut());
+  }
+
+  /** Le joueur sort de la maison : il apparaît sur le seuil et marche jusque devant, puis la caméra reprend sa place. */
+  introWalkOut() {
+    const { FRONT, WALK_MS, PAUSE_MS } = INTRO;
+    this.tweens.add({
+      targets: this.player,
+      y: FRONT.Y,
+      alpha: 1,
+      duration: WALK_MS,
+      ease: 'Linear',
+      onComplete: () => {
+        // * Il lit la lettre du gardien, puis la caméra reprend sa place
+        this.time.delayedCall(PAUSE_MS, () => this.introPlaying && this.dialogue.open('lettre', DIALOGUES.lettre, null, () => this.introZoomOut()));
+      },
+    });
+  }
+
+  /** La caméra reprend sa place (zoom normal, centrée), puis l'intro se termine. */
+  introZoomOut() {
+    const camera = this.cameras.main;
+    camera.zoomTo(1, INTRO.ZOOM_OUT_MS, 'Sine.easeInOut');
+    camera.pan(this.scale.width / 2, this.scale.height / 2, INTRO.ZOOM_OUT_MS, 'Sine.easeInOut', false, (cam, progress) => {
+      if (progress === 1 && this.introPlaying) this.introRevealMirrors(() => this.introNote());
+    });
+  }
+
+  /**
+   * * Passe l'intro : tout se termine d'un coup, comme si elle était allée au bout (le joueur devant la maison, les miroirs là, le premier ouvert).
+   * Les rappels différés et les animations de l'intro s'arrêtent d'eux-mêmes : ils ne font rien dès que introPlaying est faux.
+   * Sans effet dans la première seconde (une touche encore enfoncée depuis le menu ne doit pas la passer).
+   */
+  skipIntro() {
+    if (!this.introPlaying || this.time.now - this.introStartedAt < INTRO.SKIP_AFTER_MS) return;
+    const { FRONT, CAMERA } = INTRO;
+
+    // * La boîte de dialogue se ferme sans lancer la suite de l'intro
+    this.dialogue.onClosed = null;
+    this.dialogue.typing?.remove();
+    this.dialogue.typing = null;
+    this.dialogue.close();
+
+    // * Les animations de la caméra (fondu, zoom, déplacement) s'arrêtent, la vue est celle du jeu
+    const camera = this.cameras.main;
+    camera.fadeEffect.reset();
+    camera.zoomEffect.reset();
+    camera.panEffect.reset();
+    camera.setZoom(1).centerOn(this.scale.width / 2, this.scale.height / 2);
+
+    // * Le joueur est devant la maison ; les miroirs sont là, en taille normale, et le premier est ouvert (son cadenas disparaît)
+    this.tweens.killTweensOf([this.player, ...this.mirrors, ...this.mirrorLocks]);
+    this.player.setPosition(FRONT.X, FRONT.Y).setAlpha(1).setFrame(PLAYER.FRAMES.DOWN);
+    this.mirrors.forEach((mirror) => mirror.setAlpha(1).setScale(1));
+    this.mirrorLocks.forEach((padlock) => padlock.setAlpha(1).setScale(MIRROR_LOCK.SCALE));
+    this.introOpenMirrors.forEach(({ mirror, padlock }) => {
+      mirror.clearTint();
+      padlock.destroy();
+    });
+
+    this.endIntro();
+  }
+
+  /** Les miroirs sont là, cadenassés : la note au dos de la lettre l'explique, puis le premier miroir s'ouvre. */
+  introNote() {
+    if (!this.introPlaying) return;
+    this.dialogue.open('note', DIALOGUES.note, null, () => this.introUnlockFirstMirror());
+  }
+
+  /** Le cadenas du premier miroir (celui de la nuit) s'ouvre, puis l'intro se termine : la partie commence. */
+  introUnlockFirstMirror() {
+    if (!this.introPlaying) return;
+    const { UNLOCK_DELAY_MS, END_PAUSE_MS } = INTRO;
+    this.introOpenMirrors.forEach(({ mirror, padlock }, i) => {
+      const last = i === this.introOpenMirrors.length - 1;
+      playMirrorUnlock(this, mirror, padlock, UNLOCK_DELAY_MS, last ? () => this.time.delayedCall(END_PAUSE_MS, () => this.introPlaying && this.endIntro()) : undefined);
+    });
+  }
+
+  /**
+   * Les miroirs du jardin apparaissent un à un, dans l'ordre des mondes, chacun avec son cadenas : ils grossissent en se dévoilant.
+   * @param {Function} onDone  Appelée quand le dernier est apparu
+   */
+  introRevealMirrors(onDone) {
+    const { START_DELAY_MS, DELAY_MS, POP_MS, POP_FROM_SCALE } = INTRO.MIRRORS;
+    const mirrors = [...this.mirrors].sort((a, b) => a.world.localeCompare(b.world));
+    mirrors.forEach((mirror, i) => {
+      const padlock = this.mirrorLocks.find((lock) => lock.x === mirror.x && lock.y === mirror.y);
+      this.time.delayedCall(START_DELAY_MS + i * DELAY_MS, () => {
+        if (!this.introPlaying) return;
+        [mirror, padlock].filter(Boolean).forEach((sprite) => {
+          const scale = sprite.scaleX;
+          sprite.setVisible(true).setAlpha(0).setScale(scale * POP_FROM_SCALE);
+          this.tweens.add({ targets: sprite, alpha: 1, scale, duration: POP_MS, ease: 'Back.easeOut' });
+        });
+      });
+    });
+    this.time.delayedCall(START_DELAY_MS + (mirrors.length - 1) * DELAY_MS + POP_MS + 300, () => this.introPlaying && onDone());
+  }
+
+  /** Fin de l'intro : les miroirs sont là, le joueur reprend la main, l'interface revient et le chronomètre démarre. */
+  endIntro() {
+    this.introPlaying = false;
+    this.skipIntroKeys?.forEach((event) => this.input.keyboard.off(event, this.skipIntro, this));
+    this.setMirrorsVisible(true); // (déjà visibles : filet de sécurité)
+    this.scene.setVisible(true, SCENES.UI);
+
+    // * Le joueur 2 arrive à côté du joueur 1 (qui n'est plus au point de départ)
+    if (this.player2.active) {
+      const start = findStartNear(this, this.player, this.walls);
+      this.player2.setPosition(start.x, start.y).setVisible(true);
+    }
+
+    this.transitioning = false;
+    timer.start();
+  }
+
+  /** Montre ou cache les miroirs du jardin et leurs cadenas. */
+  setMirrorsVisible(visible) {
+    [...this.mirrors, ...this.mirrorLocks].filter((sprite) => sprite.active).forEach((sprite) => sprite.setVisible(visible)); // (un cadenas ouvert est détruit)
   }
 
   /**
@@ -694,6 +865,86 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   /**
+   * * L'outro : après la dernière phrase de l'ancien, le joueur est figé. Les 5 étoiles sortent des miroirs (leurs places dans la carte, même si
+   * un miroir a disparu), montent vers l'ancien et tournent autour de lui, puis l'écran passe au blanc et la victoire s'affiche.
+   * O ou Échap la passent. Le chronomètre s'arrête dès le début : l'outro ne compte pas dans le temps.
+   */
+  playOutro() {
+    const ancien = this.npcs.find((npc) => npc.npcName === 'ancien');
+    if (!ancien) return this.winGame();
+    this.outroPlaying = true;
+    this.outroStartedAt = this.time.now;
+    this.transitioning = true;
+    timer.stop();
+    this.hint.setText(''); // « I : parler » ne reste pas affiché pendant l'outro
+    this.outroKeys = ['keydown-O', 'keydown-ESC'];
+    this.outroKeys.forEach((event) => this.input.keyboard.on(event, this.skipOutro, this));
+
+    const center = { x: ancien.x, y: ancien.y - OUTRO.RING_HEIGHT };
+    const mirrorPlaces = this.map
+      .getObjectLayer('objects')
+      .objects.filter((object) => (object.class || object.type) === 'mirror')
+      .map((object) => ({ x: object.x + object.width / 2, y: object.y + object.height / 2 }));
+
+    // * Chaque étoile part de son miroir (elle apparaît) et monte à sa place sur le cercle autour de l'ancien
+    const angleStep = (Math.PI * 2) / mirrorPlaces.length;
+    this.outroStars = mirrorPlaces.map((place, i) => {
+      const angle = -Math.PI / 2 + i * angleStep;
+      const star = this.add.image(place.x, place.y, 'etoile').setDepth(OUTRO.STAR_DEPTH).setScale(OUTRO.STAR_SCALE).setAlpha(0);
+      star.angle0 = angle;
+      this.tweens.add({ targets: star, alpha: 1, duration: 400, delay: i * OUTRO.STAGGER_MS });
+      this.tweens.add({
+        targets: star,
+        x: center.x + Math.cos(angle) * OUTRO.RING_RADIUS,
+        y: center.y + Math.sin(angle) * OUTRO.RING_RADIUS,
+        duration: OUTRO.RISE_MS,
+        delay: i * OUTRO.STAGGER_MS,
+        ease: 'Sine.easeInOut',
+      });
+      return star;
+    });
+
+    // * Quand la dernière est arrivée, tout le cercle fait un tour, puis le blanc recouvre l'écran
+    const risen = (mirrorPlaces.length - 1) * OUTRO.STAGGER_MS + OUTRO.RISE_MS;
+    this.time.delayedCall(risen, () => {
+      if (!this.outroPlaying) return;
+      const turn = { value: 0 };
+      this.tweens.add({
+        targets: turn,
+        value: Math.PI * 2,
+        duration: OUTRO.ORBIT_MS,
+        onUpdate: () =>
+          this.outroStars.forEach((star) => {
+            const angle = star.angle0 + turn.value;
+            star.setPosition(center.x + Math.cos(angle) * OUTRO.RING_RADIUS, center.y + Math.sin(angle) * OUTRO.RING_RADIUS);
+          }),
+        onComplete: () => {
+          if (!this.outroPlaying) return;
+          this.cameras.main.fadeOut(OUTRO.FADE_MS, 255, 255, 255);
+          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.endOutro());
+        },
+      });
+    });
+  }
+
+  /** Passe l'outro (O ou Échap), sauf pendant la première demi-seconde. */
+  skipOutro() {
+    if (!this.outroPlaying || this.time.now - this.outroStartedAt < OUTRO.SKIP_AFTER_MS) return;
+    this.cameras.main.fadeEffect.reset();
+    this.endOutro();
+  }
+
+  /** Fin de l'outro : les étoiles disparaissent et la victoire s'affiche. */
+  endOutro() {
+    if (!this.outroPlaying) return;
+    this.outroPlaying = false;
+    this.outroKeys.forEach((event) => this.input.keyboard.off(event, this.skipOutro, this));
+    this.tweens.killTweensOf(this.outroStars);
+    this.outroStars.forEach((star) => star.destroy());
+    this.winGame();
+  }
+
+  /**
    * * Fin de la partie : on arrête le chronomètre, on fige le joueur et la physique, et l'interface affiche l'écran de victoire.
    */
   winGame() {
@@ -711,12 +962,6 @@ export default class WorldScene extends Phaser.Scene {
     // * Partie gagnée : tout est figé, on ne lit plus les touches
     if (this.gameWon) return;
 
-    // * Victoire : toutes les étoiles du jeu sont ramassées ET le joueur est de retour dans le jardin
-    if (this.isNormalWorld() && areAllStarsCollected()) {
-      this.winGame();
-      return;
-    }
-
     // * Les ennemis vivent à chaque image, sauf pendant un dialogue ou une transition (ils s'arrêtent)
     updateEnemies(this, this.enemies, this.getEnemyTargets(), this.dialogue.isOpen || this.transitioning);
     if (this.enemiesTotal > 0 && !this.enemiesCleared && this.enemies.countActive(true) === 0) {
@@ -729,6 +974,10 @@ export default class WorldScene extends Phaser.Scene {
     if (this.transitioning) {
       this.player.setVelocity(0, 0);
       this.player2.setVelocity(0, 0);
+      if (this.introPlaying) {
+        if (this.dialogue.isOpen) this.dialogue.update(this.input1); // la lettre de l'intro : le joueur la fait avancer
+        else if (this.input1.justPressed('interact')) this.skipIntro(); // I sans phrase affichée : on passe l'intro
+      }
       return;
     }
 
@@ -819,7 +1068,9 @@ export default class WorldScene extends Phaser.Scene {
     if (nearNpc && !nearMirror && input.justPressed('interact')) {
       this.hint.setText('');
       this.dialogueInput = input; // c'est ce joueur qui fait avancer le dialogue
-      this.dialogue.open(nearNpc.npcName, DIALOGUES[nearNpc.npcName], () => this.revealWorldStar(nearNpc));
+      // * L'ancien gardien termine le jeu : la victoire vient quand sa dernière phrase est lue. Les autres PNJ donnent l'étoile du monde.
+      const isAncien = nearNpc.npcName === 'ancien';
+      this.dialogue.open(nearNpc.npcName, DIALOGUES[nearNpc.npcName], () => this.revealWorldStar(nearNpc), isAncien ? () => this.playOutro() : undefined);
       return true;
     }
 
@@ -836,6 +1087,7 @@ export default class WorldScene extends Phaser.Scene {
 
         // * Transition : le cercle noir se referme SUR LE MIROIR pris, puis on change de scène
         this.transitioning = true;
+        fadeOutMusic(this, TRANSITION.IRIS_CLOSE_MS); // la musique s'estompe en même temps que le cercle se referme
         irisClose(this, nearMirror.x, nearMirror.y, () => {
           this.scene.start(targetScene, { from: currentWorld });
         });

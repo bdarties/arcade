@@ -66,12 +66,15 @@ export default class DialogueBox {
    * @param {string} id  Le nom du personnage (sert à retenir que son énigme est résolue)
    * @param {object} dialogue  { name, lines, riddle? } (voir src/data/dialogues.js)
    * @param {Function} [onSolved]  Appelée quand le joueur trouve la bonne réponse (la récompense)
+   * @param {Function} [onClosed]  Appelée quand la boîte se ferme (après la dernière phrase)
    */
-  open(id, dialogue, onSolved) {
+  open(id, dialogue, onSolved, onClosed) {
     this.id = id;
     this.dialogue = dialogue;
     this.onSolved = onSolved;
+    this.onClosed = onClosed;
     this.isOpen = true;
+    this.fitToScreen();
     this.container.setVisible(true);
 
     const { riddle } = dialogue;
@@ -145,6 +148,20 @@ export default class DialogueBox {
   close() {
     this.isOpen = false;
     this.container.setVisible(false);
+    const onClosed = this.onClosed;
+    this.onClosed = null;
+    onClosed?.();
+  }
+
+  /**
+   * Garde la boîte à sa place sur l'ÉCRAN, même si la caméra est zoomée ou décalée (comme pendant l'intro) :
+   * à l'échelle 1/zoom et au coin haut gauche de ce que voit la caméra, le zoom la remet à sa taille normale.
+   * Avec une caméra normale (zoom 1, au centre), la boîte est à (0, 0) en taille normale : rien ne change.
+   */
+  fitToScreen() {
+    const camera = this.scene.cameras.main;
+    const zoom = camera.zoom;
+    this.container.setScale(1 / zoom).setPosition(camera.midPoint.x - GAME_WIDTH / 2 / zoom, camera.midPoint.y - GAME_HEIGHT / 2 / zoom);
   }
 
   moveCursor(step) {

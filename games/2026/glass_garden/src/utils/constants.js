@@ -162,6 +162,7 @@ export const ASSETS = {
   WATER: 'water',
   MIRROR: 'mirror',
   NPC_ENIGME: 'pnj_enigme', // le personnage de l'énigme (voir NPCS)
+  NPC_ANCIEN: 'pnj_ancien', // l'ancien gardien, à la fin du jeu (voir NPCS)
   BUBBLE: 'bulle', // les bulles du monde magique (voir BUBBLES)
   ENEMY_FAUCHEUR: 'ennemi_faucheur', // les ennemis du monde du rêve (voir ENEMIES)
   ENEMY_CAPUCHE: 'ennemi_capuche',
@@ -286,6 +287,16 @@ export const NPCS = {
     image: 'assets/images/sprites/pnj_enigme.png',
     hitbox: { WIDTH: 36, HEIGHT: 14 }, // la zone qui bloque le joueur, en pixels
   },
+  // * L'ancien gardien : il attend dans le jardin quand les 5 étoiles sont réunies (requiresAllStars), et la victoire vient après son dialogue.
+  // Son image est une feuille de 4 images de 32 x 32 (dos, droite, gauche, face) : il regarde le joueur, donc l'image de face (frame 3).
+  ancien: {
+    key: ASSETS.NPC_ANCIEN,
+    image: 'assets/images/sprites/pnj_ancien.png',
+    frameSize: 32,
+    frame: 3,
+    hitbox: { WIDTH: 20, HEIGHT: 12 },
+    requiresAllStars: true,
+  },
 };
 
 // * Ordre d'affichage : plus la valeur est grande, plus l'élément est devant
@@ -309,6 +320,55 @@ export const TRANSITION = {
   IRIS_OPEN_MS: 600, // durée de l'ouverture du cercle
   IRIS_OPEN_EASE: 'Quad.easeOut', // le cercle ralentit en s'ouvrant
   COLOR: 0x000000,
+};
+
+// * La musique des mondes (voir MusicSystem.js) : un fichier par monde (le nom du monde est celui de WORLDS), jouée en boucle.
+// Un monde absent de TRACKS n'a pas de musique (le monde 3, l'automne, attend la sienne : il suffit d'ajouter une ligne ici).
+export const MUSIC = {
+  PATH: 'assets/audio/music/',
+  KEY_PREFIX: 'music_', // la clé Phaser d'une musique est ce préfixe suivi du nom du monde
+  VOLUME: 0.5, // le volume de la musique (0 à 1)
+  FADE_MS: 600, // le fondu à chaque passage de miroir, comme l'ouverture et la fermeture du cercle (TRANSITION)
+  TRACKS: {
+    hub: 'jardin.mp3',
+    world_1: 'nuit.mp3',
+    world_2: 'reve.mp3',
+    world_4: 'post_apo.mp3',
+    world_5: 'magie.mp3',
+  },
+};
+
+// * L'intro du jardin, jouée au début d'une nouvelle partie (voir WorldScene.playIntro)
+export const INTRO = {
+  FADE_MS: 2500, // le fondu depuis le blanc, pendant lequel le joueur est figé
+  FADE_COLOR: { RED: 255, GREEN: 255, BLUE: 255 }, // le blanc
+  // * Le zoom sur la maison (le centre est choisi pour que la vue reste dans la carte), qui grossit lentement pendant le fondu et la sortie
+  CAMERA: { CENTER_X: 270, CENTER_Y: 260, ZOOM_START: 2.4, ZOOM_END: 2.8, ZOOM_IN_MS: 3600 },
+  // * Le joueur sort de la porte de la maison (DOOR), apparaît en marchant, et s'arrête devant (FRONT)
+  DOOR: { X: 167, Y: 286 },
+  FRONT: { X: 167, Y: 302 },
+  WALK_MS: 800,
+  PAUSE_MS: 500, // la pause quand il est sorti, avant que la caméra ne reprenne sa place
+  ZOOM_OUT_MS: 1400, // le dézoom vers la vue normale
+  // * Les miroirs apparaissent un à un (dans l'ordre des mondes), chacun avec son cadenas : un petit « pop » (il grossit en se dévoilant)
+  SKIP_AFTER_MS: 1000, // pendant la première seconde, on ne peut pas passer l'intro (une touche encore enfoncée depuis le menu)
+  UNLOCK_DELAY_MS: 500, // après la note : le temps avant que le cadenas du premier miroir ne s'ouvre
+  END_PAUSE_MS: 600, // la pause entre l'ouverture du cadenas et la reprise du jeu
+  MIRRORS: { START_DELAY_MS: 400, DELAY_MS: 650, POP_MS: 450, POP_FROM_SCALE: 0.4 },
+};
+
+// * L'outro, après la dernière phrase de l'ancien (voir WorldScene.playOutro) : les 5 étoiles sortent des miroirs, montent vers lui et
+// tournent autour de lui, puis le blanc recouvre l'écran avant la victoire.
+export const OUTRO = {
+  STAR_DEPTH: 11, // devant les personnages (le décor du dessus est à 10)
+  STAR_SCALE: 1.5,
+  RING_RADIUS: 56, // la distance des étoiles à l'ancien, en pixels
+  RING_HEIGHT: 24, // le centre du cercle est à cette hauteur au-dessus de ses pieds
+  RISE_MS: 1500, // le temps que met chaque étoile à monter de son miroir
+  STAGGER_MS: 250, // le décalage entre le départ de deux étoiles
+  ORBIT_MS: 2000, // le tour complet des étoiles autour de lui
+  FADE_MS: 1600, // le fondu vers le blanc
+  SKIP_AFTER_MS: 500, // avant ce délai, on ne peut pas passer l'outro
 };
 
 // * Fumée de cheminée : des objets de classe « smoke » posés dans Tiled (point = le haut de la cheminée)
@@ -593,7 +653,6 @@ export const DECO = {
   // (0xffffff = aucune teinte). Un monde absent garde les couleurs d'origine des images.
   WORLD_TINTS: {
     world_1: 0x8f9cd4, // la nuit : des bleus, le vert des buissons s'assombrit
-    world_3: 0xf2d0a0, // l'automne : une lumière chaude
   },
   // * Les sources de lumière ne sont jamais teintées : une lanterne, une bougie ou un cristal reste lumineux, même la nuit
   UNTINTED: ['lanterne_', 'bougie_', 'cristal_'], // les noms d'images qui commencent ainsi
@@ -612,7 +671,7 @@ export const DECO = {
   ],
   IMAGES: [
     'fleur_1', 'fleur_2', 'fleur_3', 'fleur_4', 'fleur_5', 'fleur_6',
-    'buisson', 'buisson_automne', 'trefle', 'herbe', 'plante_verte', 'panneau',
+    'buisson', 'buisson_automne', 'buisson_reve', 'buisson_magie', 'trefle', 'herbe', 'plante_verte', 'panneau',
     'champignon_1', 'champignon_2', 'champignon_3', 'champignon_4',
     'lanterne_bleue', 'lanterne_orange', 'lanterne_noire', 'lanterne_rose', 'lanterne_verte', 'lanterne_violette',
     'bougie_1', 'bougie_2', 'bougie_3',
