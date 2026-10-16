@@ -4,13 +4,12 @@ export default class victory extends Phaser.Scene {
     super({ key: "victory" });
   }
 
-  // Charge le bouton de retour (et éventuellement la future illustration de victoire).
+  // Charge le bouton de retour et l'illustration de victoire
   preload() {
     this.load.setBaseURL(this.sys.game.config.baseURL);
+    this.load.image("ecran_victoire", "./assets/ecrans/victoire.png")
     this.load.image("button_back", "./assets/boutton/button_back.png");
 
-    // Décommenter la ligne ci-dessous quand tu auras ton image d'écran de victoire :
-    // this.load.image("ecran_victoire", "./assets/ecrans/victory_screen.png");
   }
 
   // Affiche le placeholder de victoire et configure le retour à l'accueil via la touche I.
@@ -21,12 +20,7 @@ export default class victory extends Phaser.Scene {
     const baseScale = 0.36;
     const zoomScale = baseScale * 1.12;
 
-    // --- PLACEHOLDER PLEIN ÉCRAN "VICTOIRE" ---
-    // Remplaçable plus tard par :
-    // this.add.image(w / 2, h / 2, "ecran_victoire").setDisplaySize(w, h).setDepth(-1);
-    this.add
-      .rectangle(w / 2, h / 2, w, h, 0x1e1b26)
-      .setDepth(-1);
+    this.add.image(w / 2, h / 2, "ecran_victoire").setDisplaySize(w, h).setDepth(-1);
 
     this.add
       .text(w / 2, h / 2 - 40, "VICTOIRE", {
@@ -34,6 +28,16 @@ export default class victory extends Phaser.Scene {
         fontSize: "64px",
         fontStyle: "bold",
         color: "#ffd700",
+        stroke: "#000000",
+        strokeThickness: 6
+      })
+      .setOrigin(0.5);
+
+          this.add
+      .text(w / 2, h / 1 - 300, "Votre femme est saine est sauve !", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "32px",
+        color: "#ff5500",
         stroke: "#000000",
         strokeThickness: 6
       })
