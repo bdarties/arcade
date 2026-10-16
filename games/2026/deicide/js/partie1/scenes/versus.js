@@ -33,9 +33,8 @@ const SOL_TUILES = 3; // l'épaisseur du sol de départ
 const TUILE_BOUT = 639, TUILE_MILIEU = 638; // une plateforme : un bout (639, retourné à gauche), du milieu (638), l'autre bout (639)
 const TUILES_MUR = [800, 801, 802, 803]; // les 4 colonnes de chaque mur
 const TUILE_SOL = 1126, TUILE_SOL_BORD = 1131; // le sol (pleine) et le bord du sol
-const TUILE_FOND = 1332; // le fond sombre
 const ECART_MIN = 3, ECART_MAX = 4; // l'écart (en tuiles) entre deux rangées de plateformes : le saut du robot fait 5 tuiles, on reste en dessous
-const VITESSE_DEPART = 45, VITESSE_MAX = 115, ACCELERATION = 0.7; // l'écran monte de 45 px/s, +0,7 px/s chaque seconde, jusqu'à 115 px/s
+const VITESSE_DEPART = 45, VITESSE_MAX = 180, ACCELERATION = 2.5; // l'écran monte de 45 px/s, +2,5 px/s chaque seconde (le maximum est atteint après environ 54 s), jusqu'à 180 px/s
 const DELAI_DEFILEMENT = 3000; // ms avant que l'écran commence à monter (le temps de lire « MANCHE 1 » et de grimper)
 const HAUTEUR_ZONE = 44; // px : la zone rouge en bas de l'écran. La toucher, c'est mourir
 // les objets qui apparaissent pendant la manche
@@ -60,11 +59,14 @@ export default class versus extends Phaser.Scene { // la scène du 1 contre 1
 
   create() { // construit l'arène et les deux robots
     creerAnimationsPersonnage(this); // animations du robot
-    this.cameras.main.setBackgroundColor("#3a3a3a"); // fond gris
+    this.cameras.main.setBackgroundColor("#000000"); // fond noir uni (pas de tuiles de fond : en défilement elles laissaient voir un quadrillage entre elles)
+    this.cameras.main.roundPixels = true; // la caméra se pose sur des pixels entiers : plus de fines lignes entre les tuiles quand l'écran monte
     const hauteurPx = HAUTEUR_TUILES * 32; // la hauteur de la tour en pixels
     this.groupe_plateformes = this.construireTour(); // les murs, le sol et les plateformes (les balles disparaissent contre eux, voir personnage.js)
     this.physics.world.setBounds(0, 0, LARGEUR_TUILES * 32, hauteurPx); // le monde physique a la taille de la tour
+    this.bordsSansSautDeMur = new Phaser.Geom.Rectangle(MUR_TUILES * 32, 0, (LARGEUR_TUILES - 2 * MUR_TUILES) * 32, hauteurPx); // l'intérieur de la tour : les murs gauche et droit ne permettent ni glissade ni saut de mur (voir personnage.js)
     this.cameras.main.setScroll(0, hauteurPx - this.cameras.main.height + 24); // l'écran commence en bas de la tour (24 px plus bas : le sol est au-dessus de la zone rouge, les robots ont le temps de grimper)
+    this.defilement = this.cameras.main.scrollY; // la position exacte de l'écran, avec des décimales (la caméra, elle, reçoit un nombre entier)
     this.vitesseEcran = VITESSE_DEPART; // la vitesse à laquelle l'écran monte (px/s)
     this.debutDefilement = this.time.now + DELAI_DEFILEMENT; // l'écran ne monte pas avant cet instant
 
@@ -127,9 +129,7 @@ export default class versus extends Phaser.Scene { // la scène du 1 contre 1
   construireTour() { // fabrique la tour avec les tuiles de la map solo (tileset « dawn ») : murs, sol et plateformes symétriques. Renvoie le calque solide
     const carte = this.make.tilemap({ tileWidth: 32, tileHeight: 32, width: LARGEUR_TUILES, height: HAUTEUR_TUILES }); // une carte vide
     const tuiles = carte.addTilesetImage("dawn_of_the_gods_ombre", "tuiles_dawn", 32, 32, 0, 0, 1); // le tileset de la map solo ; le dernier 1 = premier numéro de tuile (comme dans Tiled)
-    const fond = carte.createBlankLayer("fond", tuiles).setDepth(-20); // le calque du fond (décor, sans collision)
     const calque = carte.createBlankLayer("tour", tuiles).setDepth(-10); // le calque solide : murs, sol, plateformes
-    fond.fill(TUILE_FOND, 0, 0, LARGEUR_TUILES, HAUTEUR_TUILES); // le fond sombre de la map solo partout
     const poser = (x, y, tuile, retournee = false) => { const t = calque.putTileAt(tuile, x, y); t.flipX = retournee; }; // pose une tuile (retournée = miroir gauche-droite)
     const poserSym = (x, y, tuile, retournee = false) => { poser(x, y, tuile, retournee); poser(LARGEUR_TUILES - 1 - x, y, tuile, !retournee); }; // pose une tuile ET sa symétrique (le miroir par rapport au centre)
     for (let y = 0; y < HAUTEUR_TUILES; y++) for (let i = 0; i < MUR_TUILES; i++) { poser(i, y, TUILES_MUR[i]); poser(LARGEUR_TUILES - MUR_TUILES + i, y, TUILES_MUR[i]); } // les deux murs, sur toute la hauteur
@@ -162,7 +162,8 @@ export default class versus extends Phaser.Scene { // la scène du 1 contre 1
   monterEcran(delta) { // fait monter l'écran d'un petit pas
     const camera = this.cameras.main; // la caméra
     this.vitesseEcran = Math.min(VITESSE_MAX, this.vitesseEcran + ACCELERATION * delta / 1000); // il accélère doucement
-    camera.scrollY = Math.max(0, camera.scrollY - this.vitesseEcran * delta / 1000); // il monte (sans dépasser le haut de la tour)
+    this.defilement = Math.max(0, this.defilement - this.vitesseEcran * delta / 1000); // il monte (sans dépasser le haut de la tour)
+    camera.scrollY = Math.round(this.defilement); // la caméra ne reçoit que des pixels entiers
     this.joueurs.forEach((joueur) => { // le haut de l'écran est un plafond : on ne peut pas sortir par le haut
       if (joueur.mortVersus || joueur.body.top >= camera.scrollY) return; // mort, ou bien dans l'écran : rien à faire
       joueur.body.y = camera.scrollY; // on le remet sous le bord haut

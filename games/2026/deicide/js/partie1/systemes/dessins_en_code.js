@@ -80,29 +80,46 @@ export function creerTexturesLanterne(scene) { // la lanterne allumée et la lan
     dessinerLanterne(scene, "lanterne_eteinte", { "#": "#3b3634", V: "#4a4a52", J: "#3a3a40", B: "#2e2e33" }); // la lanterne éteinte
 }
 
-// La lanterne vivante : la lanterne avec de petites ailes. Les deux images (ailes levées, ailes baissées) sont dessinées dans une seule texture, l'une sous l'autre.
-// Les ailes sont dessinées à droite, puis la même retournée à gauche.
-// ailes levées : attachées en bas à gauche
-const AILE_HAUT = [".....LLL.", "...LLWWWL", "..LWWWWWL", ".LWWWWWL.", "LWWWWWL..", "LWWWWL...", ".LWWL....", "..LL....."]; // le dessin de l'aile quand elle est levée
-// ailes baissées : attachées en haut à gauche
-const AILE_BAS = ["..LL.....", ".LWWL....", "LWWWWL...", "LWWWWWL..", ".LWWWWWL.", "..LWWWWWL", "...LLWWWL", ".....LLL."]; // le dessin de l'aile quand elle est baissée
-const COULEURS_LANTERNE = { "#": "#3b3634", V: "#f3e6b8", J: "#ffd45c", B: "#ffffff" }; // la lanterne allumée
-const COULEURS_AILE = { W: "#ffffff", L: "#8a779b" }; // les couleurs des ailes
+// La lanterne vivante : une lanterne de fer et d'or avec de petites ailes de plumes. Elle a son propre dessin (la lanterne accrochée des niveaux ne change pas).
+// 4 images dans une seule texture, l'une sous l'autre : ailes levées, à mi-chemin, baissées, à mi-chemin (l'animation les enchaîne dans cet ordre : 0, 1, 2, 1).
+// Chaque lettre est un pixel : o = contour sombre, i = fer, l = reflet lavande, g = or sombre, G = or vif, V = verre clair, Y = verre doré, W = cœur de la flamme.
+const MOTIF_VIVANTE = [ // la lanterne : 10 colonnes sur 14 lignes (comme la lanterne accrochée, pour garder la même hitbox)
+    "...gGGg...", // l'anneau d'accroche
+    "...g..g...", // son bas
+    "..oliilo..", // la pointe du chapeau
+    ".oliiiilo.", // le chapeau, avec un reflet lavande
+    ".oGGGGGGo.", // le liseré doré sous le chapeau
+    ".gVVVVVvg.", // le haut du verre, entre deux montants dorés (v = côté droit du verre, un peu plus sombre : ça donne du volume)
+    ".gVVYYVvg.", // la pointe de la flamme
+    ".gVYWWYvg.", // la flamme : le cœur blanc
+    ".gVYWWYvg.", // la flamme
+    ".gVYYYYvg.", // le bas de la flamme
+    ".gVVVVVvg.", // le bas du verre
+    ".oGGGGGGo.", // le liseré doré du socle
+    "..oiiiio..", // le socle
+    "...oggo..." // la pointe du socle
+];
+const COULEURS_VIVANTE = { o: "#2a2530", i: "#4a4057", l: "#8a779b", g: "#c99a2e", G: "#ffd45c", V: "#fff2c0", v: "#ecd9a0", Y: "#ffd45c", W: "#ffffff" }; // fer sombre, lavande du HUD, or des lanternes
+// Les ailes : 9 colonnes sur 8 lignes, le bord collé à la lanterne est la colonne 0. L = contour lavande, W = plume claire, S = plume dans l'ombre.
+// Dessinées à droite, puis retournées à gauche. Chaque pose a la ligne où elle commence (depart) : l'attache tombe toujours à hauteur du verre.
+const AILE_HAUT = [".....LLL.", "...LLWWWL", "..LWWWWSL", ".LWWWWSL.", "LWWWWSL..", "LWSSSL...", "LSSL.....", "LL......."]; // ailes levées : attachées en bas à gauche
+const AILE_MILIEU = ["...LLLL..", ".LLWWWWL.", "LWWWWWWWL", "LWWWWWSSL", "LSSSSSSL.", ".LSSSLL..", "..LLL....", "........."]; // ailes à mi-chemin : presque à plat
+const AILE_BAS = ["LL.......", "LSSL.....", "LWSSSL...", "LWWWWSL..", ".LWWWWSL.", "..LWWWWSL", "...LLWWWL", ".....LLL."]; // ailes baissées : attachées en haut à gauche
+const COULEURS_AILE = { W: "#f5f0f8", S: "#cfc6dc", L: "#8a779b" }; // plume claire (la même que le texte du HUD), plume dans l'ombre, contour lavande
 const LARGEUR_IMAGE = 28; // une image de la lanterne ailée : 28 x 16 (la lanterne fait 10 x 14, les ailes dépassent de 9 de chaque côté)
 const HAUTEUR_IMAGE = 16; // hauteur d'une image de lanterne ailée
-export function creerTextureLanterneVivante(scene) { // crée la lanterne ailée (deux images l'une sous l'autre)
-    fabriquer(scene, "lanterne_vivante", LARGEUR_IMAGE, HAUTEUR_IMAGE * 2, (ctx, texture) => { // on fabrique la texture de deux images
+export function creerTextureLanterneVivante(scene) { // crée la lanterne ailée (4 images l'une sous l'autre)
+    fabriquer(scene, "lanterne_vivante", LARGEUR_IMAGE, HAUTEUR_IMAGE * 4, (ctx, texture) => { // on fabrique la texture de quatre images
         const pixel = (x, y, couleur) => { ctx.fillStyle = couleur; ctx.fillRect(x, y, 1, 1); }; // fonction qui peint un pixel
-        [AILE_HAUT, AILE_BAS].forEach((aile, image) => { // pour chaque position d'aile (levée puis baissée)
+        [[AILE_HAUT, 3], [AILE_MILIEU, 6], [AILE_BAS, 7], [AILE_MILIEU, 6]].forEach(([aile, depart], image) => { // pour chaque position d'aile : le dessin, et la ligne où il commence
             const haut = image * HAUTEUR_IMAGE; // première ligne de cette image dans la texture
-            peindreMotif(ctx, MOTIF_LANTERNE, COULEURS_LANTERNE, 9, haut + 2); // la lanterne, au milieu
-            const departAile = haut + (image === 0 ? 1 : 5); // où commence la première ligne de l'aile
-            aile.forEach((ligne, y) => [...ligne].forEach((lettre, x) => { // pour chaque pixel de l'aile
+            aile.forEach((ligne, y) => [...ligne].forEach((lettre, x) => { // pour chaque pixel de l'aile (peinte AVANT la lanterne : elle passe derrière)
                 if (lettre === ".") return; // un point : transparent
-                pixel(19 + x, departAile + y, COULEURS_AILE[lettre]); // aile droite
-                pixel(8 - x, departAile + y, COULEURS_AILE[lettre]); // aile gauche : la même, retournée
+                pixel(18 + x, haut + depart + y, COULEURS_AILE[lettre]); // aile droite (elle touche le verre)
+                pixel(9 - x, haut + depart + y, COULEURS_AILE[lettre]); // aile gauche : la même, retournée
             }));
-            texture.add(image, 0, 0, haut, LARGEUR_IMAGE, HAUTEUR_IMAGE); // image numéro 0 puis 1
+            peindreMotif(ctx, MOTIF_VIVANTE, COULEURS_VIVANTE, 9, haut + 2); // la lanterne, au milieu
+            texture.add(image, 0, 0, haut, LARGEUR_IMAGE, HAUTEUR_IMAGE); // image numéro 0, 1, 2 puis 3
         });
     }, { net: true }); // pixel art : pas de flou
 }
