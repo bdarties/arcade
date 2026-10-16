@@ -26,6 +26,11 @@ export default class egouts extends Phaser.Scene {
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
     fct.chargerPerso(this);
+    //À changer :
+    this.load.spritesheet("ennemi_grenier", "./assets/spritesheet/ennemigreniert.png", {
+      frameWidth: 36,
+      frameHeight: 64
+    });
   }
 
   // Construit la carte et ses collisions, puis place le joueur et les portes.
@@ -100,10 +105,95 @@ export default class egouts extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     fct.initVies(this, false);
+
+    //À changer :
+    if (!this.anims.exists("ennemi_marche")) {
+      this.anims.create({
+        key: "ennemi_marche",
+        frames: this.anims.generateFrameNumbers("ennemi_grenier", { start: 0, end: 7 }),
+        frameRate: 8,
+        repeat: -1
+      });
+     }
+    
+    this.ennemis = [];
+    const calque_ennemis = map.getObjectLayer("ennemis");
+    if (!calque_ennemis) {
+      console.warn('Calque d\'objets "ennemis" introuvable dans la map Tiled');
+    } else {
+      calque_ennemis.objects.forEach((o) => {
+        const prop = (nom, defaut) => {
+        const p = o.properties && o.properties.find((p) => p.name === nom);
+        return p ? p.value : defaut;
+      };
+      const e = this.physics.add
+      .sprite(o.x, o.y + decalageY, "ennemi_grenier", 0)
+      .setOrigin(0.5, 1)
+      .setScale(prop("echelle", ENNEMI_ECHELLE))
+      .setDepth(1);
+      e.body.setSize(24, 58).setOffset(6, 6);
+      e.vitesse = prop("vitesse", ENNEMI_VITESSE);
+      e.distance = prop("distance", ENNEMI_DISTANCE);
+      e.pv = prop("pv", ENNEMI_PV);
+      e.departX = o.x;
+      e.sens = Math.random() < 0.5 ? -1 : 1;
+      e.play("ennemi_marche");
+      this.physics.add.collider(e, calque_sol);
+      this.physics.add.overlap(this.player, e, () => this.perdreVie(ENNEMI_DEGATS, e));
+      this.ennemis.push(e);
+      });
+    }
+    fct.activerCoups(this.player, this.ennemis);
+    
+    this.sound.stopByKey("son_pluie");
+    this.sound.stopByKey("musique_menu");
+    
+    if (this.cache.audio.exists("musique_grenier")) {
+      let musique = this.sound.get("musique_grenier");
+      if (!musique) {
+        musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
+        musique.play();
+      }
+    } else {
+      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_grenier.mp3");
+    }
+      
   }
 
-  // Gère les chutes, le déplacement, les sauts et les interactions avec les portes.
+// Fait patrouiller les ennemis et les fait rebrousser chemin près des bords.
+  mettreAJourEnnemis() {
+    this.ennemis.forEach((e) => {
+      const b = e.body;
+      const aDroite = e.sens > 0;
+      const auSol = b.blocked.down || b.touching.down;
+
+      const mur = aDroite ? b.blocked.right : b.blocked.left;
+      const tropLoin = Math.abs(e.x - e.departX) > e.distance;
+      const xDevant = aDroite ? b.right + 4 : b.left - 4;
+      const videDevant = auSol && !this.calque_sol.hasTileAtWorldXY(xDevant, b.bottom + 4);
+
+      if (mur || videDevant || (tropLoin && (e.x - e.departX > 0) === aDroite)) e.sens = -e.sens;
+
+      e.setVelocityX(e.sens * e.vitesse);
+      e.setFlipX(e.sens < 0);
+    });
+  }
+
+  // Applique les dégâts puis redémarre le niveau si toutes les vies sont perdues.
+  perdreVie(degats, source) {
+    if (fct.perdreVieJoueur(this, this.player, degats, source)) {
+      this.scene.restart({ depuis: "precedent" });
+    }
+  }
+
   update() {
+    // Met à jour les ennemis, le joueur, les chutes et les portes.
+    if (this.player.body.bottom >= this.cameras.main.height - 1) {
+      fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
+    }
+    this.mettreAJourEnnemis();
+
+
     if (this.player.body.bottom >= this.cameras.main.height - 1) {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
