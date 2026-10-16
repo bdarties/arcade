@@ -80,12 +80,12 @@ export default class Game_over extends Phaser.Scene {
     }
 
     // "Rejouer" en bas à gauche, "Retour" en rouge en bas à droite
-    const rejouer = texte(200, 685, "I | R : Rejouer", 22, "#f1c489")
+    const rejouer = texte(200, 685, "A: Rejouer", 22, "#f1c489")
       .setInteractive({ useHandCursor: true });
     rejouer.on("pointerover", () => rejouer.setColor("#ffffff"));
     rejouer.on("pointerout", () => rejouer.setColor("#f1c489"));
 
-    const menu = texte(1080, 685, "K | F : Retour", 22, TEXTE_ROUGE)
+    const menu = texte(1080, 685, "D : Retour", 22, TEXTE_ROUGE)
       .setInteractive({ useHandCursor: true });
     menu.on("pointerover", () => menu.setColor("#ffffff"));
     menu.on("pointerout", () => menu.setColor(TEXTE_ROUGE));
