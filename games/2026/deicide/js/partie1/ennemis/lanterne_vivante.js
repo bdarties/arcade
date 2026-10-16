@@ -6,7 +6,7 @@
 // Utilisation : preparerLanternesVivantes(this) dans create() de niveau1, après la création du joueur et du groupe tirsJoueur.
 import { creerTextureLanterneVivante } from "../systemes/dessins_en_code.js"; // le dessin de la lanterne ailée (en code, avec le même motif que les lanternes accrochées)
 import { ROBOT, LANTERNES_VIVANTES, DEGATS } from "../parametres.js"; // la vitesse du robot et les réglages des lanternes
-import { lanterneVivanteMorte } from "../systemes/effets.js"; // éclats, éclair
+import { lanterneVivanteMorte, clignoter } from "../systemes/effets.js"; // éclats, éclair, et la lueur qui bat
 import { donnerBoost } from "../mecanismes/boost.js"; // le boost donné au robot
 import { jouerSon } from "../systemes/sons.js"; // bruit du verre qui casse
 
@@ -25,7 +25,7 @@ export function preparerLanternesVivantes(scene) { // prépare les lanternes viv
     creerTextureLanterneVivante(scene); // fabrique l'image de la lanterne ailée
     if (!scene.anims.exists("lanterne_vivante_vol")) { // si l'animation de vol n'existe pas encore...
         // les ailes battent
-        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 }); // ...on la crée : deux images, en boucle
+        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { frames: [0, 1, 2, 1] }), frameRate: 10, repeat: -1 }); // ...on la crée : quatre images (ailes levées, à mi-chemin, baissées, à mi-chemin), en boucle
     }
     scene.maxLanternes = undefined; // (la scène est réutilisée après une mort : on repart du maximum normal)
     const groupe = scene.physics.add.group({ allowGravity: false }); // le groupe qui contiendra toutes les lanternes vivantes (sans gravité)
@@ -46,7 +46,7 @@ export function preparerLanternesVivantes(scene) { // prépare les lanternes viv
 // (surContact(robot)). Un tir d'un robot l'abat : surTir(robot) (en 1 contre 1, c'est lui qui reçoit le boost). Les options : delai (ms entre deux lanternes), maximum.
 export function preparerLanternesVersus(scene, { delai, maximum, surContact, surTir }) { // prépare les lanternes vivantes du 1 contre 1
     creerTextureLanterneVivante(scene); // fabrique l'image de la lanterne ailée
-    if (!scene.anims.exists("lanterne_vivante_vol")) scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 }); // l'animation de vol, si elle n'existe pas encore
+    if (!scene.anims.exists("lanterne_vivante_vol")) scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { frames: [0, 1, 2, 1] }), frameRate: 10, repeat: -1 }); // l'animation de vol, si elle n'existe pas encore
     scene.maxLanternes = maximum; // pas plus de lanternes que ça en même temps
     const groupe = scene.physics.add.group({ allowGravity: false }); // le groupe des lanternes (sans gravité)
     scene.lanternesVivantes = groupe; // (personnage.js s'en sert pour la visée auto)
@@ -124,7 +124,8 @@ export function faireApparaitre(scene) { // fait apparaître une lanterne vivant
     scene.tweens.add({ targets: lanterne, alpha: 1, duration: 300 }); // elle apparaît en fondu
     if (scene.textures.exists("halo_doux")) { // une lueur dorée autour (la texture vient d'ennemis_normaux.js)
         const halo = scene.add.image(place.x, place.y, "halo_doux"); // l'image de la lueur dorée
-        halo.setScale(0.55).setTint(0xffd45c).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0.8).setPipeline("SinglePipeline"); // on la réduit, la teinte et la fait briller
+        halo.setScale(0.85).setTint(0xffd45c).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0.9).setPipeline("SinglePipeline"); // on la réduit, la teinte et la fait briller
+        clignoter(scene, halo, { scale: 1.05, alpha: 0.55, duration: 450 + Math.random() * 300 }); // la lueur bat comme une flamme (un rythme un peu différent pour chaque lanterne)
         lanterne.halo = halo; // la lanterne retient sa lueur
         lanterne.once("destroy", () => halo.destroy()); // la lueur disparaît avec la lanterne
     }

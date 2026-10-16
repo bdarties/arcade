@@ -258,7 +258,7 @@ function marcherEtSauter(joueur, etat) { // gère la marche et le saut depuis le
 function glisserEtSauterDuMur(joueur, etat) { // gère la glissade contre un mur et le saut de mur
     const { maintenant, auSol, libre, verrou, gauche, droite } = etat; // on récupère les valeurs utiles de l'état
     const veutSaut = Phaser.Input.Keyboard.JustDown(joueur.touches.saut); // appui neuf : garder le bouton enfoncé ne rechaîne pas les sauts de mur
-    const bords = joueur.scene.physics.world.bounds; // identifie si le joueur se trouve contre un bord de la map
+    const bords = joueur.scene.bordsSansSautDeMur ?? joueur.scene.physics.world.bounds; // identifie si le joueur se trouve contre un bord de la map (le 1 contre 1 le remplace par l'intérieur de sa tour : ses murs ne servent pas au saut de mur)
     const auBordGauche = joueur.body.left <= bords.left + 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
     const auBordDroit = joueur.body.right >= bords.right - 1; // si le joueur est à 1 pixel du bord de la map il est considéré comme collé au bord
     // en contact avec un mur qui n'est pas le bord de la map : on peut s'y accrocher
@@ -296,7 +296,8 @@ function dasherOuTirer(joueur, clavier, etat) { // gère le dash et le tir (un s
     const veutTir = Phaser.Input.Keyboard.JustDown(joueur.touches.tir); // vrai si on vient d'appuyer sur tir
     if (libre && veutDash && maintenant >= joueur.prochainDash) { // dash demandé, libre, et délai écoulé
         joueur.prochainDash = maintenant + DASH.delai; // on note quand on pourra redasher
-        jouerAction(joueur, "dash"); // on lance l'animation du dash
+        if (clavier.left.isDown !== clavier.right.isDown) joueur.regardeGauche = clavier.left.isDown; // le dash part du côté où on pousse le joystick : le robot se tourne de ce côté (sans flèche, ou les deux ensemble, il garde le sens où il regarde)
+        jouerAction(joueur, "dash"); // on lance l'animation du dash (elle part dans le sens où il regarde, donc vers le joystick)
         jouerSon(joueur.scene, "dash"); // bruit du dash
         traineeDash(joueur); // laisse une traînée de fantômes rouges
     } else if (libre && veutTir && maintenant >= joueur.prochainTir) { // sinon, tir demandé, libre, et délai écoulé
