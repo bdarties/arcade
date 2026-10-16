@@ -41,9 +41,9 @@ export default class Win_screen extends Phaser.Scene {
     texte(640, 330, "SCORE", 24, "#fff4dc");
     texte(640, 380, String(scoreJ1 ?? 0), 48, "#f1c489");
 
-    const rejouer = texte(640, 560, "I | R : Rejouer", 22, "#f1c489")
+    const rejouer = texte(640, 560, "A: Rejouer", 22, "#f1c489")
       .setInteractive({ useHandCursor: true });
-    const menu = texte(640, 610, "K | F : Menu", 22, "#f1c489")
+    const menu = texte(640, 610, "D : Menu", 22, "#f1c489")
       .setInteractive({ useHandCursor: true });
     [rejouer, menu].forEach((t) => {
       t.on("pointerover", () => t.setColor("#ffffff"));
