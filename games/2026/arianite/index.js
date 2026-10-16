@@ -8,6 +8,7 @@ import toit from "./js/toit.js";
 import opera from "./js/opera.js";
 import egouts from "./js/egouts.js";
 import VersusScene from "./js/versus/VersusScene.js"; // mode arcade 2 joueurs (isolé du mode narratif)
+import victory from "./js/victory.js";
 
 // conteneur du jeu (absent de index.html, on le crée ici)
 if (!document.getElementById("game-container")) {
@@ -54,22 +55,16 @@ var config = {
       debug: false // permet de voir les hitbox et les vecteurs d'acceleration quand mis à true
     }
   },
-  scene: [accueil, controls, credits, histoire, exterieur, toit, opera, egouts, VersusScene], // accueil en premier = lancée au démarrage
+  scene: [accueil, controls, credits, histoire, exterieur, toit, opera, egouts, VersusScene, victory], // accueil en premier = lancée au démarrage
   baseURL: window.location.pathname.replace(/\/[^/]*$/, '')
 };
 
-
-function demarrerJeu() {
-  game = new Phaser.Game(config);
+try {
+  // Attend le chargement de la police avant de continuer l'exécution du module
+  await document.fonts.load('20px "Press Start 2P"', "ARIANITE");
+} catch (erreur) {
+  console.error("Impossible de charger la police Press Start 2P.", erreur);
 }
 
-// Attend le chargement de la police déclarée dans la page avant de créer les scènes.
-document.fonts.load('20px "Press Start 2P"', "ARIANITE").then(
-  demarrerJeu,
-  (erreur) => {
-    console.error("Impossible de charger la police Press Start 2P.", erreur);
-    demarrerJeu();
-  }
-);
-
+// Le jeu est créé et exporté uniquement après la résolution (ou l'échec) du chargement
 export var game = new Phaser.Game(config);
