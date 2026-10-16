@@ -381,18 +381,7 @@ fermerPanneau() {
       .setDepth(PROFONDEUR.texte);
     this.tweens.add({ targets: texte, scale: 1.2, duration: 300, yoyo: true, repeat: 3 });
 
-    for (var k = 0; k < 14; k++) {
-      var etoile = this.add.image(joueur.x, this.yCible - 40, "img_etoile").setDepth(PROFONDEUR.texte);
-      this.tweens.add({
-        targets: etoile,
-        x: joueur.x + Phaser.Math.Between(-180, 180),
-        y: this.yCible - Phaser.Math.Between(60, 260),
-        angle: 360,
-        alpha: 0,
-        duration: 1100,
-        onComplete: () => etoile.destroy()
-      });
-    }
+
   }
 
   resultatEssai() {
