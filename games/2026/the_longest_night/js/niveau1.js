@@ -156,7 +156,7 @@ export default class niveau1 extends Phaser.Scene {
       carte_fichier: "./assets/map/niveau_1.json",
       tileset_nom: "tileset_good",
       tileset_image: "Phaser_tuileGood",
-      temps: 100,
+      temps: 300,
       nombre_cles: 2,
       nombre_ennemis: 4,
       nombre_recharges: 1,
