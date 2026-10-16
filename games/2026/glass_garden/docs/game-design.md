@@ -242,7 +242,7 @@ La borne n'a pas de clavier : on ne peut pas y utiliser de raccourci. Le jeu **d
 |---|---|
 | `Ctrl + C` (ou `Cmd + C` sur Mac) | Passe de arcade à pc, ou de pc à arcade |
 
-Cliquer d'abord sur le jeu pour qu'il reçoive le clavier. Le mode actuel s'affiche en bas à gauche de l'écran (« Mode : arcade » ou « Mode : pc »).
+Cliquer d'abord sur le jeu pour qu'il reçoive le clavier. En mode pc, « Mode : pc » s'affiche en bas à gauche de l'écran (on ne voit rien en mode arcade : la borne est toujours en arcade).
 
 **Comment ça marche dans le code :**
 - `InputManager` contient les touches de **chaque mode** et branche les deux jeux dès le début ; il lit celui du mode actuel à chaque image. Changer de mode est donc immédiat, sans recréer la scène.
@@ -580,6 +580,16 @@ Trois développeurs, qui travaillent **tous sur le code** et en parallèle sur l
 - [ ] **Étoiles :** afficher le temps final et enregistrer le record à la victoire, placer une étoile dans chaque monde.
 - [ ] **Plantes :** les retirer de `tileset_garden.png` pour qu'elles ne soient pas recolorées.
 - [ ] **Noms de l'équipe :** remplacer les `[Membre n]`.
+
+### Pistes d'amélioration (après le rendu)
+
+Ces idées figuraient en `TODO` dans le code. Elles ne sont pas prévues avant le rendu : on les garde ici.
+
+- [ ] **Son :** les bruitages (passage de miroir, tir, bulle qui éclate, explosion, étoile ramassée, victoire) et une musique par monde. Aucun fichier audio n'existe encore.
+- [ ] **Aide près des miroirs :** remplacer le texte « I : entrer dans le miroir » par une icône de touche au-dessus du miroir.
+- [ ] **Pseudo et classement :** remplacer le record unique par une liste triée de résultats (pseudo, temps), avec un top 10 par mode, rangée dans le `localStorage` (qui suffit pour une seule borne).
+- [ ] **Saisie du pseudo :** au début de la partie, avec un écran de saisie de lettres au joystick, façon arcade (pas de clavier sur la borne). Le chrono démarrerait alors à la fin de cette saisie, et non plus depuis `WorldScene`.
+- [ ] **Actions en plus :** courir, lampe, pause, et brancher les cinq autres boutons de la borne (K, L, M, etc.) quand ces actions existeront.
 
 ---
 

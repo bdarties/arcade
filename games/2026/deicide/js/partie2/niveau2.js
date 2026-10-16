@@ -1,6 +1,6 @@
-// ⚠ PARTIE 2 : HORS ÉVALUATION. Cette partie n'est pas à prendre en compte dans la partie évaluée (qui est la partie 1, dans js/partie1/).
-// Elle a été ajoutée à la fin, uniquement pour rendre le jeu plus intéressant sur la borne et répondre à la demande de Nicolas Maurin :
-// rendre le jeu plus difficile et ajouter du contenu. Voir js/partie2/lisez-moi.md.
+// PARTIE 2 : nous ne souhaitons pas soumettre cette partie du code à l'évaluation. Nous ne présentons que la partie 1 (js/partie1/).
+// La partie 2 est uniquement présente pour améliorer la rejouabilité du jeu sur la borne (un jeu plus difficile et plus de contenu), suite à la demande
+// de Nicolas Maurin. Voir js/partie2/lisez-moi.md.
 // RETIRABLE : cette partie est indépendante. Supprimer ce dossier et les 4 références dans index.js (voir js/partie2/lisez-moi.md) : le jeu marche sans elle.
 // niveau2.js : le niveau 2, horizontal : une fuite. Le Dieu de la Lumière enragé poursuit le robot (poursuite.js) ; il faut courir et dasher.
 // C'est le même niveau que le niveau 1 (voir niveau_de_base.js : robot, ennemis, lumière, pause, mort) avec une autre config. La map est dessinée dans Tiled

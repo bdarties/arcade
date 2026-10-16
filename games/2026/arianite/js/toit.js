@@ -1,32 +1,33 @@
 import * as fct from "./fonctions.js";
 
-/***********************************************************************/
-/** RÉGLAGES (à adapter si besoin)
-/***********************************************************************/
-
 const FICHIER_TUILES = "./assets/greniertile.png";
 const NOM_TUILESET = "greniertile";
 const FICHIER_FOND = "./assets/fondgrenier.png";
 const PARALLAXE_FOND = 0.15;
 
+// Paramètres de déplacement et de résistance des ennemis, surchargeables dans Tiled.
 const ENNEMI_DEGATS = 1;
 const ENNEMI_PV = 2;
 const ENNEMI_VITESSE = 60;
 const ENNEMI_DISTANCE = 150;
 const ENNEMI_ECHELLE = 1;
 
+// Emplacements de secours des portes si la carte ne fournit pas de sortie.
 const PORTE_GAUCHE = { col: 1, ligne_pieds: 16 };
 const PORTE_DROITE = { col: 111, ligne_pieds: 13 };
 
+// Niveau du grenier : plateformes, ennemis patrouilleurs et portes de sortie.
 export default class toit extends Phaser.Scene {
   constructor() {
     super({ key: "toit" });
   }
 
+  // Conserve la provenance du joueur pour le placer près de la porte correspondante.
   init(data) {
     this.depuis = data.depuis;
   }
 
+  // Charge la carte, le décor, les ennemis et leurs ressources audio.
   preload() {
     const baseURL = this.sys.game.config.baseURL;
     this.load.setBaseURL(baseURL);
@@ -45,10 +46,8 @@ export default class toit extends Phaser.Scene {
     fct.chargerPerso(this);
   }
 
+  // Construit la carte et initialise le joueur, les ennemis et les transitions.
   create() {
-    /*************************************
-     *  MAP TILED                        *
-     *************************************/
     const donnees = this.cache.tilemap.get("map_grenier").data;
     donnees.tilesets = donnees.tilesets.map((ts) =>
       ts.source
@@ -91,9 +90,6 @@ export default class toit extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, map.widthInPixels, hauteurEcran);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, hauteurEcran);
 
-    /*************************************
-     *  PORTES (zones sur les tuiles)    *
-     *************************************/
     const creerZonePorte = (p) => {
       const x = p.col * 32 + 16;
       const piedsY = p.ligne_pieds * 32 + decalageY;
@@ -133,9 +129,6 @@ export default class toit extends Phaser.Scene {
       .setDepth(20)
       .setVisible(false);
 
-    /*************************************
-     *  JOUEUR                           *
-     *************************************/
     let departX, departY;
     if (this.depuis === "suivant") {
       departX = this.porte_suivant.x;
@@ -155,16 +148,12 @@ export default class toit extends Phaser.Scene {
 
     fct.creerAnimsPerso(this);
     this.player = this.physics.add.sprite(departX, departY, "img_perso");
-    this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.clavier = fct.creerClavier(this);
 
     this.physics.add.collider(this.player, calque_sol);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-    /*************************************
-     *  ENNEMIS (calque Tiled "ennemis") *
-     *************************************/
     this.calque_sol = calque_sol;
     fct.initVies(this, false);
 
@@ -204,23 +193,23 @@ export default class toit extends Phaser.Scene {
         this.ennemis.push(e);
       });
     }
-    fct.activerCoups(this.player, this.ennemis); // les coups de poing (Bouton B : O / T) blessent les ennemis
+    fct.activerCoups(this.player, this.ennemis);
 
-    /*************************************
-     *  MUSIQUE                          *
-     *************************************/
     this.sound.stopByKey("son_pluie");
     this.sound.stopByKey("musique_menu");
 
     if (this.cache.audio.exists("musique_grenier")) {
-      const musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
-      musique.play();
-      this.events.once("shutdown", () => musique.stop());
+      let musique = this.sound.get("musique_grenier");
+      if (!musique) {
+        musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
+        musique.play();
+      }
     } else {
       console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_grenier.mp3");
     }
   }
 
+  // Fait patrouiller les ennemis et les fait rebrousser chemin près des bords.
   mettreAJourEnnemis() {
     this.ennemis.forEach((e) => {
       const b = e.body;
@@ -239,13 +228,19 @@ export default class toit extends Phaser.Scene {
     });
   }
 
+  // Applique les dégâts puis redémarre le niveau si toutes les vies sont perdues.
   perdreVie(degats, source) {
     if (fct.perdreVieJoueur(this, this.player, degats, source)) {
       this.scene.restart({ depuis: "precedent" });
     }
   }
 
+  // Met à jour les ennemis, le joueur, les chutes et les portes.
   update() {
+    if (this.player.body.bottom >= this.cameras.main.height - 1) {
+      fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
+    }
+
     this.mettreAJourEnnemis();
 
     const auSol = this.player.body.touching.down || this.player.body.blocked.down;
@@ -259,12 +254,7 @@ export default class toit extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("exterieur", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        if (this.scene.manager.keys["backstage"]) {
-          this.scene.start("backstage", { depuis: "precedent" });
-        } else {
-          this.texte_info.setText("Niveau suivant pas encore disponible").setVisible(true);
-          this.time.delayedCall(1500, () => this.texte_info.setVisible(false));
-        }
+        this.scene.start("opera", { depuis: "precedent" });
       }
     }
   }

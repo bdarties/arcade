@@ -394,8 +394,12 @@ function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) 
     force *= REGLAGE_DEGRADE.force;
   }
   if (!scene.pinceaux[i]) scene.pinceaux[i] = scene.make.image({ key: "degrade_lumiere" }, false);
-  // le noir est en ECHELLE_NOIR : le pinceau y est placé et dimensionné à la même échelle (les teintes, elles, restent à l'échelle du monde)
-  scene.pinceaux[i].setPosition((x - camera.scrollX) * ECHELLE_NOIR, (y - camera.scrollY) * ECHELLE_NOIR).setDisplaySize(rayon * 2 * ECHELLE_NOIR, rayon * 2 * ECHELLE_NOIR).setAlpha(Math.min(force, 1));
+  // le noir est en ECHELLE_NOIR et collé à l'écran : le pinceau y est placé en coordonnées d'écran (avec le zoom de la caméra)
+  // et dimensionné à la même échelle (les teintes, elles, restent à l'échelle du monde)
+  const zoom = camera.zoom;
+  const ecran_x = (x - camera.scrollX - camera.width / 2) * zoom + camera.width / 2;
+  const ecran_y = (y - camera.scrollY - camera.height / 2) * zoom + camera.height / 2;
+  scene.pinceaux[i].setPosition(ecran_x * ECHELLE_NOIR, ecran_y * ECHELLE_NOIR).setDisplaySize(rayon * 2 * ECHELLE_NOIR * zoom, rayon * 2 * ECHELLE_NOIR * zoom).setAlpha(Math.min(force, 1));
   if (!TEINTE_CHAUDE || !ajuster || !DIAG.teintes) {
     scene.teintes[i]?.setVisible(false); // cet indice a pu servir à une lumière teintée à l'image précédente
     return;
@@ -407,6 +411,11 @@ function pinceau(scene, x, y, rayon, force, couleur = 0xffffff, ajuster = true) 
 // à appeler à chaque image : les mêmes lumières qu'avec Light2D (cf. majLight2D), en pinceaux
 function majDegrade(scene) {
   scene.nb_pinceaux = 0;
+  // le noir est collé à l'écran, mais la caméra qui le filme zoome (jusqu'à ZOOM_MIN en dézoomant à deux joueurs) : sans correction
+  // il rétrécit avec le zoom et laisse les bords de l'écran en clair. On l'agrandit de l'inverse du zoom et on le recale sur le coin de l'écran.
+  const camera = scene.cameras.main;
+  const decalage = 1 - 1 / camera.zoom;
+  scene.obscurite.setPosition((camera.width / 2) * decalage, (camera.height / 2) * decalage).setScale(1 / (ECHELLE_NOIR * camera.zoom));
   scene.joueurs.forEach((j) => {
     pinceau(scene, j.sprite.x, j.sprite.y, HALO_JOUEUR_DEGRADE.rayon, HALO_JOUEUR_DEGRADE.force, COULEUR_JOUEUR);
     pinceau(scene, j.sprite.x, j.sprite.y, RAYON_VISIBILITE_JOUEUR, 1, 0xffffff, false);

@@ -29,7 +29,7 @@ export default class PreloadScene extends Phaser.Scene {
     // * Les cartes sont chargées : on peut compter les étoiles de tout le jeu
     computeStarTotals(this.cache.tilemap);
 
-    // TODO(équipe): démarrer MenuScene à la place quand l'écran d'accueil existera
-    this.scene.start(SCENES.HUB);
+    // * Le jeu démarre sur l'écran d'accueil (MenuScene)
+    this.scene.start(SCENES.MENU);
   }
 }

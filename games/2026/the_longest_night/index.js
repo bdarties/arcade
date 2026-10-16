@@ -5,7 +5,6 @@ import Ecran_score from "./js/Ecran_score.js";
 import Game_over from "./js/Game_over.js";
 import Menu from "./js/menu.js";
 
-
 // configuration générale du jeu
 var config = {
   width: 1280, // largeur en pixels
@@ -36,4 +35,4 @@ var config = {
 
 
 // création et lancement du jeu
-var game = new Phaser.Game(config);
+export var game = new Phaser.Game(config);

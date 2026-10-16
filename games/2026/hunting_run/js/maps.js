@@ -321,6 +321,8 @@ export const ECRANS = {
   gameOver: "./assets/ui/game-over.png",
   // bouton "Rejouer" (écran Game Over et écran de fin)
   boutonRejouer: "./assets/ui/rejouer.png",
+  // bouton "Menu"
+  boutonMenu: "./assets/ui/menu.png",
   // bouton "Revivre" (écran Game Over après un K.O.)
   boutonRevivre: "./assets/ui/revivre.png"
 };

@@ -3,9 +3,8 @@ import { SCENES, WORLD_MAPS } from '../utils/constants.js';
 
 /**
  * * Monde 3 : l'automne.
- * Pour l'instant, il affiche seulement sa carte de test grâce à WorldScene
- * (sa carte est décrite dans WORLD_MAPS, dans constants.js).
- * TODO(équipe): ajouter la mécanique propre au monde 3
+ * Un personnage pose une énigme : la bonne réponse fait sauter l'étoile de sa tête.
+ * Tout vient des objets posés dans sa carte (voir WORLD_MAPS dans constants.js), gérés par WorldScene : ce fichier ne fait que nommer le monde.
  */
 export default class World3Scene extends WorldScene {
   constructor() {

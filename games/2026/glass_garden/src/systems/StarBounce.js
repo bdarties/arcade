@@ -37,8 +37,12 @@ function planFlights(startHeight) {
  * @param {Phaser.Physics.Arcade.Sprite} star  L'étoile (ramassable quand elle s'est posée)
  * @param {{x: number, y: number, headHeight: number}} from  Les pieds du personnage et la hauteur de sa tête
  * @param {(x: number, y: number) => boolean} isFree  Vrai si l'étoile peut se poser en ce point du sol
+ * @param {{distanceScale?: number, spin?: boolean, onLanded?: (x: number, y: number) => void}} [options]
+ *   distanceScale : 1 par défaut ; 0,5 va deux fois moins loin (les bombes). spin : faux = ne tourne pas.
+ *   onLanded : appelée à l'arrivée au sol, à la place de « étoile ramassable » (la bombe explose).
  */
-export function bounceStar(scene, star, from, isFree) {
+export function bounceStar(scene, star, from, isFree, options = {}) {
+  const { distanceScale = 1, spin = true, onLanded } = options;
   const flights = planFlights(from.headHeight);
   const total = flights[flights.length - 1].start + flights[flights.length - 1].duration;
 
@@ -59,7 +63,7 @@ export function bounceStar(scene, star, from, isFree) {
   let speed = 0;
   search: for (const scale of [1, 0.6, 0.3]) {
     for (const tryAngle of angles) {
-      const trySpeed = Phaser.Math.FloatBetween(STAR_BOUNCE.SPEED.MIN, STAR_BOUNCE.SPEED.MAX) * scale;
+      const trySpeed = Phaser.Math.FloatBetween(STAR_BOUNCE.SPEED.MIN, STAR_BOUNCE.SPEED.MAX) * scale * distanceScale;
       if (isPathFree(tryAngle, trySpeed * total)) {
         angle = tryAngle;
         speed = trySpeed;
@@ -84,14 +88,19 @@ export function bounceStar(scene, star, from, isFree) {
     const groundY = from.y + Math.sin(angle) * speed * elapsed;
 
     star.setPosition(groundX, groundY - height);
-    star.angle += (STAR_BOUNCE.SPIN_DEG_PER_S * delta) / 1000 * (height > 0 ? 1 : 0);
+    if (spin) star.angle += (STAR_BOUNCE.SPIN_DEG_PER_S * delta) / 1000 * (height > 0 ? 1 : 0);
     shadow.setPosition(groundX, groundY).setScale(1 - Math.min(height, 100) / 160); // l'ombre rétrécit quand l'étoile monte
 
     if (elapsed >= total) {
       scene.events.off('update', onUpdate);
       shadow.destroy();
       star.setAngle(0).setDepth(0);
-      star.enableBody(true, groundX, groundY, true, true); // posée : elle peut être ramassée
+      if (onLanded) {
+        star.setPosition(groundX, groundY);
+        onLanded(groundX, groundY);
+      } else {
+        star.enableBody(true, groundX, groundY, true, true); // posée : elle peut être ramassée
+      }
     }
   };
   scene.events.on('update', onUpdate);
