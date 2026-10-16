@@ -72,7 +72,6 @@ var son_cle;
 var son_renard_blesse;
 var son_porte_ouverte;
 var son_recharge_magique;
-var son_moniteur_coeur;
 var areignee_morte;
 var renard_mort;
 var musique_niveau;
@@ -112,7 +111,6 @@ const niveauState = {
   get groupe_recharges() { return groupe_recharges; }, set groupe_recharges(value) { groupe_recharges = value; },
   get groupe_soin() { return groupe_soin; }, set groupe_soin(value) { groupe_soin = value; },
   get murs() { return murs; }, set murs(value) { murs = value; },
-  get son_moniteur_coeur() { return son_moniteur_coeur; }, set son_moniteur_coeur(value) { son_moniteur_coeur = value; },
   get son_porte_ouverte() { return son_porte_ouverte; }, set son_porte_ouverte(value) { son_porte_ouverte = value; },
   get son_recharge_magique() { return son_recharge_magique; }, set son_recharge_magique(value) { son_recharge_magique = value; },
   get nombre_cles() { return nombre_cles; }, set nombre_cles(value) { nombre_cles = value; },
@@ -158,8 +156,8 @@ export default class niveau1 extends Phaser.Scene {
       carte_fichier: "./assets/map/niveau_1.json",
       tileset_nom: "tileset_good",
       tileset_image: "Phaser_tuileGood",
-      temps: 90,
-      nombre_cles: 1,
+      temps: 100,
+      nombre_cles: 2,
       nombre_ennemis: 4,
       nombre_recharges: 1,
       nombre_soins: 1,
@@ -242,7 +240,6 @@ export default class niveau1 extends Phaser.Scene {
     this.load.audio("cle_collecte", "./assets/musique_et_sons/cle_collecte.wav");
     this.load.audio("areignee_morte", "./assets/musique_et_sons/areignee_morte.mp3");
     this.load.audio("Grognement_renard", "./assets/musique_et_sons/Grognement_renard.wav");
-    this.load.audio("moniteur_coeur", "./assets/musique_et_sons/moniteur_coeur.wav");
     this.load.audio("Porte_ouverte", "./assets/musique_et_sons/Porte_ouverte.wav");
     this.load.audio("recharge_magique", "./assets/musique_et_sons/recharge_magique.wav");
     this.load.audio("renard_mort", "./assets/musique_et_sons/renard_mort.wav");
@@ -613,7 +610,6 @@ export default class niveau1 extends Phaser.Scene {
     son_cle = ajouter_son(this, 'cle_collecte');
     son_soin = ajouter_son(this, 'soin_bandage');
     areignee_morte = ajouter_son(this, 'areignee_morte');
-    son_moniteur_coeur = ajouter_son(this, 'moniteur_coeur');
     son_porte_ouverte = ajouter_son(this, 'Porte_ouverte');
     son_recharge_magique = ajouter_son(this, 'recharge_magique');
     musique_niveau = ajouter_son(this, 'musique_niveau');

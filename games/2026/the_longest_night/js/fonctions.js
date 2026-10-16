@@ -105,7 +105,7 @@ export function apparition_elements() { //fait apparaître clés, soins, recharg
       this.gameState.camJ2UI.ignore(recharge);
     }
   }
-  if (this.gameState.groupe_ennemis.countActive(true) || this.gameState.renard < this.gameState.nombre_ennemis_apparaissant && this.gameState.tableau_spawn.length > 0) {
+  if (this.gameState.groupe_ennemis.countActive(true) < this.gameState.nombre_ennemis_apparaissant && this.gameState.tableau_spawn.length > 0) {
     const definition = Phaser.Utils.Array.GetRandom(this.gameState.tableau_ennemis);
     const position = Phaser.Utils.Array.RemoveRandomElement(this.gameState.tableau_spawn);
     const ennemi = this.gameState.groupe_ennemis.create(position.x, position.y, definition.texture);
@@ -457,8 +457,6 @@ export function apparition_faucheuse() {
   if (this.gameState.faucheuse || vivants.length === 0) {
     return;
   }
-  this.gameState.son_moniteur_coeur.play();
-
   // le message, au centre de l'écran (seule camGlobalUI l'affiche, les autres caméras l'ignorent)
   const message = this.add.text(640, 200, "LE TEMPS EST ÉCOULÉ...\nLA FAUCHEUSE ARRIVE !", {
     fontFamily: "Arial, sans-serif",

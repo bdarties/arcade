@@ -20,6 +20,9 @@ export default class Game_over extends Phaser.Scene {
 
   preload() {
     this.load.image("screen_game_over", "./assets/screen_game_over.png");
+    this.load.image("button_retour", "./assets/menu/button_retour.png");
+    this.load.audio("Musique_Game_Over", "./assets/musique_et_sons/Musique_Game_Over.mp3");
+    this.load.audio("Musique_victoire", "./assets/musique_et_sons/Musique_Victoire.mp3");
   }
 
   create() {
