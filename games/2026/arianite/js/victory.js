@@ -9,7 +9,7 @@ export default class victory extends Phaser.Scene {
     this.load.setBaseURL(this.sys.game.config.baseURL);
     this.load.image("ecran_victoire", "./assets/ecrans/victoire.png")
     this.load.image("button_back", "./assets/boutton/button_back.png");
-
+    this.load.audio("son_victoire", "./assets/musique/victory.mp3")
   }
 
   // Affiche le placeholder de victoire et configure le retour à l'accueil via la touche I.
@@ -19,6 +19,9 @@ export default class victory extends Phaser.Scene {
 
     const baseScale = 0.36;
     const zoomScale = baseScale * 1.12;
+
+    const sonWin = this.sound.add("son_victoire", { volume: 0.5 });
+    sonWin.play();
 
     this.add.image(w / 2, h / 2, "ecran_victoire").setDisplaySize(w, h).setDepth(-1);
 
@@ -42,7 +45,6 @@ export default class victory extends Phaser.Scene {
         strokeThickness: 6
       })
       .setOrigin(0.5);
-
     // --- BOUTON RETOUR AU CENTRE BAS (comme dans controls.js) ---
     this.add
       .image(w / 2, 650, "button_back")
@@ -53,5 +55,6 @@ export default class victory extends Phaser.Scene {
 
     // Retour à l'accueil avec la touche I
     this.input.keyboard.once("keydown-I", () => this.scene.start("accueil"));
+
   }
 }

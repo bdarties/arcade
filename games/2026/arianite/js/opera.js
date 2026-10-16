@@ -525,7 +525,7 @@ export default class opera extends Phaser.Scene {
       .setOrigin(def.origine[0], def.origine[1])
       .setDepth(3);
 
-    this.texte_info.setText("Lance-trompette récupéré ! K pour tirer (1 tir / 3 s)").setVisible(true);
+    this.texte_info.setText("Lance-trompette récupéré ! D pour tirer (1 tir toutes les 3 s)").setVisible(true);
     this.time.delayedCall(2500, () => {
       if (this.texte_info) this.texte_info.setVisible(false);
     });
