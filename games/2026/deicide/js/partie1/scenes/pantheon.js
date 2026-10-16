@@ -6,8 +6,9 @@ import { rattraperHorloge } from "./pause.js"; // pour que le niveau « ne sente
 import { ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel et les couleurs
 import { creerPolice, plaque } from "../systemes/dessins_en_code.js"; // la police pixel et les plaques (dessinées en code)
 import { jouerSon } from "../systemes/sons.js"; // un petit bruit quand on change de choix
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 
-const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // les mêmes que le menu pause (I = le bouton de saut de la borne)
+const TOUCHES_VALIDER = TOUCHES.pause.valider; // les mêmes que le menu pause (I = le bouton de saut de la borne)
 
 const E = 4; // une plaque est dessinée en pixels de 4 x 4 à l'écran
 const CHOIX = ["OUI", "NON"]; // les deux choix proposés
@@ -62,8 +63,8 @@ export default class pantheon extends Phaser.Scene { // la scène du choix, pos�
 
         const clavier = this.input.keyboard; // le clavier
         const sur = (touches, action) => touches.forEach((touche) => clavier.on("keydown-" + touche, action)); // fonction qui associe une action à une liste de touches
-        sur(["LEFT", "UP"], () => this.deplacer(-1)); // gauche ou haut : choix précédent
-        sur(["RIGHT", "DOWN"], () => this.deplacer(1)); // droite ou bas : choix suivant
+        sur(TOUCHES.pantheon.precedent, () => this.deplacer(-1)); // gauche ou haut : choix précédent
+        sur(TOUCHES.pantheon.suivant, () => this.deplacer(1)); // droite ou bas : choix suivant
         sur(TOUCHES_VALIDER, (evenement) => { if (!evenement.repeat) this.valider(); }); // pas de répétition : l'appui qui a tiré ne valide pas
     }
 

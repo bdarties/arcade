@@ -1,4 +1,5 @@
 // optimisation.js : réglages pour que le jeu reste fluide sur la borne (un Raspberry Pi 3, très peu puissant)
+import { TOUCHES } from "./raccourcis.js"; // toutes les touches du jeu (F3 : la boîte d'images par seconde)
 
 // 1. Le décor figé -------------------------------------------------------------------------------------------------------
 // Les calques de tuiles de Phaser sont redessinés tuile par tuile à CHAQUE image : plus de 1 200 tuiles dans le niveau 1,
@@ -107,7 +108,7 @@ export function compteurImages(jeu) { // affiche les images par seconde (touche 
     }, 500); // fin du minuteur de 500 ms
     window.addEventListener("keydown", (evenement) => { // à chaque touche appuyée
         // F3 sur un ordinateur ; sur la borne, le bouton B (la touche O) : pas de clavier pour taper F3. (En jeu, O ne sert à rien d'autre ; dans le menu elle lance aussi la partie.)
-        if (evenement.key === "F3" || (evenement.code === "KeyO" && !evenement.repeat)) { evenement.preventDefault(); boite.style.display = boite.style.display === "none" ? "block" : "none"; } // F3 ou O : afficher ou cacher la boîte
+        if (evenement.key === TOUCHES.test.cadence || (evenement.code === "KeyO" && !evenement.repeat)) { evenement.preventDefault(); boite.style.display = boite.style.display === "none" ? "block" : "none"; } // F3 ou O : afficher ou cacher la boîte
     });
 }
 

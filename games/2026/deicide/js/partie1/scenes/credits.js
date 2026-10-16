@@ -5,9 +5,10 @@
 import { ecrire, OR, CLAIR, LAVANDE, GRIS_VIOLET } from "./classement.js"; // l'écriture en police pixel et les couleurs du jeu
 import { creerTextureHalo, creerTexturePixel, creerPolice } from "../systemes/dessins_en_code.js"; // les dessins faits en code (halo, particules, police pixel)
 import { jouerSon, musiqueDeScene } from "../systemes/sons.js"; // bruitages et musique
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 
 const VOLUME_MUSIQUE_CREDITS = 1; // le volume de base de la musique des crédits : le maximum (0,38 puis 0,6 avant, trop faible face à la musique des boss : 0,42 et 0,18) ; 0,3 pour celle du niveau ; le réglage « musique » du menu pause s'y applique
-const TOUCHES_SORTIR = ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"]; // les touches qui passent les crédits
+const TOUCHES_SORTIR = TOUCHES.credits.sortir; // les touches qui passent les crédits
 const DELAI_AVANT_SORTIR = 1500; // ms : le joueur tient encore le bouton qui l'a amené ici
 const VITESSE = 75; // px par seconde
 const PAUSE_TITRE = 4200; // ms pendant lesquelles le titre reste seul au centre avant que ça défile

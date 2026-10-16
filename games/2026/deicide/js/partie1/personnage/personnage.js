@@ -1,4 +1,5 @@
 import { jouerSon } from "../systemes/sons.js"; // permet de jouer les bruitages
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 import { traineeDash } from "../systemes/effets.js"; // copies fantômes derrière le robot pendant le dash
 import { ROBOT, DASH, TIR, LANTERNES_VIVANTES } from "../parametres.js"; // tous les chiffres de réglage (vitesse, saut, gravité, tir...)
 import { creerTextureBalle, creerTextureDash as creerTextureDashDessin } from "../systemes/dessins_en_code.js"; // la balle et la bande du dash (dessinées en code)
@@ -173,7 +174,7 @@ export function creerPersonnage(scene, x, y, options = {}) { // crée le robot �
     joueur.instantMur = -1e9; // et quand on l'a touché
     joueur.verrouJusqua = 0; // instant jusqu'auquel les flèches gauche/droite sont ignorées (après un saut de mur)
     // I = saut, K = tir, L = dash ; false : on ne bloque pas les raccourcis du navigateur
-    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? { saut: "I", tir: "K", dash: "L" }, false); // les touches de saut, tir et dash
+    joueur.touches = scene.input.keyboard.addKeys(options.touches ?? TOUCHES.joueur1, false); // les touches de saut, tir et dash
     joueur.prochainTir = 0; // instant à partir duquel on peut retirer
     joueur.prochainDash = 0; // instant à partir duquel on peut redasher
     joueur.instantSol = -1e9; // dernier instant où il était au sol (pour le saut « coyote »)

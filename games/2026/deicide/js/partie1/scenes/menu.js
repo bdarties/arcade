@@ -6,6 +6,7 @@
 // il cligne de l'œil, le titre "glitche" de temps en temps et de la poussière flotte dans l'air.
 import { chargerJeu } from "../systemes/chargement.js"; // charge tous les assets du jeu pendant que le menu s'affiche
 import { creerAnimationsPersonnage } from "../personnage/personnage.js"; // crée la texture de la balle du robot
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 import { GLITCH_TITRE } from "../parametres.js"; // les chiffres du glitch du titre
 import { jouerSon } from "../systemes/sons.js"; // bruitages
 import { VERSION } from "../../version.js"; // le numéro de version du jeu (voir outils/version.py)
@@ -13,9 +14,9 @@ import { ecrire } from "./classement.js"; // l'écriture en police pixel du jeu 
 import { creerPolice, creerTexturePixel, plaque } from "../systemes/dessins_en_code.js"; // la police pixel et les particules (dessinées en code)
 
 // les touches qui lancent le jeu : Entrée, Espace, et les boutons de la borne (X = start, puis les boutons 1 à 6 : I O P K L ;)
-const TOUCHES_JOUER = ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"]; // les touches qui lancent le jeu : clavier et boutons de la borne
+const TOUCHES_JOUER = TOUCHES.menu.jouer; // les touches qui lancent le jeu : clavier et boutons de la borne
 // les boutons du joueur 2 (R T Y F G H, et son start N) lancent directement le 1 contre 1
-const TOUCHES_JOUEUR2 = ["R", "T", "Y", "F", "G", "H", "N"]; // les boutons du joueur 2 : ils lancent le 1 contre 1
+const TOUCHES_JOUEUR2 = TOUCHES.menu.jouer2; // les boutons du joueur 2 : ils lancent le 1 contre 1
 
 // Le robot de l'image est un Bot Wheel dessiné avec des pixels de 10,4 px (mesuré sur l'image). Pour que la flamme du tir
 // tombe pile au bout de son canon, on pose les images de "shoot_fx.png" avec la même taille de pixel.
@@ -72,10 +73,10 @@ export default class menu extends Phaser.Scene { // l'écran d'accueil
     this.boutonClassement = this.creerBoutonClassement(947, 477); // à droite, à mi-hauteur entre JOUER (y 405) et 1 V 1 (y 545)
     this.indication = this.add.text(640, 640, "FLÈCHES : CHOISIR", { fontFamily: "monospace", fontSize: "16px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(0.5); // le texte d'aide sous les boutons
     this.majMode(); // on affiche le mode choisi
-    ["UP", "W", "Z"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1))); // flèche haut : mode solo
-    ["DOWN", "S"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2))); // flèche bas : mode 1 contre 1
-    ["RIGHT", "D"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 1) this.changerMode(3); })); // de JOUER vers CLASSEMENT
-    ["LEFT", "Q"].forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 3) this.changerMode(1); })); // et le retour
+    TOUCHES.menu.haut.forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(1))); // flèche haut : mode solo
+    TOUCHES.menu.bas.forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => this.changerMode(2))); // flèche bas : mode 1 contre 1
+    TOUCHES.menu.droite.forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 1) this.changerMode(3); })); // de JOUER vers CLASSEMENT
+    TOUCHES.menu.gauche.forEach((nom) => this.input.keyboard.on("keydown-" + nom, () => { if (this.mode === 3) this.changerMode(1); })); // et le retour
     this.boutonDeux.dalle.on("pointerdown", () => { this.mode = 2; this.lancer(); }); // un clic sur 1 V 1 le lance
 
     this.add.text(1262, 686, VERSION, { fontFamily: "monospace", fontSize: "20px", color: "#8a779b", stroke: "#000000", strokeThickness: 3 }).setOrigin(1, 1).setDepth(10); // en bas à droite : sur la borne, on voit si le jeu est à jour

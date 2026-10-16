@@ -9,6 +9,7 @@ import { creerPersonnage, creerAnimationsPersonnage, majPersonnage, jouerAction 
 import { jouerSon, musiqueDeScene, chargerMusiqueBoss, VOLUME_MUSIQUE_BOSS } from "../systemes/sons.js"; // sons et musique du boss
 import * as effets from "../systemes/effets.js"; // flashs, éclats, tremblements
 import { objetsDe } from "../systemes/chargement.js"; // lecture des points de la carte Tiled
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 import { preparerPause } from "./pause.js"; // le menu pause (Échap ou X), comme dans les niveaux
 import { creerTextureHalo } from "../systemes/dessins_en_code.js"; // le halo de lumière : on s'en sert pour faire ressortir chaque robot
 
@@ -54,15 +55,16 @@ export default class versus extends Phaser.Scene { // la scène du 1 contre 1
     const [depart2] = objetsDe(carte, "depart2"); // point de départ du joueur 2
     this.joueurs = [ // la liste des deux robots
       creerPersonnage(this, depart1.x, depart1.y, { teinte: COULEUR_J1 }), // le joueur 1, teinté en rouge
-      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: { saut: "R", tir: "F", dash: "G" } }) // le joueur 2, teinté en bleu, avec ses touches R, F et G
+      creerPersonnage(this, depart2.x, depart2.y, { teinte: COULEUR_J2, touches: TOUCHES.joueur2 }) // le joueur 2, teinté en bleu, avec ses touches R, F et G
     ]; // fin de la liste
     this.joueurs[1].regardeGauche = true; // le joueur 2 regarde vers le joueur 1
     // joueur 2 : Q Z D S sur un clavier AZERTY. A et W marchent aussi : le joystick de la borne envoie A et W (clavier QWERTY, voir gpio2keys.py)
     const touche = (nom) => this.input.keyboard.addKey(nom, false); // fonction qui crée une touche du clavier
+    const D = TOUCHES.joueur2Deplacement; // les touches de déplacement du joueur 2
     const ou = (a, b) => ({ get isDown() { return a.isDown || b.isDown; } }); // « l'une ou l'autre est enfoncée »
     this.claviers = [ // les commandes des deux joueurs
       this.input.keyboard.createCursorKeys(), // joueur 1 : les flèches
-      { left: ou(touche("Q"), touche("A")), right: touche("D"), up: ou(touche("Z"), touche("W")), down: touche("S") } // joueur 2 : Q/A, D, Z/W, S
+      { left: ou(...D.gauche.map(touche)), right: touche(D.droite), up: ou(...D.haut.map(touche)), down: touche(D.bas) } // joueur 2 : Q/A, D, Z/W, S
     ]; // fin de la liste
     this.joueurs.forEach((joueur, i) => { // pour chaque joueur
       joueur.numero = i; // 0 = joueur 1, 1 = joueur 2
