@@ -12,8 +12,51 @@
 //   - F4 : lance directement l'écran de victoire (classement.js, avec un temps de test)
 //   - F8 : téléporte le robot dans l'arène du boss (niveau 1) ou loin dans la map (niveau 2)
 //   (F9 : lancer le niveau 2, F10 : lancer la phase 3 du dernier boss : ce sont des touches de test de la partie 2, voir partie2/tests_borne.js)
+// ---------------------------------------------------------------------------------------------
+// TOUTES LES TOUCHES DU JEU (un seul endroit : pour en changer une, c'est ici)
+// ---------------------------------------------------------------------------------------------
+// Deux façons de nommer une touche, selon l'outil qui la lit :
+//   - noms Phaser en MAJUSCULES ("ENTER", "SPACE", "X", "SEMICOLON"...) : pour this.input.keyboard.on("keydown-...") et addKey ;
+//   - codes du navigateur ("KeyO", "Enter", "Semicolon"...) : pour evenement.code (crédits, mode NO HIT) ; evenement.key pour les touches F.
+// Deux cas ne sont PAS listés, car ils lisent toutes les touches : « n'importe quelle touche » pour rejouer en 1 contre 1 (versus.js) et la saisie du nom au classement (classement.js).
+// Sur la borne, les boutons A à F envoient I, O, P, K, L et ; (voir gpio2keys.py) ; le joystick du joueur 2 envoie Q/A, D, Z/W, S.
+// L'aide affichée en jeu (personnage/hud.js) lit ces touches : changer une touche ici suffit (les lettres A à F viennent de BOUTONS_BORNE, les flèches de l'aide sont dessinées en dur).
+export const TOUCHES = {
+    joueur1Deplacement: { left: "LEFT", right: "RIGHT", up: "UP", down: "DOWN" }, // bouger (gauche, droite) et viser (haut, bas) du joueur 1 : les noms left/right/up/down sont ceux que le code attend
+    joueur1: { saut: "I", tir: "K", dash: "L" }, // le robot du joueur 1 (personnage.js) : A = I, D = K, E = L sur la borne
+    joueur2: { saut: "R", tir: "F", dash: "G" }, // le robot du joueur 2 en 1 contre 1 (versus.js)
+    joueur2Deplacement: { gauche: ["Q", "A"], droite: "D", haut: ["Z", "W"], bas: "S" }, // déplacer et viser le joueur 2 (Q Z D S en AZERTY, A et W : joystick de la borne)
+    menu: { // l'accueil (menu.js)
+        jouer: ["ENTER", "SPACE", "X", "I", "O", "P", "K", "L", "SEMICOLON"], // lancent le jeu solo : clavier et boutons de la borne (X = start)
+        jouer2: ["R", "T", "Y", "F", "G", "H", "N"], // boutons du joueur 2 (N = son start) : lancent le 1 contre 1
+        haut: ["UP", "W", "Z"], bas: ["DOWN", "S"], droite: ["RIGHT", "D"], gauche: ["LEFT", "Q"] // changer de mode : solo, 1 contre 1, classement
+    },
+    pause: { // le menu pause (pause.js)
+        ouvrir: ["ESC", "X"], // ouvrent la pause en jeu
+        valider: ["ENTER", "SPACE", "I"], // valident une ligne (le panthéon les utilise aussi)
+        retour: ["ESC", "X", "K", "O"], // reviennent en arrière : des crédits au menu, du menu au jeu
+        haut: ["UP"], bas: ["DOWN"], gauche: ["LEFT"], droite: ["RIGHT"] // naviguer dans le menu pause et régler les curseurs
+    },
+    pantheon: { precedent: ["LEFT", "UP"], suivant: ["RIGHT", "DOWN"] }, // le choix de fin de boss (pantheon.js) ; valider = pause.valider
+    classement: { // l'écran de fin (classement.js), codes du navigateur
+        valider: ["KeyI", "Enter", "Space"], // valident le choix, le nom et le classement (I = le bouton de saut de la borne)
+        gauche: "ArrowLeft", droite: "ArrowRight", haut: "ArrowUp", bas: "ArrowDown" // OUI / NON, puis changer la lettre (haut, bas) et la case (gauche, droite)
+    },
+    credits: { sortir: ["KeyI", "Enter", "Space", "KeyO", "KeyK", "KeyL"] }, // passent les crédits (credits.js), codes du navigateur
+    noHit: ["KeyO", "Semicolon"], // maintenues ensemble : le mode NO HIT (mode_no_hit.js) ; ; = la touche M d'un clavier AZERTY
+    reset: [80, "Semicolon"], // maintenues 0,5 s : recommencer la partie (ci-dessous) ; P (bouton C) = 80 et ; (bouton F)
+    test: { // touches de test du clavier (TEMPORAIRES, à retirer avant la borne), lues par evenement.key
+        victoire: "F4", teleporter: "F8", // F4 : écran de victoire ; F8 : téléporter le robot (ci-dessous)
+        niveau2: "F9", phase3: "F10", phase4: "F5", // lancent le niveau 2, la phase 3 et la phase 4 du dernier boss (partie2/tests_borne.js)
+        cadence: "F3" // affiche ou cache la boîte d'images par seconde (optimisation.js) ; sur la borne : le bouton B (touche O)
+    }
+};
+
+// Le bouton de la borne (A à F) que chaque touche représente, pour l'aide affichée en jeu (hud.js) : A = I, B = O, C = P, D = K, E = L, F = ;
+export const BOUTONS_BORNE = { I: "A", O: "B", P: "C", K: "D", L: "E", SEMICOLON: "F" };
+
 const COMBOS = [ // la liste des combinaisons de touches (une seule : le reset)
-    { nom: "reset", touches: [80, "Semicolon"], texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)
+    { nom: "reset", touches: TOUCHES.reset, texte: "MAINTIENS POUR RECOMMENCER", action: (jeu) => reinitialiser(jeu) } // P (bouton C) et ; (bouton F)
 ]; // fin de la liste
 const DUREE = 500; // ms à maintenir les deux boutons
 const DEBUT_AFFICHAGE = 120; // ms avant d'afficher la barre (un appui très court ne montre rien)
@@ -70,8 +113,8 @@ function lancerVictoire(jeu) { // F4 : l'écran de victoire, avec un temps de te
 
 export function activerRaccourcis(jeu) { // branche les raccourcis sur le clavier (appelée par index.js)
     window.addEventListener("keydown", (evenement) => { // les touches de test
-        if (evenement.key === "F4") { evenement.preventDefault(); lancerVictoire(jeu); } // F4 : écran de victoire
-        if (evenement.key === "F8") teleporterRobot(jeu); // F8 : téléportation
+        if (evenement.key === TOUCHES.test.victoire) { evenement.preventDefault(); lancerVictoire(jeu); } // F4 : écran de victoire
+        if (evenement.key === TOUCHES.test.teleporter) teleporterRobot(jeu); // F8 : téléportation
     }); // fin de la liste des touches de test
 
     const enfoncees = new Set(); // les touches de combo actuellement maintenues

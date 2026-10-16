@@ -21,3 +21,6 @@ bin/
 lib/
 include/
 pyvenv.cfg
+
+# Questions d oral (document prive enseignant)
+questions_oral_jeux.pdf

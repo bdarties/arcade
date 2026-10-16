@@ -5,10 +5,11 @@
 import { reglages, changerReglage, VOLUME_MAX, LUMINOSITE_MAX } from "../systemes/preferences_joueur.js"; // les réglages du joueur
 import { jouerSon, majVolumeMusique } from "../systemes/sons.js"; // bruitages et volume de la musique
 import { appliquerLuminosite } from "../mecanismes/lumiere.js"; // change le gris du voile d'ombre
+import { TOUCHES } from "../systemes/raccourcis.js"; // toutes les touches du jeu
 
-const TOUCHES_PAUSE = ["ESC", "X"]; // ouvrent la pause (et la ferment, voir TOUCHES_RETOUR)
-const TOUCHES_VALIDER = ["ENTER", "SPACE", "I"]; // valident le choix
-const TOUCHES_RETOUR = ["ESC", "X", "K", "O"]; // reviennent en arrière : de la page crédits au menu, du menu au jeu
+const TOUCHES_PAUSE = TOUCHES.pause.ouvrir; // ouvrent la pause (et la ferment, voir TOUCHES_RETOUR)
+const TOUCHES_VALIDER = TOUCHES.pause.valider; // valident le choix
+const TOUCHES_RETOUR = TOUCHES.pause.retour; // reviennent en arrière : de la page crédits au menu, du menu au jeu
 
 // couleurs et police : celles du menu et du HUD
 const POLICE = "monospace"; // la police de tous les textes
@@ -90,10 +91,10 @@ export default class pause extends Phaser.Scene { // la scène du menu pause
 
         const clavier = this.input.keyboard; // le clavier
         const sur = (touches, action) => touches.forEach((touche) => clavier.on("keydown-" + touche, action)); // fonction qui associe une action à une liste de touches
-        sur(["UP"], () => this.deplacer(-1)); // haut : ligne précédente
-        sur(["DOWN"], () => this.deplacer(1)); // bas : ligne suivante
-        sur(["LEFT"], () => this.regler(-1)); // gauche : baisse le réglage
-        sur(["RIGHT"], () => this.regler(1)); // droite : augmente le réglage
+        sur(TOUCHES.pause.haut, () => this.deplacer(-1)); // haut : ligne précédente
+        sur(TOUCHES.pause.bas, () => this.deplacer(1)); // bas : ligne suivante
+        sur(TOUCHES.pause.gauche, () => this.regler(-1)); // gauche : baisse le réglage
+        sur(TOUCHES.pause.droite, () => this.regler(1)); // droite : augmente le réglage
         sur(TOUCHES_VALIDER, (evenement) => { if (!evenement.repeat) this.valider(); }); // valider (sans répétition)
         sur(TOUCHES_RETOUR, (evenement) => { if (!evenement.repeat) this.retour(); }); // retour (sans répétition)
 

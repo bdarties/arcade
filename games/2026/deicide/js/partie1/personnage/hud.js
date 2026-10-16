@@ -18,6 +18,7 @@
 
 import { chargerBarreDeVie, creerBarreDeVie, majBarreDeVie, PV_MAX_BARRE, ECHELLE_HUD, HAUTEUR_BARRE } from "./barre_de_vie.js"; // la barre de vie, ses dimensions et son agrandissement
 import { rechargeDash } from "./personnage.js"; // la jauge de recharge du dash du robot
+import { TOUCHES as RACCOURCIS, BOUTONS_BORNE } from "../systemes/raccourcis.js"; // les touches du jeu : l'aide affichée les lit
 
 const ECHELLE = ECHELLE_HUD; // le HUD est plus gros que le robot (x2) pour rester lisible : on le règle dans barre_de_vie.js
 const ECHELLE_TOUCHES = 2; // l'aide des touches, à droite, est plus petite que le reste du HUD
@@ -83,14 +84,15 @@ const LETTRES = { // les lettres de la petite police, en pixels (# = pixel allum
 
 // --- aide des touches : une plaque sous le chrono, une ligne par action (la ou les touches, puis le mot).
 // Ce sont les noms des boutons de la borne (A à F, voir gpio2keys.py) : A = touche I (saut), D = touche K (tir), E = touche L (dash).
-// Pour changer une touche : modifier sa ligne ici ET la touche dans personnage.js (addKeys) ou dans les niveaux.
+// Les lettres viennent de raccourcis.js (TOUCHES.joueur1 et BOUTONS_BORNE) : pour changer une touche, c'est là-bas. Les flèches sont dessinées en dur.
+const bouton = (touche) => BOUTONS_BORNE[touche] ?? touche; // le bouton de la borne de cette touche (A à F) ; sinon la touche elle-même (il faut alors son dessin dans LETTRES)
 // Les noms "gauche", "droite", "haut", "bas" dessinent une flèche ; les autres noms sont des lettres de LETTRES.
 const TOUCHES = [ // les lignes de l'aide : touches à afficher et mot qui les décrit
     { touches: ["gauche", "droite"], mot: "BOUGER" }, // flèches gauche/droite : bouger
     { touches: ["haut", "bas"], mot: "VISER" }, // flèches haut/bas : viser
-    { touches: ["A"], mot: "SAUT" }, // bouton A : sauter
-    { touches: ["D"], mot: "TIR" }, // bouton D : tirer
-    { touches: ["E"], mot: "DASH" } // bouton E : dasher
+    { touches: [bouton(RACCOURCIS.joueur1.saut)], mot: "SAUT" }, // bouton A : sauter
+    { touches: [bouton(RACCOURCIS.joueur1.tir)], mot: "TIR" }, // bouton D : tirer
+    { touches: [bouton(RACCOURCIS.joueur1.dash)], mot: "DASH" } // bouton E : dasher
 ];
 const FLECHES = { // les dessins des 4 flèches
     gauche: ["..#..", ".##..", "#####", ".##..", "..#.."], // la flèche gauche, dessinée en pixels

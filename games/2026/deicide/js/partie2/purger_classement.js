@@ -13,13 +13,20 @@ const DATE_LIMITE = "2026-10-15"; // les lignes enregistrées après cette date 
 export async function purgerClassement() { // à appeler une fois au chargement du jeu
     if (typeof lireDonneesJSON !== "function" || typeof ecrireDonneesJSON !== "function") return; // la sauvegarde (js/donnees.js) n'est pas chargée : rien à faire
     try {
-        const liste = await lireDonneesJSON(); // le panthéon actuel : une liste de lignes { nom, net, brut, morts, coups, date }
-        if (!Array.isArray(liste)) return; // pas de panthéon encore (ou illisible) : rien à retirer
+        const donnees = await lireDonneesJSON(); // le panthéon actuel : l'ancien format est une liste de lignes { nom, net, brut, morts, coups, date }, le nouveau { chrono: [...], nohit: [...] }
+        const listes = Array.isArray(donnees) ? { chrono: donnees } : donnees; // l'ancien format est le classement chrono
+        if (!listes || typeof listes !== "object") return; // pas de panthéon encore (ou illisible) : rien à retirer
         const aRetirer = (ligne) => ligne && NOMS_A_RETIRER.includes(String(ligne.nom).trim().toUpperCase()) && String(ligne.date ?? "") <= DATE_LIMITE; // vrai si cette ligne porte un des noms et date d'avant la limite
-        const gardees = liste.filter((ligne) => !aRetirer(ligne)); // toutes les autres lignes
-        if (gardees.length === liste.length) return; // aucune ligne à retirer : on n'écrit rien
-        await ecrireDonneesJSON(gardees); // on réécrit le panthéon sans les lignes retirées
-        console.log("Classement nettoyé : " + (liste.length - gardees.length) + " ligne(s) retirée(s)"); // une trace dans la console
+        let retirees = 0; // le nombre de lignes retirées, dans les deux classements
+        const nettoyees = {}; // les listes nettoyées
+        for (const nom of Object.keys(listes)) { // pour chaque classement (chrono, nohit)
+            if (!Array.isArray(listes[nom])) { nettoyees[nom] = listes[nom]; continue; } // pas une liste : on n'y touche pas
+            nettoyees[nom] = listes[nom].filter((ligne) => !aRetirer(ligne)); // toutes les autres lignes
+            retirees += listes[nom].length - nettoyees[nom].length; // on compte ce qui a été retiré
+        }
+        if (retirees === 0) return; // aucune ligne à retirer : on n'écrit rien
+        await ecrireDonneesJSON(Array.isArray(donnees) ? nettoyees.chrono : nettoyees); // on réécrit le panthéon sans les lignes retirées (dans son format d'origine)
+        console.log("Classement nettoyé : " + retirees + " ligne(s) retirée(s)"); // une trace dans la console
     } catch (erreur) {
         console.warn("Nettoyage du classement impossible :", erreur); // on ne bloque jamais le jeu pour ça
     }

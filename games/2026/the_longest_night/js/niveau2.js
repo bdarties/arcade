@@ -1,5 +1,68 @@
+import {
+  ajouter_son,
+  gerer_cameras,
+  fusionner_cameras,
+  deplacement_areignee,
+  apparition_elements,
+  degat_contact_ennemi,
+  recharger,
+  tirer,
+  Elimination_ennemi,
+  recuperer_cle,
+  soigner,
+  aller_niveau_suivant,
+  preparer_faucheuse,
+  apparition_faucheuse,
+  deplacement_faucheuse,
+  terminer_match,
+  points_spawn_libres,
+  detruire
+} from "./fonctions.js";
 import niveau1 from "./niveau1.js";
 
+const niveauState = {
+  get player() { return player; }, set player(value) { player = value; },
+  get player2() { return player2; }, set player2(value) { player2 = value; },
+  get mode_deux_joueurs() { return mode_deux_joueurs; }, set mode_deux_joueurs(value) { mode_deux_joueurs = value; },
+  get camerasFusionnees() { return camerasFusionnees; }, set camerasFusionnees(value) { camerasFusionnees = value; },
+  get camGlobalUI() { return camGlobalUI; }, set camGlobalUI(value) { camGlobalUI = value; },
+  get camJ1() { return camJ1; }, set camJ1(value) { camJ1 = value; },
+  get camJ1UI() { return camJ1UI; }, set camJ1UI(value) { camJ1UI = value; },
+  get camJ2() { return camJ2; }, set camJ2(value) { camJ2 = value; },
+  get camJ2UI() { return camJ2UI; }, set camJ2UI(value) { camJ2UI = value; },
+  get cibleCamera() { return cibleCamera; }, set cibleCamera(value) { cibleCamera = value; },
+  get cle() { return cle; }, set cle(value) { cle = value; },
+  get cles_creees() { return cles_creees; }, set cles_creees(value) { cles_creees = value; },
+  get cles_restantes() { return cles_restantes; }, set cles_restantes(value) { cles_restantes = value; },
+  get cles_restantes_affiche() { return cles_restantes_affiche; }, set cles_restantes_affiche(value) { cles_restantes_affiche = value; },
+  get fin_de_partie() { return fin_de_partie; }, set fin_de_partie(value) { fin_de_partie = value; },
+  get faucheuse() { return faucheuse; }, set faucheuse(value) { faucheuse = value; },
+  get groupe_ennemis() { return groupe_ennemis; }, set groupe_ennemis(value) { groupe_ennemis = value; },
+  get groupeBullets() { return groupeBullets; }, set groupeBullets(value) { groupeBullets = value; },
+  get groupe_cle() { return groupe_cle; }, set groupe_cle(value) { groupe_cle = value; },
+  get groupe_recharges() { return groupe_recharges; }, set groupe_recharges(value) { groupe_recharges = value; },
+  get groupe_soin() { return groupe_soin; }, set groupe_soin(value) { groupe_soin = value; },
+  get murs() { return murs; }, set murs(value) { murs = value; },
+  get nombre_cles() { return nombre_cles; }, set nombre_cles(value) { nombre_cles = value; },
+  get nombre_ennemis_apparaissant() { return nombre_ennemis_apparaissant; }, set nombre_ennemis_apparaissant(value) { nombre_ennemis_apparaissant = value; },
+  get nombre_recharges_apparaissant() { return nombre_recharges_apparaissant; }, set nombre_recharges_apparaissant(value) { nombre_recharges_apparaissant = value; },
+  get nombre_soins_apparaissant() { return nombre_soins_apparaissant; }, set nombre_soins_apparaissant(value) { nombre_soins_apparaissant = value; },
+  get porte() { return porte; }, set porte(value) { porte = value; },
+  get score_J1_affiche() { return score_J1_affiche; }, set score_J1_affiche(value) { score_J1_affiche = value; },
+  get score_J2_affiche() { return score_J2_affiche; }, set score_J2_affiche(value) { score_J2_affiche = value; },
+  get son_areignne_blesse() { return son_areignne_blesse; }, set son_areignne_blesse(value) { son_areignne_blesse = value; },
+  get son_cle() { return son_cle; }, set son_cle(value) { son_cle = value; },
+  get son_feu() { return son_feu; }, set son_feu(value) { son_feu = value; },
+  get son_joueur_blesse() { return son_joueur_blesse; }, set son_joueur_blesse(value) { son_joueur_blesse = value; },
+  get son_soin() { return son_soin; }, set son_soin(value) { son_soin = value; },
+  get sortie_ouverte() { return sortie_ouverte; }, set sortie_ouverte(value) { sortie_ouverte = value; },
+  get spawns_complets() { return spawns_complets; }, set spawns_complets(value) { spawns_complets = value; },
+  get tableau_ennemis() { return tableau_ennemis; }, set tableau_ennemis(value) { tableau_ennemis = value; },
+  get tableau_spawn() { return tableau_spawn; }, set tableau_spawn(value) { tableau_spawn = value; },
+  get temps_restant() { return temps_restant; }, set temps_restant(value) { temps_restant = value; },
+  get balle_restanteJ1_affiche() { return balle_restanteJ1_affiche; }, set balle_restanteJ1_affiche(value) { balle_restanteJ1_affiche = value; },
+  get balle_restanteJ2_affiche() { return balle_restanteJ2_affiche; }, set balle_restanteJ2_affiche(value) { balle_restanteJ2_affiche = value; }
+};
 
 // niveau2 réutilise tout le code de niveau1 (joueurs, caméras, HUD, clés, tirs...)
 // et ne redéfinit que ce qui change : la carte, les ennemis et les points d'apparition.
@@ -12,6 +75,11 @@ export default class niveau2 extends niveau1 {
     const cfg = super.parametres_niveau(); // on part des réglages du niveau 1...
     return {
       ...cfg, // ...et on remplace seulement ce qui est différent
+      temps: 180,
+      nombre_cles: 3,
+      nombre_ennemis:  5,
+      nombre_recharges: 2,
+      nombre_soins: 2,
       carte_cle: "carte2",
       carte_fichier: "./assets/map/niveau_2.json",
       tileset_nom: "tileset_reverse",       // nom du tileset DANS Tiled (à vérifier dans niveau_2.json, champ "name" de "tilesets")
@@ -29,6 +97,8 @@ export default class niveau2 extends niveau1 {
         texture: "renard",
         animation: "animation_renard_marche",
         animation_attaque: "animation_renard_attaque",
+        son_blesse: "son_renard_blesse",
+        son_mort: "renard_mort",
         comportement: "rodeur",   // se balade, n'attaque que si un joueur est dans son rayon
         rayon_detection: 70,      // en pixels : distance à partir de laquelle il attaque (et portée de son coup)
         vitesse: 45,              // vitesse de balade

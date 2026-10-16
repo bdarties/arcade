@@ -6,7 +6,7 @@
 // Utilisation : preparerLanternesVivantes(this) dans create() de niveau1, après la création du joueur et du groupe tirsJoueur.
 import { creerTextureLanterneVivante } from "../systemes/dessins_en_code.js"; // le dessin de la lanterne ailée (en code, avec le même motif que les lanternes accrochées)
 import { ROBOT, LANTERNES_VIVANTES, DEGATS } from "../parametres.js"; // la vitesse du robot et les réglages des lanternes
-import { lanterneVivanteMorte } from "../systemes/effets.js"; // éclats, éclair
+import { lanterneVivanteMorte, clignoter } from "../systemes/effets.js"; // éclats, éclair, et la lueur qui bat
 import { donnerBoost } from "../mecanismes/boost.js"; // le boost donné au robot
 import { jouerSon } from "../systemes/sons.js"; // bruit du verre qui casse
 
@@ -25,7 +25,7 @@ export function preparerLanternesVivantes(scene) { // prépare les lanternes viv
     creerTextureLanterneVivante(scene); // fabrique l'image de la lanterne ailée
     if (!scene.anims.exists("lanterne_vivante_vol")) { // si l'animation de vol n'existe pas encore...
         // les ailes battent
-        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { start: 0, end: 1 }), frameRate: 6, repeat: -1 }); // ...on la crée : deux images, en boucle
+        scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { frames: [0, 1, 2, 1] }), frameRate: 10, repeat: -1 }); // ...on la crée : quatre images (ailes levées, à mi-chemin, baissées, à mi-chemin), en boucle
     }
     scene.maxLanternes = undefined; // (la scène est réutilisée après une mort : on repart du maximum normal)
     const groupe = scene.physics.add.group({ allowGravity: false }); // le groupe qui contiendra toutes les lanternes vivantes (sans gravité)
@@ -40,6 +40,46 @@ export function preparerLanternesVivantes(scene) { // prépare les lanternes viv
         scene.events.off(Phaser.Scenes.Events.UPDATE, diriger); // ...on arrête de diriger les lanternes
         minuterie.remove(); // ...et on arrête le minuteur
     });
+}
+
+// Version 1 contre 1 : mêmes lanternes, mais il y a deux robots (scene.joueurs). Elle poursuit le robot vivant le plus proche. Au contact elle le blesse et se brise
+// (surContact(robot)). Un tir d'un robot l'abat : surTir(robot) (en 1 contre 1, c'est lui qui reçoit le boost). Les options : delai (ms entre deux lanternes), maximum.
+export function preparerLanternesVersus(scene, { delai, maximum, surContact, surTir }) { // prépare les lanternes vivantes du 1 contre 1
+    creerTextureLanterneVivante(scene); // fabrique l'image de la lanterne ailée
+    if (!scene.anims.exists("lanterne_vivante_vol")) scene.anims.create({ key: "lanterne_vivante_vol", frames: scene.anims.generateFrameNumbers("lanterne_vivante", { frames: [0, 1, 2, 1] }), frameRate: 10, repeat: -1 }); // l'animation de vol, si elle n'existe pas encore
+    scene.maxLanternes = maximum; // pas plus de lanternes que ça en même temps
+    const groupe = scene.physics.add.group({ allowGravity: false }); // le groupe des lanternes (sans gravité)
+    scene.lanternesVivantes = groupe; // (personnage.js s'en sert pour la visée auto)
+    scene.physics.add.collider(groupe, scene.groupe_plateformes); // elles ne traversent pas les murs
+    scene.cibleLanterne = (lanterne) => { // le robot vivant le plus proche de cette lanterne
+        const vivants = scene.joueurs.filter((joueur) => !joueur.mortVersus); // les robots encore en vie
+        if (vivants.length === 0) return null; // personne
+        return vivants.reduce((a, b) => (Phaser.Math.Distance.Between(a.x, a.y, lanterne.x, lanterne.y) <= Phaser.Math.Distance.Between(b.x, b.y, lanterne.x, lanterne.y) ? a : b)); // le plus proche
+    };
+    scene.joueurs.forEach((joueur) => { // pour chaque robot
+        scene.physics.add.overlap(joueur, groupe, (robot, lanterne) => { // une lanterne le touche
+            if (!lanterne.active || robot.mortVersus) return; // déjà détruite, ou robot mort : rien
+            casserLanterne(scene, lanterne); // elle se brise
+            surContact(robot); // et il est blessé
+        });
+        scene.physics.add.overlap(joueur.tirs, groupe, (tir, lanterne) => { // un tir de ce robot la touche
+            if (!lanterne.active) return; // déjà détruite
+            tir.destroy(); // le tir disparaît
+            casserLanterne(scene, lanterne); // la lanterne se brise
+            surTir(joueur); // et le robot qui a tiré est récompensé
+        });
+    });
+    const diriger = () => groupe.getChildren().forEach((lanterne) => dirigerLanterne(scene, lanterne)); // dirige chaque lanterne
+    scene.events.on(Phaser.Scenes.Events.UPDATE, diriger); // à chaque image
+    const minuterie = scene.time.addEvent({ delay: delai, loop: true, callback: () => faireApparaitre(scene) }); // une lanterne de temps en temps
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { scene.events.off(Phaser.Scenes.Events.UPDATE, diriger); minuterie.remove(); }); // on débranche tout à l'arrêt de la scène
+}
+
+function casserLanterne(scene, lanterne) { // une lanterne se brise : éclats et bruit de verre
+    const x = lanterne.x, y = lanterne.y; // l'endroit
+    lanterne.destroy(); // sa lueur disparaît avec elle
+    jouerSon(scene, "lanterne"); // le verre qui casse
+    lanterneVivanteMorte(scene, x, y); // éclats dorés et blancs
 }
 
 // vrai s'il n'y a aucune tuile solide dans le carré de 48 px autour du point (la lanterne y tiendrait sans toucher un mur)
@@ -84,7 +124,8 @@ export function faireApparaitre(scene) { // fait apparaître une lanterne vivant
     scene.tweens.add({ targets: lanterne, alpha: 1, duration: 300 }); // elle apparaît en fondu
     if (scene.textures.exists("halo_doux")) { // une lueur dorée autour (la texture vient d'ennemis_normaux.js)
         const halo = scene.add.image(place.x, place.y, "halo_doux"); // l'image de la lueur dorée
-        halo.setScale(0.55).setTint(0xffd45c).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0.8).setPipeline("SinglePipeline"); // on la réduit, la teinte et la fait briller
+        halo.setScale(0.85).setTint(0xffd45c).setBlendMode(Phaser.BlendModes.ADD).setDepth(51).setAlpha(0.9).setPipeline("SinglePipeline"); // on la réduit, la teinte et la fait briller
+        clignoter(scene, halo, { scale: 1.05, alpha: 0.55, duration: 450 + Math.random() * 300 }); // la lueur bat comme une flamme (un rythme un peu différent pour chaque lanterne)
         lanterne.halo = halo; // la lanterne retient sa lueur
         lanterne.once("destroy", () => halo.destroy()); // la lueur disparaît avec la lanterne
     }
@@ -94,12 +135,13 @@ export function faireApparaitre(scene) { // fait apparaître une lanterne vivant
 // chaque image : la lanterne se dirige vers le robot, flotte, contourne un mur si elle est coincée, et s'éteint si elle dure trop longtemps
 function dirigerLanterne(scene, lanterne) { // fait bouger une lanterne (appelée à chaque image)
     if (!lanterne.active) return; // si elle est détruite, on ne fait rien
-    const joueur = scene.player; // le robot
+    const joueur = scene.cibleLanterne ? scene.cibleLanterne(lanterne) : scene.player; // le robot visé (en 1 contre 1, la scène choisit le plus proche : voir preparerLanternesVersus)
     const maintenant = scene.time.now; // l'heure actuelle
     if (maintenant - lanterne.naissance > LANTERNES_VIVANTES.dureeDeVie && !lanterne.sEteint) { // trop vieille : elle s'éteint
         lanterne.sEteint = true; // elle est marquée comme éteinte
         scene.tweens.add({ targets: lanterne, alpha: 0, duration: 500, onComplete: () => lanterne.destroy() }); // elle s'efface puis disparaît
     }
+    if (!joueur) { lanterne.body.setVelocity(0, Math.sin((maintenant / 280) + lanterne.phase) * 18); return; } // plus personne à poursuivre : elle flotte sur place
     const dx = joueur.x - lanterne.x; // écart horizontal avec le robot
     const dy = (joueur.y - 26) - lanterne.y; // elle vise le milieu du corps du robot (joueur.y = ses pieds)
     const distance = Math.hypot(dx, dy) || 1; // distance jusqu'au robot

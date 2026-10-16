@@ -4,6 +4,13 @@ const FICHIER_TUILES = "./assets/tileset_sewer.png";
 const NOM_TUILESET = "tileset_sewer";
 const COULEUR_FOND = "#383543";
 
+// Paramètres de déplacement et de résistance des ennemis, surchargeables dans Tiled.
+const ENNEMI_DEGATS = 1;
+const ENNEMI_PV = 2;
+const ENNEMI_VITESSE = 60;
+const ENNEMI_DISTANCE = 150;
+const ENNEMI_ECHELLE = 1;
+
 // Niveau des égouts : carte Tiled, portes de transition et déplacement du joueur.
 export default class egouts extends Phaser.Scene {
   constructor() {
@@ -26,6 +33,11 @@ export default class egouts extends Phaser.Scene {
     this.load.image("img_porte2", "./assets/door2.png");
     this.load.image("img_porte3", "./assets/door3.png");
     fct.chargerPerso(this);
+    //À changer :
+    this.load.spritesheet("ennemi_grenier", "./assets/spritesheet/ennemigreniert.png", {
+      frameWidth: 36,
+      frameHeight: 64
+    });
   }
 
   // Construit la carte et ses collisions, puis place le joueur et les portes.
@@ -60,8 +72,8 @@ export default class egouts extends Phaser.Scene {
     map.createLayer("calque_background", tileset, 0, decalageY).setDepth(-9);
     map.createLayer("calque_background_2", tileset, 0, decalageY).setDepth(-8);
     map.createLayer("calque_background_ombres", tileset, 0, decalageY).setDepth(-7);
-    const calque_sol = map.createLayer("calque_plateformes", tileset, 0, decalageY);
-    calque_sol.setCollisionByExclusion([-1, 0]);
+    this.calque_sol = map.createLayer("calque_plateformes", tileset, 0, decalageY);
+    this.calque_sol.setCollisionByExclusion([-1, 0]);
 
     this.physics.world.setBounds(0, decalageY, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, hauteurEcran);
@@ -96,17 +108,115 @@ export default class egouts extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.clavier = fct.creerClavier(this);
 
-    this.physics.add.collider(this.player, calque_sol);
+    this.physics.add.collider(this.player, this.calque_sol);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     fct.initVies(this, false);
+
+    //À changer :
+    if (!this.anims.exists("ennemi_marche")) {
+      this.anims.create({
+        key: "ennemi_marche",
+        frames: this.anims.generateFrameNumbers("ennemi_grenier", { start: 0, end: 7 }),
+        frameRate: 8,
+        repeat: -1
+      });
+     }
+    
+    this.ennemis = [];
+    const calque_ennemis = map.getObjectLayer("ennemis");
+    console.log("calque ennemis :", calque_ennemis);
+    console.log("calques d'objets :", map.objects.map((l) => l.name));
+
+    if (!calque_ennemis) {
+      console.warn('Calque d\'objets "ennemis" introuvable dans la map Tiled');
+    } else {
+      calque_ennemis.objects.forEach((o) => {
+        const prop = (nom, defaut) => {
+        const p = o.properties && o.properties.find((p) => p.name === nom);
+        return p ? p.value : defaut;
+      };
+      const e = this.physics.add
+      .sprite(o.x, o.y + decalageY, "ennemi_grenier", 0)
+      .setOrigin(0.5, 1)
+      .setScale(prop("echelle", ENNEMI_ECHELLE))
+      .setDepth(1);
+      e.body.setSize(24, 58).setOffset(6, 6);
+      e.vitesse = prop("vitesse", ENNEMI_VITESSE);
+      e.distance = prop("distance", ENNEMI_DISTANCE);
+      e.pv = prop("pv", ENNEMI_PV);
+      e.departX = o.x;
+      e.sens = Math.random() < 0.5 ? -1 : 1;
+      e.play("ennemi_marche");
+      this.physics.add.collider(e, this.calque_sol);
+      this.physics.add.overlap(this.player, e, () => this.perdreVie(ENNEMI_DEGATS, e));
+      this.ennemis.push(e);
+      });
+    }
+    fct.activerCoups(this.player, this.ennemis);
+    
+    this.sound.stopByKey("son_pluie");
+    this.sound.stopByKey("musique_menu");
+    
+    if (this.cache.audio.exists("musique_grenier")) {
+      let musique = this.sound.get("musique_grenier");
+      if (!musique) {
+        musique = this.sound.add("musique_grenier", { loop: true, volume: 0.5 });
+        musique.play();
+      }
+    } else {
+      console.warn("Musique introuvable : vérifie le chemin ./assets/musique/music_grenier.mp3");
+    }
+      
+    const test = this.physics.add
+      .sprite(departX + 150, departY, "ennemi_grenier", 0)
+      .setOrigin(0.5, 1)
+      .setDepth(1);
+    test.body.setSize(24, 58).setOffset(6, 6);
+    test.vitesse = ENNEMI_VITESSE;
+    test.distance = ENNEMI_DISTANCE;
+    test.pv = ENNEMI_PV;
+    test.departX = test.x;
+    test.sens = 1;
+    test.play("ennemi_marche");
+    this.physics.add.collider(test, this.calque_sol);
+    this.physics.add.overlap(this.player, test, () => this.perdreVie(ENNEMI_DEGATS, test));
+    this.ennemis.push(test);
+
   }
 
-  // Gère les chutes, le déplacement, les sauts et les interactions avec les portes.
+// Fait patrouiller les ennemis et les fait rebrousser chemin près des bords.
+  mettreAJourEnnemis() {
+    this.ennemis.forEach((e) => {
+      const b = e.body;
+      const aDroite = e.sens > 0;
+      const auSol = b.blocked.down || b.touching.down;
+
+      const mur = aDroite ? b.blocked.right : b.blocked.left;
+      const tropLoin = Math.abs(e.x - e.departX) > e.distance;
+      const xDevant = aDroite ? b.right + 4 : b.left - 4;
+      const videDevant = auSol && !this.calque_sol.hasTileAtWorldXY(xDevant, b.bottom + 4);
+
+      if (mur || videDevant || (tropLoin && (e.x - e.departX > 0) === aDroite)) e.sens = -e.sens;
+
+      e.setVelocityX(e.sens * e.vitesse);
+      e.setFlipX(e.sens < 0);
+    });
+  }
+
+  // Applique les dégâts puis redémarre le niveau si toutes les vies sont perdues.
+  perdreVie(degats, source) {
+    if (fct.perdreVieJoueur(this, this.player, degats, source)) {
+      this.scene.restart({ depuis: "precedent" });
+    }
+  }
+
   update() {
+    // Met à jour les ennemis, le joueur, les chutes et les portes.
     if (this.player.body.bottom >= this.cameras.main.height - 1) {
       fct.mortParChute(this, () => this.scene.restart({ depuis: "precedent" }));
     }
+    this.mettreAJourEnnemis();
 
     const auSol = this.player.body.touching.down || this.player.body.blocked.down;
     fct.deplacerPerso(this.player, this.clavier, auSol);
@@ -118,9 +228,7 @@ export default class egouts extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("opera", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        this.texte_info.setText("Niveau suivant pas encore disponible").setVisible(true);
-        if (this.timerInfo) this.timerInfo.remove();
-        this.timerInfo = this.time.delayedCall(1500, () => this.texte_info.setVisible(false));
+        this.scene.start("victory");
       }
     }
   }
