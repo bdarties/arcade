@@ -17,7 +17,7 @@ const JEU = infosJeu("piano_time");  // titre, fond, règles... (dans jeux.js)
 
 const X_PIANO_SOLO = 640;            // solo : un seul piano au centre
 const X_PIANO_DUO = [330, 950];      // duo : un piano à gauche (J1), un à droite (J2)
-const X_PANNEAU_SOLO = 1115;         // solo : le titre et le morceau sont à droite du piano
+const X_PANNEAU_SOLO = 1115;         // solo : le titre et le morceau sont à droite du piano  
 
 const LARGEUR_COULOIR = 100;         // largeur d'un couloir = d'une touche du piano
 const Y_HAUT = 150;                  // les notes apparaissent en haut des couloirs
