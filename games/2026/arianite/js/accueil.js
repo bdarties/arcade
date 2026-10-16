@@ -41,7 +41,7 @@ export default class accueil extends Phaser.Scene {
       },
       {
         sprite: this.creerBouton(colX, startY + espacementY, "button_fight"),
-        action: () => this.scene.start("versus")
+        action: () => this.scene.start("victory")
       },
       {
         sprite: this.creerBouton(colX, startY + espacementY * 2, "button_controls"),

@@ -118,9 +118,7 @@ export default class egouts extends Phaser.Scene {
       if (this.physics.overlap(this.player, this.porte_precedent)) {
         this.scene.start("opera", { depuis: "suivant" });
       } else if (this.physics.overlap(this.player, this.porte_suivant)) {
-        this.texte_info.setText("Niveau suivant pas encore disponible").setVisible(true);
-        if (this.timerInfo) this.timerInfo.remove();
-        this.timerInfo = this.time.delayedCall(1500, () => this.texte_info.setVisible(false));
+        this.scene.start("victory");
       }
     }
   }

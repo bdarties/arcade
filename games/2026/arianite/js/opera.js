@@ -1,4 +1,5 @@
 import * as fct from "./fonctions.js";
+import { ARMES, jouerSon } from "./versus/armes.js";
 
 const FICHIER_TUILES = "./assets/tileset_opera.png";
 const NOM_TUILESET = "tileset_opera";
@@ -20,6 +21,13 @@ const BOSS_DELAI_ATTAQUE = 2500;
 const FRAME_IMPACT_JOUEUR = { aria_punch_right: 2, aria_punch_left: 6 };
 const COUP_PORTEE_JOUEUR = 70;
 const COUP_DEGATS_JOUEUR = 1;
+
+// Lance-trompette (repris du mode Versus) : tir toutes les 3 s, 1 PV de dégâts au boss.
+const ROQUETTE_DELAI = 3000;
+const ROQUETTE_VITESSE = 520;
+const ROQUETTE_ECHELLE = 0.5;
+const ROQUETTE_DEGATS = 1;
+const ARME_PORTEE_RAMASSAGE = 60;
 
 // Scène du boss à l'Opéra, avec cordes, plateformes et accès aux niveaux voisins.
 export default class opera extends Phaser.Scene {
@@ -63,6 +71,13 @@ export default class opera extends Phaser.Scene {
       frameWidth: 236,
       frameHeight: 252
     });
+
+    // Lance-trompette : mêmes ressources et mêmes clés que le mode Versus.
+    this.load.image("versus_lancetrompette", "./assets/versus/armes/lancetrompette.png");
+    this.load.image("versus_lancetrompette_vide", "./assets/versus/armes/lancetrompette_vide.png");
+    this.load.image("versus_roquette", "./assets/versus/armes/roquette.png");
+    this.load.audio("versus_s_lance_tir", "./assets/versus/sons/lance_tir.mp3");
+    this.load.audio("versus_s_explosion", "./assets/versus/sons/explosion.mp3");
   }
 
   // Construit la salle, configure ses portes et initialise Aria et le boss.
@@ -202,6 +217,7 @@ export default class opera extends Phaser.Scene {
 
     this.creerAnimationsBoss();
     this.creerBoss();
+    this.creerArmeRoquette(map);
   }
 
   // Prépare les animations de patrouille, d'attente et d'attaque du boss.
@@ -366,11 +382,16 @@ export default class opera extends Phaser.Scene {
     }
   }
 
-  // Compte un impact sur le point faible et lance la défaite du boss si nécessaire.
+  // Compte un impact sur le point faible (coup de poing d'Aria).
   toucherVisageBoss() {
+    this.infligerDegatsBoss(COUP_DEGATS_JOUEUR);
+  }
+
+  // Retire des PV au boss et lance sa défaite si nécessaire.
+  infligerDegatsBoss(degats) {
     if (this.boss.estMort || this.boss.invincible) return;
 
-    this.boss.pv -= COUP_DEGATS_JOUEUR;
+    this.boss.pv -= degats;
 
     if (this.boss.pv <= 0) {
       this.mourirBoss();
@@ -452,6 +473,157 @@ export default class opera extends Phaser.Scene {
         this.declencherAttaqueBoss();
       }
     }
+  }
+
+  // Place le lance-trompette à l'emplacement "lance_roquette" du calque "arme" de la carte.
+  creerArmeRoquette(map) {
+    const def = ARMES.lancetrompette;
+    const o = map.findObject("arme", (obj) => obj.name === "lance_roquette") || { x: 191, y: 328 };
+
+    this.aArme = false;
+    this.prochainTirRoquette = 0;
+    this.armeSprite = null;
+    this.roquettes = this.physics.add.group({ allowGravity: false });
+
+    this.armeAuSol = this.add
+      .image(o.x, o.y, "versus_lancetrompette")
+      .setOrigin(0.5, 1)
+      .setScale(def.echelleItem)
+      .setDepth(3);
+    this.tweens.add({ targets: this.armeAuSol, y: o.y - 6, duration: 700, yoyo: true, repeat: -1 });
+
+    this.indiceArme = this.add
+      .text(o.x, o.y - 50, "K : ramasser", { fontSize: "16px", color: "#ffffff", backgroundColor: "#000000" })
+      .setOrigin(0.5, 1)
+      .setDepth(20)
+      .setVisible(false);
+
+    this.barreArme = this.add.graphics().setScrollFactor(0).setDepth(100);
+  }
+
+  // Indique si Aria est assez près de l'arme posée au sol.
+  joueurProcheArme() {
+    if (!this.armeAuSol) return false;
+    return (
+      Phaser.Math.Distance.Between(this.player.x, this.player.y, this.armeAuSol.x, this.armeAuSol.y - 20) <
+      ARME_PORTEE_RAMASSAGE
+    );
+  }
+
+  // Aria prend l'arme : elle apparaît dans sa main et le tir devient possible.
+  ramasserArme() {
+    const def = ARMES.lancetrompette;
+    this.aArme = true;
+    this.tweens.killTweensOf(this.armeAuSol);
+    this.armeAuSol.destroy();
+    this.armeAuSol = null;
+    this.indiceArme.setVisible(false);
+
+    this.armeSprite = this.add
+      .image(0, 0, "versus_lancetrompette")
+      .setScale(def.echelle)
+      .setOrigin(def.origine[0], def.origine[1])
+      .setDepth(3);
+
+    this.texte_info.setText("Lance-trompette récupéré ! K pour tirer (1 tir / 3 s)").setVisible(true);
+    this.time.delayedCall(2500, () => {
+      if (this.texte_info) this.texte_info.setVisible(false);
+    });
+  }
+
+  // Tire une roquette dans la direction d'Aria, si le délai de 3 secondes est écoulé.
+  tirerRoquette() {
+    const maintenant = this.time.now;
+    if (maintenant < this.prochainTirRoquette) return;
+
+    const def = ARMES.lancetrompette;
+    const dir = this.player.flipX ? -1 : 1;
+    const x = this.player.x + dir * def.bouche[0];
+    const y = this.player.y + def.bouche[1];
+
+    const r = this.roquettes
+      .create(x, y, "versus_roquette")
+      .setScale(ROQUETTE_ECHELLE)
+      .setFlipX(dir < 0)
+      .setDepth(4);
+    r.body.setAllowGravity(false);
+    r.body.setVelocity(dir * ROQUETTE_VITESSE, 0);
+    r.setData("fumee", 0);
+
+    this.prochainTirRoquette = maintenant + ROQUETTE_DELAI;
+    jouerSon(this, "lance_tir");
+  }
+
+  // Fait exploser une roquette avec un petit effet visuel et sonore.
+  exploserRoquette(r) {
+    const { x, y } = r;
+    r.destroy();
+
+    const eclair = this.add.circle(x, y, 18, 0xfff2a8, 1).setDepth(20);
+    const boule = this.add.circle(x, y, 14, 0xff8a1f, 0.95).setDepth(19);
+    this.tweens.add({ targets: eclair, scale: 4, alpha: 0, duration: 220, onComplete: () => eclair.destroy() });
+    this.tweens.add({ targets: boule, scale: 7, alpha: 0, duration: 420, ease: "Cubic.easeOut", onComplete: () => boule.destroy() });
+    this.cameras.main.shake(150, 0.005);
+    jouerSon(this, "explosion");
+  }
+
+  // Met à jour l'arme tenue, la barre de recharge, les roquettes en vol et leurs impacts sur le boss.
+  mettreAJourArme() {
+    const def = ARMES.lancetrompette;
+    const maintenant = this.time.now;
+    const pret = maintenant >= this.prochainTirRoquette;
+
+    // Arme posée au sol : on affiche l'indice quand Aria est à portée.
+    if (!this.aArme && this.indiceArme) {
+      this.indiceArme.setVisible(this.joueurProcheArme());
+    }
+
+    // Arme tenue : elle suit Aria et devient "vide" pendant la recharge.
+    this.barreArme.clear();
+    if (this.aArme) {
+      const dir = this.player.flipX ? -1 : 1;
+      const cle = pret ? "versus_lancetrompette" : "versus_lancetrompette_vide";
+      if (this.armeSprite.texture.key !== cle) this.armeSprite.setTexture(cle);
+      this.armeSprite
+        .setPosition(this.player.x + dir * def.main[0], this.player.y + def.main[1])
+        .setFlipX(this.player.flipX);
+
+      // Petite barre de recharge sous la barre de vie.
+      const ratio = pret ? 1 : 1 - (this.prochainTirRoquette - maintenant) / ROQUETTE_DELAI;
+      this.barreArme.fillStyle(0x140a0a, 0.85).fillRect(24, 76, 240, 12);
+      this.barreArme.fillStyle(pret ? 0xe0a83a : 0x777777, 1).fillRect(26, 78, 236 * ratio, 8);
+      this.barreArme.lineStyle(2, 0xc9a24b, 1).strokeRect(24, 76, 240, 12);
+    }
+
+    // Roquettes en vol : sortie de la carte, fumée et collision avec le boss.
+    const limiteDroite = this.physics.world.bounds.width;
+    const boss = this.boss;
+    const bossTouchable = boss && boss.active && !boss.estMort && boss.body;
+    const zoneBoss = bossTouchable
+      ? new Phaser.Geom.Rectangle(boss.body.x, boss.body.y, boss.body.width, boss.body.height)
+      : null;
+
+    this.roquettes.getChildren().slice().forEach((r) => {
+      if (r.x < 0 || r.x > limiteDroite) {
+        r.destroy();
+        return;
+      }
+
+      if (maintenant - r.getData("fumee") > 60) {
+        r.setData("fumee", maintenant);
+        const dir = r.body.velocity.x >= 0 ? 1 : -1;
+        const f = this.add.circle(r.x - dir * 16, r.y, 5, 0xd8d8d8, 0.7).setDepth(3);
+        this.tweens.add({ targets: f, scale: 2.4, alpha: 0, duration: 380, onComplete: () => f.destroy() });
+      }
+
+      if (zoneBoss) {
+        const zoneRoquette = new Phaser.Geom.Rectangle(r.body.x, r.body.y, r.body.width, r.body.height);
+        if (Phaser.Geom.Intersects.RectangleToRectangle(zoneRoquette, zoneBoss)) {
+          this.exploserRoquette(r);
+          this.infligerDegatsBoss(ROQUETTE_DEGATS);
+        }
+      }
+    });
   }
 
   // Cherche toute la colonne de corde pour déterminer ses limites d'escalade.
@@ -541,6 +713,7 @@ export default class opera extends Phaser.Scene {
   update() {
     this.gererCorde();
     this.updateBoss();
+    this.mettreAJourArme();
 
     if (!this.enCorde) {
       const auSol = this.player.body.touching.down || this.player.body.blocked.down;
@@ -574,6 +747,10 @@ export default class opera extends Phaser.Scene {
             if (this.texte_info) this.texte_info.setVisible(false);
           });
         }
+      } else if (!this.aArme && this.joueurProcheArme()) {
+        this.ramasserArme();
+      } else if (this.aArme && !this.enCorde) {
+        this.tirerRoquette();
       }
     }
   }
