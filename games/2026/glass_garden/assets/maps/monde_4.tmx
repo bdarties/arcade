@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="105">
+<map version="1.10" tiledversion="1.12.0" orientation="orthogonal" renderorder="right-down" width="40" height="22" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="141">
  <editorsettings>
   <export target="monde_4.json" format="json"/>
  </editorsettings>
@@ -254,6 +254,90 @@
    <point/>
   </object>
   <object id="104" name="caisse" type="crate" x="240" y="80">
+   <point/>
+  </object>
+  <object id="113" name="lanterne_noire" type="deco" x="816" y="190">
+   <point/>
+  </object>
+  <object id="114" name="lanterne_noire" type="deco" x="848" y="190">
+   <point/>
+  </object>
+  <object id="115" name="lanterne_noire" type="deco" x="880" y="190">
+   <point/>
+  </object>
+  <object id="116" name="sac_1" type="deco" x="784" y="222">
+   <point/>
+  </object>
+  <object id="117" name="puits" type="deco" x="816" y="222">
+   <point/>
+  </object>
+  <object id="118" name="sac_2" type="deco" x="848" y="222">
+   <point/>
+  </object>
+  <object id="119" name="crane" type="deco" x="912" y="286">
+   <point/>
+  </object>
+  <object id="120" name="crane" type="deco" x="1136" y="446">
+   <point/>
+  </object>
+  <object id="121" name="sac_2" type="deco" x="793" y="577">
+   <point/>
+  </object>
+  <object id="122" name="sac_1" type="deco" x="765" y="576">
+   <point/>
+  </object>
+  <object id="123" name="sac_2" type="deco" x="790" y="607">
+   <point/>
+  </object>
+  <object id="124" name="sac_1" type="deco" x="45" y="33">
+   <point/>
+  </object>
+  <object id="125" name="sac_1" type="deco" x="20" y="44">
+   <point/>
+  </object>
+  <object id="126" name="sac_3" type="deco" x="13" y="18">
+   <point/>
+  </object>
+  <object id="127" name="sac_3" type="deco" x="15" y="240">
+   <point/>
+  </object>
+  <object id="128" name="sac_3" type="deco" x="13" y="272">
+   <point/>
+  </object>
+  <object id="129" name="sac_2" type="deco" x="20" y="296">
+   <point/>
+  </object>
+  <object id="130" name="sac_1" type="deco" x="1049" y="260">
+   <point/>
+  </object>
+  <object id="131" name="sac_3" type="deco" x="993" y="268">
+   <point/>
+  </object>
+  <object id="132" name="sac_2" type="deco" x="1022" y="245">
+   <point/>
+  </object>
+  <object id="133" name="citrouilles_halloween" type="deco" x="734" y="322">
+   <point/>
+  </object>
+  <object id="134" name="citrouilles_halloween" type="deco" x="742" y="296">
+   <point/>
+  </object>
+  <object id="135" name="crane" type="deco" x="1253" y="460">
+   <point/>
+  </object>
+  <object id="136" name="crane" type="deco" x="1228" y="447">
+   <point/>
+  </object>
+  <object id="137" name="panneau" type="deco" x="1040" y="446">
+   <point/>
+  </object>
+  <object id="138" name="panneau" type="deco" x="176" y="414">
+   <point/>
+  </object>
+  <object id="139" name="livres" type="deco" x="272" y="542">
+   <point/>
+  </object>
+  <object id="140" name="livres" type="deco" x="1264" y="318">
    <point/>
   </object>
  </objectgroup>

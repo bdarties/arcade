@@ -17,6 +17,32 @@
 // =====================================================================================
 
 export const DIALOGUES = {
+  // * La lettre du gardien, lue au début de la partie (voir WorldScene.playIntro)
+  lettre: {
+    name: 'Lettre',
+    lines: [
+      "Le gardien du jardin est parti sans prévenir. Sur sa porte, il a laissé une lettre.",
+      "« J'ai caché 5 étoiles dans les jardins de l'autre côté des miroirs. »",
+      "« Réunis-les, et tu sauras où je suis. »",
+    ],
+  },
+  // * L'ancien gardien, retrouvé dans le jardin quand les 5 étoiles sont réunies : l'écran de victoire vient après (voir WorldScene.interact)
+  ancien: {
+    name: 'Le gardien',
+    lines: [
+      'Je suis là.',
+      "Tu as retrouvé mes 5 étoiles. Le jardin n'a jamais été aussi beau.",
+      "Merci d'avoir pris soin de lui.",
+    ],
+  },
+  // * La note au dos de la lettre, lue quand les miroirs sont apparus (voir WorldScene.playIntro) : elle explique les cadenas
+  note: {
+    name: 'Lettre',
+    lines: [
+      "Au dos de la lettre, une note : « Les miroirs sont verrouillés. Chaque étoile rapportée en ouvre de nouveaux. »",
+      "« Commence par celui de la nuit. »",
+    ],
+  },
   enigme: {
     name: '',
     lines: [
