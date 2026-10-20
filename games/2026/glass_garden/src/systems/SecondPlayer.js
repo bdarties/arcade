@@ -20,7 +20,7 @@ export function loadSecondPlayer(scene) {
 
 // * Le premier endroit libre autour du joueur 1 : ni dans un mur, ni dans un miroir, ni dans un décor solide
 // (la boîte de collision du joueur 2 est un petit rectangle aux pieds : on le compare aux obstacles ; un miroir en train de disparaître compte aussi)
-function findStartNear(scene, player, walls) {
+export function findStartNear(scene, player, walls) {
   const d = P2_SPAWN_DISTANCE;
   const { WIDTH, HEIGHT } = PLAYER.HITBOX;
   const overlaps = (x, y, body) => x + WIDTH / 2 > body.left && x - WIDTH / 2 < body.right && y + HEIGHT > body.top && y < body.bottom;
@@ -30,7 +30,8 @@ function findStartNear(scene, player, walls) {
     const blockers = [...(scene.mirrors ?? []), scene.vanishingMirror, ...(scene.decoBlockers?.getChildren() ?? [])].filter((b) => b?.active);
     return !blockers.some((blocker) => blocker.body && overlaps(x, y, blocker.body));
   };
-  const candidates = [[d, 0], [-d, 0], [0, d], [0, -d]].map(([dx, dy]) => ({ x: player.x + dx, y: player.y + dy }));
+  // * D'abord les quatre côtés, puis les diagonales et plus loin si tout est bloqué (devant la porte de la maison, par exemple)
+  const candidates = [[d, 0], [-d, 0], [0, d], [0, -d], [d, d], [-d, d], [d, -d], [-d, -d], [2 * d, 0], [-2 * d, 0]].map(([dx, dy]) => ({ x: player.x + dx, y: player.y + dy }));
   return candidates.find(isFree) || { x: player.x, y: player.y };
 }
 

@@ -1,5 +1,6 @@
 import { SCENES, UI_IMAGES, GAME_MODES } from '../utils/constants.js';
 import { setGameMode } from '../systems/GameMode.js';
+import { requestIntro } from '../systems/IntroSystem.js';
 
 /**
  * * L'écran de choix du mode (Solo ou Multi) : une image plein écran où la carte choisie est surlignée.
@@ -32,6 +33,7 @@ export default class ModeScene extends Phaser.Scene {
       if (this.leaving) return;
       this.leaving = true;
       setGameMode(this.mode);
+      requestIntro(); // une nouvelle partie commence par l'intro du jardin
       this.scene.start(SCENES.HUB);
     };
     this.leaving = false;

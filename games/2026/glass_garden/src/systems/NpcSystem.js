@@ -3,7 +3,7 @@
 // =====================================================================================
 //
 // Un PNJ se pose dans Tiled : un objet « point » de classe « npc » dans le calque « objects ». Son NOM donne le
-// personnage (une clé de NPCS dans constants.js, ex. « enigme »). Le point marque l'endroit où il a les pieds.
+// personnage (une clé de NPCS dans constants.js, ex. « enigme »). Un PNJ peut ne s'afficher qu'à la fin du jeu (requiresAllStars). Le point marque l'endroit où il a les pieds.
 // Changer un PNJ de place se fait donc dans Tiled, sans toucher au code. Une carte sans objet « npc » n'en a pas.
 // Selon la version de Tiled, la classe s'appelle « class » ou « type » : on lit les deux.
 //
@@ -13,10 +13,15 @@
 // =====================================================================================
 
 import { NPCS } from '../utils/constants.js';
+import { areAllStarsCollected } from './StarSystem.js';
 
 /** Charge les images de tous les PNJ (à appeler dans preload). */
 export function preloadNpcs(scene) {
-  Object.values(NPCS).forEach((npc) => scene.load.image(npc.key, npc.image));
+  Object.values(NPCS).forEach((npc) => {
+    // * Une image seule, ou une feuille d'images (frameSize) dont on choisit l'image avec « frame »
+    if (npc.frameSize) scene.load.spritesheet(npc.key, npc.image, { frameWidth: npc.frameSize, frameHeight: npc.frameSize });
+    else scene.load.image(npc.key, npc.image);
+  });
 }
 
 /**
@@ -34,8 +39,11 @@ export function createNpcs(scene, map, player) {
         return null;
       }
 
+      // * Certains PNJ n'apparaissent qu'à la fin du jeu (voir requiresAllStars dans NPCS)
+      if (config.requiresAllStars && !areAllStarsCollected()) return null;
+
       // * Les pieds sont au point de l'objet : le bas de l'image, centré
-      const npc = scene.physics.add.staticSprite(object.x, object.y, config.key).setOrigin(0.5, 1);
+      const npc = scene.physics.add.staticSprite(object.x, object.y, config.key, config.frame).setOrigin(0.5, 1);
       npc.npcName = object.name;
 
       // * La zone qui bloque est un petit rectangle aux pieds (et non toute l'image, qui est très grande).

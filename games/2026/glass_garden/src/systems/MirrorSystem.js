@@ -67,32 +67,57 @@ export function preloadMirrorLocks(scene) {
 }
 
 /**
+ * Pose un cadenas fermé sur ce miroir, qui s'assombrit.
+ * @returns {Phaser.GameObjects.Image} le cadenas
+ */
+export function addMirrorLock(scene, mirror) {
+  const { CLOSED, OPEN, SCALE, DEPTH, TINT } = MIRROR_LOCK;
+  [CLOSED, OPEN].forEach(({ KEY }) => scene.textures.get(KEY).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  mirror.setTint(TINT);
+  return scene.add.image(mirror.x, mirror.y, CLOSED.KEY).setScale(SCALE).setDepth(DEPTH);
+}
+
+/**
+ * Déverrouille ce miroir : après un court délai, le cadenas s'ouvre, monte et s'efface, et le miroir retrouve ses couleurs.
+ * @param {number} [delay]  Le délai avant l'ouverture (par défaut OPEN_DELAY_MS, le temps de laisser l'iris s'ouvrir)
+ * @param {Function} [onDone]  Appelée quand le cadenas a disparu
+ */
+export function playMirrorUnlock(scene, mirror, padlock, delay = MIRROR_LOCK.OPEN_DELAY_MS, onDone) {
+  const { OPEN, OPEN_ANIM } = MIRROR_LOCK;
+  scene.time.delayedCall(delay, () => {
+    padlock.setTexture(OPEN.KEY);
+    mirror.clearTint();
+    scene.tweens.add({
+      targets: padlock,
+      y: padlock.y - OPEN_ANIM.RISE_PX,
+      alpha: 0,
+      duration: OPEN_ANIM.DURATION_MS,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        padlock.destroy();
+        onDone?.();
+      },
+    });
+  });
+}
+
+/**
  * Pose un cadenas sur chaque miroir verrouillé du jardin (le miroir est aussi un peu assombri). Un miroir qui vient de s'ouvrir
  * (voir ProgressSystem.takePendingMirrorAnimations) montre d'abord son cadenas, qui s'ouvre, monte et s'efface.
  * @param {Phaser.Scene} scene
  * @param {Phaser.GameObjects.Sprite[]} mirrors  Les miroirs de la scène (chacun a `world`)
+ * @returns {Phaser.GameObjects.Image[]} les cadenas posés (pour pouvoir les cacher, voir l'intro)
  */
 export function createMirrorLocks(scene, mirrors) {
   const opening = takePendingMirrorAnimations();
-  const { CLOSED, OPEN, SCALE, DEPTH, TINT, OPEN_DELAY_MS, OPEN_ANIM } = MIRROR_LOCK;
-  [CLOSED, OPEN].forEach(({ KEY }) => scene.textures.get(KEY).setFilter(Phaser.Textures.FilterMode.NEAREST));
-
+  const padlocks = [];
   mirrors.forEach((mirror) => {
     const locked = isMirrorLocked(mirror.world);
     if (!locked && !opening.includes(mirror.world)) return;
 
-    const padlock = scene.add.image(mirror.x, mirror.y, CLOSED.KEY).setScale(SCALE).setDepth(DEPTH);
-    if (locked) {
-      mirror.setTint(TINT);
-      return;
-    }
-
-    // * Il vient de s'ouvrir : le miroir est sombre, le cadenas se déverrouille, monte et s'efface, le miroir retrouve ses couleurs
-    mirror.setTint(TINT);
-    scene.time.delayedCall(OPEN_DELAY_MS, () => {
-      padlock.setTexture(OPEN.KEY);
-      mirror.clearTint();
-      scene.tweens.add({ targets: padlock, y: padlock.y - OPEN_ANIM.RISE_PX, alpha: 0, duration: OPEN_ANIM.DURATION_MS, ease: 'Quad.easeOut', onComplete: () => padlock.destroy() });
-    });
+    const padlock = addMirrorLock(scene, mirror);
+    padlocks.push(padlock);
+    if (!locked) playMirrorUnlock(scene, mirror, padlock); // il vient de s'ouvrir : le cadenas se déverrouille
   });
+  return padlocks;
 }
