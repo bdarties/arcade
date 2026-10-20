@@ -72,7 +72,8 @@ export default class opera extends Phaser.Scene {
       frameHeight: 252
     });
 
-    this.load.spritesheet("femme", "./assets/spritesheet/femme.png", {
+    //Spriteesheet de la femme :
+    this.load.spritesheet("femme_stand", "./assets/spritesheet/femme_stand.png", {
       frameWidth: 36,
       frameHeight: 64
     });
@@ -224,13 +225,15 @@ export default class opera extends Phaser.Scene {
     this.creerBoss();
     this.creerArmeRoquette(map);
 
+    //Animation de la femme :
     this.anims.create({
-      key: "femme_anim", 
-      frames: this.anims.generateFrameNumbers("femme", { start: 0, end: 1 }),
+      key: "femme_anim",
+      frames: this.anims.generateFrameNumbers("femme_stand", { start: 0, end: 1 }),
       frameRate: 4,
       repeat: -1
-    }); 
-    this.femme = this.physics.add.sprite(450,450, "femme");
+    });
+    this.femme = this.add.sprite(960, 200, "femme_stand").setOrigin(0.5, 1).setDepth(1);
+    this.femme.play("femme_anim");
   }
 
   // Prépare les animations de patrouille, d'attente et d'attaque du boss.
